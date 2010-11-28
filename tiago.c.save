@@ -1,0 +1,200 @@
+/* 
+
+Tiago's set of programs to interface RH and Python
+
+First: get hydrogen levels in LTE using LTEpops(Atom). 
+
+Needed:
+
+* Atom instance
+  How to get it? Looking in readatom.c, we should need to:
+  
+  readAtom(atom,filename,FALSE);  (last bool is active or not)
+
+* Atmos, following quantities: --DONE
+  atmos.ne 
+  atmos.T  
+  atmos.Nspace
+
+  but readAtom needs also: --DONE
+  atmos.Nelem --DONE
+  atmos.elements[*].abund 
+  atmos.elements[*].weight
+  atmos.nHtot  --DONE
+  atmos.vturb  --DONE
+  atmos.Stokes --DONE
+  atmos.moving --DONE
+
+* Input, following quantities: --DONE
+  input.isum
+  input.PRD_NmaxIter
+  input.PRD_angle_dep
+  input.limit_memory
+  input.Nthreads
+  input.XRD
+
+* Commandline, following:
+  
+
+
+*/
+
+ 
+#include <ctype.h>
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
+
+#include "rh.h"
+#include "atom.h"
+#include "atmos.h"
+#include "rhsc2d/geometry.h"
+#include "spectrum.h"
+#include "statistics.h"
+#include "inputs.h"
+#include "constant.h"
+
+
+/* --- Function prototypes --                          -------------- */
+
+void readAtom(Atom *atom, char *atom_file, bool_t active);
+
+
+/* --- Global variables --                             -------------- */
+
+Atmosphere atmos;
+Geometry geometry;
+Spectrum spectrum;
+ProgramStats stats;
+InputData input;
+CommandLine commandline;
+char messageStr[MAX_MESSAGE_LENGTH];
+enum Topology topology = ONE_D_PLANE;
+
+
+
+
+/* ------- begin ---------------------------------------------------- */
+
+void main(void)
+{
+
+
+
+}
+
+
+
+double **main(void)
+{
+  char *filename = "Atoms/H_6.atom";
+  Atom *atom;
+  char *aa;
+  int i;
+
+  printf("--- Tiago test RH interface\n");
+
+  // Allocate space for atom
+  atom = (Atom *) malloc(sizeof(Atom));
+
+  // initialise input 
+  input.Nthreads = 1;
+  input.PRD_NmaxIter = 0;
+  input.PRD_angle_dep = FALSE;
+  input.limit_memory = FALSE;
+  input.XRD = FALSE;
+  input.isum = 0;
+  strcpy(input.pfData,"Atoms/pf_Kurucz.input");
+  strcpy(input.abund_input,"Atoms/abundance.input");
+  input.metallicity = 0.;
+
+  /* printf("input.Nthreads = %d\n",input.Nthreads);
+     printf("input.pfData = %s\n",input.pfData); */
+
+  commandline.logfile = stderr; 
+  
+  // initialise atmos
+  atmos.Nspace = 5; // testing, to be removed
+
+  readAbundance(&atmos);
+
+  atmos.Stokes = FALSE;
+  atmos.moving = FALSE;
+  
+  atmos.nHtot = (double *) calloc(atmos.Nspace, sizeof(double));
+  atmos.vturb = (double *) calloc(atmos.Nspace, sizeof(double));  
+  atmos.T     = (double *) calloc(atmos.Nspace, sizeof(double));
+  atmos.ne    = (double *) calloc(atmos.Nspace, sizeof(double));  
+
+  // Manually assigning some test values
+  // FALC higher 5 layers:
+  atmos.T[0] = 1.00e5;
+  atmos.T[1] = 9.56e4;
+  atmos.T[2] = 9.08e4;
+  atmos.T[3] = 8.39e4;
+  atmos.T[4] = 7.59e4;
+  atmos.ne[0] = 1.251891E10;
+  atmos.ne[1] = 1.304293E10;
+  atmos.ne[2] = 1.366348E10;
+  atmos.ne[3] = 1.467464E10;
+  atmos.ne[4] = 1.603707E10;
+  atmos.nHtot[0] = 1.0457E10;
+  atmos.nHtot[1] = 1.0940E10;
+  atmos.nHtot[2] = 1.1518E10;
+  atmos.nHtot[3] = 1.2472E10;
+  atmos.nHtot[4] = 1.3782E10;
+
+  // FALC lower 5 layers (in LTE):
+  atmos.T[0] =8.220000E+03 ;
+  atmos.T[1] =8.540000E+03 ;
+  atmos.T[2] =8.860000E+03 ;
+  atmos.T[3] =9.140000E+03 ;
+  atmos.T[4] =9.400000E+03 ;
+  atmos.ne[0] = 1.041290E+15 ;
+  atmos.ne[1] = 1.531806E+15 ;
+  atmos.ne[2] = 2.194603E+15 ;
+  atmos.ne[3] = 2.952398E+15 ;
+  atmos.ne[4] = 3.831726E+15 ;
+  atmos.nHtot[0] = 1.28402E17 ;
+  atmos.nHtot[1] = 1.29180E17 ;
+  atmos.nHtot[2] = 1.3002E17 ;
+  atmos.nHtot[3] = 1.3128E17 ;
+  atmos.nHtot[4] = 1.3266E17 ;  
+
+  for (i = 0; i < atmos.Nspace; i++){
+    atmos.vturb[i] = 0.0;
+    atmos.nHtot[i] /= CUBE(CM_TO_M);
+    atmos.ne[i]    /= CUBE(CM_TO_M);
+  }
+
+
+  /* printf("atmos.Tpf[10] = %f\n",atmos.Tpf[10]);
+     printf("atmos.elements[0].ID = %s\n",atmos.elements[0].ID); 
+
+  printf("--- initAtom\n");
+  initAtom(atom);
+  printf("atom.Nprd = %d\n",atom->Nprd);
+  getAtomID(filename); */
+
+  printf("--- readAtom\n");
+  readAtom(atom,filename,(bool_t )FALSE);
+  
+  // set LTE pops
+  printf("--- LTEpops\n");
+  LTEpops(atom,TRUE);
+
+
+  // print some stuff
+  printf(" atom->Nlevel = %d\n",atom->Nlevel);
+
+  for (i=0; i < atmos.Nspace; i++){
+    printf("%e  %e  %e  %e  %e  %e\n",atom->nstar[0][i]*CUBE(CM_TO_M),atom->nstar[1][i]*CUBE(CM_TO_M),atom->nstar[2][i]*CUBE(CM_TO_M),atom->nstar[3][i]*CUBE(CM_TO_M),atom->nstar[4][i],atom->nstar[5][i]*CUBE(CM_TO_M));
+  }
+
+
+  // Free stuff!!!
+
+  printf("--- End of Tiago's tests\n");
+  return atom->nstar;
+    
+}

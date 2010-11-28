@@ -1,0 +1,38 @@
+## --- Machine dependent defs --                       -------------- ##
+#     
+#      CPU = sparc
+#      OS  = SunOS5
+#
+#      Version:       rh2.0
+#      Author:        Han Uitenbroek (huitenbroek@sunspot.noao.edu)
+#      Last modified: Thu Mar  4 15:59:44 2010 --
+#
+##     --------------------------                      ----------RH-- ##
+
+## --- Choose one if compilation is required for a specific target
+##     machine (use the fpversion command to determine optimal target)##
+
+## TARGET = -xtarget=ultra3i -xcache=64/32/4:1024/64/4
+
+XARCH = -m64
+
+
+CC       = cc
+CFLAGS   = -I../ -v $(TARGET) $(XARCH) -xO4 -mt
+
+
+## --- If f90 compiler is not available replace loader with cc (LD = cc)
+
+LD       = f90
+LDFLAGS  = -L../ $(TARGET) $(XARCH) -xO4 -mt
+
+
+## --- libnsl is needed for the XDR functions
+#      libsunmath is needed for the floating point exception routine
+#      libf90 is needed for FORTRAN 90 internals. --   -------------- ##
+
+ARCHLIBS = -lnsl -lsunmath -lm -lpthread
+ARCHINC  = 
+
+
+## ---                                                 -------------- ##

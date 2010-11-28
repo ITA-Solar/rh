@@ -1,0 +1,20 @@
+## --- Machine dependent defs --                       -------------- ##
+#     
+#      CPU = i686
+#      OS  = Linux, gcc C-compiler
+#
+#      Last modified: Fri Sep 18 22:22:57 2009 --
+#      ------------                                    -------------- ##
+
+CC       = gcc
+CFLAGS   = -O2 -I../ ##-Wall
+
+## --- If no FORTAN compiler is available use gcc as the loader (LD = gcc)
+
+LD       = gcc
+LDFLAGS  = -O2 -L../
+
+ARCHLIBS = -lm -lpthread
+ARCHINC  = 
+
+## ---                                                 -------------- ##

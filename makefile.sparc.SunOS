@@ -1,0 +1,45 @@
+## --- Machine dependent defs --                       -------------- ##
+#     
+#      CPU = sparc
+#      OS  = SunOS5
+#
+#      Version:       rh2.0
+#      Author:        Han Uitenbroek (huitenbroek@nso.edu)
+#      Last modified: Thu Mar  4 15:59:38 2010 --
+#
+##     --------------------------                      ----------RH-- ##
+
+## --- Choose one if compilation is required for a specific target
+##     machine (use the fpversion command to determine optimal target)##
+
+## TARGET = -xtarget=ultra3i -xcache=64/32/4:1024/64/4
+
+XARCH = -m64
+
+## --- If no f90 compiler is available comment out -DHAVE_F90
+
+CC       = cc
+CFLAGS   = -v $(TARGET) $(XARCH) -xO4 -mt -DHAVE_F90
+
+
+## --- Macros for F90 alternative routines --           ------------- ##
+
+F90C     = f90
+F90FLAGS = -xO4 $(TARGET) $(XARCH) -mt
+
+
+## -- Library settings --                               ------------- ##
+
+ARFLAGS  = rv
+ARCHINC  =
+
+## --- In case the .f90 suffix is not automatically defined
+##     corresponding suffix rule --                    -------------- ##
+
+.SUFFIXES: .f90
+
+.f90.o:
+	$(F90C) -c $(F90FLAGS) $<
+
+
+## ---                                                 -------------- ##

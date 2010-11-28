@@ -1,0 +1,145 @@
+Notes on building the MPI version of RH in 1.5D
+===============================================
+
+What to put on the NetCDF file?
+
+* Temp
+* Rho [SI]
+* nne [SI]
+* nh (6-levels, LTE) [SI]
+* x, y, z    [km]
+* vx, vy, vz [km/s]
+
+----------------------------------------
+Python calls to write netcdf file
+
+temp = N.transpose(pyfits.getdata('temp_20.fits'))
+nne = N.transpose(pyfits.getdata('nne_20.fits'))
+rho = N.transpose(pyfits.getdata('rho_20.fits'))
+nhtot=N.transpose(pyfits.getdata('nhtot_20.fits'))
+vx = N.transpose(pyfits.getdata('vx_20.fits'))
+vy = N.transpose(pyfits.getdata('vy_20.fits'))
+vz = N.transpose(pyfits.getdata('vz_20.fits'))
+x = N.transpose(pyfits.getdata('x_20.fits'))
+y = N.transpose(pyfits.getdata('y_20.fits'))
+z = N.transpose(pyfits.getdata('z_20.fits'))
+
+
+# How to get nH:
+nh = N.zeros((6,512, 256, 325),dtype='d')
+for i in range(256):
+    aa =  rhpy.nh_lte(temp[:,:,i].ravel().astype('d'),nne[:,:,i].ravel().astype('d'),nhtot[:,:,i].ravel().astype('d'))
+    aa = N.reshape(aa,(6,512,256))
+    nh[:,:,:,i]= aa	
+
+rootgrp = Dataset('bifrost_s20.ncdf','w',format='NETCDF4')
+
+# dimensions
+rootgrp.createDimension('nx',512)
+rootgrp.createDimension('ny',256)
+rootgrp.createDimension('nz',325)
+rootgrp.createDimension('nhydr',6)
+
+# variables
+temp_var = rootgrp.createVariable('temperature','f4',('nx','ny','nz'),zlib=True)
+rho_var = rootgrp.createVariable('density','f4',('nx','ny','nz'),zlib=True)
+vx_var = rootgrp.createVariable('velocity_x','f4',('nx','ny','nz'),zlib=True)
+vy_var = rootgrp.createVariable('velocity_y','f4',('nx','ny','nz'),zlib=True)
+vz_var = rootgrp.createVariable('velocity_z','f4',('nx','ny','nz'),zlib=True)
+nne_var = rootgrp.createVariable('electron_density','f8',('nx','ny','nz'),zlib=True)
+nh_var = rootgrp.createVariable('hydrogen_populations','f4',('nhydr','nx','ny','nz'),zlib=True)
+x_var = rootgrp.createVariable('x','f4',('nx'),zlib=True)
+y_var = rootgrp.createVariable('y','f4',('ny'),zlib=True)
+z_var = rootgrp.createVariable('z','f4',('nz'),zlib=True)
+
+# attributes 
+rootgrp.description = 'Some quantities from Juan\'s BIFROST snapshot 20'
+temp_var.units = 'K'
+rho_var.units = 'kg m^-3'
+nne_var.units = 'm^-3'
+nh_var.units = 'm^-3'
+vx_var.units = 'km/s'
+vy_var.units = 'km/s'
+vz_var.units = 'km/s'
+x_var.units = 'km'
+y_var.units = 'km'
+z_var.units = 'km'
+
+# put data
+temp_var[:] = temp
+rho_var[:] = rho
+nne_var[:] = nne
+vz_var[:] = vz
+vx_var[:] = vx
+vy_var[:] = vy
+y_var[:] = y
+x_var[:] = x
+z_var[:] = z
+# missing nhtot!
+
+
+# close
+rootgrp.close()
+
+
+### GET stuff out of file
+temp = ncdf.getvar('bifrost_s20_comp.ncdf','temperature',memmap=True)
+nne = ncdf.getvar('bifrost_s20_comp.ncdf','electron_density',memmap=True)
+vz = ncdf.getvar('bifrost_s20_comp.ncdf','velocity_z',memmap=True)
+nh = ncdf.getvar('bifrost_s20_comp.ncdf','hydrogen_populations',memmap=True)
+x = ncdf.getvar('bifrost_s20_comp.ncdf','x',memmap=True)
+y = ncdf.getvar('bifrost_s20_comp.ncdf','y',memmap=True)
+z = ncdf.getvar('bifrost_s20_comp.ncdf','z',memmap=True)
+
+#############################################################
+######     Write new file with sliced atmosphere    #########
+#############################################################
+
+sl = [120,-30]
+
+rootgrp = Dataset('bifrost_s20_slice.ncdf','w',format='NETCDF4')
+rootgrp.createDimension('nx',512)
+rootgrp.createDimension('ny',256)
+rootgrp.createDimension('nz',325-sl[0]+sl[1])
+rootgrp.createDimension('nhydr',6)
+temp_var = rootgrp.createVariable('temperature','f4',('nx','ny','nz'))
+vz_var = rootgrp.createVariable('velocity_z','f4',('nx','ny','nz'))
+nne_var = rootgrp.createVariable('electron_density','f8',('nx','ny','nz'))
+nh_var = rootgrp.createVariable('hydrogen_populations','f4',('nhydr','nx','ny','nz'))
+x_var = rootgrp.createVariable('x','f4',('nx'))
+y_var = rootgrp.createVariable('y','f4',('ny'))
+z_var = rootgrp.createVariable('z','f4',('nz'))
+
+# attributes 
+rootgrp.description = 'Some quantities from Juan\'s BIFROST snapshot 20'
+rootgrp.has_B = 0
+temp_var.units = 'K'
+nne_var.units = 'm^-3'
+nh_var.units = 'm^-3'
+vx_var.units = 'm/s'
+vy_var.units = 'm/s'
+vz_var.units = 'm/s'
+x_var.units = 'm'
+y_var.units = 'm'
+z_var.units = 'm'
+
+# put data
+temp_var[:] = temp[:,:,sl[0]:sl[1]]
+nne_var[:] = nne[:,:,sl[0]:sl[1]]
+vz_var[:] = vz[:,:,sl[0]:sl[1]]*1000.
+nh_var[:] = nh[:,:,:,sl[0]:sl[1]]
+y_var[:] = y[:]*1000.
+x_var[:] = x[:]*1000.
+z_var[:] = z[sl[0]:sl[1]]*1000.
+
+# close
+rootgrp.close()
+
+============================================================================
+
+Put data into multi atmosphere
+
+cm3_to_m3 = 1.e-6
+
+ne /= cm3_to_m3
+nh /= cm3_to_m3
