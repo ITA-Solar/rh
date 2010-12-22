@@ -52,7 +52,6 @@ InputData input;
 CommandLine commandline;
 char messageStr[MAX_LINE_SIZE];
 
-
 /* ------- begin -------------------------- solveray.c -------------- */
 
 int main(int argc, char *argv[])

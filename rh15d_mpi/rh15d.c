@@ -1,5 +1,4 @@
 #include <string.h>
-#include <mpi.h>
 
 #include "rh.h"
 #include "atom.h"
@@ -28,8 +27,8 @@ InputData input;
 NCDF_Atmos_file infile;
 CommandLine commandline;
 char messageStr[MAX_MESSAGE_LENGTH];
-MPI_Comm mpi_comm;
-MPI_Info mpi_info;
+BackgroundData bgdat;
+MPI_data mpi;
 
 /* ------- begin -------------------------- rhf1d.c ----------------- */
 
@@ -41,14 +40,20 @@ int main(int argc, char *argv[])
   Atom *atom;
   Molecule *molecule;
 
+
   /* --- Set up MPI ----------------------             -------------- */
   MPI_Init(&argc,&argv);
-  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
-  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-  MPI_Get_processor_name(mpi_name, &mpi_namelen);
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
+  MPI_Get_processor_name(mpi.name, &mpi.namelen);
 
-  mpi_comm = MPI_COMM_WORLD;
-  mpi_info = MPI_INFO_NULL;
+  mpi.comm = MPI_COMM_WORLD;
+  mpi.info = MPI_INFO_NULL;
+
+  // Temporary: 
+  mpi.Ntasks = 1;
+  mpi.task   = 0; 
+  mpi.backgrrecno = 0; 
 
   /* --- Read input data and initialize --             -------------- */
 
@@ -63,8 +68,24 @@ int main(int argc, char *argv[])
   init_ncdf(&atmos, &geometry, &infile);
   readAtmos_ncdf(214,220, &atmos, &geometry, &infile);
 
+  // Temporary, to be put in parallel init file
+  if ((input.p15d_x1 <= 0) || (input.p15d_x1 > infile.nx))
+    input.p15d_x1 = infile.nx;
+  if ((input.p15d_y1 <= 0) || (input.p15d_y1 > infile.ny))
+    input.p15d_y1 = infile.ny;
+
+  mpi.nx = (input.p15d_x1 - input.p15d_x0) / input.p15d_xst + 
+           (input.p15d_x1 - input.p15d_x0) % input.p15d_xst;
+
+  mpi.ny = (input.p15d_y1 - input.p15d_y0) / input.p15d_yst + 
+           (input.p15d_y1 - input.p15d_y0) % input.p15d_yst;
+
+
+  printf("MPI nx = %d\n",mpi.nx);
+  printf("MPI ny = %d\n",mpi.ny); 
   printf("Atmos moving = %d\n",atmos.moving);
   printf("Atmos ID = %s\n",atmos.ID);
+  printf("Atmos ID len = %d\n",strlen(atmos.ID)); 
 
   /*
   printf("    height      temp        ne           vz         vturb\n");
@@ -80,8 +101,6 @@ int main(int argc, char *argv[])
   exit(0);
   */
 
-  
-  //MULTIatmos(&atmos, &geometry);
   if (atmos.Stokes) Bproject();
 
 
@@ -89,13 +108,13 @@ int main(int argc, char *argv[])
   readMolecularModels();
   SortLambda();
   
-  //getBoundary(&geometry);
-  
-  Background(analyze_output=TRUE, equilibria_only=FALSE);
-  //convertScales(&atmos, &geometry);
+  // Maybe we should have an init_io where all these files are initialised?
+  init_ncdf_J();
+  init_Background();
+  Background_p(analyze_output=TRUE, equilibria_only=FALSE);
 
   getProfiles();
-  initSolution();
+  initSolution_p();
   initScatter();
 
   getCPU(1, TIME_POLL, "Total Initialize");
@@ -118,6 +137,7 @@ int main(int argc, char *argv[])
   writeSpectrum(&spectrum);
   writeFlux(FLUX_DOT_OUT);
 
+
   for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
     atom = atmos.activeatoms[nact];
 
@@ -137,7 +157,9 @@ int main(int argc, char *argv[])
   getCPU(1, TIME_POLL, "Write output");
 
 
-  close_ncdf(&atmos, &geometry, &infile);
+  close_ncdf_J();
+  close_Background();
+  close_atmos_ncdf(&atmos, &geometry, &infile);
 
   printTotalCPU();
   MPI_Finalize();

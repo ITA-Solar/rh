@@ -24,11 +24,14 @@ LDFLAGS = -L../ -L/opt/local/lib/
 
 ONE_D_OBJS = anglequad.o  feautrier.o  formal.o  hydrostat.o  multiatmos.o \
              rh15d.o  piecestokes.o  piecewise.o  project.o  riiplane.o \
-             writeflux_xdr.o  writegeom_xdr.o readatmos_ncdf.o
+             writeflux_xdr.o  writegeom_xdr.o readatmos_ncdf.o \
+	     background_p.o brs_p.o readj_p.o scatter_p.o writespect_p.o \
+	     initial_p.o
 
    ONEDOBJ = solve15d.o  iter_1d.o  feautrier.o
 
   RAY_OBJS = anglequad.o  feautrier.o  formal.o  hydrostat.o  multiatmos.o \
+	     readj_p.o \
              project.o  piecestokes.o  piecewise.o  riiplane.o  solveray.o
 
 BACKGROPAC = anglequad.o  backgrcontr.o  multiatmos.o  project.o
@@ -36,7 +39,7 @@ BACKGROPAC = anglequad.o  backgrcontr.o  multiatmos.o  project.o
 
 ## --- Rules for the executables --                    -------------- ##
 
-all:   rh15d  solve15d  solveray  backgrcontr
+all:   rh15d  solve15d # solveray  backgrcontr
 
 rh15d:  $(ONE_D_OBJS)  librh
 	$(LD) -o $@  $(LDFLAGS) $(ONE_D_OBJS) $(LIBS)
@@ -73,16 +76,31 @@ backgrcontr.o:          ../rh.h  ../atom.h  ../atmos.h  \
                         ../spectrum.h  geometry.h  ../background.h  \
                         ../inputs.h  ../error.h  ../statistics.h
 
+background_p.o:         ../rh.h  ../atom.h  ../atmos.h  ../spectrum.h  \
+			../constant.h  ../background.h  ../error.h       \
+			../statistics.h  ../inputs.h  ../xdr.h parallel.h \
+			background_p.c
+	$(CC) $(CFLAGS) -Wall -c  -o $@ background_p.c
+
+brs_p.o:                ../rh.h  ../atom.h  ../atmos.h  ../spectrum.h \
+	   		../error.h ../xdr.h parallel.h brs_p.c
+	$(CC) $(CFLAGS) -Wall -c  -o $@ brs_p.c
+
 feautrier.o:            ../rh.h  ../atom.h  ../atmos.h  \
                         geometry.h  ../spectrum.h  ../error.h
 
-formal.o:               ../rh.h  ../atom.h  ../atmos.h  \
-                        geometry.h  ../spectrum.h  ../constant.h  \
+formal.o:               ../rh.h  ../atom.h  ../atmos.h  parallel.h \
+                        geometry.h  ../spectrum.h  ../constant.h   \
                         ../background.h  ../inputs.h  ../error.h  ../xdr.h
 
 hydrostat.o:            ../rh.h  ../atom.h  ../atmos.h  geometry.h \
                         ../background.h  ../constant.h  ../accelerate.h \
                         ../error.h
+
+initial_p.o:            ../rh.h  ../atom.h  ../atmos.h  ../spectrum.h   \
+	                ../accelerate.h  ../constant.h  ../statistics.h \
+	                ../error.h  ../inputs.h  ../xdr.h parallel.h initial_p.c
+	$(CC) $(CFLAGS) -Wall -c  -o $@ initial_p.c
 
 iter_1d.o:              ../rh.h  ../atom.h  ../atmos.h  \
                         geometry.h  ../accelerate.h  ../error.h  \
@@ -105,6 +123,10 @@ project.o:              ../rh.h  ../atom.h  ../atmos.h  \
 readatmos_ncdf.o:       ../rh.h  ../atmos.h ../inputs.h  geometry.h parallel.h readatmos_ncdf.c
 	$(CC) $(CFLAGS) -Wall -c  -o $@ readatmos_ncdf.c
 
+readj_p.o:              ../rh.h  ../atom.h  ../atmos.h  ../spectrum.h parallel.h \
+	   		../background.h  ../inputs.h  ../error.h readj_p.c
+	$(CC) $(CFLAGS) -Wall -c  -o $@ readj_p.c
+
 rh15d.o:                ../rh.h  ../atom.h  ../atmos.h  \
                         geometry.h  ../spectrum.h  ../background.h  \
                         ../statistics.h  ../error.h  ../inputs.h  ../xdr.h rh15d.c
@@ -112,6 +134,9 @@ rh15d.o:                ../rh.h  ../atom.h  ../atmos.h  \
 
 riiplane.o:             ../rh.h  ../atom.h  ../atmos.h  \
                         geometry.h  ../constant.h  ../error.h
+
+scatter_p.o:            ../rh.h  ../atom.h  ../atmos.h  ../spectrum.h \
+	                ../inputs.h  ../constant.h  ../error.h  ../statistics.h
 
 solve15d.o:             ../rh.h  ../atom.h  ../atmos.h  \
                         geometry.h  ../spectrum.h  ../accelerate.h  \
@@ -127,5 +152,11 @@ writeflux_xdr.o:        ../rh.h  ../atom.h  ../atmos.h  \
 
 writegeom_xdr.o:        ../rh.h  ../atom.h  ../atmos.h  \
                         geometry.h  ../error.h  ../inputs.h  ../xdr.h
+
+writespect_p.o:         ../rh.h  ../atom.h  ../atmos.h  \
+	                ../spectrum.h  ../constant.h  ../error.h \
+	                ../inputs.h  ../xdr.h  parallel.h writespect_p.c
+	$(CC) $(CFLAGS) -Wall -c -o $@ writespect_p.c
+
 
 ## ------- end ---------------------------- Makefile ---------------- ##

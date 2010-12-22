@@ -22,7 +22,7 @@
 #include <netcdf.h>
 #include <mpi.h>
 
-#include "parallel.h"
+
 #include "rh.h"
 
 
@@ -32,6 +32,7 @@
 #include "error.h"
 #include "inputs.h"
 #include "statistics.h"
+#include "parallel.h"
 
 
 //#define FILE_NAME "/Users/tiago/data/bifrost/bifrost_s20_slice.ncdf"
@@ -41,7 +42,6 @@
 #define NH_NAME   "hydrogen_populations"
 #define Z_NAME    "z"
 
-#define ERR(e) {printf("(EEE) NetCDF: %s\n", nc_strerror(e)); exit(EXIT_FAILURE);}
 
 
 /* --- Function prototypes --                          -------------- */
@@ -49,8 +49,7 @@
 
 /* --- Global variables --                             -------------- */
 
-extern MPI_Comm mpi_comm;
-extern MPI_Info mpi_info;
+extern MPI_data mpi;
 extern InputData input;
 extern char messageStr[];
 
@@ -82,45 +81,46 @@ void init_ncdf(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *infile)
   
 
   /* Open the file. */
-  if ((ierror = nc_open_par(input.atmos_input,NC_NOWRITE, mpi_comm, mpi_info, 
-			    &infile->ncid))) ERR(ierror);
+  if ((ierror = nc_open_par(input.atmos_input ,NC_NOWRITE | NC_MPIIO, mpi.comm, 
+			    mpi.info, &infile->ncid))) ERR(ierror,routineName);
 
   ncid = infile->ncid;
 
   /* Is magnetic field included? */
-  if ((ierror = nc_get_att_int( ncid, NC_GLOBAL, "has_B", &has_B))) ERR(ierror);
+  if ((ierror = nc_get_att_int( ncid, NC_GLOBAL, "has_B", &has_B))) ERR(ierror,routineName);
 
   if (has_B) printf("NCDF has B, but we are not doing anything about it for now.\n");
   atmos->Stokes = FALSE;
 
   /* Get the dimids and values */
-  if ((ierror = nc_inq_dimid( ncid, "nx", &infile->nx_id)))       ERR(ierror);
-  if ((ierror = nc_inq_dimlen(ncid, infile->nx_id, &infile->nx))) ERR(ierror);
+  if ((ierror = nc_inq_dimid( ncid, "nx", &infile->nx_id)))       ERR(ierror,routineName);
+  if ((ierror = nc_inq_dimlen(ncid, infile->nx_id, &infile->nx))) ERR(ierror,routineName);
 
-  if ((ierror = nc_inq_dimid( ncid, "ny", &infile->ny_id)))       ERR(ierror);
-  if ((ierror = nc_inq_dimlen(ncid, infile->ny_id, &infile->ny))) ERR(ierror);
+  if ((ierror = nc_inq_dimid( ncid, "ny", &infile->ny_id)))       ERR(ierror,routineName);
+  if ((ierror = nc_inq_dimlen(ncid, infile->ny_id, &infile->ny))) ERR(ierror,routineName);
 
-  if ((ierror = nc_inq_dimid( ncid, "nz", &infile->nz_id)))       ERR(ierror);
-  if ((ierror = nc_inq_dimlen(ncid, infile->nz_id, &infile->nz))) ERR(ierror);
+  if ((ierror = nc_inq_dimid( ncid, "nz", &infile->nz_id)))       ERR(ierror,routineName);
+  if ((ierror = nc_inq_dimlen(ncid, infile->nz_id, &infile->nz))) ERR(ierror,routineName);
 
-  if ((ierror = nc_inq_dimid( ncid, "nhydr", &infile->nhyd_id)))  ERR(ierror);
-  if ((ierror = nc_inq_dimlen(ncid, infile->nhyd_id, &nn)))       ERR(ierror);
+  if ((ierror = nc_inq_dimid( ncid, "nhydr", &infile->nhyd_id)))  ERR(ierror,routineName);
+  if ((ierror = nc_inq_dimlen(ncid, infile->nhyd_id, &nn)))       ERR(ierror,routineName);
 
   /* get some values in atmos/geometry structures */
-  atmos->Nspace = geometry->Ndep = (int) infile->nz;
-  atmos->NHydr  = (int) nn;
+  geometry->Ndep = (int)  infile->nz;
+  atmos->Nspace  = (long) infile->nz;
+  atmos->NHydr   = (int)  nn;
 
 
   /* Get the varids */
-  if ((ierror = nc_inq_varid(ncid, TEMP_NAME, &infile->T_varid)))  ERR(ierror);
-  if ((ierror = nc_inq_varid(ncid, NE_NAME,   &infile->ne_varid))) ERR(ierror);
-  if ((ierror = nc_inq_varid(ncid, VZ_NAME,   &infile->vz_varid))) ERR(ierror);
-  if ((ierror = nc_inq_varid(ncid, NH_NAME,   &infile->nh_varid))) ERR(ierror);
-  if ((ierror = nc_inq_varid(ncid, "z",       &z_varid)))          ERR(ierror);
+  if ((ierror = nc_inq_varid(ncid, TEMP_NAME, &infile->T_varid)))  ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(ncid, NE_NAME,   &infile->ne_varid))) ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(ncid, VZ_NAME,   &infile->vz_varid))) ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(ncid, NH_NAME,   &infile->nh_varid))) ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(ncid, "z",       &z_varid)))          ERR(ierror,routineName);
 
   /* read things that don't depend on x, y */
   geometry->height = (double *) malloc(atmos->Nspace * sizeof(double));
-  if ((ierror = nc_get_var_double(ncid, z_varid, geometry->height))) ERR(ierror);
+  if ((ierror = nc_get_var_double(ncid, z_varid, geometry->height))) ERR(ierror,routineName);
 
   /* allocate arrays */
   geometry->vel = (double *) malloc(atmos->Nspace * sizeof(double));
@@ -183,7 +183,7 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 		    NCDF_Atmos_file *infile)
 /* Reads the variables T, ne, vel, nh for a given (xi,yi) pair */ 
 {
-  
+  const char routineName[] = "readAtmos_ncdf";
   size_t start[]    = {0, 0, 0}; /* starting values */
   size_t count[]    = {1, 1, 1};
   size_t start_nh[] = {0, 0, 0, 0};
@@ -198,11 +198,11 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   
    /* read variables */
   if ((ierror = nc_get_vara_double(ncid, infile->T_varid,  start, count, atmos->T)))
-    ERR(ierror);
+    ERR(ierror,routineName);
   if ((ierror = nc_get_vara_double(ncid, infile->ne_varid, start, count, atmos->ne)))
-    ERR(ierror);
+    ERR(ierror,routineName);
   if ((ierror = nc_get_vara_double(ncid, infile->vz_varid, start, count, geometry->vel)))
-    ERR(ierror);
+    ERR(ierror,routineName);
 
   /* zero nHtot */
   for (j = 0; j < atmos->Nspace; j++) atmos->nHtot[j] = 0.0; 
@@ -215,7 +215,7 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   for (i = 0; i < atmos->NHydr; i++){
     start_nh[0] = i;
     if ((ierror = nc_get_vara_double(ncid, infile->nh_varid, start_nh, count_nh, 
-				     atmos->nH[i]))) ERR(ierror);
+				     atmos->nH[i]))) ERR(ierror,routineName);
 
     /* Sum to get nHtot */
     for (j = 0; j < atmos->Nspace; j++) atmos->nHtot[j] += atmos->nH[i][j];
@@ -242,13 +242,14 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 /* ------- end ---------------------------- readAtmos_ncdf  --------- */
 
 /* ------- begin -------------------------- close_ncdf  ------------- */
-void close_ncdf(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *infile)
+void close_atmos_ncdf(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *infile)
 /* Closes the NCDF file and frees memory */
 {
+  const char routineName[] = "close_atmos_ncdf";
   int ierror;
   
   /* Close the file. */
-  if ((ierror = nc_close(infile->ncid))) ERR(ierror);
+  if ((ierror = nc_close(infile->ncid))) ERR(ierror,routineName);
 
   /* Free stuff */
   free(atmos->T);

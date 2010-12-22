@@ -24,6 +24,7 @@
 #include "inputs.h"
 #include "error.h"
 #include "xdr.h"
+#include "parallel.h"
 
 
 /* --- Function prototypes --                          -------------- */
@@ -48,7 +49,8 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
   bool_t   initialize, boundbound, polarized_as, polarized_c,
            PRD_angle_dep, to_obs, solveStokes, angle_dep;
   enum     FeautrierOrder F_order;     
-  int      Nspace = atmos.Nspace, Nrays = atmos.Nrays;
+  long     Nspace = atmos.Nspace;
+  int      Nrays = atmos.Nrays;
   double  *I, *chi, *S, **Ipol, **Spol, *Psi, *Jdag, wmu, dJmax, dJ,
           *J20dag, musq, threemu1, threemu2, *J, *J20;
   ActiveSet *as;
@@ -116,7 +118,8 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
   Jdag = (double *) malloc(Nspace * sizeof(double));
   if (input.limit_memory) {
     J = (double *) malloc(atmos.Nspace *sizeof(double));
-    readJlambda(nspect, Jdag);
+    //readJlambda(nspect, Jdag);
+    readJlambda_ncdf(nspect, Jdag);
   } else {
     J = spectrum.J[nspect];
     for (k = 0;  k < Nspace;  k++) Jdag[k] = J[k];
@@ -260,8 +263,12 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
       dJmax = MAX(dJmax, dJ);
     }
     if (input.limit_memory) {
-      writeJlambda(nspect, J);
-      if (input.backgr_pol) writeJ20lambda(nspect, J20);
+      //writeJlambda(nspect, J);
+      writeJlambda_ncdf(nspect, J);
+      if (input.backgr_pol) {
+	//writeJ20lambda(nspect, J20);
+	writeJ20_ncdf(nspect, J20);
+      }
     }
   }
   /* --- Clean up --                                 ---------------- */

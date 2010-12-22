@@ -34,6 +34,19 @@ typedef struct {
 } NCDF_Atmos_file;
 
 
+/* For the background stuff */
+typedef struct {
+  char     *brs_fname;
+  bool_t    do_fudge;
+  int       Nfudge;
+  int       brs_ncid,    brs_hl_var,    brs_ip_var,  brs_nrec_var;
+  // for now here, in the future perhaps write things in io.h:
+  int       j_ncid, jlambda_var, j20_var; 
+  double   *lambda_fudge, **fudge;
+} BackgroundData;
+
+
+
 /* --- Associated function prototypes --               -------------- */
 
 void convertScales(Atmosphere *atmos, Geometry *geometry);
@@ -45,7 +58,7 @@ void writeGeometry(Geometry *geometry);
 void init_ncdf(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *infile);
 void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 		    NCDF_Atmos_file *infile);
-void close_ncdf(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *infile);
+void close_atmos_ncdf(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *infile);
 
 
 /* --- Formal solution related --                      -------------- */
