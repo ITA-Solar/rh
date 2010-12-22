@@ -10,6 +10,15 @@
   ATMOS_FILE = /Users/tiago/data/bifrost/bifrost_s20_slice2.ncdf 
   ABUND_FILE = ../../Atoms/abundance.input
 
+# Stuff for 1.5D version:
+  X_START = 0
+  X_END   = 5
+  X_STEP  = 1
+
+  Y_START = 0
+  Y_END   = 5
+  Y_STEP  = 1
+
 # Set choice of number of rays (KEYWORD_OPTIONAL).
 
   NRAYS = 3
@@ -90,9 +99,9 @@
 # Temporary files for mean intensities and background opacities
 # (KEYWORD_REQUIRED).
 
-  J_FILE          = J.dat
+  J_FILE          = scratch/J.dat
   STARTING_J      = NEW_J
-  BACKGROUND_FILE = background.dat
+  BACKGROUND_FILE = scratch/background
 
 # Apply multiplicative factor to all background metals. METALLICITY
 # is specified in terms of dex, ie -1.0 means a tenfold decrease in metals
