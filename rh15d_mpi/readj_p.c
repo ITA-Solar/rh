@@ -14,7 +14,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <netcdf.h>
 
 #include "rh.h"
 #include "atom.h"
@@ -25,8 +24,8 @@
 #include "inputs.h"
 #include "error.h"
 #include "parallel.h"
+#include "io.h"
 
-#define J_FILE_TEMPLATE "%s.ncdf"
 
 /* --- Function prototypes --                          -------------- */
 
@@ -37,10 +36,10 @@ extern Atmosphere atmos;
 extern Spectrum spectrum;
 extern InputData input;
 extern char messageStr[];
+extern IO_data io;
 extern MPI_data mpi;
-extern BackgroundData bgdat;
 
-/* ------- begin -------------------------- init__ncdf_J.c ----------- */
+/* ------- begin -------------------------- init_ncdf_J.c ----------- */
 void init_ncdf_J(void)
 /* Creates the netCDF file for J 
    Must also put option to create or not, depending on OLD_J
@@ -52,7 +51,7 @@ void init_ncdf_J(void)
   int     ierror, jncid, nx_id, ny_id, nspect_id, nspace_id,
           Jlambda_var, J20_var, dimids[4];
   FILE   *test;
-  char    file_J[MAX_MESSAGE_LENGTH];
+  char    file_J[MAX_MESSAGE_LENGTH],  *atmosID;
 
 
   /* add the .ncdf extension to J.dat */
@@ -66,50 +65,75 @@ void init_ncdf_J(void)
     fclose(test);
   }
 
-  /* Create the file */
-  if ((ierror = nc_create_par(file_J, NC_NETCDF4 | NC_CLOBBER | NC_MPIIO, 
-			      mpi.comm, mpi.info, &jncid))) ERR(ierror,routineName);
+  
+  if (input.startJ == OLD_J) {
+    /* Read existing file */
+    if ((ierror = nc_open_par(file_J, NC_NETCDF4 | NC_WRITE | NC_MPIIO, 
+			      mpi.comm, mpi.info, &jncid))) ERR(ierror,routineName); 
 
-  /* Write atmos.ID as global attribute */
-  if ((ierror = nc_put_att_text(jncid, NC_GLOBAL, "atmosID", strlen(atmos.ID),
-				atmos.ID ))) ERR(ierror,routineName);
+    /* Get the variable ids */
+    if ((ierror = nc_inq_varid(jncid, "Jlambda", &Jlambda_var))) 
+      ERR(ierror,routineName);
+    if (input.backgr_pol)
+      if ((ierror = nc_inq_varid(jncid, "J20", &J20_var))) 
+	ERR(ierror,routineName);    
 
-  /* Create dimensions */ 
-  if ((ierror = nc_def_dim(jncid, "nx",    mpi.nx,          &nx_id     ))) 
-    ERR(ierror,routineName);
-  if ((ierror = nc_def_dim(jncid, "ny",    mpi.ny,          &ny_id     ))) 
-    ERR(ierror,routineName);
-  // in the future, this nz should be a maximum value of atmos.Nspace to account
-  // for the cases where more points are added (interpolated) to different columns
-  if ((ierror = nc_def_dim(jncid, "nz",    atmos.Nspace,    &nspace_id ))) 
-    ERR(ierror,routineName);
-  if ((ierror = nc_def_dim(jncid, "nwave", spectrum.Nspect, &nspect_id ))) 
-    ERR(ierror,routineName);
+    /* consistency checks */
+    if ((ierror = nc_get_att_text( jncid, NC_GLOBAL, "atmosID", atmosID ))) 
+      ERR(ierror,routineName);
 
-  /* Create variables */
-  dimids[0] = nx_id;
-  dimids[1] = ny_id;
-  dimids[2] = nspace_id;
-  dimids[3] = nspect_id;
+    if (!strstr(atmosID, atmos.ID)) {
+      sprintf(messageStr,
+	      "J data was derived from different atmosphere (%s) than current",
+	      atmosID);
+      Error(WARNING, routineName, messageStr);
+    }
+    free(atmosID);
 
-  /* Jlambda */
-  if ((ierror = nc_def_var(jncid, "Jlambda", NC_FLOAT, 4, dimids, &Jlambda_var)))
-    ERR(ierror,routineName);
+  } else {  
+    /* Create the file, when NEW_J is used */
+    if ((ierror = nc_create_par(file_J, NC_NETCDF4 | NC_CLOBBER | NC_MPIIO, 
+				mpi.comm, mpi.info, &jncid))) ERR(ierror,routineName);
 
-  /* J20 */
-  if (input.backgr_pol)
+    /* Write atmos.ID as global attribute */
+    if ((ierror = nc_put_att_text(jncid, NC_GLOBAL, "atmosID", strlen(atmos.ID),
+				  atmos.ID ))) ERR(ierror,routineName);
+
+    /* Create dimensions */ 
+    if ((ierror = nc_def_dim(jncid, "nx",    mpi.nx,          &nx_id     ))) 
+      ERR(ierror,routineName);
+    if ((ierror = nc_def_dim(jncid, "ny",    mpi.ny,          &ny_id     ))) 
+      ERR(ierror,routineName);
+    // in the future, this nz should be a maximum value of atmos.Nspace to account
+    // for the cases where more points are added (interpolated) to different columns
+    if ((ierror = nc_def_dim(jncid, "nz",    atmos.Nspace,    &nspace_id ))) 
+      ERR(ierror,routineName);
+    if ((ierror = nc_def_dim(jncid, "nwave", spectrum.Nspect, &nspect_id ))) 
+      ERR(ierror,routineName);
+
+    /* Create variables */
+    dimids[0] = nx_id;
+    dimids[1] = ny_id;
+    dimids[2] = nspace_id;
+    dimids[3] = nspect_id;
+
+    /* Jlambda */
+    if ((ierror = nc_def_var(jncid, "Jlambda", NC_FLOAT, 4, dimids, &Jlambda_var)))
+      ERR(ierror,routineName);
+
+    /* J20 */
+    if (input.backgr_pol)
       if ((ierror = nc_def_var(jncid, "J20", NC_FLOAT, 4, dimids, &J20_var    )))
 	ERR(ierror,routineName);
 
-
-  /* End define mode */
-  if ((ierror = nc_enddef(jncid))) ERR(ierror,routineName);
+    /* End define mode */
+    if ((ierror = nc_enddef(jncid))) ERR(ierror,routineName);
+  }
 
   /* Copy stuff to Background data struct */
-  printf("j_ncid = %d\n", jncid);
-  bgdat.j_ncid      = jncid;
-  bgdat.jlambda_var = Jlambda_var;
-  bgdat.j20_var     = J20_var;
+  io.j_ncid        = jncid;
+  io.j_jlambda_var = Jlambda_var;
+  io.j_j20_var     = J20_var;
 
   return;
 }
@@ -123,7 +147,7 @@ void close_ncdf_J(void)
 {
   const char routineName[] = "close_ncdf_J";
   int        ierror;
-  if ((ierror = nc_close(bgdat.j_ncid))) ERR(ierror,routineName);
+  if ((ierror = nc_close(io.j_ncid))) ERR(ierror,routineName);
   return;
 }
 /* ------- end ---------------------------- close_ncdf_J.c ---------- */
@@ -139,15 +163,15 @@ void writeJlambda_ncdf(int nspect, double *J)
 
   
   /* Get variable */
-  start[0] = mpi.task; // temporary, to be changed to mpi.ix 
-  start[1] = mpi.task;
+  start[0] = mpi.ix;  
+  start[1] = mpi.iy;
   start[3] = nspect;
   count[2] = atmos.Nspace;
 
   //printf("start = %d %d %d %d\n", start[0],start[1],start[2],start[3]);
   //printf("count = %d %d %d %d\n", count[0],count[1],count[2],count[3]);
 
-  if ((ierror = nc_put_vara_double(bgdat.j_ncid, bgdat.jlambda_var, start, count,
+  if ((ierror = nc_put_vara_double(io.j_ncid, io.j_jlambda_var, start, count,
 				   J ))) ERR(ierror,routineName);
 
   return;
@@ -165,12 +189,12 @@ void writeJ20_ncdf(int nspect, double *J)
 
   
   /* Get variable */
-  start[0] = mpi.task; // temporary, to be changed to mpi.ix 
-  start[1] = mpi.task;
+  start[0] = mpi.ix;  
+  start[1] = mpi.iy;
   start[3] = nspect;
   count[2] = atmos.Nspace;
 
-  if ((ierror = nc_put_vara_double(bgdat.j_ncid, bgdat.j20_var, start, count,
+  if ((ierror = nc_put_vara_double(io.j_ncid, io.j_j20_var, start, count,
 				   J ))) ERR(ierror,routineName);
 
   return;
@@ -189,13 +213,13 @@ void readJlambda_ncdf(int nspect, double *J)
 
   
   /* Get variable */
-  start[0] = mpi.task; // temporary, to be changed to mpi.ix 
-  start[1] = mpi.task;
+  start[0] = mpi.ix;
+  start[1] = mpi.iy;
   start[3] = nspect;
   count[2] = atmos.Nspace;
 
   /* read as double, although it is written as float */
-  if ((ierror = nc_get_vara_double(bgdat.j_ncid, bgdat.jlambda_var, start, count, J )))
+  if ((ierror = nc_get_vara_double(io.j_ncid, io.j_jlambda_var, start, count, J )))
     ERR(ierror,routineName);
 
 
@@ -214,13 +238,13 @@ void readJ20_ncdf(int nspect, double *J)
 
   
   /* Get variable */
-  start[0] = mpi.task; // temporary, to be changed to mpi.ix 
-  start[1] = mpi.task;
+  start[0] = mpi.ix; 
+  start[1] = mpi.iy;
   start[3] = nspect;
   count[2] = atmos.Nspace;
 
   /* read as double, although it is written as float */
-  if ((ierror = nc_get_vara_double(bgdat.j_ncid, bgdat.j20_var, start, count, J )))
+  if ((ierror = nc_get_vara_double(io.j_ncid, io.j_j20_var, start, count, J )))
     ERR(ierror,routineName);
 
   return;

@@ -11,6 +11,7 @@
 #include "inputs.h"
 #include "xdr.h"
 #include "parallel.h"
+#include "io.h"
 
 /* --- Function prototypes --                          -------------- */
 
@@ -29,13 +30,14 @@ CommandLine commandline;
 char messageStr[MAX_MESSAGE_LENGTH];
 BackgroundData bgdat;
 MPI_data mpi;
+IO_data io;
 
 /* ------- begin -------------------------- rhf1d.c ----------------- */
 
 int main(int argc, char *argv[])
 {
   bool_t analyze_output, equilibria_only;
-  int    niter, nact, i;
+  int    niter, nact, i, Ntest;
 
   Atom *atom;
   Molecule *molecule;
@@ -49,6 +51,7 @@ int main(int argc, char *argv[])
 
   mpi.comm = MPI_COMM_WORLD;
   mpi.info = MPI_INFO_NULL;
+
 
   // Temporary: 
   mpi.Ntasks = 1;
@@ -65,21 +68,21 @@ int main(int argc, char *argv[])
   spectrum.updateJ = TRUE;
 
   getCPU(1, TIME_START, NULL);
-  init_ncdf(&atmos, &geometry, &infile);
-  readAtmos_ncdf(214,220, &atmos, &geometry, &infile);
+  init_ncdf_atmos(&atmos, &geometry, &infile);
+  // init_io should go in here, and should be the following order:
+  /* init_ncdf_atmos
+   * init_ncdf_J
+   * init_Background
+   * init_ncdf_input
+   * init_ncdf_aux 
+   * init_ncdf_spec
+  */
 
-  // Temporary, to be put in parallel init file
-  if ((input.p15d_x1 <= 0) || (input.p15d_x1 > infile.nx))
-    input.p15d_x1 = infile.nx;
-  if ((input.p15d_y1 <= 0) || (input.p15d_y1 > infile.ny))
-    input.p15d_y1 = infile.ny;
+  /* Find out the work load for each process */
+  distribute_jobs();
 
-  mpi.nx = (input.p15d_x1 - input.p15d_x0) / input.p15d_xst + 
-           (input.p15d_x1 - input.p15d_x0) % input.p15d_xst;
-
-  mpi.ny = (input.p15d_y1 - input.p15d_y0) / input.p15d_yst + 
-           (input.p15d_y1 - input.p15d_y0) % input.p15d_yst;
-
+  // Temporary
+  mpi.Ntasks = 1;
 
   printf("MPI nx = %d\n",mpi.nx);
   printf("MPI ny = %d\n",mpi.ny); 
@@ -87,80 +90,113 @@ int main(int argc, char *argv[])
   printf("Atmos ID = %s\n",atmos.ID);
   printf("Atmos ID len = %d\n",strlen(atmos.ID)); 
 
-  /*
-  printf("    height      temp        ne           vz         vturb\n");
-  //printf("    nh(0)       nh(1)       nh(2)        nh(3)      nh(4)        nh(5)       nhtot\n");
-  for(i=0; i<175; i++){
-    //printf(" %10.4e  %10.4e  %10.4e  %10.4e %10.4e  %10.4e  %10.4e\n",
-    //   atmos.nH[0][i],atmos.nH[1][i],atmos.nH[2][i],atmos.nH[3][i],atmos.nH[4][i],
-    //   atmos.nH[5][i],atmos.nHtot[i]);
 
-    printf(" %10.4e  %10.4e  %10.4e  %10.4e %10.4e\n",
-    	   geometry.height[i],atmos.T[i],atmos.ne[i],geometry.vel[i],atmos.vturb[i]);
-  }
-  exit(0);
-  */
+  /* Main loop over tasks */
+  for (mpi.task = 0; mpi.task < mpi.Ntasks; mpi.task++) {
+    /* Indices of x and y */
+    mpi.ix = mpi.taskmap[mpi.task + mpi.my_start][0];
+    mpi.iy = mpi.taskmap[mpi.task + mpi.my_start][1];
 
-  if (atmos.Stokes) Bproject();
+    /* Read atmosphere column */
+    //readAtmos_ncdf(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
+
+    if (mpi.rank == 0)
+      readAtmos_ncdf(214,220, &atmos, &geometry, &infile);
+    if (mpi.rank == 1)
+      readAtmos_ncdf(280,100, &atmos, &geometry, &infile);
+
+    /*
+      printf("    height      temp        ne           vz         vturb\n");
+      //printf("    nh(0)       nh(1)       nh(2)        nh(3)      nh(4)        nh(5)       nhtot\n");
+      for(i=0; i<175; i++){
+      //printf(" %10.4e  %10.4e  %10.4e  %10.4e %10.4e  %10.4e  %10.4e\n",
+      //   atmos.nH[0][i],atmos.nH[1][i],atmos.nH[2][i],atmos.nH[3][i],atmos.nH[4][i],
+      //   atmos.nH[5][i],atmos.nHtot[i]);
+      
+      printf(" %10.4e  %10.4e  %10.4e  %10.4e %10.4e\n",
+      geometry.height[i],atmos.T[i],atmos.ne[i],geometry.vel[i],atmos.vturb[i]);
+      }
+      exit(0);
+    */
+
+    if (atmos.Stokes) Bproject();
 
 
-  readAtomicModels();
-  readMolecularModels();
-  SortLambda();
+    readAtomicModels();
+    readMolecularModels();
+    SortLambda();
   
-  // Maybe we should have an init_io where all these files are initialised?
-  init_ncdf_J();
-  init_Background();
-  Background_p(analyze_output=TRUE, equilibria_only=FALSE);
+    // Maybe we should have an init_io where all these files are initialised?
+    init_ncdf_J();
+    init_Background();
+    init_ncdf_spec();
+    Background_p(analyze_output=TRUE, equilibria_only=FALSE);
 
-  getProfiles();
-  initSolution_p();
-  initScatter();
+    init_ncdf_indata();
 
-  getCPU(1, TIME_POLL, "Total Initialize");
+    getProfiles();
+    initSolution_p();
+    initScatter();
 
-  /* --- Solve radiative transfer for active ingredients -- --------- */
-  Iterate(input.NmaxIter, input.iterLimit);
+    getCPU(1, TIME_POLL, "Total Initialize");
 
-  adjustStokesMode();
-  niter = 0;
-  while (niter < input.NmaxScatter) {
-    if (solveSpectrum(FALSE, FALSE) <= input.iterLimit) break;
-    niter++;
-  }
-  /* --- Write output files --                         -------------- */
-  getCPU(1, TIME_START, NULL);
+    /* --- Solve radiative transfer for active ingredients -- --------- */
+    Iterate(input.NmaxIter, input.iterLimit);
 
-  writeInput();
-  writeAtmos(&atmos);
-  writeGeometry(&geometry);
-  writeSpectrum(&spectrum);
-  writeFlux(FLUX_DOT_OUT);
+    adjustStokesMode();
+    niter = 0;
+    while (niter < input.NmaxScatter) {
+      if (solveSpectrum(FALSE, FALSE) <= input.iterLimit) break;
+      niter++;
+    }
+    /* --- Write output files --                         -------------- */
+    getCPU(1, TIME_START, NULL);
 
+    writeAtmos_p();
+    /* These will be superseed by writeInputData_p() 
+       writeInput();
+       writeAtmos(&atmos);
+       writeGeometry(&geometry); 
+    */
+    writeSpectrum_p();
+    /* These two were superseeded by writeSpectrum_p()
+       writeSpectrum(&spectrum);
+       writeFlux(FLUX_DOT_OUT);
+    */
 
-  for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
-    atom = atmos.activeatoms[nact];
+    // Tiago: commenting out the writing of output files for now
+    /*
+      for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
+      atom = atmos.activeatoms[nact];
 
-    writeAtom(atom);
-    writePopulations(atom);
-    writeRadRate(atom);
-    writeCollisionRate(atom);
-    writeDamping(atom);
-  } 
-  for (nact = 0;  nact < atmos.Nactivemol;  nact++) {
-    molecule = atmos.activemols[nact];
-    writeMolPops(molecule);
-  }
+      writeAtom(atom);
+      writePopulations(atom);
+      writeRadRate(atom);
+      writeCollisionRate(atom);
+      writeDamping(atom);
+      } 
+      for (nact = 0;  nact < atmos.Nactivemol;  nact++) {
+      molecule = atmos.activemols[nact];
+      writeMolPops(molecule);
+      }
 
-  writeOpacity();
+      writeOpacity();
+      
+      getCPU(1, TIME_POLL, "Write output");
+    */
 
-  getCPU(1, TIME_POLL, "Write output");
-
+  } /* End of main task loop */
 
   close_ncdf_J();
   close_Background();
-  close_atmos_ncdf(&atmos, &geometry, &infile);
+  close_ncdf_atmos(&atmos, &geometry, &infile);
+  close_ncdf_spec();
+  close_ncdf_indata();
 
+
+  /* Frees from memory stuff used for job control */
+  finish_jobs();
+    
   printTotalCPU();
   MPI_Finalize();
 

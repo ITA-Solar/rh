@@ -26,7 +26,7 @@ ONE_D_OBJS = anglequad.o  feautrier.o  formal.o  hydrostat.o  multiatmos.o \
              rh15d.o  piecestokes.o  piecewise.o  project.o  riiplane.o \
              writeflux_xdr.o  writegeom_xdr.o readatmos_ncdf.o \
 	     background_p.o brs_p.o readj_p.o scatter_p.o writespect_p.o \
-	     initial_p.o
+	     initial_p.o distribute_jobs.o writeinputdata_p.o 
 
    ONEDOBJ = solve15d.o  iter_1d.o  feautrier.o
 
@@ -79,12 +79,17 @@ backgrcontr.o:          ../rh.h  ../atom.h  ../atmos.h  \
 background_p.o:         ../rh.h  ../atom.h  ../atmos.h  ../spectrum.h  \
 			../constant.h  ../background.h  ../error.h       \
 			../statistics.h  ../inputs.h  ../xdr.h parallel.h \
-			background_p.c
+			io.h  background_p.c
 	$(CC) $(CFLAGS) -Wall -c  -o $@ background_p.c
 
 brs_p.o:                ../rh.h  ../atom.h  ../atmos.h  ../spectrum.h \
-	   		../error.h ../xdr.h parallel.h brs_p.c
+	   		../error.h ../xdr.h parallel.h  io.h  brs_p.c
 	$(CC) $(CFLAGS) -Wall -c  -o $@ brs_p.c
+
+distribute_jobs.o:      ../rh.h  ../atom.h  ../atmos.h  geometry.h \
+	   		../inputs.h  parallel.h  io.h  distribute_jobs.c
+	$(CC) $(CFLAGS) -Wall -c  -o $@ distribute_jobs.c
+
 
 feautrier.o:            ../rh.h  ../atom.h  ../atmos.h  \
                         geometry.h  ../spectrum.h  ../error.h
@@ -120,11 +125,12 @@ piecewise.o:            ../rh.h  ../atom.h  ../atmos.h  \
 project.o:              ../rh.h  ../atom.h  ../atmos.h  \
                         geometry.h
 
-readatmos_ncdf.o:       ../rh.h  ../atmos.h ../inputs.h  geometry.h parallel.h readatmos_ncdf.c
+readatmos_ncdf.o:       ../rh.h  ../atmos.h ../inputs.h  geometry.h  parallel.h  \
+	                io.h     readatmos_ncdf.c
 	$(CC) $(CFLAGS) -Wall -c  -o $@ readatmos_ncdf.c
 
 readj_p.o:              ../rh.h  ../atom.h  ../atmos.h  ../spectrum.h parallel.h \
-	   		../background.h  ../inputs.h  ../error.h readj_p.c
+	   		../background.h  ../inputs.h  ../error.h   io.h   readj_p.c
 	$(CC) $(CFLAGS) -Wall -c  -o $@ readj_p.c
 
 rh15d.o:                ../rh.h  ../atom.h  ../atmos.h  \
@@ -146,6 +152,11 @@ solveray.o:             ../rh.h  ../atom.h  ../atmos.h  \
                         geometry.h  ../spectrum.h  ../background.h  \
                         ../statistics.h  ../inputs.h  ../error.h  ../xdr.h
 
+writeinputdata_p.o:     ../rh.h  ../atom.h  ../atmos.h  \
+                        geometry.h  ../error.h  ../inputs.h  \
+                        parallel.h  io.h  writeinputdata_p.c
+	$(CC) $(CFLAGS) -Wall -c -o $@ writeinputdata_p.c
+
 writeflux_xdr.o:        ../rh.h  ../atom.h  ../atmos.h  \
                         geometry.h  ../spectrum.h  ../constant.h  \
                         ../error.h  ../xdr.h
@@ -155,7 +166,7 @@ writegeom_xdr.o:        ../rh.h  ../atom.h  ../atmos.h  \
 
 writespect_p.o:         ../rh.h  ../atom.h  ../atmos.h  \
 	                ../spectrum.h  ../constant.h  ../error.h \
-	                ../inputs.h  ../xdr.h  parallel.h writespect_p.c
+	                ../inputs.h  ../xdr.h  parallel.h  io.h  writespect_p.c
 	$(CC) $(CFLAGS) -Wall -c -o $@ writespect_p.c
 
 

@@ -1,4 +1,4 @@
-/* ------- file: -------------------------- multiatmos.c ------------
+/* ------- file: -------------------------- readatmos_ncdf.c ------------
 
        Version:       rh2.0, 1.5-D plane-parallel
        Author:        Tiago Pereira (tiago.pereira@nasa.gov)
@@ -19,13 +19,8 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <netcdf.h>
-#include <mpi.h>
-
 
 #include "rh.h"
-
-
 #include "atom.h"
 #include "atmos.h"
 #include "geometry.h"
@@ -33,14 +28,7 @@
 #include "inputs.h"
 #include "statistics.h"
 #include "parallel.h"
-
-
-//#define FILE_NAME "/Users/tiago/data/bifrost/bifrost_s20_slice.ncdf"
-#define TEMP_NAME "temperature"
-#define VZ_NAME   "velocity_z"
-#define NE_NAME   "electron_density"
-#define NH_NAME   "hydrogen_populations"
-#define Z_NAME    "z"
+#include "io.h"
 
 
 
@@ -53,15 +41,15 @@ extern MPI_data mpi;
 extern InputData input;
 extern char messageStr[];
 
-/* ------- begin --------------------------   init_ncdf   ------------ */
+/* ------- begin --------------------------   init_ncdf_atmos   ----- */
 
-void init_ncdf(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *infile)
+void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *infile)
 /* Initialises the input atmosphere file, gets dimensions and variable ids. 
    Also performs other basic RH initialisations like readAbundance       */
 { 
   const char routineName[] = "init_ncdf";
   struct  stat statBuffer;
-  int ierror, ncid, z_varid, has_B;
+  int ierror, ncid, x_varid, y_varid, z_varid, has_B;
   size_t nn;
   char *filename;
 
@@ -117,10 +105,17 @@ void init_ncdf(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *infile)
   if ((ierror = nc_inq_varid(ncid, VZ_NAME,   &infile->vz_varid))) ERR(ierror,routineName);
   if ((ierror = nc_inq_varid(ncid, NH_NAME,   &infile->nh_varid))) ERR(ierror,routineName);
   if ((ierror = nc_inq_varid(ncid, "z",       &z_varid)))          ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(ncid, "y",       &y_varid)))          ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(ncid, "x",       &x_varid)))          ERR(ierror,routineName);
 
   /* read things that don't depend on x, y */
   geometry->height = (double *) malloc(atmos->Nspace * sizeof(double));
   if ((ierror = nc_get_var_double(ncid, z_varid, geometry->height))) ERR(ierror,routineName);
+  infile->y   = (double *) malloc(infile->ny * sizeof(double));
+  if ((ierror = nc_get_var_double(ncid, y_varid, infile->y))) ERR(ierror,routineName);
+  infile->x   = (double *) malloc(infile->nx * sizeof(double));
+  if ((ierror = nc_get_var_double(ncid, x_varid, infile->x))) ERR(ierror,routineName);
+
 
   /* allocate arrays */
   geometry->vel = (double *) malloc(atmos->Nspace * sizeof(double));
@@ -175,7 +170,7 @@ void init_ncdf(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *infile)
   return;
 
 }
-/* ------- end ---------------------------- init_ncdf   ------------- */
+/* ------- end ---------------------------- init_ncdf_atmos  -------- */
 
 /* ------- begin -------------------------- readAtmos_ncdf  --------- */
 
@@ -242,7 +237,7 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 /* ------- end ---------------------------- readAtmos_ncdf  --------- */
 
 /* ------- begin -------------------------- close_ncdf  ------------- */
-void close_atmos_ncdf(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *infile)
+void close_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *infile)
 /* Closes the NCDF file and frees memory */
 {
   const char routineName[] = "close_atmos_ncdf";
@@ -258,6 +253,8 @@ void close_atmos_ncdf(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *in
   free(atmos->nHtot);
   free(geometry->vel);
   free(geometry->height);
+  free(infile->y);
+  free(infile->x);
   //freeMatrix((void **) atmos->nH); // this is free by distribute_nH
 
   return; 

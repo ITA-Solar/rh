@@ -108,7 +108,6 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include <netcdf.h>
 
 #include "rh.h"
 #include "atom.h"
@@ -122,10 +121,9 @@
 #include "xdr.h"
 #include "geometry.h"
 #include "parallel.h"
+#include "io.h"
 
 #define COMMENT_CHAR  "#"
-#define FILE_EXT ".dat"
-
 
 /* --- Function prototypes --                          -------------- */
 

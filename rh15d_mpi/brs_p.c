@@ -14,7 +14,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <netcdf.h>
 
 #include "rh.h"
 #include "atom.h"
@@ -24,20 +23,14 @@
 #include "xdr.h"
 #include "geometry.h"
 #include "parallel.h"
- 
-#define  BRS_DOT_OUT  "brs.out"
-#define  BRS_FILE     "scratch/brs_out_p"
-#define  BRS_EXT      ".ncdf"
-#define  HASLINE_VAR  "hasline"
-#define  ISPOL_VAR    "ispolarised"
-#define  BGREC_VAR    "backgrrecno"
+#include "io.h"
 
 /* --- Global variables --                             -------------- */
 
 extern Atmosphere atmos;
 extern Spectrum spectrum;
 extern char messageStr[];
-extern BackgroundData bgdat;
+extern IO_data io; 
 extern MPI_data mpi;
 
 /* ------- begin -------------------------- init_ncdf_BRS.c --------- */
@@ -106,12 +99,11 @@ void init_ncdf_BRS(void)
   /* End define mode */
   if ((ierror = nc_enddef(ncid))) ERR(ierror,routineName);
  
-  /* Copy stuff to Background data struct */
-  bgdat.brs_ncid     = ncid;
-  bgdat.brs_hl_var   = hl_var;
-  bgdat.brs_ip_var   = ip_var;
-  bgdat.brs_nrec_var = nrec_var;
-  bgdat.brs_fname    = file_brs;
+  /* Copy stuff to the IO data struct */
+  io.brs_ncid     = ncid;
+  io.brs_hl_var   = hl_var;
+  io.brs_ip_var   = ip_var;
+  io.brs_nrec_var = nrec_var;
 
   return;
 }
@@ -125,7 +117,7 @@ void close_ncdf_BRS(void)
   const char routineName[] = "close_ncdf_BRS";
   int        ierror;
 
-  if ((ierror = nc_close(bgdat.brs_ncid))) ERR(ierror,routineName);
+  if ((ierror = nc_close(io.brs_ncid))) ERR(ierror,routineName);
   return;
 }
 /* ------- end ---------------------------- close_ncdf_BRS.c --------- */
@@ -142,7 +134,7 @@ void writeBRS_ncdf(void)
   size_t  start[] = {0, 0};
   size_t  count[] = {1, 1};
   
-  ncid = bgdat.brs_ncid;
+  ncid = io.brs_ncid;
 
   /* For unlimited dimension */
   start[0] = (size_t) mpi.task; 
@@ -166,12 +158,12 @@ void writeBRS_ncdf(void)
   
   /* write data to file */
   count[1] = (size_t) spectrum.Nspect;
-  if ((ierror = nc_put_vara_ubyte(bgdat.brs_ncid, bgdat.brs_hl_var,   start, count, 
+  if ((ierror = nc_put_vara_ubyte(io.brs_ncid, io.brs_hl_var,   start, count, 
 				  hasline )))           ERR(ierror,routineName);
-  if ((ierror = nc_put_vara_ubyte(bgdat.brs_ncid, bgdat.brs_ip_var,   start, count,
+  if ((ierror = nc_put_vara_ubyte(io.brs_ncid, io.brs_ip_var,   start, count,
 				  ispolarised )))       ERR(ierror,routineName);
   count[1] = (size_t) Nrecno;
-  if ((ierror = nc_put_vara_long( bgdat.brs_ncid, bgdat.brs_nrec_var, start, count,
+  if ((ierror = nc_put_vara_long( io.brs_ncid, io.brs_nrec_var, start, count,
 				  atmos.backgrrecno ))) ERR(ierror,routineName);
 
   

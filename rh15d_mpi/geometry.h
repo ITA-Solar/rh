@@ -31,6 +31,7 @@ typedef struct {
   int       ncid,    nx_id,    ny_id,    nz_id,   nhyd_id;
   int       T_varid, ne_varid, vz_varid, nh_varid; 
   size_t    nx,      ny,       nz,       NHydr;
+  double   *x, *y;
 } NCDF_Atmos_file;
 
 
@@ -55,10 +56,10 @@ void getBoundary(Geometry *geometry);
 void MULTIatmos(Atmosphere *atmos, Geometry *geometry);
 void writeGeometry(Geometry *geometry);
 
-void init_ncdf(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *infile);
+void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *infile);
 void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 		    NCDF_Atmos_file *infile);
-void close_atmos_ncdf(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *infile);
+void close_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *infile);
 
 
 /* --- Formal solution related --                      -------------- */
