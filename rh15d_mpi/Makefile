@@ -26,7 +26,8 @@ ONE_D_OBJS = anglequad.o  feautrier.o  formal.o  hydrostat.o  multiatmos.o \
              rh15d.o  piecestokes.o  piecewise.o  project.o  riiplane.o \
              writeflux_xdr.o  writegeom_xdr.o readatmos_ncdf.o \
 	     background_p.o brs_p.o readj_p.o scatter_p.o writespect_p.o \
-	     initial_p.o distribute_jobs.o writeinputdata_p.o 
+	     initial_p.o distribute_jobs.o writeinputdata_p.o  writeAux_p.o \
+	     parallel_io.o
 
    ONEDOBJ = solve15d.o  iter_1d.o  feautrier.o
 
@@ -116,6 +117,11 @@ multiatmos.o:           ../rh.h  ../atom.h  ../atmos.h  \
                         ../constant.h  ../error.h  ../inputs.h  \
                         ../statistics.h  ../xdr.h
 
+parallel_io.o:          ../rh.h  ../atom.h  ../atmos.h ../error.h ../inputs.h \
+			../constant.h ../accelerate.h \
+                        parallel.h  io.h  parallel_io.c
+	$(CC) $(CFLAGS) -Wall -c -o $@ parallel_io.c
+
 piecestokes.o:          ../rh.h  ../atom.h  ../atmos.h  \
                         geometry.h  ../spectrum.h
 
@@ -151,6 +157,11 @@ solve15d.o:             ../rh.h  ../atom.h  ../atmos.h  \
 solveray.o:             ../rh.h  ../atom.h  ../atmos.h  \
                         geometry.h  ../spectrum.h  ../background.h  \
                         ../statistics.h  ../inputs.h  ../error.h  ../xdr.h
+
+writeAux_p.o:           ../rh.h  ../atom.h  ../atmos.h  \
+                        geometry.h  ../spectrum.h ../error.h  ../inputs.h  \
+                        parallel.h  io.h  writeAux_p.c
+	$(CC) $(CFLAGS) -Wall -c -o $@ writeAux_p.c
 
 writeinputdata_p.o:     ../rh.h  ../atom.h  ../atmos.h  \
                         geometry.h  ../error.h  ../inputs.h  \
