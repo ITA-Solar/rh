@@ -24,10 +24,6 @@
 #include "parallel.h"
 #include "io.h"
 
-#define AUX_FILE "output_aux.ncdf"
-#define ARR_STRLEN 30
-
-
 /* --- Function prototypes --                          -------------- */
 
 
@@ -123,26 +119,26 @@ void init_ncdf_aux(void)
     dimids[3] = nspace_id;
     /* Populations */
     if (atom->n != NULL) 
-      if ((ierror = nc_def_var(ncid_atom, "populations",     NC_FLOAT, 4, dimids,
-			       &io.aux_atom_pop[i])))   ERR(ierror,routineName);
+      if ((ierror = nc_def_var(ncid_atom, POP_NAME,    NC_FLOAT, 4, dimids,
+			       &io.aux_atom_pop[i]))) ERR(ierror,routineName);
     if (atom->nstar != NULL)
-      if ((ierror = nc_def_var(ncid_atom, "populations_LTE", NC_FLOAT, 4, dimids,
-		            &io.aux_atom_poplte[i])))   ERR(ierror,routineName);
+      if ((ierror = nc_def_var(ncid_atom, POPLTE_NAME, NC_FLOAT, 4, dimids,
+		            &io.aux_atom_poplte[i]))) ERR(ierror,routineName);
 
     /* Radiative rates */
     dimids[0] = nline_id;
     dimids[1] = nx_id;
     dimids[2] = ny_id;
     dimids[3] = nspace_id;
-    if ((ierror = nc_def_var(ncid_atom, "Rij_line",      NC_FLOAT, 4, dimids,
-			     &io.aux_atom_RijL[i])))   ERR(ierror,routineName);
-    if ((ierror = nc_def_var(ncid_atom, "Rji_line",      NC_FLOAT, 4, dimids,
-			     &io.aux_atom_RjiL[i])))   ERR(ierror,routineName); 
+    if ((ierror = nc_def_var(ncid_atom, RIJ_L_NAME, NC_FLOAT, 4, dimids,
+			     &io.aux_atom_RijL[i]))) ERR(ierror,routineName);
+    if ((ierror = nc_def_var(ncid_atom, RJI_L_NAME, NC_FLOAT, 4, dimids,
+			     &io.aux_atom_RjiL[i]))) ERR(ierror,routineName); 
     dimids[0] = ncont_id;
-    if ((ierror = nc_def_var(ncid_atom, "Rij_continuum", NC_FLOAT, 4, dimids,
-			     &io.aux_atom_RijC[i])))   ERR(ierror,routineName);    
-    if ((ierror = nc_def_var(ncid_atom, "Rji_continuum", NC_FLOAT, 4, dimids,
-			     &io.aux_atom_RjiC[i])))   ERR(ierror,routineName);    
+    if ((ierror = nc_def_var(ncid_atom, RIJ_C_NAME, NC_FLOAT, 4, dimids,
+			     &io.aux_atom_RijC[i]))) ERR(ierror,routineName);    
+    if ((ierror = nc_def_var(ncid_atom, RJI_C_NAME, NC_FLOAT, 4, dimids,
+			     &io.aux_atom_RjiC[i]))) ERR(ierror,routineName);    
 
     /* Collision rates */
     dimids[0] = nlevel_id;
@@ -150,7 +146,7 @@ void init_ncdf_aux(void)
     dimids[2] = nx_id;
     dimids[3] = ny_id;
     dimids[4] = nspace_id;
-    if ((ierror = nc_def_var(ncid_atom, "collision_rates", NC_FLOAT, 5, dimids,
+    if ((ierror = nc_def_var(ncid_atom, COLL_NAME, NC_FLOAT, 5, dimids,
 			     &io.aux_atom_coll[i]))) ERR(ierror,routineName);
 
     /* Damping */
@@ -158,7 +154,7 @@ void init_ncdf_aux(void)
     dimids[1] = nx_id;
     dimids[2] = ny_id;
     dimids[3] = nspace_id;
-    if ((ierror = nc_def_var(ncid_atom, "damping",  NC_FLOAT, 4, dimids,
+    if ((ierror = nc_def_var(ncid_atom, DAMP_NAME, NC_FLOAT, 4, dimids,
 			     &io.aux_atom_damp[i]))) ERR(ierror,routineName);
     
     /* --- attributes --- */
@@ -204,11 +200,11 @@ void init_ncdf_aux(void)
 
   /* --- Definitions for the OPACITY group --- */
   /* dimensions */
-  if ((ierror = nc_def_dim(ncid_op, "nrays",   geometry.Nrays,  &nrays_id ))) 
+  if ((ierror = nc_def_dim(ncid_op, "nrays",    geometry.Nrays,  &nrays_id ))) 
     ERR(ierror,routineName);
-  if ((ierror = nc_def_dim(ncid_op, "nwave_angle_dep", nad,     &nwad_id  ))) 
+  if ((ierror = nc_def_dim(ncid_op, NW_AD_NAME, nad,             &nwad_id  ))) 
     ERR(ierror,routineName); 
-  if ((ierror = nc_def_dim(ncid_op, "nwave_angle_ind", nai,     &nwai_id  ))) 
+  if ((ierror = nc_def_dim(ncid_op, NW_AI_NAME, nai,             &nwai_id  ))) 
     ERR(ierror,routineName); 
 
   // MUST CREATE INPUT OPTION TO WRITE (OR NOT) THE OPACITY
@@ -218,9 +214,9 @@ void init_ncdf_aux(void)
   dimids[1] = nx_id;
   dimids[2] = ny_id;
   dimids[3] = nspace_id;
-  if ((ierror = nc_def_var(ncid_op, "chi_angle_ind", NC_FLOAT, 4, dimids,
+  if ((ierror = nc_def_var(ncid_op, CHI_AI_NAME, NC_FLOAT, 4, dimids,
 			   &io.aux_op_chi_ai))) ERR(ierror,routineName);
-  if ((ierror = nc_def_var(ncid_op, "eta_angle_ind", NC_FLOAT, 4, dimids,
+  if ((ierror = nc_def_var(ncid_op, ETA_AI_NAME, NC_FLOAT, 4, dimids,
 			   &io.aux_op_eta_ai))) ERR(ierror,routineName);
 
   dimids[0] = nwad_id;
@@ -228,9 +224,9 @@ void init_ncdf_aux(void)
   dimids[2] = nx_id;
   dimids[3] = ny_id;
   dimids[4] = nspace_id;
-  if ((ierror = nc_def_var(ncid_op, "chi_angle_dep", NC_FLOAT, 5, dimids,
+  if ((ierror = nc_def_var(ncid_op, CHI_AD_NAME, NC_FLOAT, 5, dimids,
 			   &io.aux_op_chi_ad))) ERR(ierror,routineName);
-  if ((ierror = nc_def_var(ncid_op, "eta_angle_dep", NC_FLOAT, 5, dimids,
+  if ((ierror = nc_def_var(ncid_op, ETA_AD_NAME, NC_FLOAT, 5, dimids,
 			   &io.aux_op_eta_ad))) ERR(ierror,routineName);
 
 
@@ -239,20 +235,20 @@ void init_ncdf_aux(void)
   if (spectrum.vacuum_to_air) {
     lambda_air = (double *) malloc(nwave * sizeof(double));
     vacuum_to_air(nwave, wave, lambda_air);
-    if ((ierror=nc_put_att_double(ncid_op, NC_GLOBAL, "wavelength_nm", NC_DOUBLE, 
+    if ((ierror=nc_put_att_double(ncid_op, NC_GLOBAL, WAVET_NAME, NC_DOUBLE, 
 		       	          nwave, lambda_air ))) ERR(ierror,routineName);
     free(lambda_air);
     free(wave);
   } else {
-    if ((ierror=nc_put_att_double(ncid_op, NC_GLOBAL, "wavelength_nm", NC_DOUBLE, 
+    if ((ierror=nc_put_att_double(ncid_op, NC_GLOBAL, WAVET_NAME, NC_DOUBLE, 
 				  nwave, wave )))       ERR(ierror,routineName);
     free(wave);
   }
   
   /* wavelength angle indices */
-  if ((ierror=nc_put_att_int(ncid_op, NC_GLOBAL, "wave_angle_dep_indices",
+  if ((ierror=nc_put_att_int(ncid_op, NC_GLOBAL, WAVE_AD_IDX_NAME,
          	           NC_INT, nad, ad_idx ))) ERR(ierror,routineName);
-  if ((ierror=nc_put_att_int(ncid_op, NC_GLOBAL, "wave_angle_ind_indices",
+  if ((ierror=nc_put_att_int(ncid_op, NC_GLOBAL, WAVE_AI_IDX_NAME,
                  	   NC_INT, nai, ai_idx ))) ERR(ierror,routineName);
   free(ad_idx);
   free(ai_idx);

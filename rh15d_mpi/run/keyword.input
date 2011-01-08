@@ -12,12 +12,12 @@
 
 # Stuff for 1.5D version:
   X_START = 0
-  X_END   = 5
-  X_STEP  = 1
+  X_END   = 10 
+  X_STEP  = 2
 
   Y_START = 0
-  Y_END   = 5
-  Y_STEP  = 1
+  Y_END   = 10
+  Y_STEP  = 2
 
 # Set choice of number of rays (KEYWORD_OPTIONAL).
 

@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
   distribute_jobs();
 
   // Temporary
-  mpi.Ntasks = 2;
+  mpi.Ntasks = 1;
 
   /* Main loop over tasks */
   for (mpi.task = 0; mpi.task < mpi.Ntasks; mpi.task++) {
@@ -82,12 +82,13 @@ int main(int argc, char *argv[])
     mpi.ix = mpi.taskmap[mpi.task + mpi.my_start][0];
     mpi.iy = mpi.taskmap[mpi.task + mpi.my_start][1];
 
+
     /* Read atmosphere column */
     //readAtmos_ncdf(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
 
-    if (mpi.rank == 0)
+    if (mpi.task == 0)
       readAtmos_ncdf(214,220, &atmos, &geometry, &infile);
-    if (mpi.rank == 1)
+    if (mpi.task == 1)
       readAtmos_ncdf(280,100, &atmos, &geometry, &infile);
 
     if (atmos.Stokes) Bproject();

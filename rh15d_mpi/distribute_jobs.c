@@ -52,7 +52,7 @@ void distribute_jobs(void)
 
  */
 
-  int  *tasks, my_start;
+  int  *tasks;
 
  
   mpi.backgrrecno = 0; 
@@ -79,19 +79,7 @@ void distribute_jobs(void)
   /* Calculate tasks and distribute */ 
   tasks        = get_tasks(mpi.nx*mpi.ny, mpi.size);
   mpi.Ntasks   = tasks[mpi.rank];
-  mpi.taskmap  = get_taskmap(tasks, &my_start);
-
-  //printf("MMM = %d\n",mpi.my_tasks[10][1]);
- 
-  /*
-  printf("Process %d: %d tasks, mystart = %d\n",mpi.rank,mpi.Ntasks, my_start);
-  for (i=0; i < mpi.Ntasks; i++){
-    printf("Process %d: task %d : (x,y) = (%d, %d)\n",mpi.rank,i, mpi.taskmap[i+my_start][0],
-	   mpi.taskmap[i+my_start][1]);
-    printf("Process %d: task %d : (x,y) = (%d, %d)\n",mpi.rank,i, mpi.my_tasks[i][0],
-	   mpi.my_tasks[i][1]);
-  }
-  */
+  mpi.taskmap  = get_taskmap(tasks, &mpi.my_start);
 
   free(tasks);
 
@@ -119,7 +107,7 @@ int **get_taskmap(int *ntasks, int *my_start)
 
   /* distribute tasks */
   k = 0;
-  for (i=0; i < mpi.size; i++) {
+  for (i=0; i < mpi.size; i++) { 
     start[i] = k;
     k += ntasks[i];
   }
