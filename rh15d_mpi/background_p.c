@@ -126,7 +126,7 @@
 #define COMMENT_CHAR  "#"
 
 /* --- Function prototypes --                          -------------- */
-
+void SetLTEQuantities_p(void);
 
 /* --- Global variables --                             -------------- */
 
@@ -145,7 +145,7 @@ void init_Background(void)
   const char routineName[] = "init_Background";
   char    inputLine[MAX_LINE_SIZE];
   bool_t  exit_on_EOF;
-  int     n;
+  int     n, nspect;
   FILE   *fp_fudge;
   char    file_background[MAX_MESSAGE_LENGTH], *fext = FILE_EXT;
 
@@ -178,6 +178,25 @@ void init_Background(void)
     fclose(fp_fudge);
   } else
     bgdat.do_fudge = FALSE;
+
+  /* --- Allocate memory for the boolean array that stores whether
+         a wavelength overlaps with a Bound-Bound transition in the
+         background, or whether it is polarized --     -------------- */
+
+  atmos.backgrflags = (flags *) malloc(spectrum.Nspect * sizeof(flags));
+  for (nspect = 0;  nspect < spectrum.Nspect;  nspect++) {
+    atmos.backgrflags[nspect].hasline = FALSE;
+    atmos.backgrflags[nspect].ispolarized = FALSE;
+  }
+  /* --- Allocate memory for the list of record numbers that specifies
+         for each wavelength where to find the background opacity,
+         scattering opacity, and emissivity --         -------------- */
+
+  if (atmos.moving || atmos.Stokes) {
+    atmos.backgrrecno = 
+      (long *) malloc(2*spectrum.Nspect*atmos.Nrays * sizeof(long)); 
+  } else
+    atmos.backgrrecno = (long *) malloc(spectrum.Nspect * sizeof(long));
 
 
   /* --- Open background file --                        ------------- */
@@ -240,7 +259,7 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
   getCPU(2, TIME_START, NULL);
 
   if (input.solve_ne) Solve_ne(atmos.ne, fromscratch=TRUE);
-  SetLTEQuantities();
+  SetLTEQuantities_p();
 
   if (input.NonICE)
     readMolecules(MOLECULAR_CONCENTRATION_FILE);
@@ -328,24 +347,6 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
 
   He = (atmos.elements[1].model) ? atmos.elements[1].model : NULL;
 
-  /* --- Allocate memory for the boolean array that stores whether
-         a wavelength overlaps with a Bound-Bound transition in the
-         background, or whether it is polarized --     -------------- */
-
-  atmos.backgrflags = (flags *) malloc(spectrum.Nspect * sizeof(flags));
-  for (nspect = 0;  nspect < spectrum.Nspect;  nspect++) {
-    atmos.backgrflags[nspect].hasline = FALSE;
-    atmos.backgrflags[nspect].ispolarized = FALSE;
-  }
-  /* --- Allocate memory for the list of record numbers that specifies
-         for each wavelength where to find the background opacity,
-         scattering opacity, and emissivity --         -------------- */
-
-  if (atmos.moving || atmos.Stokes) {
-    atmos.backgrrecno = 
-      (long *) malloc(2*spectrum.Nspect*atmos.Nrays * sizeof(long)); 
-  } else
-    atmos.backgrrecno = (long *) malloc(spectrum.Nspect * sizeof(long));
 
   /* --- Open output file for background opacity, emissivity,
          scattering --                                 -------------- */
@@ -496,6 +497,7 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
     for (k = 0;  k < atmos.Nspace;  k++)
       chi_ai[k] += sca_c[k] * scatt_fudge;
 
+
     /* --- Now the contributions that may be angle-dependent due to the
            presence of atomic or molecular lines --    -------------- */
 
@@ -600,6 +602,21 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
 					       chi_c, eta_c, sca_c, chip_c);
 	  }
 	}
+
+	/*
+    // Tiago, testing
+    if ((nspect == 0)  && (mu == 0)) {
+      printf("### From background ... \n");
+      for(k=0; k<175; k+=5){
+	printf(" %10.4e  %10.4e  %10.4e  %10.4e \n",
+	       chi_ai[k],
+	       eta_ai[k],
+	       chi_c[k],
+	       eta_c[k]);
+      }
+    }
+    // end testing
+    */
       }    
     } else {
       /* --- Angle-independent case. First, add opacity from passive
@@ -656,29 +673,37 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
 
     /* --- Write out the metals and molecules --         ------------ */
 
+    /* Commented out, not a priority now
     writeMetals("metals.out"); // Tiago: must be replaced by NetCDF version
     writeMolecules(MOLECULAR_CONCENTRATION_FILE);
+    */
   }
   /* --- Clean up but keep H, H2, and active atom and/or molecule
-         if appropriate --                               ------------ */
+         if appropriate, only for last task --           ------------ */
+  if (mpi.task == mpi.Ntasks - 1) {
+    if (atmos.Natom > 1) {
+      for (n = 1;  n < atmos.Natom;  n++)
+	if (!atmos.atoms[n].active  &&  !atmos.hydrostatic)
+	  freeAtom(&atmos.atoms[n]);
+    }
+    if (atmos.Nmolecule > 1) {
+      for (n = 1;  n < atmos.Nmolecule;  n++)
+	if (!atmos.molecules[n].active) freeMolecule(&atmos.molecules[n]);
+    }
 
-  if (atmos.Natom > 1) {
-    for (n = 1;  n < atmos.Natom;  n++)
-      if (!atmos.atoms[n].active  &&  !atmos.hydrostatic)
-	freeAtom(&atmos.atoms[n]);
-  }
-  if (atmos.Nmolecule > 1) {
-    for (n = 1;  n < atmos.Nmolecule;  n++)
-      if (!atmos.molecules[n].active) freeMolecule(&atmos.molecules[n]);
-  }
+    if (strcmp(input.KuruczData, "none")) {
+      free(atmos.Tpf);  atmos.Tpf = NULL;
+      for (n = 0;  n < atmos.Nelem;  n++) {
+	free(atmos.elements[n].ionpot);
+	freeMatrix((void **) atmos.elements[n].pf);
+	if (atmos.elements[n].n)
+	  freeMatrix((void **) atmos.elements[n].n);
+      }
+    }
 
-  if (strcmp(input.KuruczData, "none")) {
-    free(atmos.Tpf);  atmos.Tpf = NULL;
-    for (n = 0;  n < atmos.Nelem;  n++) {
-      free(atmos.elements[n].ionpot);
-      freeMatrix((void **) atmos.elements[n].pf);
-      if (atmos.elements[n].n)
-	freeMatrix((void **) atmos.elements[n].n);
+    if (do_fudge) {
+      free(lambda_fudge);
+      freeMatrix((void **) fudge);
     }
   }
   getCPU(3, TIME_POLL, "Background Opacity");
@@ -701,10 +726,41 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
     free(chip_c);
   }
 
-  if (do_fudge) {
-    free(lambda_fudge);
-    freeMatrix((void **) fudge);
-  }
   getCPU(2, TIME_POLL, "Total Background");
 }
 /* ------- end ---------------------------- Background.c ------------ */
+
+
+/* ------- begin -------------------------- SetLTEQuantities_p.c ---- */
+
+void SetLTEQuantities_p(void)
+/* This is the same as SetLTEQuantities, but doesn't close the atom files  */
+{
+  register int n;
+
+  bool_t Debeye = TRUE;
+  Atom *atom;
+
+  for (n = 0;  n < atmos.Natom;  n++) {
+    atom = &atmos.atoms[n];
+
+    /* --- Get LTE populations for each atom --        -------------- */
+
+    LTEpops(atom, Debeye);
+
+    if (atom->active) {
+      
+      /* --- Read the collisional data (in MULTI's GENCOL format).
+             After this we can close the input file for the active
+             atom. --                                  -------------- */
+
+      CollisionRate(atom, atom->fp_input);
+
+      /* --- Compute the fixed rates and store in Cij -- ------------ */
+
+      if (atom->Nfixed > 0) FixedRate(atom);
+    }
+  }
+}
+/* ------- end ---------------------------- SetLTEQuantities_p.c ---- */
+

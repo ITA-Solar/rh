@@ -12,6 +12,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <unistd.h>
+#include <time.h>
 
 #include "rh.h"
 #include "atom.h"
@@ -23,7 +25,7 @@
 #include "io.h"
 
 #define INPUTDATA_FILE "output_indata.ncdf"
-#define ARR_STRLEN 20
+#define ARR_STRLEN 30
 
 /* --- Function prototypes --                          -------------- */
 
@@ -47,8 +49,8 @@ void init_ncdf_indata(void)
          nspace_id, nhydr_id, nelem_id, nrays_id, nproc_id, naa_id, atstr_id,
          temp_var, ne_var, vz_var, vturb_var, B_var, gB_var, chiB_var, nh_var,
          ew_var, ab_var, eid_var, mu_var, wmu_var, height_var,x_var, y_var,
-         xnum_var, ynum_var, tm_var, it_var, conv_var, dm_var, ntsk_var, host_var,
-         ft_var, dimids[4];
+         xnum_var, ynum_var, tm_var, tn_var, it_var, conv_var, dm_var, ntsk_var, 
+         host_var, ft_var, dimids[4];
   bool_t PRD_angle_dep, XRD;
   char   startJ[MAX_LINE_SIZE], StokesMode[MAX_LINE_SIZE], angleSet[MAX_LINE_SIZE];
   FILE  *test;
@@ -64,18 +66,26 @@ void init_ncdf_indata(void)
   /* Create the file  */
   if ((ierror = nc_create_par(INPUTDATA_FILE, NC_NETCDF4 | NC_CLOBBER | NC_MPIIO, 
 			      mpi.comm, mpi.info, &ncid))) ERR(ierror,routineName);
-  
-  /* Write atmos.ID as global attribute */
-  if ((ierror = nc_put_att_text(ncid, NC_GLOBAL, "atmosID", strlen(atmos.ID),
-				atmos.ID ))) ERR(ierror,routineName);
-
-  // ideas for more global attributes? (root group)
-
 
   /* Create groups */
   if ((ierror = nc_def_grp(ncid, "input", &ncid_input))) ERR(ierror,routineName);
   if ((ierror = nc_def_grp(ncid, "atmos", &ncid_atmos))) ERR(ierror,routineName);
   if ((ierror = nc_def_grp(ncid, "mpi",   &ncid_mpi)))   ERR(ierror,routineName);
+
+  /* --- Definitions for the root group --- */ 
+  /* dimensions */
+  if ((ierror = nc_def_dim(ncid, "nx",     mpi.nx,       &nx_id    ))) 
+    ERR(ierror,routineName);
+  if ((ierror = nc_def_dim(ncid, "ny",     mpi.ny,       &ny_id    ))) 
+    ERR(ierror,routineName);
+  if ((ierror = nc_def_dim(ncid, "nz",     atmos.Nspace, &nspace_id))) 
+    ERR(ierror,routineName);
+  if ((ierror = nc_def_dim(ncid, "strlen", ARR_STRLEN,   &atstr_id ))) 
+    ERR(ierror,routineName);
+
+  /* attributes */
+  if ((ierror = nc_put_att_text(ncid, NC_GLOBAL, "atmosID", strlen(atmos.ID),
+				atmos.ID ))) ERR(ierror,routineName);
 
   /* --- Definitions for the INPUT group --- */
   /* dimensions */
@@ -206,19 +216,11 @@ void init_ncdf_indata(void)
 
   /* --- Definitions for the ATMOS group --- */
   /* dimensions */
-  if ((ierror = nc_def_dim(ncid_atmos, "nx",        mpi.nx,          &nx_id    ))) 
-    ERR(ierror,routineName);
-  if ((ierror = nc_def_dim(ncid_atmos, "ny",        mpi.ny,          &ny_id    ))) 
-    ERR(ierror,routineName);
-  if ((ierror = nc_def_dim(ncid_atmos, "nz",        atmos.Nspace,    &nspace_id))) 
-    ERR(ierror,routineName);
   if ((ierror = nc_def_dim(ncid_atmos, "nhydr",     atmos.H->Nlevel, &nhydr_id )))
     ERR(ierror,routineName);
   if ((ierror = nc_def_dim(ncid_atmos, "nelements", atmos.Nelem,     &nelem_id ))) 
     ERR(ierror,routineName);
   if ((ierror = nc_def_dim(ncid_atmos, "nrays",     geometry.Nrays,  &nrays_id ))) 
-    ERR(ierror,routineName);
-  if ((ierror = nc_def_dim(ncid_atmos, "strlen",   ATOM_ID_WIDTH+1, &atstr_id ))) 
     ERR(ierror,routineName);
 
   /* variables*/
@@ -297,16 +299,10 @@ void init_ncdf_indata(void)
   
   /* --- Definitions for the MPI group --- */
   /* dimensions */
-  if ((ierror = nc_def_dim(ncid_mpi, "nx",          mpi.nx,   &nx_id   ))) 
-    ERR(ierror,routineName);
-  if ((ierror = nc_def_dim(ncid_mpi, "ny",          mpi.ny,   &ny_id   ))) 
-    ERR(ierror,routineName);
   if ((ierror = nc_def_dim(ncid_mpi, "nprocesses",  mpi.size, &nproc_id))) 
     ERR(ierror,routineName);  
   if ((ierror = nc_def_dim(ncid_mpi, "nactive_atom",atmos.Nactiveatom,&naa_id)))
     ERR(ierror,routineName);  
-  if ((ierror = nc_def_dim(ncid_mpi, "strlen",   ARR_STRLEN, &atstr_id ))) 
-    ERR(ierror,routineName);
 
   /* variables*/
   dimids[0] = nx_id;
@@ -317,9 +313,11 @@ void init_ncdf_indata(void)
 			   &ynum_var))) ERR(ierror,routineName);
   dimids[0] = nx_id;
   dimids[1] = ny_id;
-  /* this one is a matrix with floats: XX.YY, where XX = mpi.rank, YY=task number */
-  if ((ierror = nc_def_var(ncid_mpi, "taskmap",     NC_FLOAT,  2, dimids,
+
+  if ((ierror = nc_def_var(ncid_mpi, "task_map",    NC_USHORT, 2, dimids,
 			   &tm_var)))   ERR(ierror,routineName);
+  if ((ierror = nc_def_var(ncid_mpi, "task_number", NC_USHORT, 2, dimids,
+			   &tn_var)))   ERR(ierror,routineName);
   if ((ierror = nc_def_var(ncid_mpi, "iterations",  NC_USHORT, 2, dimids,
 			   &it_var)))   ERR(ierror,routineName);
 
@@ -386,11 +384,13 @@ void init_ncdf_indata(void)
   io.in_mpi_xnum   = xnum_var;
   io.in_mpi_ynum   = ynum_var;
   io.in_mpi_tm     = tm_var;
+  io.in_mpi_tn     = tn_var;
   io.in_mpi_it     = it_var;
   io.in_mpi_conv   = conv_var;
   io.in_mpi_dm     = dm_var;
   io.in_mpi_ntsk   = ntsk_var;
   io.in_mpi_host   = host_var;
+  io.in_mpi_ft     = ft_var;
 
 
   return;
@@ -494,8 +494,74 @@ void writeAtmos_p(void)
 /* ------- end   --------------------------   writeAtmos_p.c --- */
 
 /* ------- begin --------------------------   writeMPI_p.c --- */
+void writeMPI_p(void)
+{
+  const char routineName[] = "writeMPI_p";
+  int     ierror, ncid, i;
+  size_t  start[] = {0, 0, 0, 0};
+  size_t  count[] = {1, 1, 1, 1};
+  char    hostname[ARR_STRLEN], timestr[ARR_STRLEN];
+  time_t  curtime;
+  struct tm *loctime;
+
+
+  ncid = io.in_mpi_ncid;
+
+
+  /* write x and y, convert from MPI indices to initial atmos indices */
+  for (i=0; i < mpi.nx; i++) {
+    start[0] = (size_t) i;
+    if ((ierror = nc_put_var1_int(ncid, io.in_mpi_xnum,  &start[0], 
+	     &mpi.xnum[i]))) ERR(ierror,routineName);  
+  }
+
+  for (i=0; i < mpi.ny; i++) {
+    start[0] = (size_t) i;
+    if ((ierror = nc_put_var1_int(ncid, io.in_mpi_ynum,  &start[0], 
+	     &mpi.ynum[i]))) ERR(ierror,routineName);  
+  }
+
+  start[0] = mpi.ix;
+  start[1] = mpi.iy;
+  if ((ierror = nc_put_var1_int(ncid, io.in_mpi_tm, start, &mpi.rank )))
+    ERR(ierror,routineName);
+  if ((ierror = nc_put_var1_int(ncid, io.in_mpi_tn, start, &mpi.task )))
+    ERR(ierror,routineName);
+
+  /* Number of tasks */
+  start[0] = mpi.rank;
+  if ((ierror = nc_put_var1_int(ncid, io.in_mpi_ntsk, start, &mpi.Ntasks )))
+    ERR(ierror,routineName);
+
+  /* Hostname of each process */
+  if ((ierror = gethostname((char *) &hostname, ARR_STRLEN)) != 0 )
+    printf("(EEE) %s: error getting hostname.\n",routineName);
+
+  start[1] = 0;
+  count[1] = strlen(hostname);
+  if ((ierror = nc_put_vara_text(ncid, io.in_mpi_host, start, count,
+      (const char *) &hostname )))     ERR(ierror,routineName); 
+  
+
+  /* Get time in ISO 8601 */
+  curtime = time(NULL);
+  loctime = localtime(&curtime);
+  strftime(timestr, ARR_STRLEN, "%Y-%m-%dT%H:%M:%S%z", loctime);
+  
+  count[1] = strlen(timestr);
+  if ((ierror = nc_put_vara_text(ncid, io.in_mpi_ft, start, count,
+      (const char *) &timestr )))     ERR(ierror,routineName); 
+
+  
+  // not writing iteration number, convergence, and delta max. Requires modification 
+  // of iterate.c to spit out dpopsmax, niter, etc. Wait until we do the revision
+  // of the messaging in MPI, to see what needs to be modified. 
+  //if ((ierror = nc_put_var1_int(ncid, io.in_mpi_it, start, niter )))
+  //  ERR(ierror,routineName);
+
+
+  return;
+}
+
 /* ------- end   --------------------------   writeMPI_p.c --- */
 
-// Now needed: 
-// * routine to write indata.atmos stuff;
-// * routine to write indata.mpi   stuff;

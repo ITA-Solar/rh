@@ -60,22 +60,16 @@ extern MPI_data mpi;
 extern enum Topology topology;
 
 
-/* ------- begin -------------------------- initSolution.c ---------- */
-
-void initSolution_p(void)
-{
+/* ------- begin -------------------------- initSolution_alloc.c ---- */
+void initSolution_alloc(void) {
   const char routineName[] = "initSolution_p";
-  register int k, i, ij, nspect, n, nact;
+  register int nspect, nact;
   char    permission[3], file_imu[MAX_MESSAGE_LENGTH];
-  int     la, j, Nsr, Nplane, index, status, oflag;
-  double  gijk, wla, twohnu3_c2, hc_k, twoc, fourPI;
-  ActiveSet  *as;
+  int     Nsr, Nplane, index, oflag;
   Molecule   *molecule;
   Atom       *atom;
-  AtomicLine *line;
-  AtomicContinuum *continuum;
 
-  getCPU(2, TIME_START, NULL);
+
 
   /* --- Allocate space for angle-averaged mean intensity -- -------- */
 
@@ -134,20 +128,8 @@ void initSolution_p(void)
     sprintf(messageStr, "Unknown topology (%d)", topology);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
-  /* --- Read angle-averaged intensity from previous run if necessary,
-         and open file for J in case option for limited memory is set */
-  if (input.startJ == OLD_J) {
 
-    /* --- Fill matrix J with old values from previous run ----- -- */
 
-    for (nspect = 0;  nspect < spectrum.Nspect;  nspect++)
-      readJlambda_ncdf(nspect, spectrum.J[nspect]);
-      
-    if (input.backgr_pol) {
-      for (nspect = 0;  nspect < spectrum.Nspect;  nspect++)
-	readJ20_ncdf(nspect, spectrum.J20[nspect]);      
-    }
-  }
 
   /* --- Need storage for angle-dependent specific intensities for
          angle-dependent PRD --                        -------------- */
@@ -187,12 +169,93 @@ void initSolution_p(void)
       }
     }
   }
+
+
   for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
     atom = atmos.activeatoms[nact];
 
     /* --- Allocate memory for the rate equation matrix -- ---------- */
-
     atom->Gamma = matrix_double(SQ(atom->Nlevel), atmos.Nspace);
+  }
+
+
+  for (nact = 0;  nact < atmos.Nactivemol;  nact++) {
+    molecule = atmos.activemols[nact];
+
+    /* --- Allocate memory for the rate equation matrix -- ---------- */
+    molecule->Gamma = matrix_double(SQ(molecule->Nv), atmos.Nspace);
+  }
+
+
+
+  return;
+}
+/* ------- end   -------------------------- initSolution_alloc.c ---- */
+
+/* ------- begin -------------------------- initSolution.c ---------- */
+
+void initSolution_p(void)
+{
+  const char routineName[] = "initSolution_p";
+  register int k, i, ij, nspect, n, nact;
+  int     la, j, status;
+  double  gijk, wla, twohnu3_c2, hc_k, twoc, fourPI;
+  ActiveSet  *as;
+  Molecule   *molecule;
+  Atom       *atom;
+  AtomicLine *line;
+  AtomicContinuum *continuum;
+
+  getCPU(2, TIME_START, NULL);
+
+  if (mpi.task == 0) {
+    /* allocate memory only for the first time */
+    initSolution_alloc();
+  } else {
+    /* zeroing of some arrays */
+    
+    for (nspect = 0;  nspect < spectrum.Nspect;  nspect++) {
+      
+      /* --- Zero J arrays --- */
+      for (k = 0;  k < atmos.Nspace;  k++) {
+	spectrum.J[nspect][k] = 0.0;
+	if (input.backgr_pol) spectrum.J20[nspect][k] = 0.0;
+      }
+      
+      /* --- Zero intensity arrays --- */
+      for (k = 0;  k < atmos.Nrays;  k++) {
+	spectrum.I[nspect][k] = 0.0;
+	if (atmos.Stokes || input.backgr_pol) {
+	  spectrum.Stokes_Q[nspect][k] = 0.0;
+	  spectrum.Stokes_U[nspect][k] = 0.0;
+	  spectrum.Stokes_V[nspect][k] = 0.0;
+	}
+      }
+
+    }
+
+
+  }
+
+  /* --- Read angle-averaged intensity from previous run if necessary,
+         and open file for J in case option for limited memory is set */
+
+  // Tiago: this assumes input.limit_memory is always FALSE
+  if (input.startJ == OLD_J) {
+
+    /* --- Fill matrix J with old values from previous run ----- -- */
+    for (nspect = 0;  nspect < spectrum.Nspect;  nspect++)
+      readJlambda_ncdf(nspect, spectrum.J[nspect]);
+    
+    if (input.backgr_pol) {
+      for (nspect = 0;  nspect < spectrum.Nspect;  nspect++)
+	readJ20_ncdf(nspect, spectrum.J20[nspect]);
+    }
+  }
+
+
+  for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
+    atom = atmos.activeatoms[nact];
 
     /* --- Initialize the mutex lock for the operator Gamma if there
            are more than one threads --                -------------- */
@@ -204,6 +267,7 @@ void initSolution_p(void)
 	Error(ERROR_LEVEL_2, routineName, messageStr);
       }
     }
+
 
     switch(atom->initial_solution) {
     case LTE_POPULATIONS:
@@ -240,6 +304,8 @@ void initSolution_p(void)
 	    }
 	    break;
 
+	    printf("### InitSolution 4\n");
+
 	  case ATOMIC_CONTINUUM:
 	    continuum = as->art[nact][n].ptype.continuum;
 	    la = nspect - continuum->Nblue;
@@ -275,6 +341,7 @@ void initSolution_p(void)
     break;
     }
   }
+
   /* --- Now the molecules that are active --          -------------- */
   
   for (nact = 0;  nact < atmos.Nactivemol;  nact++) {
@@ -289,9 +356,6 @@ void initSolution_p(void)
 	molecule->nvstar[i][k] = molecule->n[k] *
 	  molecule->pfv[i][k] / molecule->pf[k];
     }
-    /* --- Allocate memory for the rate equation matrix -- ---------- */
-
-    molecule->Gamma = matrix_double(SQ(molecule->Nv), atmos.Nspace);
 
     /* --- Initialize the mutex lock for the operator Gamma if there
            are more than one thread --                 -------------- */

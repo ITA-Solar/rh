@@ -60,8 +60,6 @@ void init_ncdf_BRS(void)
     fclose(test);
   }
 
-  printf("%s\n",file_brs);
-
   /* Create the file */
   if ((ierror = nc_create(file_brs, NC_NETCDF4 | NC_CLOBBER, &ncid)))
     ERR(ierror,routineName);

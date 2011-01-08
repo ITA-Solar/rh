@@ -123,7 +123,6 @@ void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *inf
   atmos->ne     = (double *) malloc(atmos->Nspace * sizeof(double));
   atmos->vturb  = (double *) calloc(atmos->Nspace , sizeof(double)); /* default zero */
   atmos->nHtot  = (double *) malloc(atmos->Nspace * sizeof(double));
-  atmos->nH     = matrix_double(atmos->NHydr, atmos->Nspace);
 
 
   /* some other housekeeping */ 
@@ -163,7 +162,8 @@ void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *inf
  	  * B available?
      	  * ?
 	- nHtot --DONE
-
+	- nHtot must be allocated on readAtmos_ncdf and not here,
+          because distribute_nH will deallocate it!
    */
 
 
@@ -199,7 +199,8 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   if ((ierror = nc_get_vara_double(ncid, infile->vz_varid, start, count, geometry->vel)))
     ERR(ierror,routineName);
 
-  /* zero nHtot */
+  /* allocate and zero nHtot */
+  atmos->nH = matrix_double(atmos->NHydr, atmos->Nspace);
   for (j = 0; j < atmos->Nspace; j++) atmos->nHtot[j] = 0.0; 
 
   /* read nH */ 

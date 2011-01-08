@@ -39,6 +39,9 @@ void readJ20_ncdf(int nspect, double *J);
 
 void initSolution_p(void);
 
+void distribute_jobs(void);
+void finish_jobs(void);
+
 void init_ncdf_spec(void);
 void close_ncdf_spec(void);
 void writeSpectrum_p(void);
@@ -46,6 +49,16 @@ void writeSpectrum_p(void);
 void init_ncdf_indata(void);
 void close_ncdf_indata(void);
 void writeAtmos_p(void);
+void writeMPI_p(void);
+
+void init_ncdf_aux(void);
+void close_ncdf_aux(void);
+void writeAux_p(void);
+void writeOpacity_p(void);
+
+void initParallelIO(void);
+void closeParallelIO(void);
+void UpdateAtmosDep(void);
 
 #define ERR(e,r) {printf("(EEE) %s: NetCDF: %s\n", r, nc_strerror(e)); exit(EXIT_FAILURE);}
 

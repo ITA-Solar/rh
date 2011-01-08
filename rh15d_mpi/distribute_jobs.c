@@ -30,7 +30,6 @@
 int  *intrange(int start, int end, int step, int *N);
 int  *get_tasks(long ntotal, int size);
 int **get_taskmap(int *ntasks, int *my_start);
-void  finish_jobs(void);
 
 /* --- Global variables --                             -------------- */
 
@@ -53,7 +52,7 @@ void distribute_jobs(void)
 
  */
 
-  int i,*tasks, my_start;
+  int  *tasks, my_start;
 
  
   mpi.backgrrecno = 0; 
