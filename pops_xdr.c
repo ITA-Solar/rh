@@ -29,14 +29,15 @@ extern char messageStr[];
 
 /* ------- begin -------------------------- xdr_populations.c ------- */
 
-bool_t xdr_populations(XDR *xdrs, char *atmosID, int Nlevel, int Nspace,
+bool_t xdr_populations(XDR *xdrs, char *atmosID, int Nlevel, long Nspace,
 		       double *n, double *nstar)
 {
   const char routineName[] = "xdr_populations";
 
   char  *ID;
   bool_t result = TRUE;
-  int    Npop = Nlevel * Nspace, Nl, Ns;
+  int    Nl, Ns;
+  long   Npop = Nlevel * Nspace;
 
   /* --- The actual reading/writing routine. Upon input the values
          for atmosID, Nlevel and Nspace in the file are checked against
@@ -45,7 +46,7 @@ bool_t xdr_populations(XDR *xdrs, char *atmosID, int Nlevel, int Nspace,
   if (xdrs->x_op == XDR_ENCODE) {
     result &= xdr_counted_string(xdrs, &atmosID);
     result &= xdr_int(xdrs, &Nlevel);
-    result &= xdr_int(xdrs, &Nspace);
+    result &= xdr_long(xdrs, &Nspace);
   } else {
     result &= xdr_counted_string(xdrs, &ID);
     if (!strstr(ID, atmosID)) {

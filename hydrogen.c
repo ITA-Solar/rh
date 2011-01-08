@@ -68,7 +68,8 @@ void distribute_nH()
   register int k, i;
 
   char    config[4], *ptr;
-  int    *quantumNo, Nspace = atmos.Nspace, iq;
+  int    *quantumNo, iq;
+  long    Nspace = atmos.Nspace;
   double *g_total, g_i;
 
   /* --- Redistribute the hydrogen levels for use in the background
@@ -222,7 +223,7 @@ void Hydrogen_ff(double lambda, double *chi)
 
   register int k;
 
-  int    Nspace = atmos.Nspace;
+  long   Nspace = atmos.Nspace;
   double hc_kla, C0, sigma, g_ff, stim, nu3, *np;
 
   C0     = SQ(Q_ELECTRON)/(4.0*PI*EPSILON_0) / sqrt(M_ELECTRON);
@@ -305,7 +306,7 @@ bool_t Hminus_bf(double lambda, double *chi, double *eta)
     3.38, 3.14, 2.85, 2.54, 2.20, 1.83, 1.46, 1.06, 0.71, 0.40, 0.17, 0.0};
 
   bool_t hunt;
-  int    Nspace = atmos.Nspace;
+  long   Nspace = atmos.Nspace;
   double hc_kla, stimEmis, twohnu3_c2, alpha_bf;
 
   if ((lambda <= lambdaBF[0]) || (lambda >= lambdaBF[NBF-1]))
@@ -435,7 +436,7 @@ bool_t Hminus_ff(double lambda, double *chi)
      7.97e+01, 8.32e+01, 8.67e+01, 9.01e+01
   };
   
-  int     Nspace = atmos.Nspace;
+  long    Nspace = atmos.Nspace;
   double  theta, pe, lambda_index, kappa;
 
   if (lambda == 0.0) {
@@ -635,7 +636,7 @@ bool_t H2minus_ff(double lambda, double *chi) {
      1.26e+02, 1.38e+02, 1.47e+02
   };
 
-  int     Nspace = atmos.Nspace;
+  long    Nspace = atmos.Nspace;
   double  theta, pe, lambda_index, kappa, *nH2;
 
   if (lambda == 0.0) {
@@ -756,7 +757,7 @@ bool_t H2plus_ff(double lambda, double *chi)
     1.39, 1.18, 1.02, 0.90, 0.73, 0.60, 0.52, 0.46, 0.37, 0.31
   };
 
-  int     Nspace = atmos.Nspace;
+  long    Nspace = atmos.Nspace;
   double  T, lambda_index, kappa, *np;
 
   if (lambda == 0.0) {

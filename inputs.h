@@ -78,6 +78,8 @@ typedef struct {
   int    isum, Ngdelay, Ngorder, Ngperiod, NmaxIter,
          PRD_NmaxIter, PRD_Ngdelay, PRD_Ngorder, PRD_Ngperiod,
          NmaxScatter, Nthreads;
+  /* Tiago, added this for 1.5D version */
+  int    p15d_x0, p15d_x1, p15d_xst, p15d_y0, p15d_y1, p15d_yst;
   double iterLimit, PRDiterLimit, metallicity;
 
   pthread_attr_t thread_attr;

@@ -32,7 +32,7 @@
 
 /* ------- begin -------------------------- Planck.c ---------------- */
 
-void Planck(int Nspace, double *T, double lambda, double *Bnu)
+void Planck(long Nspace, double *T, double lambda, double *Bnu)
 {
   register int k;
 

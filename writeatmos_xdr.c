@@ -61,7 +61,7 @@ void writeAtmos(Atmosphere *atmos)
   register int n;
 
   bool_t result = TRUE;
-  int    Nspace = atmos->Nspace;
+  long   Nspace = atmos->Nspace;
   char  *elemID, *atmosID;
   FILE  *fp_out;
   XDR    xdrs;

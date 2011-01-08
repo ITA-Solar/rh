@@ -54,7 +54,8 @@ void writeOpacity(void)
 
   bool_t  to_obs, initialize, crosscoupling, boundbound, polarized,
     PRD_angle_dep, result = TRUE;
-  int     Nspace = atmos.Nspace, record, *as_rn, Nrecord;
+  long    Nspace = atmos.Nspace;
+  int     record, *as_rn, Nrecord;
   FILE   *fp_out;
   XDR     xdrs;
   ActiveSet *as;

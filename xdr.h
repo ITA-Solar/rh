@@ -27,7 +27,7 @@ bool_t writeFlux(char *fileName);
 bool_t writeMetals(char *fileName);
 bool_t xdr_atom(XDR *xdrs, Atom *atom);
 bool_t xdr_counted_string(XDR *xdrs, char **p);
-bool_t xdr_populations(XDR *xdrs, char *atmosID, int Nlevel, int Nspace,
+bool_t xdr_populations(XDR *xdrs, char *atmosID, int Nlevel, long Nspace,
 		       double *n, double *nstar);
 bool_t xdr_BRS(XDR *xdrs);
 

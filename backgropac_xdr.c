@@ -30,7 +30,7 @@ enum opac_type {ABSORPTION, SCATTERING};
 /* --- Function prototypes --                          -------------- */
 
 bool_t write_contrib_xdr(XDR *xdrs, char *label, enum opac_type type,
-			 int Nspace, double *scatt);
+			 long Nspace, double *scatt);
 
 
 /* --- Global variables --                             -------------- */
@@ -197,7 +197,7 @@ void backgrOpac(int Nlambda, double *lambda)
 /* ------- begin -------------------------- write_contrib_xdr.c ----- */
 
 bool_t write_contrib_xdr(XDR *xdrs, char *label, enum opac_type type,
-			 int Nspace, double *scatt)
+			 long Nspace, double *scatt)
 {
   bool_t result = TRUE;
 

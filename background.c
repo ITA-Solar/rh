@@ -289,9 +289,9 @@ void Background(bool_t analyzeoutput, bool_t equilibria_only)
 
   if (atmos.moving || atmos.Stokes) {
     atmos.backgrrecno = 
-      (int *) malloc(2*spectrum.Nspect*atmos.Nrays * sizeof(int));
+      (long *) malloc(2*spectrum.Nspect*atmos.Nrays * sizeof(long));
   } else
-    atmos.backgrrecno = (int *) malloc(spectrum.Nspect * sizeof(int));
+    atmos.backgrrecno = (long *) malloc(spectrum.Nspect * sizeof(long));
 
   /* --- Open output file for background opacity, emissivity,
          scattering --                                 -------------- */

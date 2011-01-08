@@ -96,7 +96,9 @@ bool_t xdr_BRS(XDR *xdrs)
 
   char  *atmosID;
   bool_t result = TRUE, *hasline, *ispolarized;
-  int    Nspace, Nsp, Nrecno;
+  int    Nsp;
+  long   Nspace, Nrecno;
+  
 
   hasline     =
     (bool_t *) malloc(spectrum.Nspect * sizeof(bool_t));
@@ -111,7 +113,7 @@ bool_t xdr_BRS(XDR *xdrs)
   if (xdrs->x_op == XDR_ENCODE) {
     atmosID = atmos.ID;
     result &= xdr_counted_string(xdrs, &atmosID);
-    result &= xdr_int(xdrs, &atmos.Nspace);
+    result &= xdr_long(xdrs, &atmos.Nspace);
     result &= xdr_int(xdrs, &spectrum.Nspect);
 
     /* --- Flags for presence of background line --    -------------- */
@@ -129,7 +131,7 @@ bool_t xdr_BRS(XDR *xdrs)
 			 sizeof(bool_t), (xdrproc_t) xdr_bool);
   } else {
     atmos.backgrflags = (flags *) malloc(spectrum.Nspect * sizeof(flags));
-    atmos.backgrrecno = (int *) malloc(Nrecno * sizeof(int));
+    atmos.backgrrecno = (long *) malloc(Nrecno * sizeof(long));
 
     result &= xdr_counted_string(xdrs, &atmosID);
     if (!strstr(atmosID, atmos.ID)) {
@@ -140,7 +142,7 @@ bool_t xdr_BRS(XDR *xdrs)
     }
     free(atmosID);
 
-    result &= xdr_int(xdrs, &Nspace);
+    result &= xdr_long(xdrs, &Nspace);
     result &= xdr_int(xdrs, &Nsp);
     if (Nspace != atmos.Nspace || Nsp != spectrum.Nspect) {
       free(hasline);

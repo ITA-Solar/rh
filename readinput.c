@@ -167,7 +167,23 @@ void readInput()
     {"LIMIT_MEMORY", "FALSE", FALSE, KEYWORD_DEFAULT, &input.limit_memory,
      setboolValue},
     {"ALLOW_PASSIVE_BB", "TRUE", FALSE, KEYWORD_DEFAULT,
-     &input.allow_passive_bb, setboolValue}
+     &input.allow_passive_bb, setboolValue},
+
+    /* --- 1.5D version related inputs go here --     --------------- */
+    {"X_START", "0", FALSE, KEYWORD_OPTIONAL, &input.p15d_x0,
+     setintValue},
+    {"X_END", "-1",  FALSE, KEYWORD_OPTIONAL, &input.p15d_x1,
+     setintValue},
+    {"X_STEP", "1",  FALSE, KEYWORD_OPTIONAL, &input.p15d_xst,
+     setintValue},
+
+    {"Y_START", "0", FALSE, KEYWORD_OPTIONAL, &input.p15d_y0,
+     setintValue},
+    {"Y_END", "-1",  FALSE, KEYWORD_OPTIONAL, &input.p15d_y1,
+     setintValue},
+    {"Y_STEP", "1",  FALSE, KEYWORD_OPTIONAL, &input.p15d_yst,
+     setintValue}
+
   };
   Nkeyword = sizeof(theKeywords) / sizeof(Keyword);
 
