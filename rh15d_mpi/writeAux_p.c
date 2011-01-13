@@ -38,7 +38,30 @@ extern MPI_data mpi;
 extern IO_data io; 
 
 /* ------- begin --------------------------   init_ncdf_aux.c     --- */
-void init_ncdf_aux(void)
+void init_ncdf_aux(void) {
+/* Wrapper to find out if we should use old file or create new one */
+  int     nact;
+  bool_t  use_old = FALSE; 
+  Atom   *atom;
+
+
+  for (nact = 0; nact < atmos.Nactiveatom; nact++) {
+    atom = atmos.activeatoms[nact];
+
+    if (atom->initial_solution == OLD_POPULATIONS) {
+      use_old = TRUE;
+      break;
+    }
+  }
+
+  if (use_old) init_aux_old(); else init_aux_new();
+
+  return;
+}
+/* ------- end --------------------------   init_ncdf_aux.c     --- */
+
+/* ------- begin --------------------------   init_aux_new.c --   --- */
+void init_aux_new(void)
 /* Creates the netCDF file for the auxiliary data */
 {
   const char routineName[] = "init_ncdf_aux";
@@ -53,7 +76,7 @@ void init_ncdf_aux(void)
 
   /* Check if we can open the file */
   if ((test = fopen(AUX_FILE, "w")) == NULL) {
-    sprintf(messageStr, "Unable to open spectrum output file %s", AUX_FILE);
+    sprintf(messageStr, "Unable to open aux output file %s", AUX_FILE);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   } else {
     fclose(test);
@@ -91,6 +114,7 @@ void init_ncdf_aux(void)
   io.aux_atom_RjiC   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
   io.aux_atom_coll   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
   io.aux_atom_damp   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
+  io.aux_atom_vbroad = (int *) malloc(atmos.Nactiveatom * sizeof(int));
   
   /* --- Group loop over active atoms --- */
   // Should create groups for active molecules as well!
@@ -156,7 +180,15 @@ void init_ncdf_aux(void)
     dimids[3] = nspace_id;
     if ((ierror = nc_def_var(ncid_atom, DAMP_NAME, NC_FLOAT, 4, dimids,
 			     &io.aux_atom_damp[i]))) ERR(ierror,routineName);
-    
+
+
+    /* Broadening velocity */
+    dimids[0] = nx_id;
+    dimids[1] = ny_id;
+    dimids[2] = nspace_id;
+    if ((ierror = nc_def_var(ncid_atom, VBROAD_NAME, NC_FLOAT, 3, dimids,
+			     &io.aux_atom_vbroad[i]))) ERR(ierror,routineName);
+
     /* --- attributes --- */
     // ?
 
@@ -177,7 +209,7 @@ void init_ncdf_aux(void)
      nad             = wavelengths where there ARE bound-bound, polarised or 
                        angle-dep transitions
 
- */
+  */
   nwave = 0; nai = 0; nad = 0;
   /* Indices relative to nwave */
   ai_idx  = (int *)    malloc(spectrum.Nspect * sizeof(int));
@@ -264,7 +296,167 @@ void init_ncdf_aux(void)
 
   return;
 }
-/* ------- end   --------------------------   init_ncdf_aux.c     --- */
+/* ------- end   --------------------------   init_aux_new.c  --- */
+
+/* ------- begin --------------------------   init_aux_old.c   --- */
+void init_aux_old(void) {
+  const char routineName[] = "init_aux_old";
+  int     ierror, ncid, i, dimid;
+  size_t  len_id, nlevel, nline, ncont, nz;
+  char    group_name[ARR_STRLEN], *atmosID;
+  FILE   *test;
+  Atom   *atom;
+
+  /* Check if we can open the file */
+  if ((test = fopen(AUX_FILE, "a")) == NULL) {
+    sprintf(messageStr, "Unable to open aux output file %s", AUX_FILE);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  } else {
+    fclose(test);
+  }
+
+  /* --- Open the file --- */
+  if ((ierror = nc_open_par(AUX_FILE, NC_WRITE | NC_MPIIO, 
+                  mpi.comm, mpi.info, &io.aux_ncid))) ERR(ierror,routineName);
+
+  /* --- Consistency checks --- */
+  /* Check that atmosID is the same */
+  if ((ierror = nc_inq_attlen(io.aux_ncid, NC_GLOBAL, "atmosID", &len_id ))) 
+    ERR(ierror,routineName);
+
+  atmosID = (char *) malloc(len_id+1);
+
+  if ((ierror = nc_get_att_text(io.aux_ncid, NC_GLOBAL, "atmosID", atmosID ))) 
+    ERR(ierror,routineName);
+
+  if (!strstr(atmosID, atmos.ID)) {
+    sprintf(messageStr,
+         "Populations were derived from different atmosphere (%s) than current",
+	    atmosID);
+    Error(WARNING, routineName, messageStr);
+    }
+  free(atmosID);
+
+  /* Check that dimension sizes match */
+  if ((ierror = nc_inq_dimid(io.aux_ncid, "nz", &dimid ))) 
+    ERR(ierror,routineName);  
+  if ((ierror = nc_inq_dimlen(io.aux_ncid, dimid, &nz ))) 
+    ERR(ierror,routineName);    
+
+  if (nz != atmos.Nspace) {
+    sprintf(messageStr,
+	    "Number of depth points mismatch: expected %ld, found %d.",
+	    atmos.Nspace, (int)nz);
+    Error(WARNING, routineName, messageStr);
+  }
+
+
+  /* Create arrays for multiple-atom output */
+  io.aux_atom_ncid   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
+  io.aux_atom_pop    = (int *) malloc(atmos.Nactiveatom * sizeof(int));
+  io.aux_atom_poplte = (int *) malloc(atmos.Nactiveatom * sizeof(int));
+  io.aux_atom_RijL   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
+  io.aux_atom_RjiL   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
+  io.aux_atom_RijC   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
+  io.aux_atom_RjiC   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
+  io.aux_atom_coll   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
+  io.aux_atom_damp   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
+  io.aux_atom_vbroad = (int *) malloc(atmos.Nactiveatom * sizeof(int));
+
+  /* --- Group loop over active atoms --- */
+  // Should create groups for active molecules as well!
+  for (i=0; i < atmos.Nactiveatom; i++) {
+    atom = atmos.activeatoms[i];
+    
+    /* --- Get ncid of the atom group --- */
+    sprintf(group_name,(atom->ID[1] == ' ') ? "atom_%.1s" : "atom_%.2s", atom->ID);
+
+    if ((ierror = nc_inq_ncid(io.aux_ncid, group_name, &ncid)))
+      ERR(ierror,routineName);
+
+    io.aux_atom_ncid[i] = ncid;
+    
+    /* Check that dimension sizes match */
+    if ((ierror = nc_inq_dimid(ncid, "nlevel", &dimid ))) 
+      ERR(ierror,routineName);  
+    if ((ierror = nc_inq_dimlen(ncid, dimid, &nlevel ))) 
+      ERR(ierror,routineName);   
+    
+    if (nlevel != atom->Nlevel) {
+      sprintf(messageStr,
+	      "Number of levels mismatch: expected %d, found %d.",
+	      atom->Nlevel, (int)nlevel);
+      Error(WARNING, routineName, messageStr);
+    }
+
+    if ((ierror = nc_inq_dimid(ncid, "nline", &dimid ))) 
+      ERR(ierror,routineName);  
+    if ((ierror = nc_inq_dimlen(ncid, dimid, &nline ))) 
+      ERR(ierror,routineName);   
+    
+    if (nline != atom->Nline) {
+      sprintf(messageStr,
+	      "Number of lines mismatch: expected %d, found %d.",
+	      atom->Nline, (int)nline);
+      Error(WARNING, routineName, messageStr);
+    }
+    
+    if ((ierror = nc_inq_dimid(ncid, "ncontinuum", &dimid ))) 
+      ERR(ierror,routineName);  
+    if ((ierror = nc_inq_dimlen(ncid, dimid, &ncont ))) 
+      ERR(ierror,routineName);   
+    
+    if (ncont != atom->Ncont) {
+      sprintf(messageStr,
+	      "Number of continua mismatch: expected %d, found %d.",
+	      atom->Ncont, (int)ncont);
+      Error(WARNING, routineName, messageStr);
+    }
+
+    /* Get var ids */
+    if ((ierror = nc_inq_varid(ncid, POP_NAME,    &io.aux_atom_pop[i]    ))) 
+      ERR(ierror,routineName);  
+    if ((ierror = nc_inq_varid(ncid, POPLTE_NAME, &io.aux_atom_poplte[i] ))) 
+      ERR(ierror,routineName);  
+    if ((ierror = nc_inq_varid(ncid, RIJ_L_NAME,  &io.aux_atom_RijL[i]   ))) 
+      ERR(ierror,routineName);  
+    if ((ierror = nc_inq_varid(ncid, RJI_L_NAME,  &io.aux_atom_RjiL[i]   ))) 
+      ERR(ierror,routineName);  
+    if ((ierror = nc_inq_varid(ncid, RIJ_C_NAME,  &io.aux_atom_RijC[i]   ))) 
+      ERR(ierror,routineName);  
+    if ((ierror = nc_inq_varid(ncid, RJI_C_NAME,  &io.aux_atom_RijC[i]   ))) 
+      ERR(ierror,routineName);  
+    if ((ierror = nc_inq_varid(ncid, COLL_NAME,   &io.aux_atom_coll[i]   ))) 
+      ERR(ierror,routineName);  
+    if ((ierror = nc_inq_varid(ncid, DAMP_NAME,   &io.aux_atom_damp[i]   ))) 
+      ERR(ierror,routineName);  
+    if ((ierror = nc_inq_varid(ncid, VBROAD_NAME, &io.aux_atom_vbroad[i] )))
+      ERR(ierror,routineName);  
+
+  }
+
+  /* Now for the opacity group */
+  if ((ierror = nc_inq_ncid(io.aux_ncid, group_name, &ncid)))
+      ERR(ierror,routineName);
+
+  io.aux_op_ncid = ncid;
+
+  /* Get var ids */
+  if ((ierror = nc_inq_varid(ncid, CHI_AI_NAME, &io.aux_op_chi_ai ))) 
+    ERR(ierror,routineName);  
+  if ((ierror = nc_inq_varid(ncid, ETA_AI_NAME, &io.aux_op_eta_ai ))) 
+    ERR(ierror,routineName);  
+  if ((ierror = nc_inq_varid(ncid, CHI_AD_NAME, &io.aux_op_chi_ad ))) 
+    ERR(ierror,routineName); 
+  if ((ierror = nc_inq_varid(ncid, ETA_AD_NAME, &io.aux_op_eta_ad ))) 
+    ERR(ierror,routineName);  
+  
+  
+  return;
+}
+/* ------- end   --------------------------   init_aux_old.c   --- */
+
+
 
 /* ------- begin --------------------------   close_ncdf_aux.c --- */
 void close_ncdf_aux(void)
@@ -284,6 +476,7 @@ void close_ncdf_aux(void)
   free(io.aux_atom_RjiC);
   free(io.aux_atom_coll);
   free(io.aux_atom_damp);
+  free(io.aux_atom_vbroad);
 
   return; 
 }
@@ -330,6 +523,7 @@ void writeAux_p(void) {
 				   adamp[0] ))) ERR(ierror,routineName);
     freeMatrix((void **) adamp);
 
+
     /* --- write radiative rates --- */
     count[0] = 1;
     /* for bound-bound transitions */
@@ -350,6 +544,16 @@ void writeAux_p(void) {
       if ((ierror=nc_put_vara_double(ncid, io.aux_atom_RjiC[nact], start, count,
 				     continuum->Rji ))) ERR(ierror,routineName);
     }
+
+    /* --- write broadening velocity --- */
+    start[0] = mpi.ix;
+    start[1] = mpi.iy;
+    start[2] = 0;
+    count[0] = 1;
+    count[1] = 1;
+    count[2] = atmos.Nspace;
+    if ((ierror=nc_put_vara_double(ncid, io.aux_atom_vbroad[nact], start, count,
+				   atom->vbroad ))) ERR(ierror,routineName);
 
     /* --- write collisional rates --- */
     start[0] = 0;
@@ -447,8 +651,372 @@ void writeOpacity_p(void) {
 }
 /* ------- end   --------------------------   writeOpacity_p.c --- */
 
+/* ------- begin -------------------------- readPopulations_p.c -- */
+void readPopulations_p(Atom *atom) {
+
+  /* --- Read populations from file.
+
+   Note: readPopulations only reads the true populations and not
+         the LTE populations. To this effect it passes a NULL pointer
+         to xdr_populations as its last argument.
+         --                                            -------------- */
+
+  const char routineName[] = "readPopulations_p";
+  char    group_name[ARR_STRLEN], *atmosID;
+
+  int ierror, ncid, varid, dimid;
+  size_t nlevel, nz, len_id;
+  size_t start[] = {0, 0, 0, 0};
+  size_t count[] = {1, 1, 1, 1};
 
 
+
+  /* --- Get ncid of the atom group --- */
+  sprintf(group_name,(atom->ID[1] == ' ') ? "atom_%.1s" : "atom_%.2s", atom->ID);
+
+
+  if ((ierror = nc_inq_ncid(io.aux_ncid, group_name, &ncid)))
+    ERR(ierror,routineName);
+
+
+  /* --- Consistency checks --- */
+  /* Check that atmosID is the same */
+  if ((ierror = nc_inq_attlen(io.aux_ncid, NC_GLOBAL, "atmosID", &len_id ))) 
+    ERR(ierror,routineName);
+
+  atmosID = (char *) malloc(len_id+1);
+
+  if ((ierror = nc_get_att_text(io.aux_ncid, NC_GLOBAL, "atmosID", atmosID ))) 
+    ERR(ierror,routineName);
+
+  if (!strstr(atmosID, atmos.ID)) {
+    sprintf(messageStr,
+         "Populations were derived from different atmosphere (%s) than current",
+	    atmosID);
+    Error(WARNING, routineName, messageStr);
+    }
+  free(atmosID);
+
+  /* Check that dimension sizes match */
+  if ((ierror = nc_inq_dimid(ncid, "nlevel", &dimid ))) 
+    ERR(ierror,routineName);  
+  if ((ierror = nc_inq_dimlen(ncid, dimid, &nlevel ))) 
+    ERR(ierror,routineName);   
+
+  if (nlevel != atom->Nlevel) {
+    sprintf(messageStr,
+	    "Number of levels mismatch: expected %d, found %d.",
+	    atom->Nlevel, (int)nlevel);
+    Error(WARNING, routineName, messageStr);
+  }
+
+  if ((ierror = nc_inq_dimid(io.aux_ncid, "nz", &dimid ))) 
+    ERR(ierror,routineName);  
+  if ((ierror = nc_inq_dimlen(io.aux_ncid, dimid, &nz ))) 
+    ERR(ierror,routineName);    
+
+  if (nz != atmos.Nspace) {
+    sprintf(messageStr,
+	    "Number of depth points mismatch: expected %ld, found %d.",
+	    atmos.Nspace, (int)nz);
+    Error(WARNING, routineName, messageStr);
+  }
+ 
+
+  /* --- Get variable id for populations --- */
+  if ((ierror = nc_inq_varid(ncid, POP_NAME, &varid ))) 
+    ERR(ierror,routineName); 
+
+  /* --- Read data --- */
+  start[1] = mpi.ix;
+  start[2] = mpi.iy;
+  
+  count[0] = atom->Nlevel;
+  count[3] = atmos.Nspace;
+
+  /* read as double, although it is written as float */
+  if ((ierror = nc_get_vara_double(ncid, varid, start, count, atom->n[0] )))
+    ERR(ierror,routineName);
+
+
+  return;
+}
+/* ------- end   -------------------------- readPopulations_p.c -- */
+
+/* ------- begin -------------------------- readRadRates_p.c   --- */
+void readRadRates_p(Atom *atom) {
+  const char routineName[] = "readRadRates_p";
+  char    group_name[ARR_STRLEN], *atmosID;
+
+  int ierror, ncid, kr, dimid, RijL_id, RjiL_id, RijC_id, RjiC_id;
+  size_t nline, ncont, nz, len_id;
+  size_t start[] = {0, 0, 0, 0};
+  size_t count[] = {1, 1, 1, 1};
+  AtomicLine *line;
+  AtomicContinuum *continuum;
+  
+  /* --- Get ncid of the atom group --- */
+  sprintf(group_name,(atom->ID[1] == ' ') ? "atom_%.1s" : "atom_%.2s", atom->ID);
+
+  if ((ierror = nc_inq_ncid(io.aux_ncid, group_name, &ncid)))
+    ERR(ierror,routineName);
+
+
+  /* --- Consistency checks --- */
+  /* Check that atmosID is the same */
+  if ((ierror = nc_inq_attlen(io.aux_ncid, NC_GLOBAL, "atmosID", &len_id ))) 
+    ERR(ierror,routineName);
+
+  atmosID = (char *) malloc(len_id+1);
+
+  if ((ierror = nc_get_att_text(io.aux_ncid, NC_GLOBAL, "atmosID", atmosID ))) 
+    ERR(ierror,routineName);
+
+  if (!strstr(atmosID, atmos.ID)) {
+    sprintf(messageStr,
+	    "Populations were derived from different atmosphere (%s) than current",
+	    atmosID);
+    Error(WARNING, routineName, messageStr);
+  }
+  free(atmosID);
+
+  /* Check that dimension sizes match */
+  if ((ierror = nc_inq_dimid(ncid, "nline", &dimid ))) 
+    ERR(ierror,routineName);  
+  if ((ierror = nc_inq_dimlen(ncid, dimid, &nline ))) 
+    ERR(ierror,routineName);   
+
+  if (nline != atom->Nline) {
+    sprintf(messageStr,
+	    "Number of lines mismatch: expected %d, found %d.",
+	    atom->Nline, (int)nline);
+    Error(WARNING, routineName, messageStr);
+  }
+
+  if ((ierror = nc_inq_dimid(ncid, "ncontinuum", &dimid ))) 
+    ERR(ierror,routineName);  
+  if ((ierror = nc_inq_dimlen(ncid, dimid, &ncont ))) 
+    ERR(ierror,routineName);   
+
+  if (ncont != atom->Ncont) {
+    sprintf(messageStr,
+	    "Number of continua mismatch: expected %d, found %d.",
+	    atom->Ncont, (int)ncont);
+    Error(WARNING, routineName, messageStr);
+  }
+
+  if ((ierror = nc_inq_dimid(io.aux_ncid, "nz", &dimid ))) 
+    ERR(ierror,routineName);  
+  if ((ierror = nc_inq_dimlen(io.aux_ncid, dimid, &nz ))) 
+    ERR(ierror,routineName);    
+
+  if (nz != atmos.Nspace) {
+    sprintf(messageStr,
+	    "Number of depth points mismatch: expected %ld, found %d.",
+	    atmos.Nspace, (int)nz);
+    Error(WARNING, routineName, messageStr);
+  }
+ 
+
+  /* --- Get variable ids  --- */
+  if ((ierror = nc_inq_varid(ncid, RIJ_L_NAME, &RijL_id ))) 
+    ERR(ierror,routineName); 
+  if ((ierror = nc_inq_varid(ncid, RJI_L_NAME, &RjiL_id ))) 
+    ERR(ierror,routineName); 
+  if ((ierror = nc_inq_varid(ncid, RIJ_C_NAME, &RijC_id ))) 
+    ERR(ierror,routineName); 
+  if ((ierror = nc_inq_varid(ncid, RJI_C_NAME, &RjiC_id ))) 
+    ERR(ierror,routineName); 
+
+
+  /* --- Read data --- */
+  start[1] = mpi.ix;
+  start[2] = mpi.iy;
+  
+  count[3] = atmos.Nspace;
+
+  for (kr = 0; kr < atom->Nline; kr++) {
+    line = &atom->line[kr];
+    
+    start[0] = kr;
+
+    if ((ierror = nc_get_vara_double(ncid, RijL_id, start, count, line->Rij )))
+      ERR(ierror,routineName);
+    if ((ierror = nc_get_vara_double(ncid, RjiL_id, start, count, line->Rji )))
+      ERR(ierror,routineName);
+  }
+
+  for (kr = 0; kr < atom->Ncont; kr++) {
+    continuum = &atom->continuum[kr];
+    
+    start[0] = kr;
+
+    if ((ierror = nc_get_vara_double(ncid,RijC_id,start,count,continuum->Rij)))
+      ERR(ierror,routineName);
+    if ((ierror = nc_get_vara_double(ncid,RjiC_id,start,count,continuum->Rji)))
+      ERR(ierror,routineName);
+  }
+
+
+  return;
+}
+/* ------- end   -------------------------- readRadRates_p.c   --- */
+
+/* ------- begin -------------------------- readCollRates_p.c  --- */
+void readCollRates_p(Atom *atom) {
+  const char routineName[] = "readCollRates_p";
+  char    group_name[ARR_STRLEN], *atmosID;
+
+  int ierror, ncid, varid, dimid;
+  size_t nlevel, nz, len_id;
+  size_t start[] = {0, 0, 0, 0, 0};
+  size_t count[] = {1, 1, 1, 1, 1};
+
+
+
+  /* --- Get ncid of the atom group --- */
+  sprintf(group_name,(atom->ID[1] == ' ') ? "atom_%.1s" : "atom_%.2s", atom->ID);
+
+
+  if ((ierror = nc_inq_ncid(io.aux_ncid, group_name, &ncid)))
+    ERR(ierror,routineName);
+
+
+  /* --- Consistency checks --- */
+  /* Check that atmosID is the same */
+  if ((ierror = nc_inq_attlen(io.aux_ncid, NC_GLOBAL, "atmosID", &len_id ))) 
+    ERR(ierror,routineName);
+
+  atmosID = (char *) malloc(len_id+1);
+
+  if ((ierror = nc_get_att_text(io.aux_ncid, NC_GLOBAL, "atmosID", atmosID ))) 
+    ERR(ierror,routineName);
+
+  if (!strstr(atmosID, atmos.ID)) {
+    sprintf(messageStr,
+         "Populations were derived from different atmosphere (%s) than current",
+	    atmosID);
+    Error(WARNING, routineName, messageStr);
+    }
+  free(atmosID);
+
+  /* Check that dimension sizes match */
+  if ((ierror = nc_inq_dimid(ncid, "nlevel", &dimid ))) 
+    ERR(ierror,routineName);  
+  if ((ierror = nc_inq_dimlen(ncid, dimid, &nlevel ))) 
+    ERR(ierror,routineName);   
+
+  if (nlevel != atom->Nlevel) {
+    sprintf(messageStr,
+	    "Number of levels mismatch: expected %d, found %d.",
+	    atom->Nlevel, (int)nlevel);
+    Error(WARNING, routineName, messageStr);
+  }
+
+  if ((ierror = nc_inq_dimid(io.aux_ncid, "nz", &dimid ))) 
+    ERR(ierror,routineName);  
+  if ((ierror = nc_inq_dimlen(io.aux_ncid, dimid, &nz ))) 
+    ERR(ierror,routineName);    
+
+  if (nz != atmos.Nspace) {
+    sprintf(messageStr,
+	    "Number of depth points mismatch: expected %ld, found %d.",
+	    atmos.Nspace, (int)nz);
+    Error(WARNING, routineName, messageStr);
+  }
+ 
+
+  /* --- Get variable id for collision rates --- */
+  if ((ierror = nc_inq_varid(ncid, COLL_NAME, &varid ))) 
+    ERR(ierror,routineName); 
+
+  /* --- Read data --- */
+  start[2] = mpi.ix;
+  start[3] = mpi.iy;
+  
+  count[0] = atom->Nlevel;
+  count[1] = atom->Nlevel;
+  count[4] = atmos.Nspace;
+
+  /* read as double, although it is written as float */
+  if ((ierror = nc_get_vara_double(ncid, varid, start, count, atom->C[0] )))
+    ERR(ierror,routineName);
+
+
+  return;
+}
+/* ------- end   -------------------------- readCollRates_p.c  --- */
+
+/* ------- begin -------------------------- readDamping_p.c    --- */
+void readDamping_p(Atom *atom) {
+
+  const char routineName[] = "readDamping_p";
+  char    group_name[ARR_STRLEN], *atmosID;
+
+  int ierror, ncid, varid, dimid;
+  size_t nz, len_id;
+  size_t start[] = {0, 0, 0};
+  size_t count[] = {1, 1, 1};
+
+  /* --- Get ncid of the atom group --- */
+  sprintf(group_name,(atom->ID[1] == ' ') ? "atom_%.1s" : "atom_%.2s", atom->ID);
+
+
+  if ((ierror = nc_inq_ncid(io.aux_ncid, group_name, &ncid)))
+    ERR(ierror,routineName);
+
+
+  /* --- Consistency checks --- */
+  /* Check that atmosID is the same */
+  if ((ierror = nc_inq_attlen(io.aux_ncid, NC_GLOBAL, "atmosID", &len_id ))) 
+    ERR(ierror,routineName);
+
+  atmosID = (char *) malloc(len_id+1);
+
+  if ((ierror = nc_get_att_text(io.aux_ncid, NC_GLOBAL, "atmosID", atmosID ))) 
+    ERR(ierror,routineName);
+
+  if (!strstr(atmosID, atmos.ID)) {
+    sprintf(messageStr,
+         "Populations were derived from different atmosphere (%s) than current",
+	    atmosID);
+    Error(WARNING, routineName, messageStr);
+    }
+  free(atmosID);
+
+  /* Check that dimension sizes match */
+  if ((ierror = nc_inq_dimid(io.aux_ncid, "nz", &dimid ))) 
+    ERR(ierror,routineName);  
+  if ((ierror = nc_inq_dimlen(io.aux_ncid, dimid, &nz ))) 
+    ERR(ierror,routineName);    
+
+  if (nz != atmos.Nspace) {
+    sprintf(messageStr,
+	    "Number of depth points mismatch: expected %ld, found %d.",
+	    atmos.Nspace, (int)nz);
+    Error(WARNING, routineName, messageStr);
+  }
+ 
+
+  /* --- Get variable id for vbroad --- */
+  /* Reads only vbroad, as damp is not stored in any structure */
+  if ((ierror = nc_inq_varid(ncid, COLL_NAME, &varid ))) 
+    ERR(ierror,routineName); 
+
+  /* --- Read data --- */
+  start[0] = mpi.ix;
+  start[1] = mpi.iy;
+  
+  count[2] = atmos.Nspace;
+
+  /* read as double, although it is written as float */
+  if ((ierror = nc_get_vara_double(ncid, varid, start, count, atom->vbroad )))
+    ERR(ierror,routineName);
+
+
+  return;
+}
+/* ------- end   -------------------------- readDamping_p.c    --- */
 
 // LOW PRIORITY:
 /* ------- begin -------------------------- writeAtom_metadata_p.c */

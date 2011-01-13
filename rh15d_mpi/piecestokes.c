@@ -30,6 +30,7 @@
 #include "atmos.h"
 #include "geometry.h"
 #include "spectrum.h"
+#include "parallel.h"
 
 
 /* --- Function prototypes --                          -------------- */
@@ -40,6 +41,7 @@
 extern Geometry geometry;
 extern Atmosphere atmos;
 extern Spectrum spectrum;
+extern MPI_data mpi;
 
 
 /* ------- begin -------------------------- PiecewiseStokes.c ------- */
@@ -143,6 +145,10 @@ void PiecewiseStokes(int nspect, int mu, bool_t to_obs,
     /* --- Solve linear equations for I --             -------------- */
 
     SolveLinearEq(4, R, P, TRUE);
+    if (mpi.stop) {
+      freeMatrix((void **) R);
+      return; /* Get out if there is a singular matrix */
+    }
 
     /* --- Store results for Stokes vector --          -------------- */
 

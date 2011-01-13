@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "rh.h"
 #include "atom.h"
@@ -46,19 +47,15 @@ int main(int argc, char *argv[])
 
 
   /* --- Set up MPI ----------------------             -------------- */
-  MPI_Init(&argc,&argv);
-  MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
-  MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
-  MPI_Get_processor_name(mpi.name, &mpi.namelen);
-
-  mpi.comm = MPI_COMM_WORLD;
-  mpi.info = MPI_INFO_NULL;
+  initParallel(&argc,&argv);
 
   /* --- Read input data and initialize --             -------------- */
 
   setOptions(argc, argv);
   getCPU(0, TIME_START, NULL);
   SetFPEtraps();
+
+  mpi.main_logfile     = commandline.logfile;
 
   readInput();
   spectrum.updateJ = TRUE;
@@ -70,30 +67,34 @@ int main(int argc, char *argv[])
   distribute_jobs();
 
   // Temporary
-  mpi.Ntasks = 1;
+  //mpi.Ntasks = 2;
 
   /* Main loop over tasks */
   for (mpi.task = 0; mpi.task < mpi.Ntasks; mpi.task++) {
-    printf("#############################\n");
-    printf("######    TASK  %d     #######\n",mpi.task);
-    printf("#############################\n");
 
     /* Indices of x and y */
     mpi.ix = mpi.taskmap[mpi.task + mpi.my_start][0];
     mpi.iy = mpi.taskmap[mpi.task + mpi.my_start][1];
 
+    /* Printout some info */
+    sprintf(messageStr,
+      "Process %d: --- START task %4d [of %4d], (xi,yi) = (%3d,%3d)\n",
+       mpi.rank, mpi.task+1, mpi.Ntasks, mpi.xnum[mpi.ix], mpi.ynum[mpi.iy]);
+    fprintf(mpi.main_logfile, messageStr);
+    fprintf(mpi.logfile,"\n", messageStr, "\n");
 
     /* Read atmosphere column */
-    //readAtmos_ncdf(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
+    readAtmos_ncdf(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
 
-    if (mpi.task == 0)
+    /*
+    if (mpi.rank == 0)
       readAtmos_ncdf(214,220, &atmos, &geometry, &infile);
-    if (mpi.task == 1)
+    if (mpi.rank > 0)
       readAtmos_ncdf(280,100, &atmos, &geometry, &infile);
+    */
 
     if (atmos.Stokes) Bproject();
 
-  
     /* --- Run only once --                                  --------- */
     if (mpi.task == 0) {
       readAtomicModels();   
@@ -101,48 +102,64 @@ int main(int argc, char *argv[])
 
       SortLambda();
       initParallelIO();
+
     } else {
       /* Update quantities that depend on atmosphere and initialise others */
       UpdateAtmosDep();
     }
     
-
     Background_p(analyze_output=TRUE, equilibria_only=FALSE);
 
     getProfiles();
     initSolution_p();
-
-
-   
-
     initScatter();
-
-    /*
-    printf("    n[0][i]        n[1][i]        n[2][i]         n[3][i]          \n");
-    atom = atmos.activeatoms[0];
-    for(i=0; i<175; i+=5){
-      printf(" %10.4e  %10.4e  %10.4e  %10.4e\n",
-	     atom->n[0][i],
-	     atom->n[1][i],
-	     atom->n[2][i],
-	     atom->n[3][i]);
-    }
-    */
-
-  
-    // TIAGO: problem is NOT in collisional rates, but in stuff added further to Gamma
-    //        (radiation?). Differences occur in solvespectrum. Must look in formal.c 
-    //        and iterate.c. For non-PRD atom there doesn't seem to be an issue!!!
-    //        Check source function, chi, eta, etc. in formal.c
-
-  // end testing
 
     getCPU(1, TIME_POLL, "Total Initialize");
 
     /* --- Solve radiative transfer for active ingredients -- --------- */
-    Iterate(input.NmaxIter, input.iterLimit);
+    Iterate_p(input.NmaxIter, input.iterLimit);
 
- 
+    /* Treat odd cases as a crash */
+    if (isnan(mpi.dpopsmax) || isinf(mpi.dpopsmax) || (mpi.dpopsmax <= 0))
+      mpi.stop = TRUE;
+
+    /* In case of crash, write dummy data and proceed to next task */
+    if (mpi.stop) {
+      sprintf(messageStr,
+	      "\nProcess %d: *** SKIP to next task (crashed)\n", mpi.rank);\
+      fprintf(mpi.main_logfile, messageStr);
+      fprintf(mpi.logfile,      messageStr);
+
+      mpi.ncrash++;
+      mpi.stop = FALSE;
+      mpi.dpopsmax = 0.0;
+      mpi.convergence = -1;
+
+      writeAtmos_p();    
+      writeMPI_p();
+
+      continue;
+    }
+
+
+
+    /* Printout some info, finished iter */
+    if (mpi.convergence) {
+      sprintf(messageStr,
+       "Process %d: *** END ITER task %4d [of %4d], iterations = %3d, CONVERGED\n",
+       mpi.rank, mpi.task+1, mpi.Ntasks, mpi.niter);
+      mpi.nconv++;
+    } else {
+      sprintf(messageStr,
+       "Process %d: *** END ITER task %4d [of %4d], iterations = %3d, NO convergence\n",
+       mpi.rank, mpi.task+1, mpi.Ntasks, mpi.niter);
+      mpi.nnoconv++;
+    }
+
+    fprintf(mpi.main_logfile, messageStr);
+    fprintf(mpi.logfile,      messageStr);
+
+
 
     adjustStokesMode();
     niter = 0;
@@ -187,10 +204,12 @@ int main(int argc, char *argv[])
 
     getCPU(1, TIME_POLL, "Write output");
 
-    // TODO: here must free active atoms/molecules so that there is no problem
-    //       in reallocating them in readAtomicModels
-
   } /* End of main task loop */
+
+
+  /* Direct log stream back into main */
+  commandline.logfile = mpi.main_logfile;
+  mpi.single_log      = TRUE;
 
 
   close_ncdf_atmos(&atmos, &geometry, &infile);
@@ -198,7 +217,8 @@ int main(int argc, char *argv[])
 
   /* Frees from memory stuff used for job control */
   finish_jobs();
-    
+
+  Error(MESSAGE,"","*** RH finished gracefully.\n");
   printTotalCPU();
   MPI_Finalize();
 

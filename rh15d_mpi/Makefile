@@ -12,6 +12,7 @@ include ../makefiles/makefile.$(CPU).$(OS)
 
 CC = mpicc
 LD = mpicc
+AR = ar
 LDFLAGS = -L../ -L/opt/local/lib/
 
 ## --- If no FORTRAN compiler is available remove -lrh_f90 in following
@@ -21,13 +22,16 @@ LDFLAGS = -L../ -L/opt/local/lib/
 
 ## --- Define groups of object files --                -------------- ##
 
+#            writeflux_xdr.o  writegeom_xdr.o // OLD
 
-ONE_D_OBJS = anglequad.o  feautrier.o  formal.o  hydrostat.o  multiatmos.o \
-             rh15d.o  piecestokes.o  piecewise.o  project.o  riiplane.o \
-             writeflux_xdr.o  writegeom_xdr.o readatmos_ncdf.o \
-	     background_p.o brs_p.o readj_p.o scatter_p.o writespect_p.o \
-	     initial_p.o distribute_jobs.o writeinputdata_p.o  writeAux_p.o \
-	     parallel_io.o
+ONE_D_OBJS = anglequad.o  feautrier.o    formal.o     hydrostat.o  multiatmos.o  \
+             rh15d.o      piecestokes.o  piecewise.o  project.o    riiplane.o    \
+	     readatmos_ncdf.o background_p.o brs_p.o  readj_p.o    scatter_p.o   \
+	     writespect_p.o initial_p.o  distribute_jobs.o  writeinputdata_p.o   \
+	     writeAux_p.o parallel_io.o  iterate_p.o  ludcmp_p.o  accelerate_p.o \
+	     redistribute_p.o statequil_p.o
+
+SUBSTITUTE = ludcmp.o
 
    ONEDOBJ = solve15d.o  iter_1d.o  feautrier.o
 
@@ -43,6 +47,7 @@ BACKGROPAC = anglequad.o  backgrcontr.o  multiatmos.o  project.o
 all:   rh15d  solve15d # solveray  backgrcontr
 
 rh15d:  $(ONE_D_OBJS)  librh
+#	cd ..; $(AR) -d librh.a $(SUBSTITUTE)
 	$(LD) -o $@  $(LDFLAGS) $(ONE_D_OBJS) $(LIBS)
 
 solve15d:  $(ONEDOBJ)  librh
@@ -69,6 +74,8 @@ clean:
 
 ## --- Explicit dependencies on include files --       -------------- ##
 
+accelerate_p.o:         ../rh.h  ../accelerate.h ../error.h \
+                        ../statistics.h   parallel.h
 
 anglequad.o:            ../rh.h  ../atom.h  ../atmos.h  \
                         geometry.h
@@ -112,6 +119,17 @@ iter_1d.o:              ../rh.h  ../atom.h  ../atmos.h  \
                         geometry.h  ../accelerate.h  ../error.h  \
                         ../statistics.h
 
+
+iterate_p.o:            ../rh.h  ../atom.h  ../atmos.h ../spectrum.h \
+	                ../background.h  ../accelerate.h  ../error.h \
+	                ../statistics.h  ../inputs.h      parallel.h \
+                        iterate_p.c
+	$(CC) $(CFLAGS) -Wall -c -o $@ iterate_p.c
+
+ludcmp_p.o:             ../rh.h  ../error.h  parallel.h  ludcmp_p.c
+	$(CC) $(CFLAGS) -Wall -c -o $@ ludcmp_p.c
+
+
 multiatmos.o:           ../rh.h  ../atom.h  ../atmos.h  \
                         geometry.h  ../spectrum.h  ../background.h  \
                         ../constant.h  ../error.h  ../inputs.h  \
@@ -139,6 +157,9 @@ readj_p.o:              ../rh.h  ../atom.h  ../atmos.h  ../spectrum.h parallel.h
 	   		../background.h  ../inputs.h  ../error.h   io.h   readj_p.c
 	$(CC) $(CFLAGS) -Wall -c  -o $@ readj_p.c
 
+redistribute_p.o:       ../rh.h  ../atmos.h  ../atom.h  ../spectrum.h  \
+                        ../accelerate.h ../error.h  ../inputs.h  parallel.h  
+
 rh15d.o:                ../rh.h  ../atom.h  ../atmos.h  \
                         geometry.h  ../spectrum.h  ../background.h  \
                         ../statistics.h  ../error.h  ../inputs.h  ../xdr.h rh15d.c
@@ -157,6 +178,10 @@ solve15d.o:             ../rh.h  ../atom.h  ../atmos.h  \
 solveray.o:             ../rh.h  ../atom.h  ../atmos.h  \
                         geometry.h  ../spectrum.h  ../background.h  \
                         ../statistics.h  ../inputs.h  ../error.h  ../xdr.h
+
+statequil_p.o:          ../rh.h  ../atom.h  ../atmos.h  ../accelerate.h \
+                        ../error.h  ../inputs.h  parallel.h
+
 
 writeAux_p.o:           ../rh.h  ../atom.h  ../atmos.h  \
                         geometry.h  ../spectrum.h ../error.h  ../inputs.h  \

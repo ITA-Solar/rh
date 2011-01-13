@@ -185,7 +185,7 @@ bool_t readBRS_ncdf(void)
   unsigned char *hasline, *ispolarised;
   int     ierror, ncid, task_id, nrec_id, nspace_id, wave_id,
           hl_var, ip_var, nrec_var, Nrecno, nspect;
-  size_t  task_len, wave_len, nrec_len, nspace_len;
+  size_t  task_len, wave_len, nrec_len, nspace_len, id_len;
   size_t  start[] = {0, 0};
   size_t  count[] = {1, 1};
   FILE   *test;
@@ -234,6 +234,11 @@ bool_t readBRS_ncdf(void)
   if (nspace_len != atmos.Nspace || wave_len != spectrum.Nspect 
       || Nrecno != nrec_len ) return FALSE;
  
+  if ((ierror = nc_inq_attlen(   ncid, NC_GLOBAL, "atmosID", &id_len ))) 
+    ERR(ierror,routineName);
+
+  atmosID = (char *) malloc(id_len+1);
+
   if ((ierror = nc_get_att_text( ncid, NC_GLOBAL, "atmosID", atmosID ))) 
     ERR(ierror,routineName);
 

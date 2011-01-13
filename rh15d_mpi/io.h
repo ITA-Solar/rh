@@ -36,18 +36,19 @@
 #define  FILE_EXT ".dat"
 
 /* Definitions for the Aux file */
-#define AUX_FILE "output_aux.ncdf"
-#define ARR_STRLEN 30
+#define ARR_STRLEN  30
+#define AUX_FILE    "output_aux.ncdf"
 #define POP_NAME    "populations"
 #define POPLTE_NAME "populations_LTE"
-#define RIJ_L_NAME "Rij_line"
-#define RJI_L_NAME "Rji_line"
-#define RIJ_C_NAME "Rij_continuum"
-#define RJI_C_NAME "Rji_continuum"
-#define COLL_NAME  "collision_rates"
-#define DAMP_NAME  "damping"
-#define NW_AD_NAME "nwave_angle_dep"
-#define NW_AI_NAME "nwave_angle_ind"
+#define RIJ_L_NAME  "Rij_line"
+#define RJI_L_NAME  "Rji_line"
+#define RIJ_C_NAME  "Rij_continuum"
+#define RJI_C_NAME  "Rji_continuum"
+#define COLL_NAME   "collision_rates"
+#define DAMP_NAME   "damping"
+#define VBROAD_NAME "broadening_velocity"
+#define NW_AD_NAME  "nwave_angle_dep"
+#define NW_AI_NAME  "nwave_angle_ind"
 #define CHI_AI_NAME "chi_angle_ind"
 #define CHI_AD_NAME "chi_angle_dep"
 #define ETA_AI_NAME "eta_angle_ind"
@@ -55,6 +56,9 @@
 #define WAVET_NAME  "wavelength_nm"
 #define WAVE_AD_IDX_NAME "wave_angle_dep_indices"
 #define WAVE_AI_IDX_NAME "wave_angle_ind_indices"
+
+
+#define STOPFILE_TEMPLATE "scratch/STOP_FILE_p%d"
 
 
 /* For keeping the netCDF file and variable IDs */
@@ -78,8 +82,8 @@ typedef struct {
   /* for the aux file */
   int  aux_ncid,         *aux_atom_ncid,     aux_op_ncid,      *aux_atom_pop,
       *aux_atom_poplte,  *aux_atom_RijL,    *aux_atom_RjiL,    *aux_atom_RijC,
-      *aux_atom_RjiC,    *aux_atom_coll,    *aux_atom_damp,     aux_op_chi_ai,
-       aux_op_chi_ad,     aux_op_eta_ai,     aux_op_eta_ad;
+      *aux_atom_RjiC,    *aux_atom_coll,    *aux_atom_damp,    *aux_atom_vbroad,
+       aux_op_chi_ai,     aux_op_chi_ad,     aux_op_eta_ai,     aux_op_eta_ad;
   /* for atom file positions */
   long *atom_file_pos;
 } IO_data;

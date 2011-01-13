@@ -11,13 +11,13 @@
   ABUND_FILE = ../../Atoms/abundance.input
 
 # Stuff for 1.5D version:
-  X_START = 0
-  X_END   = 10 
-  X_STEP  = 2
+  X_START = 194
+  X_END   = 244 
+  X_STEP  = 1 
 
-  Y_START = 0
-  Y_END   = 10
-  Y_STEP  = 2
+  Y_START = 200
+  Y_END   = 250
+  Y_STEP  = 1
 
 # Set choice of number of rays (KEYWORD_OPTIONAL).
 
@@ -63,7 +63,7 @@
 # Set number of maximum iterations and convergence limit
 # (both KEYWORD_REQUIRED).
 
-  N_MAX_ITER = 150
+  N_MAX_ITER = 150 
   ITER_LIMIT = 1.0E-2
 
 # Parameters for Ng convergence acceleration (all are KEYWORD_OPTIONAL)

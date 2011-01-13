@@ -50,6 +50,7 @@ void init_ncdf_J(void)
   const char routineName[] = "init_netcdf_J";
   int     ierror, jncid, nx_id, ny_id, nspect_id, nspace_id,
           Jlambda_var, J20_var, dimids[4];
+  size_t  len_id;
   FILE   *test;
   char    file_J[MAX_MESSAGE_LENGTH],  *atmosID;
 
@@ -79,6 +80,11 @@ void init_ncdf_J(void)
 	ERR(ierror,routineName);    
 
     /* consistency checks */
+    if ((ierror = nc_inq_attlen(jncid, NC_GLOBAL, "atmosID", &len_id ))) 
+      ERR(ierror,routineName);
+
+    atmosID = (char *) malloc(len_id+1);
+
     if ((ierror = nc_get_att_text( jncid, NC_GLOBAL, "atmosID", atmosID ))) 
       ERR(ierror,routineName);
 

@@ -22,6 +22,7 @@
 #include "geometry.h"
 #include "inputs.h"
 #include "parallel.h"
+#include "error.h"
 #include "io.h"
 
 
@@ -165,6 +166,20 @@ int *intrange(int start, int end, int step, int *N)
 void finish_jobs(void)
 /* Frees from memory stuff used for job control */
 {
+  int total, conv, noconv, crash;
+
+  /* Get total number of tasks and convergence statuses */ 
+  MPI_Allreduce(&mpi.Ntasks,  &total,  1, MPI_INT, MPI_SUM, mpi.comm);
+  MPI_Allreduce(&mpi.ncrash,   &crash,  1, MPI_INT, MPI_SUM, mpi.comm);
+  MPI_Allreduce(&mpi.nconv,   &conv,   1, MPI_INT, MPI_SUM, mpi.comm);
+  MPI_Allreduce(&mpi.nnoconv, &noconv, 1, MPI_INT, MPI_SUM, mpi.comm);
+
+
+  sprintf(messageStr,
+   "*** Job ending. Total %d 1-D columns: %d converged, %d not converged, %d crashed.\n",
+    total, conv, noconv, crash);	  
+  
+  Error(MESSAGE,"",messageStr);
 
   free(mpi.xnum);
   free(mpi.ynum);

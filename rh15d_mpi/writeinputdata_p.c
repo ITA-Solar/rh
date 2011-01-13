@@ -46,7 +46,7 @@ void init_ncdf_indata(void)
 {
   const char routineName[] = "init_ncdf_indata";
   int    ierror, ncid, ncid_input, ncid_atmos, ncid_mpi, nx_id, ny_id, 
-         nspace_id, nhydr_id, nelem_id, nrays_id, nproc_id, naa_id, atstr_id,
+         nspace_id, nhydr_id, nelem_id, nrays_id, nproc_id,  atstr_id,
          temp_var, ne_var, vz_var, vturb_var, B_var, gB_var, chiB_var, nh_var,
          ew_var, ab_var, eid_var, mu_var, wmu_var, height_var,x_var, y_var,
          xnum_var, ynum_var, tm_var, tn_var, it_var, conv_var, dm_var, ntsk_var, 
@@ -189,6 +189,11 @@ void init_ncdf_indata(void)
   if ((ierror=nc_put_att_text(ncid_input,NC_GLOBAL,"Kurucz_PF_data",
        strlen(input.pfData),      input.KuruczData)))  ERR(ierror,routineName);
 
+  if ((ierror=nc_put_att_double( ncid_input, NC_GLOBAL, "Iteration_limit", 
+                NC_DOUBLE, 1, &input.iterLimit )))    ERR(ierror,routineName);
+  if ((ierror=nc_put_att_double( ncid_input, NC_GLOBAL, "PRD_Iteration_limit", 
+                NC_DOUBLE, 1, &input.PRDiterLimit ))) ERR(ierror,routineName);
+
   if ((ierror=nc_put_att_int( ncid_input, NC_GLOBAL, "N_max_iter",    NC_INT, 1,
 			      &input.NmaxIter )))     ERR(ierror,routineName);
   if ((ierror=nc_put_att_int( ncid_input, NC_GLOBAL, "Ng_delay",      NC_INT, 1,
@@ -301,8 +306,6 @@ void init_ncdf_indata(void)
   /* dimensions */
   if ((ierror = nc_def_dim(ncid_mpi, "nprocesses",  mpi.size, &nproc_id))) 
     ERR(ierror,routineName);  
-  if ((ierror = nc_def_dim(ncid_mpi, "nactive_atom",atmos.Nactiveatom,&naa_id)))
-    ERR(ierror,routineName);  
 
   /* variables*/
   dimids[0] = nx_id;
@@ -311,23 +314,20 @@ void init_ncdf_indata(void)
   dimids[0] = ny_id;
   if ((ierror = nc_def_var(ncid_mpi, "ynum",        NC_USHORT, 1, dimids,
 			   &ynum_var))) ERR(ierror,routineName);
+
   dimids[0] = nx_id;
   dimids[1] = ny_id;
-
   if ((ierror = nc_def_var(ncid_mpi, "task_map",    NC_USHORT, 2, dimids,
 			   &tm_var)))   ERR(ierror,routineName);
   if ((ierror = nc_def_var(ncid_mpi, "task_number", NC_USHORT, 2, dimids,
 			   &tn_var)))   ERR(ierror,routineName);
   if ((ierror = nc_def_var(ncid_mpi, "iterations",  NC_USHORT, 2, dimids,
 			   &it_var)))   ERR(ierror,routineName);
-
-  dimids[0] = naa_id;
-  dimids[1] = nx_id;
-  dimids[2] = ny_id;
-  if ((ierror = nc_def_var(ncid_mpi, "convergence", NC_UBYTE,  3, dimids,
+  if ((ierror = nc_def_var(ncid_mpi, "convergence", NC_SHORT,  2, dimids,
 			   &conv_var))) ERR(ierror,routineName);
-  if ((ierror = nc_def_var(ncid_mpi, "delta_max",   NC_FLOAT,  3, dimids,
+  if ((ierror = nc_def_var(ncid_mpi, "delta_max",   NC_FLOAT,  2, dimids,
 			   &dm_var)))   ERR(ierror,routineName);
+
   dimids[0] = nproc_id;
   dimids[1] = atstr_id;
   if ((ierror = nc_def_var(ncid_mpi, "ntasks",      NC_LONG,   1, dimids,
@@ -523,10 +523,17 @@ void writeMPI_p(void)
 
   start[0] = mpi.ix;
   start[1] = mpi.iy;
-  if ((ierror = nc_put_var1_int(ncid, io.in_mpi_tm, start, &mpi.rank )))
+  if ((ierror = nc_put_var1_int(ncid,    io.in_mpi_tm, start, &mpi.rank )))
     ERR(ierror,routineName);
-  if ((ierror = nc_put_var1_int(ncid, io.in_mpi_tn, start, &mpi.task )))
+  if ((ierror = nc_put_var1_int(ncid,    io.in_mpi_tn, start, &mpi.task )))
     ERR(ierror,routineName);
+  if ((ierror = nc_put_var1_int(ncid,    io.in_mpi_it, start, &mpi.niter)))
+    ERR(ierror,routineName);
+  if ((ierror = nc_put_var1_double(ncid, io.in_mpi_dm, start, &mpi.dpopsmax)))
+    ERR(ierror,routineName);
+  if ((ierror = nc_put_var1_int(ncid,  io.in_mpi_conv, start, &mpi.convergence)))
+    ERR(ierror,routineName);
+
 
   /* Number of tasks */
   start[0] = mpi.rank;

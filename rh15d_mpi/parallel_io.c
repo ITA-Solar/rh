@@ -31,7 +31,45 @@ void  distribute_nH(void);
 extern Atmosphere atmos;
 extern IO_data io;
 extern InputData input;
+extern CommandLine commandline;
 extern char messageStr[];
+extern MPI_data mpi;
+
+/* ------- begin --------------------------   initParallel.c --   --- */
+void initParallel(int *argc, char **argv[]) {
+  const char routineName[] = "initParallelIO";
+  char   logfile[MAX_LINE_SIZE];
+
+  /* Initialise MPI */
+  MPI_Init(argc,argv);
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
+  MPI_Get_processor_name(mpi.name, &mpi.namelen);
+
+  mpi.comm = MPI_COMM_WORLD;
+  mpi.info = MPI_INFO_NULL;
+
+  /* Open log files */ 
+  sprintf(logfile, MPILOG_TEMPLATE, mpi.rank);
+  if ((mpi.logfile = fopen(logfile, "w")) == NULL) {
+    sprintf(messageStr, "Process %d: Unable to open log file %s", 
+	    mpi.rank, logfile);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
+  setvbuf(mpi.logfile, NULL, _IOLBF, BUFSIZ);
+
+  /* Keep log stream in main log */
+  mpi.single_log = TRUE;
+
+  mpi.stop    = FALSE;
+  mpi.nconv   = 0;
+  mpi.nnoconv = 0;
+  mpi.ncrash  = 0;
+
+
+  return;
+}
+/* ------- end   --------------------------   initParallel.c --   --- */
 
 /* ------- begin --------------------------   initParallelIO.c    --- */
 void initParallelIO(void) {
@@ -50,10 +88,13 @@ void initParallelIO(void) {
   for (nact = 0; nact < atmos.Nactiveatom; nact++) {
     atom = atmos.activeatoms[nact];
     io.atom_file_pos[nact] = ftell(atom->fp_input);
-    printf("#### Atom %s, position = %d\n",atom->ID, io.atom_file_pos[nact]);
   }
 
+  /* Direct log stream into MPI log files */
+  commandline.logfile  = mpi.logfile;
+  mpi.single_log       = FALSE;
 
+  
 
   return;
 }
@@ -111,8 +152,6 @@ void UpdateAtmosDep(void) {
 	sprintf(messageStr, "Unable to rewind atom file for %s", atom->ID);
 	Error(ERROR_LEVEL_2, routineName, messageStr);
       }
-
-      printf("^^^ Atom %s now at position %d\n",atom->ID, ftell(atom->fp_input));
 
       /* Free collision rate array, will be reallocated by calls in Background_p */
       freeMatrix((void **) atom->C);
@@ -205,3 +244,54 @@ void UpdateAtmosDep(void) {
   return;
 }
 /* ------- end   --------------------------  updateAtmosDep.c     --- */
+
+
+/* ------- begin --------------------------  Error_p.c --         --- */
+void Error(enum errorlevel level, const char *routineName,
+	   const char *messageStr)
+{
+  char errorStr[MAX_MESSAGE_LENGTH];
+  enum errorlevel defaultLevel = ERROR_LEVEL_1;
+
+  switch (level) {
+  case MESSAGE:
+    if ((mpi.single_log) && (mpi.rank != 0)) return;
+    if (!commandline.quiet)
+      fprintf(commandline.logfile, "%s", (messageStr) ? messageStr : "");
+    return;
+  case WARNING:
+    if ((mpi.single_log) && (mpi.rank != 0)) 
+      fprintf(mpi.logfile, "\n-WARNING in routine %s\n %s\n",
+	      routineName, (messageStr) ? messageStr : " (Undocumented)\n");
+    fprintf(commandline.logfile, "\n-WARNING in routine %s\n %s\n",
+	    routineName, (messageStr) ? messageStr : " (Undocumented)\n");
+    return;
+  default:
+    if (level < defaultLevel) {
+      fprintf(commandline.logfile, "\a\n-ERROR in routine %s\n %s \n %s\n",
+	      routineName,(messageStr) ? messageStr : " (Undocumented)\n",
+	      "Trying to continue.....");
+      if (commandline.logfile == mpi.logfile) 
+	fprintf(mpi.main_logfile, "\a\n-Process %d: ERROR in routine %s\n %s \n %s\n",
+		mpi.rank, routineName,(messageStr) ? messageStr : " (Undocumented)\n",
+		"Trying to continue.....");
+      return;
+    } else {
+      sprintf(errorStr, "\a\n\n-FATAL_ERROR in routine %s\n %s \n %s\n",
+	      routineName,(messageStr) ? messageStr : " (Undocumented)\n",
+	      "Exiting.....");
+      if (commandline.logfile == mpi.logfile) 
+	fprintf(mpi.main_logfile, "\nProcess %d: %s", mpi.rank, errorStr);
+
+      fprintf(commandline.logfile, "%s", errorStr);
+      if (commandline.logfile != stderr) fprintf(stderr, "%s", errorStr);
+
+      /* Make exception for Singular matrix error */
+      if (!strstr(messageStr,"Singular matrix")) {
+	if (errno) perror(routineName);
+	exit(level);
+      }
+    }
+  }
+}
+/* ------- end    --------------------------  Error_p.c --         --- */
