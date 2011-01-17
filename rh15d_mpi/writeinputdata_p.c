@@ -24,8 +24,6 @@
 #include "parallel.h"
 #include "io.h"
 
-#define INPUTDATA_FILE "output_indata.ncdf"
-#define ARR_STRLEN 30
 
 /* --- Function prototypes --                          -------------- */
 
@@ -309,32 +307,32 @@ void init_ncdf_indata(void)
 
   /* variables*/
   dimids[0] = nx_id;
-  if ((ierror = nc_def_var(ncid_mpi, "xnum",        NC_USHORT, 1, dimids,
+  if ((ierror = nc_def_var(ncid_mpi, XNUM_NAME,   NC_USHORT, 1, dimids,
 			   &xnum_var))) ERR(ierror,routineName);
   dimids[0] = ny_id;
-  if ((ierror = nc_def_var(ncid_mpi, "ynum",        NC_USHORT, 1, dimids,
+  if ((ierror = nc_def_var(ncid_mpi, YNUM_NAME,   NC_USHORT, 1, dimids,
 			   &ynum_var))) ERR(ierror,routineName);
 
   dimids[0] = nx_id;
   dimids[1] = ny_id;
-  if ((ierror = nc_def_var(ncid_mpi, "task_map",    NC_USHORT, 2, dimids,
+  if ((ierror = nc_def_var(ncid_mpi, TASK_MAP,    NC_USHORT, 2, dimids,
 			   &tm_var)))   ERR(ierror,routineName);
-  if ((ierror = nc_def_var(ncid_mpi, "task_number", NC_USHORT, 2, dimids,
+  if ((ierror = nc_def_var(ncid_mpi, TASK_NUMBER, NC_USHORT, 2, dimids,
 			   &tn_var)))   ERR(ierror,routineName);
-  if ((ierror = nc_def_var(ncid_mpi, "iterations",  NC_USHORT, 2, dimids,
+  if ((ierror = nc_def_var(ncid_mpi, ITER_NAME,   NC_USHORT, 2, dimids,
 			   &it_var)))   ERR(ierror,routineName);
-  if ((ierror = nc_def_var(ncid_mpi, "convergence", NC_SHORT,  2, dimids,
+  if ((ierror = nc_def_var(ncid_mpi, CONV_NAME,   NC_SHORT,  2, dimids,
 			   &conv_var))) ERR(ierror,routineName);
-  if ((ierror = nc_def_var(ncid_mpi, "delta_max",   NC_FLOAT,  2, dimids,
+  if ((ierror = nc_def_var(ncid_mpi, DM_NAME,     NC_FLOAT,  2, dimids,
 			   &dm_var)))   ERR(ierror,routineName);
 
   dimids[0] = nproc_id;
   dimids[1] = atstr_id;
-  if ((ierror = nc_def_var(ncid_mpi, "ntasks",      NC_LONG,   1, dimids,
+  if ((ierror = nc_def_var(ncid_mpi, NTASKS,      NC_LONG,   1, dimids,
 			   &ntsk_var))) ERR(ierror,routineName);
-  if ((ierror = nc_def_var(ncid_mpi, "hostname",    NC_CHAR,   2, dimids,
+  if ((ierror = nc_def_var(ncid_mpi, HOSTNAME,    NC_CHAR,   2, dimids,
 			   &host_var))) ERR(ierror,routineName);
-  if ((ierror = nc_def_var(ncid_mpi, "finish_time", NC_CHAR,   2, dimids,
+  if ((ierror = nc_def_var(ncid_mpi, FINISH_TIME, NC_CHAR,   2, dimids,
 			   &ft_var))) ERR(ierror,routineName);
 
   // mpi.tasks(size), mpi.taskmap (but in xnum, ynum terms!), mpi.taskmap for each process
@@ -571,4 +569,90 @@ void writeMPI_p(void)
 }
 
 /* ------- end   --------------------------   writeMPI_p.c --- */
+
+
+/* ------- begin -------------------------- readConvergence.c  --- */
+void readConvergence(void) {
+  /* This is a self-contained function to read the convergence matrix,
+     written by RH. */
+  const char routineName[] = "readConvergence";
+  size_t len_id, nx, ny;
+  int    ncid, ncid_mpi, ierror, dimid, varid;
+  char  *atmosID;
+  FILE  *test;
+
+  mpi.rh_converged = matrix_int(mpi.nx, mpi.ny);
+  
+  /* --- Check if we can open the file --- */
+  if ((test = fopen(INPUTDATA_FILE, "r")) == NULL) {
+    sprintf(messageStr, "Unable to read input data file %s", AUX_FILE);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  } else {
+    fclose(test);
+  }
+
+  /* --- Open the inputdata file --- */
+  if ((ierror=nc_open(INPUTDATA_FILE,NC_NOWRITE,&ncid))) ERR(ierror,routineName);
+  
+  /* Get ncid of the MPI group */
+  if ((ierror = nc_inq_ncid(ncid, "mpi", &ncid_mpi))) ERR(ierror,routineName);
+
+
+  /* --- Consistency checks --- */
+  /* Check that atmosID is the same */
+  if ((ierror = nc_inq_attlen(ncid, NC_GLOBAL, "atmosID", &len_id ))) 
+    ERR(ierror,routineName);
+
+  atmosID = (char *) malloc(len_id+1);
+
+  if ((ierror = nc_get_att_text(ncid, NC_GLOBAL, "atmosID", atmosID ))) 
+    ERR(ierror,routineName);
+
+  if (!strstr(atmosID, atmos.ID)) {
+    sprintf(messageStr,
+         "Input data were derived from different atmosphere (%s) than current",
+	    atmosID);
+    Error(WARNING, routineName, messageStr);
+    }
+  free(atmosID);
+
+  /* Check that dimension sizes match */
+  if ((ierror = nc_inq_dimid(ncid, "nx", &dimid ))) 
+    ERR(ierror,routineName);  
+  if ((ierror = nc_inq_dimlen(ncid, dimid, &nx ))) 
+    ERR(ierror,routineName);    
+
+  if (nx != mpi.nx) {
+    sprintf(messageStr,
+	    "Number of x points mismatch: expected %d, found %d.",
+	    mpi.nx, (int)nx);
+    Error(WARNING, routineName, messageStr);
+  }
+
+  if ((ierror = nc_inq_dimid(ncid, "ny", &dimid ))) 
+    ERR(ierror,routineName);  
+  if ((ierror = nc_inq_dimlen(ncid, dimid, &ny ))) 
+    ERR(ierror,routineName);    
+
+  if (ny != mpi.ny) {
+    sprintf(messageStr,
+	    "Number of y points mismatch: expected %d, found %d.",
+	    mpi.ny, (int)ny);
+    Error(WARNING, routineName, messageStr);
+  }
+  
+
+  /* --- Read variable --- */
+  if ((ierror = nc_inq_varid(ncid_mpi, CONV_NAME, &varid ))) 
+    ERR(ierror,routineName);  
+  if ((ierror = nc_get_var_int(ncid_mpi, varid, mpi.rh_converged[0]))) 
+    ERR(ierror,routineName);  
+
+
+  /* --- Close inputdata file --- */
+  if ((ierror = nc_close(ncid))) ERR(ierror,routineName);
+
+  return;
+}
+/* ------- end   -------------------------- readConvergence.c  --- */
 

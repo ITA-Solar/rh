@@ -16,6 +16,7 @@
 #include "rh.h"
 #include "atom.h"
 #include "atmos.h"
+#include "geometry.h"
 #include "accelerate.h"
 #include "constant.h"
 #include "error.h"
@@ -29,6 +30,8 @@ void  distribute_nH(void);
 
 /* --- Global variables --                             -------------- */
 extern Atmosphere atmos;
+extern Geometry geometry;
+extern NCDF_Atmos_file infile;
 extern IO_data io;
 extern InputData input;
 extern CommandLine commandline;
@@ -36,7 +39,7 @@ extern char messageStr[];
 extern MPI_data mpi;
 
 /* ------- begin --------------------------   initParallel.c --   --- */
-void initParallel(int *argc, char **argv[]) {
+void initParallel(int *argc, char **argv[], bool_t run_ray) {
   const char routineName[] = "initParallelIO";
   char   logfile[MAX_LINE_SIZE];
 
@@ -50,7 +53,8 @@ void initParallel(int *argc, char **argv[]) {
   mpi.info = MPI_INFO_NULL;
 
   /* Open log files */ 
-  sprintf(logfile, MPILOG_TEMPLATE, mpi.rank);
+  sprintf(logfile, (run_ray) ? MPILOG_TEMPLATE : RAY_MPILOG_TEMPLATE, mpi.rank);
+
   if ((mpi.logfile = fopen(logfile, "w")) == NULL) {
     sprintf(messageStr, "Process %d: Unable to open log file %s", 
 	    mpi.rank, logfile);
@@ -59,7 +63,7 @@ void initParallel(int *argc, char **argv[]) {
   setvbuf(mpi.logfile, NULL, _IOLBF, BUFSIZ);
 
   /* Keep log stream in main log */
-  mpi.single_log = TRUE;
+  //mpi.single_log = TRUE;
 
   mpi.stop    = FALSE;
   mpi.nconv   = 0;
@@ -72,15 +76,17 @@ void initParallel(int *argc, char **argv[]) {
 /* ------- end   --------------------------   initParallel.c --   --- */
 
 /* ------- begin --------------------------   initParallelIO.c    --- */
-void initParallelIO(void) {
+void initParallelIO(bool_t run_ray) {
   int    nact;
   Atom  *atom;
 
   init_ncdf_aux();
   init_ncdf_J();
   init_Background();
-  init_ncdf_spec();
-  init_ncdf_indata();
+  if (!run_ray) {
+    init_ncdf_spec();
+    init_ncdf_indata();
+  }
 
   /* Get file position of atom files (to re-read collisions) */
   io.atom_file_pos = (long *) malloc(atmos.Nactiveatom * sizeof(long));
@@ -90,8 +96,11 @@ void initParallelIO(void) {
     io.atom_file_pos[nact] = ftell(atom->fp_input);
   }
 
+  
+
   /* Direct log stream into MPI log files */
-  commandline.logfile  = mpi.logfile;
+  //mpi.main_logfile     = commandline.logfile;
+  //commandline.logfile  = mpi.logfile;
   mpi.single_log       = FALSE;
 
   
@@ -103,13 +112,16 @@ void initParallelIO(void) {
 
 
 /* ------- begin --------------------------  closeParallelIO.c    --- */
-void closeParallelIO(void) {
+void closeParallelIO(bool_t run_ray) {
 
+  close_ncdf_atmos(&atmos, &geometry, &infile);
   close_ncdf_aux();
   close_ncdf_J();
   close_Background();
-  close_ncdf_spec();
-  close_ncdf_indata();
+  if (!run_ray) {
+    close_ncdf_spec();
+    close_ncdf_indata();
+  }
 
   free(io.atom_file_pos);
 
@@ -142,74 +154,76 @@ void UpdateAtmosDep(void) {
     }
   }
 
-
   /* Now only for active atoms */
-    for (nact = 0; nact < atmos.Nactiveatom; nact++) {
-      atom = atmos.activeatoms[nact];
+  for (nact = 0; nact < atmos.Nactiveatom; nact++) {
+    atom = atmos.activeatoms[nact];
+    
+    /* Rewind atom files to point just before collisional data */
+    if ((ierror = fseek(atom->fp_input, io.atom_file_pos[nact], SEEK_SET))) {
+      sprintf(messageStr, "Unable to rewind atom file for %s", atom->ID);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
+    }
+    
+    /* Free collision rate array, will be reallocated by calls in Background_p */
+    if (atom->C != NULL) freeMatrix((void **) atom->C);
 
-      /* Rewind atom files to point just before collisional data */
-      if ((ierror = fseek(atom->fp_input, io.atom_file_pos[nact], SEEK_SET))) {
-	sprintf(messageStr, "Unable to rewind atom file for %s", atom->ID);
-	Error(ERROR_LEVEL_2, routineName, messageStr);
+    /* Allocate Gamma, as iterate released the memory */
+    atom->Gamma = matrix_double(SQ(atom->Nlevel), atmos.Nspace);
+    
+    /* Initialise some line quantities */
+    for (kr = 0;  kr < atom->Nline;  kr++) {
+      line = &atom->line[kr];
+      
+      if (line->phi  != NULL) freeMatrix((void **) line->phi);
+      if (line->wphi != NULL) free(line->wphi);
+      
+      if (atmos.moving && line->polarizable && (input.StokesMode>FIELD_FREE)) {
+	
+	if (line->phi_Q != NULL) freeMatrix((void **) line->phi_Q);
+	if (line->phi_U != NULL) freeMatrix((void **) line->phi_U);
+	if (line->phi_V != NULL) freeMatrix((void **) line->phi_V);
+	
+
+	if (input.magneto_optical) {
+	  if (line->psi_Q != NULL) freeMatrix((void **) line->psi_Q);
+	  if (line->psi_U != NULL) freeMatrix((void **) line->psi_U);
+	  if (line->psi_V != NULL) freeMatrix((void **) line->psi_V);
+	}
       }
-
-      /* Free collision rate array, will be reallocated by calls in Background_p */
-      freeMatrix((void **) atom->C);
-
-      /* Allocate Gamma, as iterate released the memory */
-      atom->Gamma = matrix_double(SQ(atom->Nlevel), atmos.Nspace);
-
-      /* Initialise some line quantities */
-      for (kr = 0;  kr < atom->Nline;  kr++) {
-	line = &atom->line[kr];
-
-	freeMatrix((void **) line->phi);
-	free(line->wphi);
-
-	if (atmos.moving && line->polarizable && (input.StokesMode>FIELD_FREE)) {
-	  
-	  freeMatrix((void **) line->phi_Q);
-	  freeMatrix((void **) line->phi_U);
-	  freeMatrix((void **) line->phi_V);
-
-	  if (input.magneto_optical) {
-	    freeMatrix((void **) line->psi_Q);
-	    freeMatrix((void **) line->psi_U);
-	    freeMatrix((void **) line->psi_V);
-	  }
-	}
-
 	
-	for (k = 0;  k < atmos.Nspace;  k++) {
-	  line->Rij[k] = 0.0;
-	  line->Rji[k] = 0.0;
-	}
-	
-
-	if (line->PRD) {
+      for (k = 0;  k < atmos.Nspace;  k++) {
+	line->Rij[k] = 0.0;
+	line->Rji[k] = 0.0;
+      }	
+      
+      if (line->PRD) {
+	if (line->Ng_prd != NULL) {
 	  NgFree(line->Ng_prd);
 	  line->Ng_prd = NULL;
-
+	}
+	
+	if (line->fp_GII != NULL) {
 	  fclose(line->fp_GII);
 	  line->fp_GII = NULL;
+	}
 
-	  if (input.PRD_angle_dep)
-	    Nlamu = 2*atmos.Nrays * line->Nlambda;
-	  else
-	    Nlamu = line->Nlambda;
+	if (input.PRD_angle_dep)
+	  Nlamu = 2*atmos.Nrays * line->Nlambda;
+	else
+	  Nlamu = line->Nlambda;
 
-	  /* Initialize the ratio of PRD to CRD profiles to 1.0 */
-	  for (la = 0;  la < Nlamu;  la++) {
-	    for (k = 0;  k < atmos.Nspace;  k++)
-	      line->rho_prd[la][k] = 1.0;
-	  }
+	/* Initialize the ratio of PRD to CRD profiles to 1.0 */
+	for (la = 0;  la < Nlamu;  la++) {
+	  for (k = 0;  k < atmos.Nspace;  k++)
+	    line->rho_prd[la][k] = 1.0;
 	}
       }
     }
-      
+  }
+  
   distribute_nH();
 
-
+  
   /* Update atmos-dependent molecular  quantities --- --------------- */
   for (nact = 0; nact < atmos.Nmolecule; nact++) {
     molecule = &atmos.molecules[nact];
@@ -227,8 +241,8 @@ void UpdateAtmosDep(void) {
       /* Free some line quantities */
       for (kr = 0;  kr < molecule->Nrt;  kr++) {
 	mrt = &molecule->mrt[kr];
-	freeMatrix((void **) mrt->phi);
-	free(mrt->wphi);
+	if (mrt->phi  != NULL) freeMatrix((void **) mrt->phi);
+	if (mrt->wphi != NULL) free(mrt->wphi);
       }
 
     } else {

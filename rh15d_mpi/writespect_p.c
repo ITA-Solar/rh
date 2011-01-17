@@ -27,7 +27,6 @@
 #include "parallel.h"
 #include "io.h"
 
-#define SPEC_FILE "output_spectrum.ncdf"
 
 /* --- Function prototypes --                          -------------- */
 
@@ -92,16 +91,16 @@ void init_ncdf_spec(void)
   dimids[3] = nspect_id;
 
   /* Intensity */
-  if ((ierror = nc_def_var( ncid,  "Intensity", NC_FLOAT, 4, dimids, &intensity_var)))
+  if ((ierror = nc_def_var( ncid,  INT_NAME, NC_FLOAT, 4, dimids, &intensity_var)))
     ERR(ierror,routineName);
 
   /* Other Stokes parameters, if available */
   if (atmos.Stokes || input.backgr_pol) {
-    if ((ierror = nc_def_var( ncid, "Stokes_Q", NC_FLOAT, 4, dimids, &stokes_q_var)))
+    if ((ierror = nc_def_var( ncid, STOKES_Q, NC_FLOAT, 4, dimids, &stokes_q_var)))
       ERR(ierror,routineName); 
-    if ((ierror = nc_def_var( ncid, "Stokes_U", NC_FLOAT, 4, dimids, &stokes_u_var)))
+    if ((ierror = nc_def_var( ncid, STOKES_U, NC_FLOAT, 4, dimids, &stokes_u_var)))
       ERR(ierror,routineName); 
-    if ((ierror = nc_def_var( ncid, "Stokes_V", NC_FLOAT, 4, dimids, &stokes_v_var)))
+    if ((ierror = nc_def_var( ncid, STOKES_V, NC_FLOAT, 4, dimids, &stokes_v_var)))
       ERR(ierror,routineName); 
   }
 
@@ -110,7 +109,7 @@ void init_ncdf_spec(void)
   dimids[1] = ny_id;
   dimids[2] = nspect_id;
 
-  if ((ierror = nc_def_var( ncid,  "Flux", NC_FLOAT, 3, dimids, &flux_var)))
+  if ((ierror = nc_def_var( ncid,  FLUX_NAME, NC_FLOAT, 3, dimids, &flux_var)))
     ERR(ierror,routineName);
 
   // A variable for the ray intensity should be added in solveray... 
@@ -120,7 +119,7 @@ void init_ncdf_spec(void)
   /* Array with wavelengths */
   dimids[0] = nspect_id;
 
-  if ((ierror = nc_def_var( ncid,  "Wavelength", NC_DOUBLE, 1, dimids, &wave_var)))
+  if ((ierror = nc_def_var( ncid, WAVE_NAME, NC_DOUBLE, 1, dimids, &wave_var)))
     ERR(ierror,routineName);
 
   /* End define mode */

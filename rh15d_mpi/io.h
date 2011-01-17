@@ -35,6 +35,41 @@
 /* Definitions for background_p */
 #define  FILE_EXT ".dat"
 
+/* Definitions for the spectrum file */
+#define SPEC_FILE   "output_spectrum.ncdf"
+#define INT_NAME    "intensity"
+#define FLUX_NAME   "flux"
+#define STOKES_Q    "stokes_Q"
+#define STOKES_U    "stokes_U"
+#define STOKES_V    "stokes_V"
+#define WAVE_NAME   "wavelength"
+
+/* Definitions for the ray file */
+#define RAY_FILE     "output_ray.ncdf"
+#define WAVE_SEL     "wavelength_selected"
+#define WAVE_SEL_IDX "wavelength_indices"
+#define CHI_NAME     "chi"
+#define S_NAME       "source_function"
+#define CHI_L_NAME   "chi_line"
+#define ETA_L_NAME   "eta_line"
+#define CHI_C_NAME   "chi_continuum"
+#define ETA_C_NAME   "eta_continuum"
+#define SCA_C_NAME   "scattering_eta_continuum" // This is actually sca*J
+
+/* Definitions for the input data file */
+#define INPUTDATA_FILE "output_indata.ncdf"
+#define XNUM_NAME      "xnum"
+#define YNUM_NAME      "ynum"
+#define TASK_MAP       "task_map"
+#define TASK_NUMBER    "task_number"
+#define ITER_NAME      "iterations"
+#define CONV_NAME      "convergence"
+#define DM_NAME        "delta_max"
+#define NTASKS         "ntasks"
+#define HOSTNAME       "hostname"
+#define FINISH_TIME    "finish_time"
+
+
 /* Definitions for the Aux file */
 #define ARR_STRLEN  30
 #define AUX_FILE    "output_aux.ncdf"
@@ -86,6 +121,11 @@ typedef struct {
        aux_op_chi_ai,     aux_op_chi_ad,     aux_op_eta_ai,     aux_op_eta_ad;
   /* for atom file positions */
   long *atom_file_pos;
+  /* for the ray file */
+  int  ray_ncid,          ray_nwave_sel,     ray_wave_var,      ray_int_var,
+       ray_stokes_q_var,  ray_stokes_u_var,  ray_stokes_v_var,  ray_wave_idx_var,
+       ray_chi_l_var,     ray_eta_l_var,     ray_chi_c_var,     ray_eta_c_var,
+       ray_sca_c_var,     ray_chi_var,       ray_S_var,        *ray_wave_idx;
 } IO_data;
 
 

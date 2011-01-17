@@ -1,8 +1,8 @@
 /* ------- file: -------------------------- solveray.c --------------
 
-       Version:       rh2.0, 1-D plane-parallel
-       Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Wed Apr 22 09:45:18 2009 --
+       Version:       rh2.0, 1.5-D plane-parallel
+       Author:        Tiago Pereira (tiago.pereira@nasa.gov)
+       Last modified: Fri Jan 14 16:00:00 2011 --
 
        --------------------------                      ----------RH-- */
 
@@ -32,13 +32,17 @@
 #include "inputs.h"
 #include "error.h"
 #include "xdr.h"
+#include "parallel.h"
+#include "io.h"
 
 #define COMMENT_CHAR    "#"
 #define RAY_INPUT_FILE  "ray.input"
 
 
 /* --- Function prototypes --                          -------------- */
-
+void init_ncdf_ray(void);
+void writeRay(void);
+void close_ncdf_ray(void);
 
 /* --- Global variables --                             -------------- */
 
@@ -49,8 +53,12 @@ Geometry geometry;
 Spectrum spectrum;
 ProgramStats stats;
 InputData input;
+NCDF_Atmos_file infile;
 CommandLine commandline;
 char messageStr[MAX_LINE_SIZE];
+BackgroundData bgdat;
+MPI_data mpi;
+IO_data io;
 
 /* ------- begin -------------------------- solveray.c -------------- */
 
@@ -60,16 +68,23 @@ int main(int argc, char *argv[])
 
   char    rayFileName[14], inputLine[MAX_LINE_SIZE];
   bool_t  result, exit_on_EOF, to_obs, initialize, crosscoupling,
-          analyze_output, equilibria_only;
+          analyze_output, equilibria_only, run_ray;
   int     Nspect, Nread, Nrequired, checkPoint, *wave_index = NULL;
   double  muz, *S, *chi, *J;
   FILE   *fp_out, *fp_ray, *fp_stokes;
   XDR     xdrs;
   ActiveSet *as;
 
+  /* --- Set up MPI ----------------------             -------------- */
+  initParallel(&argc, &argv, run_ray=FALSE);
+
   setOptions(argc, argv);
   getCPU(0, TIME_START, NULL);
   SetFPEtraps();
+
+  /* Direct log stream into MPI log files */
+  mpi.main_logfile     = commandline.logfile;
+  commandline.logfile  = mpi.logfile;
 
   /* --- Read input data and initialize --             -------------- */
 
@@ -79,7 +94,15 @@ int main(int argc, char *argv[])
   /* --- Read input data for atmosphere --             -------------- */
 
   getCPU(1, TIME_START, NULL);
-  MULTIatmos(&atmos, &geometry);
+  init_ncdf_atmos(&atmos, &geometry, &infile);
+
+  /* --- Find out the work load for each process --    -------------- */
+  // at the moment, this must be the same as in rh15d
+  distribute_jobs();
+
+  /* --- Find out which columns converged in the RH run ------------- */
+  readConvergence();
+
 
   /* --- Read direction cosine for ray --              -------------- */
 
@@ -102,6 +125,26 @@ int main(int argc, char *argv[])
       input.StokesMode == POLARIZATION_FREE) {
     input.StokesMode = FULL_STOKES;
   }
+
+
+  /* --- read how many points to write detailed S, chi, eta, etc ---- */
+  Nread = fscanf(fp_ray, "%d", &Nspect);
+  checkNread(Nread, 1, argv[0], checkPoint=2);
+  io.ray_nwave_sel = Nspect;
+
+   /* --- Read wavelength indices for which chi and S are to be
+       written out for the specified direction --    -------------- */
+
+  if (Nspect > 0) {
+    io.ray_wave_idx = (int *) malloc(Nspect * sizeof(int));
+    Nread = 0;
+    while (fscanf(fp_ray, "%d", &io.ray_wave_idx[Nread]) != EOF) Nread++;
+    checkNread(Nread, Nspect, argv[0], checkPoint=3);
+    fclose(fp_ray);
+
+    wave_index = io.ray_wave_idx;
+  }
+
   /* --- redefine geometry for just this one ray --    -------------- */
 
   atmos.Nrays = geometry.Nrays = 1;
@@ -109,139 +152,106 @@ int main(int argc, char *argv[])
   geometry.mux[0] = sqrt(1.0 - SQ(geometry.muz[0]));
   geometry.muy[0] = 0.0;
   geometry.wmu[0] = 1.0;
-  if (atmos.Stokes) Bproject();
 
   input.startJ = OLD_J;
 
-  readAtomicModels();
-  readMolecularModels();
-  SortLambda();
+  // Temporary
+  //mpi.Ntasks = 1;
 
-  getBoundary(&geometry);
+  /* Main loop over tasks */
+  for (mpi.task = 0; mpi.task < mpi.Ntasks; mpi.task++) {
 
-  /* --- Open file with background opacities --        -------------- */
+    /* Indices of x and y */
+    mpi.ix = mpi.taskmap[mpi.task + mpi.my_start][0];
+    mpi.iy = mpi.taskmap[mpi.task + mpi.my_start][1];
 
-  if (atmos.moving || input.StokesMode) {
-    strcpy(input.background_File, "background.ray");
-    Background(analyze_output=FALSE, equilibria_only=FALSE);
-  } else {
-    Background(analyze_output=FALSE, equilibria_only=TRUE);
+    /* Printout some info */
+    sprintf(messageStr,
+      "Process %d: --- START task %4d [of %4d], (xi,yi) = (%3d,%3d)\n",
+	    mpi.rank, mpi.task+1, mpi.Ntasks, mpi.xnum[mpi.ix], mpi.ynum[mpi.iy]);
+    fprintf(mpi.main_logfile, messageStr);
+    Error(MESSAGE, "main", messageStr);
 
-    if ((atmos.fd_background =
-	 open(input.background_File, O_RDONLY, 0)) == -1) {
-      sprintf(messageStr, "Unable to open inputfile %s",
-	      input.background_File);
-      Error(ERROR_LEVEL_2, argv[0], messageStr);
+
+    /* Read atmosphere column */
+    readAtmos_ncdf(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
+
+    
+    if (atmos.Stokes) Bproject();
+
+    if (mpi.task == 0) {
+      readAtomicModels();
+      readMolecularModels();
+
+      SortLambda();
+
+      strcpy(input.background_File, "scratch/background.ray");
+      bgdat.write_BRS = FALSE;
+
+      initParallelIO(run_ray=TRUE);
+      init_ncdf_ray();
+
+    } else {
+      /* Update quantities that depend on atmosphere and initialise others */
+      UpdateAtmosDep();
     }
-    readBRS();
-  }
-  convertScales(&atmos, &geometry);
 
-  getProfiles();
-  initSolution();
-  initScatter();
 
-  getCPU(1, TIME_POLL, "Total initialize");
+    /* --- Calculate background opacities --             ------------- */
+    Background_p(analyze_output=FALSE, equilibria_only=FALSE); 
 
-  /* --- Solve radiative transfer equations --         -------------- */
+    getProfiles();
+    initSolution_p();
+    initScatter();
 
-  solveSpectrum(FALSE, FALSE);
-
-  /* --- Write emergent spectrum to output file --     -------------- */
- 
-  sprintf(rayFileName, "spectrum_%4.2f", muz);
-  if ((fp_out = fopen(rayFileName, "w" )) == NULL) {
-    sprintf(messageStr, "Unable to open output file %s", rayFileName);
-    Error(ERROR_LEVEL_2, argv[0], messageStr);
-  }
-  xdrstdio_create(&xdrs, fp_out, XDR_ENCODE);
-
-  result = xdr_double(&xdrs, &muz);
-  result = xdr_vector(&xdrs, (char *) spectrum.I[0], spectrum.Nspect,
-		      sizeof(double), (xdrproc_t) xdr_double);
-
-  /* --- Read wavelength indices for which chi and S are to be
-         written out for the specified direction --    -------------- */
-
-  Nread = fscanf(fp_ray, "%d", &Nspect);
-  checkNread(Nread, 1, argv[0], checkPoint=2);
-
-  if (Nspect > 0) {
-    wave_index = (int *) malloc(Nspect * sizeof(int));
-    Nread = 0;
-    while (fscanf(fp_ray, "%d", &wave_index[Nread]) != EOF) Nread++;
-    checkNread(Nread, Nspect, argv[0], checkPoint=3);
-    fclose(fp_ray);
-
-    chi = (double *) malloc(atmos.Nspace * sizeof(double));
-    if (atmos.Stokes)
-      S = (double *) malloc(4 * atmos.Nspace * sizeof(double));
-    else
-      S = (double *) malloc(atmos.Nspace * sizeof(double));
-  }
-  result = xdr_int(&xdrs, &Nspect);
-
-  /* --- Go through the list of wavelengths --         -------------- */
-
-  if (Nspect > 0  &&  input.limit_memory)
-    J = (double *) malloc(atmos.Nspace * sizeof(double));
-
-  for (n = 0;  n < Nspect;  n++) {
-    if (wave_index[n] < 0  ||  wave_index[n] >= spectrum.Nspect) {
-      sprintf(messageStr, "Illegal value of wave_index[n]: %4d\n"
-	      "Value has to be between 0 and %4d\n", 
-	      wave_index[n], spectrum.Nspect);
-      Error(ERROR_LEVEL_2, argv[0], messageStr);
+    /* If RH did not converge, do not calculate for this column */
+    if (mpi.rh_converged[mpi.ix][mpi.iy] < 1) {
+      sprintf(messageStr,
+	      "Process %d: *** SKIP  task %4d (RH did not converge)\n",
+	      mpi.rank,mpi.task+1);
+      fprintf(mpi.main_logfile, messageStr);
+      Error(MESSAGE, "main", messageStr);	
+      mpi.ncrash++;
       continue;
     }
-    sprintf(messageStr, "Processing n = %4d, lambda = %9.3f [nm]\n",
-	    wave_index[n], spectrum.lambda[wave_index[n]]);
-    Error(MESSAGE, NULL, messageStr);
 
-    as = &spectrum.as[wave_index[n]];
-    alloc_as(wave_index[n], crosscoupling=FALSE);
-    Opacity(wave_index[n], 0, to_obs=TRUE, initialize=TRUE);
-    readBackground(wave_index[n], 0, to_obs=TRUE);
+    getCPU(1, TIME_POLL, "Total initialize");
 
-    if (input.limit_memory) {
-      readJlambda(wave_index[n], J);
-    } else
-      J = spectrum.J[wave_index[n]];
+    /* --- Solve radiative transfer equations --         -------------- */
+    solveSpectrum(FALSE, FALSE);
 
-    /* --- Add the continuum opacity and emissivity -- -------------- */   
+    /* --- Write emergent spectrum to output file --     -------------- */
+    writeRay();
+   
+    sprintf(messageStr,
+      "Process %d: *** END   task %4d\n",
+	    mpi.rank, mpi.task+1, mpi.Ntasks);
+    fprintf(mpi.main_logfile, messageStr);
+    Error(MESSAGE, "main", messageStr);	
 
-    for (k = 0;  k < atmos.Nspace;  k++) {
-      chi[k] = as->chi[k] + as->chi_c[k];
-      S[k]   = (as->eta[k] + as->eta_c[k] + as->sca_c[k]*J[k]) / chi[k];
-    }
-    result = xdr_int(&xdrs, &wave_index[n]);
-    result = xdr_vector(&xdrs, (char *) chi, atmos.Nspace,
-			sizeof(double), (xdrproc_t) xdr_double);
-    result = xdr_vector(&xdrs, (char *) S, atmos.Nspace,
-			sizeof(double), (xdrproc_t) xdr_double);
 
-    free_as(wave_index[n], crosscoupling=FALSE);
-  }
+    mpi.nconv++;
+  }  /* End of main task loop */
 
-  /* --- If magnetic fields are present --             -------------- */
-  
-  if (atmos.Stokes || input.backgr_pol) {
-    result = xdr_vector(&xdrs, (char *) spectrum.Stokes_Q[0],
-			spectrum.Nspect, sizeof(double),
-			(xdrproc_t) xdr_double);
-    result = xdr_vector(&xdrs, (char *) spectrum.Stokes_U[0],
-			spectrum.Nspect, sizeof(double),
-			(xdrproc_t) xdr_double);
-    result = xdr_vector(&xdrs, (char *) spectrum.Stokes_V[0],
-			spectrum.Nspect, sizeof(double),
-			(xdrproc_t) xdr_double);
-  }
+  closeParallelIO(run_ray = TRUE);
+  close_ncdf_ray();
 
-  if (Nspect > 0  &&  input.limit_memory)
-    free(J);
+  finish_jobs();
+  freeMatrix((void **) mpi.rh_converged);
 
-  xdr_destroy(&xdrs);
-  fclose(fp_out);
+  sprintf(messageStr,
+	  "*** Job ending. Total %d 1-D columns: %d computed, %d skipped.\n%s",
+	  mpi.Ntasks, mpi.nconv, mpi.ncrash,
+	  "*** Solveray finished gracefully.\n");	  
+  if (mpi.rank == 0) fprintf(mpi.main_logfile, messageStr);
+  Error(MESSAGE,"main",messageStr);
+
+
   printTotalCPU();
+  MPI_Finalize();
+
+  return 0;
 }
 /* ------- end ---------------------------- solveray.c -------------- */
+
+

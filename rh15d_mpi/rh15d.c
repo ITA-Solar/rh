@@ -38,7 +38,7 @@ IO_data io;
 
 int main(int argc, char *argv[])
 {
-  bool_t analyze_output, equilibria_only;
+  bool_t analyze_output, equilibria_only, run_ray;
   int    niter, nact, i, Ntest;
 
   Atom *atom;
@@ -47,16 +47,17 @@ int main(int argc, char *argv[])
 
 
   /* --- Set up MPI ----------------------             -------------- */
-  initParallel(&argc,&argv);
-
-  /* --- Read input data and initialize --             -------------- */
+  initParallel(&argc, &argv, run_ray=FALSE);
 
   setOptions(argc, argv);
   getCPU(0, TIME_START, NULL);
   SetFPEtraps();
 
+  /* Direct log stream into MPI log files */
   mpi.main_logfile     = commandline.logfile;
+  commandline.logfile  = mpi.logfile;
 
+  /* --- Read input data and initialize --             -------------- */
   readInput();
   spectrum.updateJ = TRUE;
 
@@ -81,17 +82,11 @@ int main(int argc, char *argv[])
       "Process %d: --- START task %4d [of %4d], (xi,yi) = (%3d,%3d)\n",
        mpi.rank, mpi.task+1, mpi.Ntasks, mpi.xnum[mpi.ix], mpi.ynum[mpi.iy]);
     fprintf(mpi.main_logfile, messageStr);
-    fprintf(mpi.logfile,"\n", messageStr, "\n");
+    Error(MESSAGE, "main", messageStr);
 
     /* Read atmosphere column */
     readAtmos_ncdf(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
 
-    /*
-    if (mpi.rank == 0)
-      readAtmos_ncdf(214,220, &atmos, &geometry, &infile);
-    if (mpi.rank > 0)
-      readAtmos_ncdf(280,100, &atmos, &geometry, &infile);
-    */
 
     if (atmos.Stokes) Bproject();
 
@@ -101,13 +96,14 @@ int main(int argc, char *argv[])
       readMolecularModels();
 
       SortLambda();
-      initParallelIO();
+      initParallelIO(run_ray=FALSE);
 
     } else {
       /* Update quantities that depend on atmosphere and initialise others */
       UpdateAtmosDep();
     }
     
+    /* --- Calculate background opacities --             ------------- */
     Background_p(analyze_output=TRUE, equilibria_only=FALSE);
 
     getProfiles();
@@ -126,9 +122,10 @@ int main(int argc, char *argv[])
     /* In case of crash, write dummy data and proceed to next task */
     if (mpi.stop) {
       sprintf(messageStr,
-	      "\nProcess %d: *** SKIP to next task (crashed)\n", mpi.rank);\
+	      "Process %d: *** SKIP  task %4d (crashed after %d iterations)\n",
+	      mpi.rank, mpi.task+1, mpi.niter);
       fprintf(mpi.main_logfile, messageStr);
-      fprintf(mpi.logfile,      messageStr);
+      Error(MESSAGE, "main", messageStr);
 
       mpi.ncrash++;
       mpi.stop = FALSE;
@@ -146,18 +143,18 @@ int main(int argc, char *argv[])
     /* Printout some info, finished iter */
     if (mpi.convergence) {
       sprintf(messageStr,
-       "Process %d: *** END ITER task %4d [of %4d], iterations = %3d, CONVERGED\n",
-       mpi.rank, mpi.task+1, mpi.Ntasks, mpi.niter);
+       "Process %d: *** END   task %4d iter, iterations = %3d, CONVERGED\n",
+       mpi.rank, mpi.task+1, mpi.niter);
       mpi.nconv++;
     } else {
       sprintf(messageStr,
-       "Process %d: *** END ITER task %4d [of %4d], iterations = %3d, NO convergence\n",
-       mpi.rank, mpi.task+1, mpi.Ntasks, mpi.niter);
+       "Process %d: *** END   task %4d iter, iterations = %3d, NO convergence\n",
+       mpi.rank, mpi.task+1, mpi.niter);
       mpi.nnoconv++;
     }
 
     fprintf(mpi.main_logfile, messageStr);
-    fprintf(mpi.logfile,      messageStr);
+    Error(MESSAGE, "main", messageStr);
 
 
 
@@ -208,17 +205,22 @@ int main(int argc, char *argv[])
 
 
   /* Direct log stream back into main */
-  commandline.logfile = mpi.main_logfile;
-  mpi.single_log      = TRUE;
+  //commandline.logfile = mpi.main_logfile;
+  //mpi.single_log      = TRUE;
 
 
-  close_ncdf_atmos(&atmos, &geometry, &infile);
-  closeParallelIO();
+  closeParallelIO(run_ray = FALSE);
 
   /* Frees from memory stuff used for job control */
   finish_jobs();
 
-  Error(MESSAGE,"","*** RH finished gracefully.\n");
+  sprintf(messageStr,
+   "*** Job ending. Total %d 1-D columns: %d converged, %d not converged, %d crashed.\n%s",
+	  mpi.Ntasks, mpi.nconv, mpi.nnoconv, mpi.ncrash,
+	  "*** RH finished gracefully.\n");	  
+  if (mpi.rank == 0) fprintf(mpi.main_logfile, messageStr);
+  Error(MESSAGE,"main",messageStr);
+
   printTotalCPU();
   MPI_Finalize();
 

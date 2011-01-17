@@ -36,7 +36,9 @@ SUBSTITUTE = ludcmp.o
    ONEDOBJ = solve15d.o  iter_1d.o  feautrier.o
 
   RAY_OBJS = anglequad.o  feautrier.o  formal.o  hydrostat.o  multiatmos.o \
-	     readj_p.o \
+	     readj_p.o readatmos_ncdf.o brs_p.o  parallel_io.o writespect_p.o \
+	     writeAux_p.o writeinputdata_p.o distribute_jobs.o background_p.o \
+             initial_p.o  scatter_p.o  writeRay.o\
              project.o  piecestokes.o  piecewise.o  riiplane.o  solveray.o
 
 BACKGROPAC = anglequad.o  backgrcontr.o  multiatmos.o  project.o
@@ -44,7 +46,7 @@ BACKGROPAC = anglequad.o  backgrcontr.o  multiatmos.o  project.o
 
 ## --- Rules for the executables --                    -------------- ##
 
-all:   rh15d  solve15d # solveray  backgrcontr
+all:   rh15d  solveray  #  solve15d  backgrcontr
 
 rh15d:  $(ONE_D_OBJS)  librh
 #	cd ..; $(AR) -d librh.a $(SUBSTITUTE)
@@ -199,6 +201,11 @@ writeflux_xdr.o:        ../rh.h  ../atom.h  ../atmos.h  \
 
 writegeom_xdr.o:        ../rh.h  ../atom.h  ../atmos.h  \
                         geometry.h  ../error.h  ../inputs.h  ../xdr.h
+
+writeRay.o:             ../rh.h  ../atom.h  ../atmos.h  \
+	                ../spectrum.h  ../constant.h  ../error.h \
+	                ../inputs.h   parallel.h  io.h  writeRay.c
+	$(CC) $(CFLAGS) -Wall -c -o $@ writeRay.c
 
 writespect_p.o:         ../rh.h  ../atom.h  ../atmos.h  \
 	                ../spectrum.h  ../constant.h  ../error.h \

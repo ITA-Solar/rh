@@ -38,7 +38,7 @@ typedef struct {
 /* For the background stuff */
 typedef struct {
   char     *brs_fname;
-  bool_t    do_fudge;
+  bool_t    do_fudge, write_BRS;
   int       Nfudge;
   int       brs_ncid,    brs_hl_var,    brs_ip_var,  brs_nrec_var;
   // for now here, in the future perhaps write things in io.h:

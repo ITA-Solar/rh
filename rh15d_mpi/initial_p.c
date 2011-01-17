@@ -334,7 +334,7 @@ void initSolution_p(void)
       break;
 
     case OLD_POPULATIONS:
-      readPopulations(atom);
+      readPopulations_p(atom);
       break;
 
     default:;

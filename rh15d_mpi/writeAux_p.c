@@ -414,6 +414,7 @@ void init_aux_old(void) {
     }
 
     /* Get var ids */
+  
     if ((ierror = nc_inq_varid(ncid, POP_NAME,    &io.aux_atom_pop[i]    ))) 
       ERR(ierror,routineName);  
     if ((ierror = nc_inq_varid(ncid, POPLTE_NAME, &io.aux_atom_poplte[i] ))) 
@@ -421,13 +422,13 @@ void init_aux_old(void) {
     if ((ierror = nc_inq_varid(ncid, RIJ_L_NAME,  &io.aux_atom_RijL[i]   ))) 
       ERR(ierror,routineName);  
     if ((ierror = nc_inq_varid(ncid, RJI_L_NAME,  &io.aux_atom_RjiL[i]   ))) 
-      ERR(ierror,routineName);  
+      ERR(ierror,routineName);
     if ((ierror = nc_inq_varid(ncid, RIJ_C_NAME,  &io.aux_atom_RijC[i]   ))) 
-      ERR(ierror,routineName);  
+      ERR(ierror,routineName);
     if ((ierror = nc_inq_varid(ncid, RJI_C_NAME,  &io.aux_atom_RijC[i]   ))) 
       ERR(ierror,routineName);  
     if ((ierror = nc_inq_varid(ncid, COLL_NAME,   &io.aux_atom_coll[i]   ))) 
-      ERR(ierror,routineName);  
+      ERR(ierror,routineName); 
     if ((ierror = nc_inq_varid(ncid, DAMP_NAME,   &io.aux_atom_damp[i]   ))) 
       ERR(ierror,routineName);  
     if ((ierror = nc_inq_varid(ncid, VBROAD_NAME, &io.aux_atom_vbroad[i] )))
@@ -436,16 +437,16 @@ void init_aux_old(void) {
   }
 
   /* Now for the opacity group */
-  if ((ierror = nc_inq_ncid(io.aux_ncid, group_name, &ncid)))
+  if ((ierror = nc_inq_ncid(io.aux_ncid, "opacity", &ncid)))
       ERR(ierror,routineName);
 
   io.aux_op_ncid = ncid;
 
   /* Get var ids */
   if ((ierror = nc_inq_varid(ncid, CHI_AI_NAME, &io.aux_op_chi_ai ))) 
-    ERR(ierror,routineName);  
+    ERR(ierror,routineName); 
   if ((ierror = nc_inq_varid(ncid, ETA_AI_NAME, &io.aux_op_eta_ai ))) 
-    ERR(ierror,routineName);  
+    ERR(ierror,routineName); 
   if ((ierror = nc_inq_varid(ncid, CHI_AD_NAME, &io.aux_op_chi_ad ))) 
     ERR(ierror,routineName); 
   if ((ierror = nc_inq_varid(ncid, ETA_AD_NAME, &io.aux_op_eta_ad ))) 
@@ -744,7 +745,7 @@ void readPopulations_p(Atom *atom) {
 /* ------- end   -------------------------- readPopulations_p.c -- */
 
 /* ------- begin -------------------------- readRadRates_p.c   --- */
-void readRadRates_p(Atom *atom) {
+bool_t readRadRate(Atom *atom) {
   const char routineName[] = "readRadRates_p";
   char    group_name[ARR_STRLEN], *atmosID;
 
@@ -858,7 +859,7 @@ void readRadRates_p(Atom *atom) {
   }
 
 
-  return;
+  return TRUE;
 }
 /* ------- end   -------------------------- readRadRates_p.c   --- */
 

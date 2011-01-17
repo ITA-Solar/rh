@@ -77,6 +77,14 @@ void distribute_jobs(void)
   mpi.xnum = intrange(input.p15d_x0, input.p15d_x1, input.p15d_xst, &mpi.nx);
   mpi.ynum = intrange(input.p15d_y0, input.p15d_y1, input.p15d_yst, &mpi.ny);
 
+  /* Abort if more processes than tasks (avoid idle processes waiting forever */
+  if (mpi.size > mpi.nx*mpi.ny) {
+    sprintf(messageStr,
+            "\n*** More MPI processes (%d) than tasks (%d), aborting.\n",
+	    mpi.size,mpi.nx*mpi.ny);
+    Error(ERROR_LEVEL_2, "distribute_jobs", messageStr);
+  }
+
   /* Calculate tasks and distribute */ 
   tasks        = get_tasks(mpi.nx*mpi.ny, mpi.size);
   mpi.Ntasks   = tasks[mpi.rank];
@@ -166,20 +174,12 @@ int *intrange(int start, int end, int step, int *N)
 void finish_jobs(void)
 /* Frees from memory stuff used for job control */
 {
-  int total, conv, noconv, crash;
 
   /* Get total number of tasks and convergence statuses */ 
-  MPI_Allreduce(&mpi.Ntasks,  &total,  1, MPI_INT, MPI_SUM, mpi.comm);
-  MPI_Allreduce(&mpi.ncrash,   &crash,  1, MPI_INT, MPI_SUM, mpi.comm);
-  MPI_Allreduce(&mpi.nconv,   &conv,   1, MPI_INT, MPI_SUM, mpi.comm);
-  MPI_Allreduce(&mpi.nnoconv, &noconv, 1, MPI_INT, MPI_SUM, mpi.comm);
-
-
-  sprintf(messageStr,
-   "*** Job ending. Total %d 1-D columns: %d converged, %d not converged, %d crashed.\n",
-    total, conv, noconv, crash);	  
-  
-  Error(MESSAGE,"",messageStr);
+  MPI_Allreduce(MPI_IN_PLACE, &mpi.Ntasks,  1, MPI_INT, MPI_SUM, mpi.comm);
+  MPI_Allreduce(MPI_IN_PLACE, &mpi.ncrash,  1, MPI_INT, MPI_SUM, mpi.comm);
+  MPI_Allreduce(MPI_IN_PLACE, &mpi.nconv,   1, MPI_INT, MPI_SUM, mpi.comm);
+  MPI_Allreduce(MPI_IN_PLACE, &mpi.nnoconv, 1, MPI_INT, MPI_SUM, mpi.comm);
 
   free(mpi.xnum);
   free(mpi.ynum);

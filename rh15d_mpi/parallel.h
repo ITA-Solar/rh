@@ -13,9 +13,10 @@
 
 typedef struct {
   int      size, rank, namelen, Ntasks, task, my_start, nx, ny, ix, iy;
-  int     *xnum, *ynum, **taskmap, niter, nconv, nnoconv, ncrash;
+  int     *xnum, *ynum, **taskmap, niter, nconv, nnoconv, ncrash, convergence;
+  int    **rh_converged;
   double   dpopsmax;
-  bool_t   single_log, convergence, stop;
+  bool_t   single_log, stop;
   FILE    *logfile, *main_logfile;
   long     backgrrecno; /* record number for background file */
   char     name[MPI_MAX_PROCESSOR_NAME];
@@ -23,7 +24,7 @@ typedef struct {
   MPI_Info info;
 } MPI_data;
 
-void init_Background(void);
+void init_Background();
 void Background_p(bool_t analyzeoutput, bool_t equilibria_only);
 void close_Background();
 
@@ -62,9 +63,9 @@ void writeAux_p(void);
 void writeOpacity_p(void);
 //void readPopulations_p(Atom *atom);
 
-void initParallel(int *argc, char **argv[]);
-void initParallelIO(void);
-void closeParallelIO(void);
+void initParallel(int *argc, char **argv[], bool_t run_ray);
+void initParallelIO(bool_t run_ray);
+void closeParallelIO(bool_t run_ray);
 void UpdateAtmosDep(void);
 void RequestStop_p(void);
 bool_t StopRequested_p(void);
@@ -75,8 +76,10 @@ double solveSpectrum_p(bool_t eval_operator, bool_t redistribute);
 void SolveLinearEq_p(int N, double **A, double *b, bool_t improve);
 
 
-#define ERR(e,r) {printf("(EEE) %s: NetCDF: %s\n", r, nc_strerror(e)); exit(EXIT_FAILURE);}
-#define MPILOG_TEMPLATE "scratch/rh_p%d.log"
+#define ERR(e,r) {printf("Process %d: (EEE) %s: NetCDF: %s\n", mpi.rank, r, nc_strerror(e)); exit(EXIT_FAILURE);}
+
+#define MPILOG_TEMPLATE     "scratch/rh_p%d.log"
+#define RAY_MPILOG_TEMPLATE "scratch/solveray_p%d.log"
 
 #endif /* !__PARALLEL_H__ */
 

@@ -140,7 +140,7 @@ extern MPI_data mpi;
 
 /* ------- begin -------------------------- init_Background.c ------- */
 
-void init_Background(void)
+void init_Background(bool_t init_BRS)
 {
   const char routineName[] = "init_Background";
   char    inputLine[MAX_LINE_SIZE];
@@ -213,7 +213,7 @@ void init_Background(void)
 
 
   /* --- Initialise netCDF BRS file --                  ------------- */
-  init_ncdf_BRS();
+  if (bgdat.write_BRS) init_ncdf_BRS();
 
 
   /* --- Read background files from Kurucz data file -- ------------- */
@@ -233,7 +233,7 @@ void close_Background(void)
 {
   const char routineName[] = "close_Background";
 
-  close_ncdf_BRS();
+  if (bgdat.write_BRS) close_ncdf_BRS();
   //close(atmos.fd_background);
 
   return;
@@ -669,7 +669,7 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
     /* --- Write background record structure --          ------------ */
     
     //writeBRS_p(); // Tiago: not needed anymore
-    writeBRS_ncdf();
+    if (bgdat.write_BRS) writeBRS_ncdf();
 
     /* --- Write out the metals and molecules --         ------------ */
 
