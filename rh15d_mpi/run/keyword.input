@@ -11,13 +11,13 @@
   ABUND_FILE = ../../Atoms/abundance.input
 
 # Stuff for 1.5D version:
-  X_START = 194
+  X_START = 214
   X_END   = 244 
-  X_STEP  = 1 
+  X_STEP  = 15 
 
-  Y_START = 200
+  Y_START = 220
   Y_END   = 250
-  Y_STEP  = 1
+  Y_STEP  = 15
 
 # Set choice of number of rays (KEYWORD_OPTIONAL).
 
