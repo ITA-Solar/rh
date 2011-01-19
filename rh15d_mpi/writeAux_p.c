@@ -65,13 +65,14 @@ void init_aux_new(void)
 /* Creates the netCDF file for the auxiliary data */
 {
   const char routineName[] = "init_ncdf_aux";
-  int     ierror, ncid, ncid_atom, ncid_op, i, nx_id, ny_id, nspace_id, 
+  int     ierror, ncid, ncid_atom, ncid_mol, ncid_op, i, nx_id, ny_id, nspace_id,
           nrays_id, nwad_id, nwai_id, nlevel_id, nline_id, ncont_id, dimids[5];
   int     nwave, *ai_idx, *ad_idx, nai, nad;
   double *wave, *lambda_air;
   char    group_name[ARR_STRLEN];
   FILE   *test;
   Atom   *atom;
+  Molecule *molecule;
   ActiveSet *as;
 
   /* Check if we can open the file */
@@ -96,15 +97,12 @@ void init_aux_new(void)
   if ((ierror = nc_def_dim(ncid, "nz",       atmos.Nspace,     &nspace_id))) 
     ERR(ierror,routineName);
 
-  /* variables*/
-  // None?
-
   /* attributes */
   if ((ierror = nc_put_att_text(ncid, NC_GLOBAL, "atmosID", strlen(atmos.ID),
 				atmos.ID ))) ERR(ierror,routineName);
 
 
-  /* Create arrays for multiple-atom output */
+  /* Create arrays for multiple-atom/molecule output */
   io.aux_atom_ncid   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
   io.aux_atom_pop    = (int *) malloc(atmos.Nactiveatom * sizeof(int));
   io.aux_atom_poplte = (int *) malloc(atmos.Nactiveatom * sizeof(int));
@@ -112,12 +110,20 @@ void init_aux_new(void)
   io.aux_atom_RjiL   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
   io.aux_atom_RijC   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
   io.aux_atom_RjiC   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
-  io.aux_atom_coll   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
-  io.aux_atom_damp   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
-  io.aux_atom_vbroad = (int *) malloc(atmos.Nactiveatom * sizeof(int));
+  /* And for multiple molecule output */
+  io.aux_mol_ncid    = (int *) malloc(atmos.Nactivemol  * sizeof(int));
+  io.aux_mol_pop     = (int *) malloc(atmos.Nactivemol  * sizeof(int));
+  io.aux_mol_poplte  = (int *) malloc(atmos.Nactivemol  * sizeof(int));
+  /* Allocate only if we're writting the extra stuff */
+  if (input.p15d_wxtra) {
+    io.aux_atom_coll   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
+    io.aux_atom_damp   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
+    io.aux_atom_vbroad = (int *) malloc(atmos.Nactiveatom * sizeof(int));
+    io.aux_mol_E       = (int *) malloc(atmos.Nactivemol  * sizeof(int));
+    io.aux_mol_vbroad  = (int *) malloc(atmos.Nactivemol  * sizeof(int));
+  }
   
-  /* --- Group loop over active atoms --- */
-  // Should create groups for active molecules as well!
+  /* --- Group loop over active ATOMS --- */
   for (i=0; i < atmos.Nactiveatom; i++) {
     atom = atmos.activeatoms[i];
 
@@ -162,128 +168,185 @@ void init_aux_new(void)
     if ((ierror = nc_def_var(ncid_atom, RIJ_C_NAME, NC_FLOAT, 4, dimids,
 			     &io.aux_atom_RijC[i]))) ERR(ierror,routineName);    
     if ((ierror = nc_def_var(ncid_atom, RJI_C_NAME, NC_FLOAT, 4, dimids,
-			     &io.aux_atom_RjiC[i]))) ERR(ierror,routineName);    
+			     &io.aux_atom_RjiC[i]))) ERR(ierror,routineName); 
 
-    /* Collision rates */
+    /* Write extra output? */
+    if (input.p15d_wxtra) {
+      /* Collision rates */
+      dimids[0] = nlevel_id;
+      dimids[1] = nlevel_id;
+      dimids[2] = nx_id;
+      dimids[3] = ny_id;
+      dimids[4] = nspace_id;
+      if ((ierror = nc_def_var(ncid_atom, COLL_NAME, NC_FLOAT, 5, dimids,
+			       &io.aux_atom_coll[i]))) ERR(ierror,routineName);
+
+      /* Damping */
+      dimids[0] = nline_id;
+      dimids[1] = nx_id;
+      dimids[2] = ny_id;
+      dimids[3] = nspace_id;
+      if ((ierror = nc_def_var(ncid_atom, DAMP_NAME, NC_FLOAT, 4, dimids,
+			       &io.aux_atom_damp[i]))) ERR(ierror,routineName);
+
+      
+      /* Broadening velocity */
+      dimids[0] = nx_id;
+      dimids[1] = ny_id;
+      dimids[2] = nspace_id;
+      if ((ierror = nc_def_var(ncid_atom, VBROAD_NAME, NC_FLOAT, 3, dimids,
+			       &io.aux_atom_vbroad[i]))) ERR(ierror,routineName);
+    } 
+
+  } /* end active ATOMS loop */
+
+
+  /* --- Group loop over active MOLECULES --- */
+  for (i=0; i < atmos.Nactivemol; i++) {
+    molecule = atmos.activemols[i];
+
+    /* Get group name */
+    sprintf( group_name, "molecule_%s", molecule->ID);
+    if ((ierror = nc_def_grp(ncid, group_name, &io.aux_mol_ncid[i]))) 
+      ERR(ierror,routineName);
+
+    ncid_mol = io.aux_mol_ncid[i];
+
+    /* --- dimensions --- */
+    if ((ierror = nc_def_dim(ncid_mol, "nlevel_vibr",    molecule->Nv, 
+      &nlevel_id)))  ERR(ierror,routineName);  
+    if ((ierror = nc_def_dim(ncid_mol, "nline_molecule", molecule->Nrt,  
+      &nline_id )))  ERR(ierror,routineName);  
+    if ((ierror = nc_def_dim(ncid_mol, "nJ",             molecule->NJ,
+      &ncont_id )))  ERR(ierror,routineName);  
+
+    /* --- variables --- */
     dimids[0] = nlevel_id;
-    dimids[1] = nlevel_id;
-    dimids[2] = nx_id;
-    dimids[3] = ny_id;
-    dimids[4] = nspace_id;
-    if ((ierror = nc_def_var(ncid_atom, COLL_NAME, NC_FLOAT, 5, dimids,
-			     &io.aux_atom_coll[i]))) ERR(ierror,routineName);
-
-    /* Damping */
-    dimids[0] = nline_id;
     dimids[1] = nx_id;
     dimids[2] = ny_id;
     dimids[3] = nspace_id;
-    if ((ierror = nc_def_var(ncid_atom, DAMP_NAME, NC_FLOAT, 4, dimids,
-			     &io.aux_atom_damp[i]))) ERR(ierror,routineName);
+    /* Populations */
+    if (molecule->nv != NULL) 
+      if ((ierror = nc_def_var(ncid_mol, POP_NAME,    NC_FLOAT, 4, dimids,
+			       &io.aux_mol_pop[i]))) ERR(ierror,routineName);
+    if (molecule->nvstar != NULL)
+      if ((ierror = nc_def_var(ncid_mol, POPLTE_NAME, NC_FLOAT, 4, dimids,
+		            &io.aux_mol_poplte[i]))) ERR(ierror,routineName);
 
-
-    /* Broadening velocity */
-    dimids[0] = nx_id;
-    dimids[1] = ny_id;
-    dimids[2] = nspace_id;
-    if ((ierror = nc_def_var(ncid_atom, VBROAD_NAME, NC_FLOAT, 3, dimids,
-			     &io.aux_atom_vbroad[i]))) ERR(ierror,routineName);
-
-    /* --- attributes --- */
-    // ?
-
-
-  } /* end active atoms loop */
-
-
-  /* --- Create opacity group --- */
-  if ((ierror = nc_def_grp(ncid, "opacity", &ncid_op))) ERR(ierror,routineName);
-
-  /* Find out which wavelengths contain angle dependent opacities, which do not, 
-     and get corresponding indices
-     
-     spectrum.Nspect = total number of wavelengths
-     nwave           = wavelengths where there are active transitions (includes H)
-     nai             = wavelengths where there are NO bound-bound, polarised or 
-                       angle-dep transitions
-     nad             = wavelengths where there ARE bound-bound, polarised or 
-                       angle-dep transitions
-
-  */
-  nwave = 0; nai = 0; nad = 0;
-  /* Indices relative to nwave */
-  ai_idx  = (int *)    malloc(spectrum.Nspect * sizeof(int));
-  ad_idx  = (int *)    malloc(spectrum.Nspect * sizeof(int));
-  wave    = (double *) malloc(spectrum.Nspect * sizeof(double));
-
-  for (i=0; i < spectrum.Nspect; i++) {
-    as = &spectrum.as[i];
-    if (containsActive(as)) {
-      if ( containsPolarized(as) || (containsPRDline(as) && input.PRD_angle_dep) 
-	   || (atmos.moving && containsBoundBound(as))) {
-	ad_idx[nad++] = nwave;
-      } else {
-	ai_idx[nai++] = nwave;
-      }
-      wave[nwave] = spectrum.lambda[i];
-      ++nwave;
+    if (input.p15d_wxtra) {
+      /* Energy matrix */
+      dimids[0] = nx_id;
+      dimids[1] = ny_id;
+      dimids[2] = nlevel_id;
+      dimids[3] = ncont_id;
+      if ((ierror = nc_def_var(ncid_mol, EM_NAME,     NC_FLOAT, 4, dimids,
+			       &io.aux_mol_E[i]))) ERR(ierror,routineName);
+      
+      /* Broadening velocity */
+      dimids[0] = nx_id;
+      dimids[1] = ny_id;
+      dimids[2] = nspace_id;
+      if ((ierror = nc_def_var(ncid_mol, VBROAD_NAME, NC_FLOAT, 3, dimids,
+			       &io.aux_mol_vbroad[i]))) ERR(ierror,routineName); 
     }
-  }
-
-  /* --- Definitions for the OPACITY group --- */
-  /* dimensions */
-  if ((ierror = nc_def_dim(ncid_op, "nrays",    geometry.Nrays,  &nrays_id ))) 
-    ERR(ierror,routineName);
-  if ((ierror = nc_def_dim(ncid_op, NW_AD_NAME, nad,             &nwad_id  ))) 
-    ERR(ierror,routineName); 
-  if ((ierror = nc_def_dim(ncid_op, NW_AI_NAME, nai,             &nwai_id  ))) 
-    ERR(ierror,routineName); 
-
-  // MUST CREATE INPUT OPTION TO WRITE (OR NOT) THE OPACITY
-
-  /* variables*/
-  dimids[0] = nwai_id;
-  dimids[1] = nx_id;
-  dimids[2] = ny_id;
-  dimids[3] = nspace_id;
-  if ((ierror = nc_def_var(ncid_op, CHI_AI_NAME, NC_FLOAT, 4, dimids,
-			   &io.aux_op_chi_ai))) ERR(ierror,routineName);
-  if ((ierror = nc_def_var(ncid_op, ETA_AI_NAME, NC_FLOAT, 4, dimids,
-			   &io.aux_op_eta_ai))) ERR(ierror,routineName);
-
-  dimids[0] = nwad_id;
-  dimids[1] = nrays_id;
-  dimids[2] = nx_id;
-  dimids[3] = ny_id;
-  dimids[4] = nspace_id;
-  if ((ierror = nc_def_var(ncid_op, CHI_AD_NAME, NC_FLOAT, 5, dimids,
-			   &io.aux_op_chi_ad))) ERR(ierror,routineName);
-  if ((ierror = nc_def_var(ncid_op, ETA_AD_NAME, NC_FLOAT, 5, dimids,
-			   &io.aux_op_eta_ad))) ERR(ierror,routineName);
+    /* --- attributes --- */
+    // TODO:  molecule->Ediss, molecule->Tmin, molecule->Tmax
 
 
-  /* attributes */
-  /* write active set wavelengths as attribute, not variable! */
-  if (spectrum.vacuum_to_air) {
-    lambda_air = (double *) malloc(nwave * sizeof(double));
-    vacuum_to_air(nwave, wave, lambda_air);
-    if ((ierror=nc_put_att_double(ncid_op, NC_GLOBAL, WAVET_NAME, NC_DOUBLE, 
-		       	          nwave, lambda_air ))) ERR(ierror,routineName);
-    free(lambda_air);
-    free(wave);
-  } else {
-    if ((ierror=nc_put_att_double(ncid_op, NC_GLOBAL, WAVET_NAME, NC_DOUBLE, 
-				  nwave, wave )))       ERR(ierror,routineName);
-    free(wave);
-  }
+  } /* end active MOLECULES loop */
+
+
+  /* Opacity for the quadrature intensities is only written if write extra */ 
+  if (input.p15d_wxtra) {
+    /* --- Create opacity group --- */
+    if ((ierror = nc_def_grp(ncid, "opacity", &ncid_op))) ERR(ierror,routineName);
+
+    /* Find out which wavelengths contain angle dependent opacities, which do not, 
+       and get corresponding indices
+     
+       spectrum.Nspect = total number of wavelengths
+       nwave           = wavelengths where there are active transitions (includes H)
+       nai             = wavelengths where there are NO bound-bound, polarised or 
+                         angle-dep transitions
+       nad             = wavelengths where there ARE bound-bound, polarised or 
+                         angle-dep transitions
+
+    */
+    nwave = 0; nai = 0; nad = 0;
+    /* Indices relative to nwave */
+    ai_idx  = (int *)    malloc(spectrum.Nspect * sizeof(int));
+    ad_idx  = (int *)    malloc(spectrum.Nspect * sizeof(int));
+    wave    = (double *) malloc(spectrum.Nspect * sizeof(double));
+
+    for (i=0; i < spectrum.Nspect; i++) {
+      as = &spectrum.as[i];
+      if (containsActive(as)) {
+	if ( containsPolarized(as) || (containsPRDline(as) && input.PRD_angle_dep) 
+	     || (atmos.moving && containsBoundBound(as))) {
+	  ad_idx[nad++] = nwave;
+	} else {
+	  ai_idx[nai++] = nwave;
+	}
+	wave[nwave] = spectrum.lambda[i];
+	++nwave;
+      }
+    }
+
+    /* --- Definitions for the OPACITY group --- */
+    /* dimensions */
+    if ((ierror = nc_def_dim(ncid_op, "nrays",    geometry.Nrays,  &nrays_id ))) 
+      ERR(ierror,routineName);
+    if ((ierror = nc_def_dim(ncid_op, NW_AD_NAME, nad,             &nwad_id  ))) 
+      ERR(ierror,routineName); 
+    if ((ierror = nc_def_dim(ncid_op, NW_AI_NAME, nai,             &nwai_id  ))) 
+      ERR(ierror,routineName); 
+    
+
+    /* variables*/
+    dimids[0] = nwai_id;
+    dimids[1] = nx_id;
+    dimids[2] = ny_id;
+    dimids[3] = nspace_id;
+    if ((ierror = nc_def_var(ncid_op, CHI_AI_NAME, NC_FLOAT, 4, dimids,
+			     &io.aux_op_chi_ai))) ERR(ierror,routineName);
+    if ((ierror = nc_def_var(ncid_op, ETA_AI_NAME, NC_FLOAT, 4, dimids,
+			     &io.aux_op_eta_ai))) ERR(ierror,routineName);
+    
+    dimids[0] = nwad_id;
+    dimids[1] = nrays_id;
+    dimids[2] = nx_id;
+    dimids[3] = ny_id;
+    dimids[4] = nspace_id;
+    if ((ierror = nc_def_var(ncid_op, CHI_AD_NAME, NC_FLOAT, 5, dimids,
+			     &io.aux_op_chi_ad))) ERR(ierror,routineName);
+    if ((ierror = nc_def_var(ncid_op, ETA_AD_NAME, NC_FLOAT, 5, dimids,
+			     &io.aux_op_eta_ad))) ERR(ierror,routineName);
+
+
+    /* attributes */
+    /* write active set wavelengths as attribute, not variable! */
+    if (spectrum.vacuum_to_air) {
+      lambda_air = (double *) malloc(nwave * sizeof(double));
+      vacuum_to_air(nwave, wave, lambda_air);
+      if ((ierror=nc_put_att_double(ncid_op, NC_GLOBAL, WAVET_NAME, NC_DOUBLE, 
+				    nwave, lambda_air ))) ERR(ierror,routineName);
+      free(lambda_air);
+      free(wave);
+    } else {
+      if ((ierror=nc_put_att_double(ncid_op, NC_GLOBAL, WAVET_NAME, NC_DOUBLE, 
+				    nwave, wave )))       ERR(ierror,routineName);
+      free(wave);
+    }
   
-  /* wavelength angle indices */
-  if ((ierror=nc_put_att_int(ncid_op, NC_GLOBAL, WAVE_AD_IDX_NAME,
-         	           NC_INT, nad, ad_idx ))) ERR(ierror,routineName);
-  if ((ierror=nc_put_att_int(ncid_op, NC_GLOBAL, WAVE_AI_IDX_NAME,
-                 	   NC_INT, nai, ai_idx ))) ERR(ierror,routineName);
-  free(ad_idx);
-  free(ai_idx);
+    /* wavelength angle indices */
+    if ((ierror=nc_put_att_int(ncid_op, NC_GLOBAL, WAVE_AD_IDX_NAME,
+			       NC_INT, nad, ad_idx ))) ERR(ierror,routineName);
+    if ((ierror=nc_put_att_int(ncid_op, NC_GLOBAL, WAVE_AI_IDX_NAME,
+			       NC_INT, nai, ai_idx ))) ERR(ierror,routineName);
+    free(ad_idx);
+    free(ai_idx);
+
+  } /* end write extra condition */
 
 
   /* End define mode */
@@ -306,6 +369,7 @@ void init_aux_old(void) {
   char    group_name[ARR_STRLEN], *atmosID;
   FILE   *test;
   Atom   *atom;
+  Molecule *molecule;
 
   /* Check if we can open the file */
   if ((test = fopen(AUX_FILE, "a")) == NULL) {
@@ -351,7 +415,7 @@ void init_aux_old(void) {
   }
 
 
-  /* Create arrays for multiple-atom output */
+  /* Create arrays for multiple-atom/molecule output */
   io.aux_atom_ncid   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
   io.aux_atom_pop    = (int *) malloc(atmos.Nactiveatom * sizeof(int));
   io.aux_atom_poplte = (int *) malloc(atmos.Nactiveatom * sizeof(int));
@@ -359,12 +423,18 @@ void init_aux_old(void) {
   io.aux_atom_RjiL   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
   io.aux_atom_RijC   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
   io.aux_atom_RjiC   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
-  io.aux_atom_coll   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
-  io.aux_atom_damp   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
-  io.aux_atom_vbroad = (int *) malloc(atmos.Nactiveatom * sizeof(int));
+  io.aux_mol_ncid    = (int *) malloc(atmos.Nactivemol  * sizeof(int));
+  io.aux_mol_pop     = (int *) malloc(atmos.Nactivemol  * sizeof(int));
+  io.aux_mol_poplte  = (int *) malloc(atmos.Nactivemol  * sizeof(int));
+  if (input.p15d_wxtra) {
+    io.aux_atom_coll   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
+    io.aux_atom_damp   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
+    io.aux_atom_vbroad = (int *) malloc(atmos.Nactiveatom * sizeof(int));
+    io.aux_mol_E       = (int *) malloc(atmos.Nactivemol  * sizeof(int));
+    io.aux_mol_vbroad  = (int *) malloc(atmos.Nactivemol  * sizeof(int));
+  }
 
-  /* --- Group loop over active atoms --- */
-  // Should create groups for active molecules as well!
+  /* --- Group loop over active ATOMS --- */
   for (i=0; i < atmos.Nactiveatom; i++) {
     atom = atmos.activeatoms[i];
     
@@ -386,7 +456,7 @@ void init_aux_old(void) {
       sprintf(messageStr,
 	      "Number of levels mismatch: expected %d, found %d.",
 	      atom->Nlevel, (int)nlevel);
-      Error(WARNING, routineName, messageStr);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
     }
 
     if ((ierror = nc_inq_dimid(ncid, "nline", &dimid ))) 
@@ -398,7 +468,7 @@ void init_aux_old(void) {
       sprintf(messageStr,
 	      "Number of lines mismatch: expected %d, found %d.",
 	      atom->Nline, (int)nline);
-      Error(WARNING, routineName, messageStr);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
     }
     
     if ((ierror = nc_inq_dimid(ncid, "ncontinuum", &dimid ))) 
@@ -410,7 +480,7 @@ void init_aux_old(void) {
       sprintf(messageStr,
 	      "Number of continua mismatch: expected %d, found %d.",
 	      atom->Ncont, (int)ncont);
-      Error(WARNING, routineName, messageStr);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
     }
 
     /* Get var ids */
@@ -427,30 +497,101 @@ void init_aux_old(void) {
       ERR(ierror,routineName);
     if ((ierror = nc_inq_varid(ncid, RJI_C_NAME,  &io.aux_atom_RijC[i]   ))) 
       ERR(ierror,routineName);  
-    if ((ierror = nc_inq_varid(ncid, COLL_NAME,   &io.aux_atom_coll[i]   ))) 
-      ERR(ierror,routineName); 
-    if ((ierror = nc_inq_varid(ncid, DAMP_NAME,   &io.aux_atom_damp[i]   ))) 
-      ERR(ierror,routineName);  
-    if ((ierror = nc_inq_varid(ncid, VBROAD_NAME, &io.aux_atom_vbroad[i] )))
-      ERR(ierror,routineName);  
 
-  }
+    if (input.p15d_wxtra) {
+      if ((ierror = nc_inq_varid(ncid, COLL_NAME,   &io.aux_atom_coll[i]   ))) 
+	ERR(ierror,routineName); 
+      if ((ierror = nc_inq_varid(ncid, DAMP_NAME,   &io.aux_atom_damp[i]   ))) 
+	ERR(ierror,routineName);  
+      if ((ierror = nc_inq_varid(ncid, VBROAD_NAME, &io.aux_atom_vbroad[i] )))
+	ERR(ierror,routineName);  
+    }
 
-  /* Now for the opacity group */
-  if ((ierror = nc_inq_ncid(io.aux_ncid, "opacity", &ncid)))
+  } /* end active ATOMS loop */
+
+
+  /* --- Group loop over active MOLECULES --- */
+  for (i=0; i < atmos.Nactivemol; i++) {
+    molecule = atmos.activemols[i];
+    
+    /* --- Get ncid of the atom group --- */
+    /* Get group name */
+    sprintf( group_name, "molecule_%s", molecule->ID);
+    if ((ierror = nc_inq_ncid(io.aux_ncid, group_name, &ncid)))
       ERR(ierror,routineName);
 
-  io.aux_op_ncid = ncid;
+    io.aux_mol_ncid[i] = ncid;
+    
+    /* Check that dimension sizes match */
+    if ((ierror = nc_inq_dimid(ncid, "nlevel_vibr", &dimid ))) 
+      ERR(ierror,routineName);  
+    if ((ierror = nc_inq_dimlen(ncid, dimid, &nlevel ))) 
+      ERR(ierror,routineName);   
+    
+    if (nlevel != molecule->Nv) {
+      sprintf(messageStr,
+	      "Number of levels mismatch: expected %d, found %d.",
+	      molecule->Nv, (int)nlevel);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
+    }
 
-  /* Get var ids */
-  if ((ierror = nc_inq_varid(ncid, CHI_AI_NAME, &io.aux_op_chi_ai ))) 
-    ERR(ierror,routineName); 
-  if ((ierror = nc_inq_varid(ncid, ETA_AI_NAME, &io.aux_op_eta_ai ))) 
-    ERR(ierror,routineName); 
-  if ((ierror = nc_inq_varid(ncid, CHI_AD_NAME, &io.aux_op_chi_ad ))) 
-    ERR(ierror,routineName); 
-  if ((ierror = nc_inq_varid(ncid, ETA_AD_NAME, &io.aux_op_eta_ad ))) 
-    ERR(ierror,routineName);  
+    if ((ierror = nc_inq_dimid(ncid, "nline_molecule", &dimid ))) 
+      ERR(ierror,routineName);  
+    if ((ierror = nc_inq_dimlen(ncid, dimid, &nline ))) 
+      ERR(ierror,routineName);   
+    
+    if (nline != molecule->Nrt) {
+      sprintf(messageStr,
+	      "Number of lines mismatch: expected %d, found %d.",
+	      molecule->Nrt, (int)nline);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
+    }
+    
+    if ((ierror = nc_inq_dimid(ncid, "nJ", &dimid ))) 
+      ERR(ierror,routineName);  
+    if ((ierror = nc_inq_dimlen(ncid, dimid, &ncont ))) 
+      ERR(ierror,routineName);   
+    
+    if (ncont != molecule->NJ) {
+      sprintf(messageStr,
+	      "Number of J mismatch: expected %d, found %d.",
+	      molecule->NJ, (int)ncont);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
+    }
+
+    /* Get var ids */
+  
+    if ((ierror = nc_inq_varid(ncid, POP_NAME,    &io.aux_mol_pop[i]    ))) 
+      ERR(ierror,routineName);  
+    if ((ierror = nc_inq_varid(ncid, POPLTE_NAME, &io.aux_mol_poplte[i] ))) 
+      ERR(ierror,routineName); 
+ 
+    if (input.p15d_wxtra) {
+      if ((ierror = nc_inq_varid(ncid, EM_NAME,     &io.aux_mol_E[i]      ))) 
+	ERR(ierror,routineName);  
+      if ((ierror = nc_inq_varid(ncid, VBROAD_NAME, &io.aux_mol_vbroad[i] )))
+	ERR(ierror,routineName);  
+    }
+
+  } /* end active MOLECULES loop */
+
+  if (input.p15d_wxtra) {
+    /* Now for the opacity group */
+    if ((ierror = nc_inq_ncid(io.aux_ncid, "opacity", &ncid)))
+      ERR(ierror,routineName);
+    
+    io.aux_op_ncid = ncid;
+
+    /* Get var ids */
+    if ((ierror = nc_inq_varid(ncid, CHI_AI_NAME, &io.aux_op_chi_ai ))) 
+      ERR(ierror,routineName); 
+    if ((ierror = nc_inq_varid(ncid, ETA_AI_NAME, &io.aux_op_eta_ai ))) 
+      ERR(ierror,routineName); 
+    if ((ierror = nc_inq_varid(ncid, CHI_AD_NAME, &io.aux_op_chi_ad ))) 
+      ERR(ierror,routineName); 
+    if ((ierror = nc_inq_varid(ncid, ETA_AD_NAME, &io.aux_op_eta_ad ))) 
+      ERR(ierror,routineName);  
+  }
   
   
   return;
@@ -475,9 +616,17 @@ void close_ncdf_aux(void)
   free(io.aux_atom_RjiL);
   free(io.aux_atom_RijC);
   free(io.aux_atom_RjiC);
-  free(io.aux_atom_coll);
-  free(io.aux_atom_damp);
-  free(io.aux_atom_vbroad);
+  free(io.aux_mol_ncid);
+  free(io.aux_mol_pop);
+  free(io.aux_mol_poplte);
+
+  if (input.p15d_wxtra) {
+    free(io.aux_atom_coll);
+    free(io.aux_atom_damp);
+    free(io.aux_atom_vbroad);
+    free(io.aux_mol_E);
+    free(io.aux_mol_vbroad);
+  }
 
   return; 
 }
@@ -485,17 +634,19 @@ void close_ncdf_aux(void)
 
 /* ------- begin --------------------------   writeAux_p.c     --- */
 void writeAux_p(void) {
-// this will write: populations, radrates, coll, damping
+/* this will write: populations, radrates, coll, damping */
   const char routineName[] = "writeAux_p";
-  int      ierror, ncid, nact, kr;
-  size_t   start[] = {0, 0, 0, 0, 0};
-  size_t   count[] = {1, 1, 1, 1, 1};
-  double **adamp;
-  Atom    *atom;
+  int        ierror, ncid, nact, kr;
+  size_t     start[] = {0, 0, 0, 0, 0};
+  size_t     count[] = {1, 1, 1, 1, 1};
+  double   **adamp, **E;
+  Atom      *atom;
+  Molecule  *molecule;
   AtomicLine      *line;
   AtomicContinuum *continuum;
+  MolecularLine   *mrt;
 
-  /* --- Main atom loop --- */
+  /* --- Main ATOM loop --- */
   for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
     atom = atmos.activeatoms[nact];
     ncid = io.aux_atom_ncid[nact];
@@ -512,17 +663,19 @@ void writeAux_p(void) {
       if ((ierror=nc_put_vara_double(ncid, io.aux_atom_poplte[nact], start, count,
 			     atom->nstar[0] ))) ERR(ierror,routineName);
       
-    /* --- write damping --- */
-    adamp = matrix_double(atom->Nline, atmos.Nspace);
-    
-    for (kr=0; kr < atom->Nline; kr++) {
-      if (atom->line[kr].Voigt)
-	Damping(&atom->line[kr], adamp[kr]);
+    if (input.p15d_wxtra) {
+      /* --- write damping --- */
+      adamp = matrix_double(atom->Nline, atmos.Nspace);
+      
+      for (kr=0; kr < atom->Nline; kr++) {
+	if (atom->line[kr].Voigt)
+	  Damping(&atom->line[kr], adamp[kr]);
+      }
+      count[0] = atom->Nline;
+      if ((ierror=nc_put_vara_double(ncid, io.aux_atom_damp[nact], start, count,
+				     adamp[0] ))) ERR(ierror,routineName);
+      freeMatrix((void **) adamp);
     }
-    count[0] = atom->Nline;
-    if ((ierror=nc_put_vara_double(ncid, io.aux_atom_damp[nact], start, count,
-				   adamp[0] ))) ERR(ierror,routineName);
-    freeMatrix((void **) adamp);
 
 
     /* --- write radiative rates --- */
@@ -546,36 +699,92 @@ void writeAux_p(void) {
 				     continuum->Rji ))) ERR(ierror,routineName);
     }
 
-    /* --- write broadening velocity --- */
-    start[0] = mpi.ix;
-    start[1] = mpi.iy;
-    start[2] = 0;
-    count[0] = 1;
-    count[1] = 1;
-    count[2] = atmos.Nspace;
-    if ((ierror=nc_put_vara_double(ncid, io.aux_atom_vbroad[nact], start, count,
-				   atom->vbroad ))) ERR(ierror,routineName);
+    if (input.p15d_wxtra) {
+      /* --- write broadening velocity --- */
+      start[0] = mpi.ix;
+      start[1] = mpi.iy;
+      start[2] = 0;
+      count[0] = 1;
+      count[1] = 1;
+      count[2] = atmos.Nspace;
+      if ((ierror=nc_put_vara_double(ncid, io.aux_atom_vbroad[nact], start, count,
+				     atom->vbroad ))) ERR(ierror,routineName);
 
-    /* --- write collisional rates --- */
-    start[0] = 0;
-    start[1] = 0;
-    start[2] = mpi.ix;
-    start[3] = mpi.iy;
-    count[0] = atom->Nlevel;
-    count[1] = atom->Nlevel;
-    count[2] = 1;
-    count[3] = 1;
-    count[4] = atmos.Nspace;
-    if ((ierror=nc_put_vara_double(ncid, io.aux_atom_coll[nact], start, count,
-				   atom->C[0] ))) ERR(ierror,routineName);
+      /* --- write collisional rates --- */
+      start[0] = 0;
+      start[1] = 0;
+      start[2] = mpi.ix;
+      start[3] = mpi.iy;
+      count[0] = atom->Nlevel;
+      count[1] = atom->Nlevel;
+      count[2] = 1;
+      count[3] = 1;
+      count[4] = atmos.Nspace;
+      if ((ierror=nc_put_vara_double(ncid, io.aux_atom_coll[nact], start, count,
+				     atom->C[0] ))) ERR(ierror,routineName);
+    }
 
-    /* free atom (it will be reallocated for each task) */
-    //freeAtom(atom);
+  } /* End ATOM loop */
 
-  } /* End atom loop */
+
+  /* --- Main MOLECULE loop --- */
+  for (nact = 0;  nact < atmos.Nactivemol;  nact++) {
+    molecule = atmos.activemols[nact];
+    ncid     = io.aux_mol_ncid[nact];
+
+    /* --- write populations --- */
+    start[1] = mpi.ix;
+    start[2] = mpi.iy;
+    count[0] = molecule->Nv; 
+    count[3] = atmos.Nspace;
+    if (molecule->nv != NULL) 
+      if ((ierror=nc_put_vara_double(ncid, io.aux_mol_pop[nact], start, count,
+     			     molecule->nv[0] )))     ERR(ierror,routineName);
+    if (molecule->nvstar != NULL)
+      if ((ierror=nc_put_vara_double(ncid, io.aux_mol_poplte[nact], start, count,
+			     molecule->nvstar[0] ))) ERR(ierror,routineName);
+
+    if (input.p15d_wxtra) {
+      /* --- write energy matrix --- */
+      if (molecule->Nv > 0  &&  molecule->NJ > 0) {
+	E = matrix_double(molecule->Nv, molecule->NJ);
+	
+	for (kr = 0;  kr < molecule->Nrt;  kr++) {
+	  mrt = molecule->mrt + kr;
+	  
+	  E[mrt->vi][(int) (mrt->gi - 1)/2] = mrt->Ei;
+	  E[mrt->vj][(int) (mrt->gj - 1)/2] = mrt->Ej;
+	}
+	
+	start[0] = mpi.ix;
+	start[1] = mpi.iy;
+	start[2] = 0;
+	start[3] = 0;
+	count[0] = 1;
+	count[1] = 1;
+	count[2] = molecule->Nv;
+	count[3] = molecule->NJ;
+	if ((ierror=nc_put_vara_double(ncid, io.aux_mol_E[nact], start, count,
+				       E[0] ))) ERR(ierror,routineName);
+	freeMatrix((void **) E);
+      }
+
+      /* --- write broadening velocity --- */
+      start[0] = mpi.ix;
+      start[1] = mpi.iy;
+      start[2] = 0;
+      count[0] = 1;
+      count[1] = 1;
+      count[2] = atmos.Nspace;
+      if ((ierror=nc_put_vara_double(ncid, io.aux_mol_vbroad[nact], start, count,
+				     molecule->vbroad ))) ERR(ierror,routineName);
+    } 
+
+  } /* End MOLECULE loop */
+
 
   /* Now write opacity (also goes on aux file) */
-  writeOpacity_p();
+  if (input.p15d_wxtra) writeOpacity_p();
 
   return;
 }
@@ -653,13 +862,12 @@ void writeOpacity_p(void) {
 /* ------- end   --------------------------   writeOpacity_p.c --- */
 
 /* ------- begin -------------------------- readPopulations_p.c -- */
-void readPopulations_p(Atom *atom) {
+void readPopulations(Atom *atom) {
 
   /* --- Read populations from file.
 
    Note: readPopulations only reads the true populations and not
-         the LTE populations. To this effect it passes a NULL pointer
-         to xdr_populations as its last argument.
+         the LTE populations. 
          --                                            -------------- */
 
   const char routineName[] = "readPopulations_p";
@@ -708,7 +916,7 @@ void readPopulations_p(Atom *atom) {
     sprintf(messageStr,
 	    "Number of levels mismatch: expected %d, found %d.",
 	    atom->Nlevel, (int)nlevel);
-    Error(WARNING, routineName, messageStr);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
   }
 
   if ((ierror = nc_inq_dimid(io.aux_ncid, "nz", &dimid ))) 
@@ -720,7 +928,7 @@ void readPopulations_p(Atom *atom) {
     sprintf(messageStr,
 	    "Number of depth points mismatch: expected %ld, found %d.",
 	    atmos.Nspace, (int)nz);
-    Error(WARNING, routineName, messageStr);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
   }
  
 
@@ -743,6 +951,122 @@ void readPopulations_p(Atom *atom) {
   return;
 }
 /* ------- end   -------------------------- readPopulations_p.c -- */
+
+
+/* ------- begin -------------------------- readMolPops_p.c -- */
+void readMolPops(Molecule *molecule) {
+
+  /* --- Read populations from file.
+
+   Note: readPopulations only reads the true populations and not
+         the LTE populations. 
+         --                                            -------------- */
+
+  const char routineName[] = "readMolPops";
+  char    group_name[ARR_STRLEN], *atmosID;
+
+  int ierror, ncid, varid, dimid;
+  size_t nlevel, nz, len_id, nline, ncont;
+  size_t start[] = {0, 0, 0, 0};
+  size_t count[] = {1, 1, 1, 1};
+
+
+  /* --- Get ncid of the atom group --- */
+  sprintf(group_name, "molecule_%s", molecule->ID);
+
+
+  if ((ierror = nc_inq_ncid(io.aux_ncid, group_name, &ncid)))
+    ERR(ierror,routineName);
+
+
+  /* --- Consistency checks --- */
+  /* Check that atmosID is the same */
+  if ((ierror = nc_inq_attlen(io.aux_ncid, NC_GLOBAL, "atmosID", &len_id ))) 
+    ERR(ierror,routineName);
+
+  atmosID = (char *) malloc(len_id+1);
+
+  if ((ierror = nc_get_att_text(io.aux_ncid, NC_GLOBAL, "atmosID", atmosID ))) 
+    ERR(ierror,routineName);
+
+  if (!strstr(atmosID, atmos.ID)) {
+    sprintf(messageStr,
+         "Populations were derived from different atmosphere (%s) than current",
+	    atmosID);
+    Error(WARNING, routineName, messageStr);
+    }
+  free(atmosID);
+
+
+  /* Check that dimension sizes match */
+  if ((ierror = nc_inq_dimid(io.aux_ncid, "nz", &dimid ))) 
+    ERR(ierror,routineName);  
+  if ((ierror = nc_inq_dimlen(io.aux_ncid, dimid, &nz ))) 
+    ERR(ierror,routineName);    
+
+  if (nz != atmos.Nspace) {
+    sprintf(messageStr,
+	    "Number of depth points mismatch: expected %ld, found %d.",
+	    atmos.Nspace, (int)nz);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
+ 
+  if ((ierror = nc_inq_dimid(ncid, "nlevel_vibr", &dimid ))) 
+    ERR(ierror,routineName);  
+  if ((ierror = nc_inq_dimlen(ncid, dimid, &nlevel ))) 
+    ERR(ierror,routineName);   
+  
+  if (nlevel != molecule->Nv) {
+    sprintf(messageStr,
+	    "Number of levels mismatch: expected %d, found %d.",
+	    molecule->Nv, (int)nlevel);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
+
+  if ((ierror = nc_inq_dimid(ncid, "nline_molecule", &dimid ))) 
+    ERR(ierror,routineName);  
+  if ((ierror = nc_inq_dimlen(ncid, dimid, &nline ))) 
+    ERR(ierror,routineName);   
+  
+  if (nline != molecule->Nrt) {
+    sprintf(messageStr,
+	    "Number of lines mismatch: expected %d, found %d.",
+	    molecule->Nrt, (int)nline);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
+  
+  if ((ierror = nc_inq_dimid(ncid, "nJ", &dimid ))) 
+    ERR(ierror,routineName);  
+  if ((ierror = nc_inq_dimlen(ncid, dimid, &ncont ))) 
+    ERR(ierror,routineName);   
+  
+  if (ncont != molecule->NJ) {
+    sprintf(messageStr,
+	    "Number of J mismatch: expected %d, found %d.",
+	    molecule->NJ, (int)ncont);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
+  
+
+  /* --- Get variable id for populations --- */
+  if ((ierror = nc_inq_varid(ncid, POP_NAME, &varid ))) 
+    ERR(ierror,routineName); 
+
+  /* --- Read data --- */
+  start[1] = mpi.ix;
+  start[2] = mpi.iy;
+  
+  count[0] = molecule->Nv;
+  count[3] = atmos.Nspace;
+
+  /* read as double, although it is written as float */
+  if ((ierror = nc_get_vara_double(ncid, varid, start, count, molecule->nv[0] )))
+    ERR(ierror,routineName);
+
+
+  return;
+}
+/* ------- end   -------------------------- readMolPops_p.c -- */
 
 /* ------- begin -------------------------- readRadRates_p.c   --- */
 bool_t readRadRate(Atom *atom) {
@@ -1018,6 +1342,21 @@ void readDamping_p(Atom *atom) {
   return;
 }
 /* ------- end   -------------------------- readDamping_p.c    --- */
+
+
+/* ------- begin -------------------------- writeMolPops.c ---------- */
+
+void writeMolPops(struct Molecule *molecule)
+{
+  /* Blank function to avoid unresolved symbols.
+     (not to worry, molecular pops are written by writeAux_p)
+   */
+  return;
+}
+/* ------- end ---------------------------- writeMolPops.c ---------- */
+
+
+
 
 // LOW PRIORITY:
 /* ------- begin -------------------------- writeAtom_metadata_p.c */

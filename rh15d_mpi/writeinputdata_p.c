@@ -86,12 +86,6 @@ void init_ncdf_indata(void)
 				atmos.ID ))) ERR(ierror,routineName);
 
   /* --- Definitions for the INPUT group --- */
-  /* dimensions */
-  // None?
-
-  /* variables*/
-  // None?
-
   /* attributes */
   PRD_angle_dep = (input.PRD_angle_dep  &&  atmos.NPRDactive > 0);
   XRD           = (input.XRD  &&  atmos.NPRDactive > 0);
@@ -185,7 +179,7 @@ void init_ncdf_indata(void)
   if ((ierror=nc_put_att_text(ncid_input,NC_GLOBAL,"Abundances_file",
        strlen(input.abund_input), input.abund_input))) ERR(ierror,routineName);
   if ((ierror=nc_put_att_text(ncid_input,NC_GLOBAL,"Kurucz_PF_data",
-       strlen(input.pfData),      input.KuruczData)))  ERR(ierror,routineName);
+       strlen(input.pfData),      input.pfData)))  ERR(ierror,routineName);
 
   if ((ierror=nc_put_att_double( ncid_input, NC_GLOBAL, "Iteration_limit", 
                 NC_DOUBLE, 1, &input.iterLimit )))    ERR(ierror,routineName);
@@ -214,8 +208,6 @@ void init_ncdf_indata(void)
   if ((ierror=nc_put_att_double(ncid_input, NC_GLOBAL, "Lambda_reference",
                    NC_DOUBLE, 1, &atmos.lambda_ref ))) ERR(ierror,routineName);
 
-  // Need to write names of output files
-
 
   /* --- Definitions for the ATMOS group --- */
   /* dimensions */
@@ -241,10 +233,16 @@ void init_ncdf_indata(void)
   if (atmos.Stokes) {
     if ((ierror=nc_def_var(ncid_atmos, "B",                  NC_FLOAT, 3, dimids,
 			   &B_var)))     ERR(ierror,routineName); 
+    if ((ierror=nc_put_att_text( ncid_atmos, B_var,    "units", 1, "T"   ))) 
+                                         ERR(ierror,routineName);
     if ((ierror=nc_def_var(ncid_atmos, "gamma_B",            NC_FLOAT, 3, dimids,
 			   &gB_var)))    ERR(ierror,routineName); 
+    if ((ierror=nc_put_att_text( ncid_atmos, gB_var,   "units", 3, "rad" ))) 
+                                         ERR(ierror,routineName);
     if ((ierror=nc_def_var(ncid_atmos, "chi_B",              NC_FLOAT, 3, dimids,
 			   &chiB_var)))  ERR(ierror,routineName); 
+    if ((ierror=nc_put_att_text( ncid_atmos, chiB_var, "units", 3, "rad" ))) 
+                                         ERR(ierror,routineName);
   }
   dimids[0] = nhydr_id;
   dimids[1] = nx_id;
@@ -334,10 +332,6 @@ void init_ncdf_indata(void)
 			   &host_var))) ERR(ierror,routineName);
   if ((ierror = nc_def_var(ncid_mpi, FINISH_TIME, NC_CHAR,   2, dimids,
 			   &ft_var))) ERR(ierror,routineName);
-
-  // mpi.tasks(size), mpi.taskmap (but in xnum, ynum terms!), mpi.taskmap for each process
-  // number of iterations for each mpi.ix, mpi.iy, and also if they converged, convergence
-  // limit.
 
   /* attributes */
   if ((ierror=nc_put_att_int( ncid_mpi, NC_GLOBAL, "x_start", NC_INT, 1,
@@ -556,13 +550,6 @@ void writeMPI_p(void)
   count[1] = strlen(timestr);
   if ((ierror = nc_put_vara_text(ncid, io.in_mpi_ft, start, count,
       (const char *) &timestr )))     ERR(ierror,routineName); 
-
-  
-  // not writing iteration number, convergence, and delta max. Requires modification 
-  // of iterate.c to spit out dpopsmax, niter, etc. Wait until we do the revision
-  // of the messaging in MPI, to see what needs to be modified. 
-  //if ((ierror = nc_put_var1_int(ncid, io.in_mpi_it, start, niter )))
-  //  ERR(ierror,routineName);
 
 
   return;

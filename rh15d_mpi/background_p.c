@@ -1,8 +1,8 @@
 /* ------- file: -------------------------- background.c ------------
 
-       Version:       rh2.0
-       Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Fri Mar  5 09:16:05 2010 --
+       Version:       rh2.0, 1.5-D plane-parallel
+       Author:        Tiago Pereira (tiago.pereira@nasa.gov)
+       Last modified: Fri Jan 14 16:00:00 2011 --
 
        --------------------------                      ----------RH-- */
 
@@ -118,7 +118,6 @@
 #include "error.h"
 #include "statistics.h"
 #include "inputs.h"
-#include "xdr.h"
 #include "geometry.h"
 #include "parallel.h"
 #include "io.h"
@@ -234,7 +233,6 @@ void close_Background(void)
   const char routineName[] = "close_Background";
 
   if (bgdat.write_BRS) close_ncdf_BRS();
-  //close(atmos.fd_background);
 
   return;
 }
@@ -347,18 +345,6 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
 
   He = (atmos.elements[1].model) ? atmos.elements[1].model : NULL;
 
-
-  /* --- Open output file for background opacity, emissivity,
-         scattering --                                 -------------- */
-
-  /*
-  if ((atmos.fd_background =
-       open(input.background_File, O_RDWR | O_CREAT, PERMISSIONS)) == -1) {
-    sprintf(messageStr, "Unable to open output file %s",
-	    input.background_File);
-    Error(ERROR_LEVEL_2, routineName, messageStr);
-  }
-  */
   
   /* --- Go through the spectrum and add the different opacity and
          emissivity contributions. This is the main loop --  -------- */
@@ -602,21 +588,6 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
 					       chi_c, eta_c, sca_c, chip_c);
 	  }
 	}
-
-	/*
-    // Tiago, testing
-    if ((nspect == 0)  && (mu == 0)) {
-      printf("### From background ... \n");
-      for(k=0; k<175; k+=5){
-	printf(" %10.4e  %10.4e  %10.4e  %10.4e \n",
-	       chi_ai[k],
-	       eta_ai[k],
-	       chi_c[k],
-	       eta_c[k]);
-      }
-    }
-    // end testing
-    */
       }    
     } else {
       /* --- Angle-independent case. First, add opacity from passive
@@ -668,7 +639,6 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
   if (analyzeoutput) {
     /* --- Write background record structure --          ------------ */
     
-    //writeBRS_p(); // Tiago: not needed anymore
     if (bgdat.write_BRS) writeBRS_ncdf();
 
     /* --- Write out the metals and molecules --         ------------ */

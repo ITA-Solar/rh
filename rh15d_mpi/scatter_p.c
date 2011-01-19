@@ -33,8 +33,6 @@
 #include "parallel.h"
 
 #define TENSION  8.0
-#define PRD_FILE_TEMPLATE  "scratch/PRD_%s_%d-%d_p%d.dat"
-#define PRD_FILE_TEMPLATE1 "scratch/PRD_%.1s_%d-%d_p%d.dat"
 
 /* --- Function prototypes --                          -------------- */
 
@@ -156,21 +154,6 @@ void PRDScatter(AtomicLine *PRDline, enum Interpolation representation)
 	XRDline->Bij / Pj[k];
       Jbar = XRDline->Rij[k] / XRDline->Bij;
 
-      /*
-      // Tiago, testing
-	if ((k % 5 == 0)) {
-	  printf("k=%3d  %10.4e  %10.4e  %10.4e  %10.4e  %10.4e\n",
-		 k,
-		 atom->n[0][k],
-		 atom->n[1][k],
-		 atom->n[2][k],
-		 atom->n[3][k],
-		 XRDline->Bij);
-	} 
-	// end testing
-	*/
-
-
       /* --- Get local mean intensity and wavelength in Doppler units */
 
       for (la = 0;  la < XRDline->Nlambda;  la++) {
@@ -289,20 +272,6 @@ void PRDScatter(AtomicLine *PRDline, enum Interpolation representation)
 	  scatInt += J[lap] * gii[lap];
 	}
 	PRDline->rho_prd[la][k] += gamma*(scatInt/gnorm - Jbar);
-	
-	/*
-	  // Tiago, testing
-	if ((la % 50 == 0 ) && (k % 20 == 0)) {
-	  //printf("### From redistribute... \n");
-	    printf("(la,k)=(%03d,%03d)  %10.4e  %10.4e  %10.4e  %10.4e \n",
-		   la, k,
-		   gamma,
-		   scatInt,
-		   gnorm,  // este esta' bem 
-		   adamp[k]); 
-	} // ate agora estao correctos: gnorm (e gii, por consq.), adamp[k]
-	  // end testing
-	  */
       }
     }
   }

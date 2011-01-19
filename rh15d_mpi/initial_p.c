@@ -9,7 +9,7 @@
 /* --- Reads and/or computes the initial solution (populations and/or
        mean intensity J).
 
-       XDR (external data representation) version.
+       NetCDF version.
 
        Possible options:
 
@@ -40,7 +40,6 @@
 #include "statistics.h"
 #include "error.h"
 #include "inputs.h"
-#include "xdr.h"
 #include "parallel.h"
 
 #define IMU_FILE_TEMPLATE "scratch/Imu_p%d.dat"
@@ -240,7 +239,6 @@ void initSolution_p(void)
   /* --- Read angle-averaged intensity from previous run if necessary,
          and open file for J in case option for limited memory is set */
 
-  // Tiago: this assumes input.limit_memory is always FALSE
   if (input.startJ == OLD_J) {
 
     /* --- Fill matrix J with old values from previous run ----- -- */
@@ -250,7 +248,7 @@ void initSolution_p(void)
     if (input.backgr_pol) {
       for (nspect = 0;  nspect < spectrum.Nspect;  nspect++)
 	readJ20_ncdf(nspect, spectrum.J20[nspect]);
-    }
+    } 
   }
 
 
@@ -304,8 +302,6 @@ void initSolution_p(void)
 	    }
 	    break;
 
-	    printf("### InitSolution 4\n");
-
 	  case ATOMIC_CONTINUUM:
 	    continuum = as->art[nact][n].ptype.continuum;
 	    la = nspect - continuum->Nblue;
@@ -334,7 +330,7 @@ void initSolution_p(void)
       break;
 
     case OLD_POPULATIONS:
-      readPopulations_p(atom);
+      readPopulations(atom);
       break;
 
     default:;

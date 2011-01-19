@@ -23,7 +23,6 @@
 #include "background.h"
 #include "inputs.h"
 #include "error.h"
-#include "xdr.h"
 #include "parallel.h"
 
 
@@ -165,22 +164,6 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
 	  S[k]   = as->eta[k] + as->eta_c[k] + as->sca_c[k]*Jdag[k];
 	}
 
-	/*
-	// Tiago test
-	//printf("### From iterate, before updatePopulations...\n");
-	if (((nspect == 0) || (nspect == 65)) && (mu == 0)) {
-	  for(k=0; k<Nspace; k+=10){
-	    printf("nspect=%3d k=%3d  %10.4e  %10.4e  %10.4e  %10.4e  %10.4e\n",
-		   nspect,k,
-		   as->chi[k],
-		   as->eta[k],
-		   as->chi_c[k],
-		   as->eta_c[k],
-		   Jdag[k]);
-	  }
-	}
-	*/
-	// end testing
 	if (solveStokes) {
 	  for (k = Nspace;  k < 4*Nspace;  k++) Spol[0][k] = 0.0;
 
@@ -260,20 +243,7 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
       S[k]   = (as->eta[k] +
 		as->eta_c[k] + as->sca_c[k]*Jdag[k]) / chi[k];
     }
-    // Tiago, testing
-    /*
-    if ((nspect == 0) && (mu == 0)) {
-      for(k=0; k<175; k+=5){
-	printf(" %10.4e  %10.4e  %10.4e  %10.4e %10.4e\n",
-	       as->chi[k],
-	       as->chi_c[k],
-	       as->eta[k],
-	       as->eta_c[k],
-	       Jdag[k]);
-      }
-    }
-    */
-    // end testing
+
     for (mu = 0;  mu < Nrays;  mu++) {
       spectrum.I[nspect][mu] = Feautrier(nspect, mu, chi, S,
 					 F_order=STANDARD, I, Psi);

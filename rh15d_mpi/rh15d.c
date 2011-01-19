@@ -11,7 +11,6 @@
 #include "statistics.h"
 #include "error.h"
 #include "inputs.h"
-#include "xdr.h"
 #include "parallel.h"
 #include "io.h"
 
@@ -39,7 +38,7 @@ IO_data io;
 int main(int argc, char *argv[])
 {
   bool_t analyze_output, equilibria_only, run_ray;
-  int    niter, nact, i, Ntest;
+  int    niter, nact, i, Ntest, k;
 
   Atom *atom;
   Molecule *molecule;
@@ -157,56 +156,27 @@ int main(int argc, char *argv[])
     Error(MESSAGE, "main", messageStr);
 
 
-
     adjustStokesMode();
     niter = 0;
     while (niter < input.NmaxScatter) {
       if (solveSpectrum(FALSE, FALSE) <= input.iterLimit) break;
       niter++;
     }
+
     /* --- Write output files --                         -------------- */
     getCPU(1, TIME_START, NULL);
 
-    writeSpectrum_p(); /* replaces writeSpectrum, writeFlux */
-    writeAtmos_p();    /* replaces writeInput, writeAtmos, writeGeometry */
+    if (input.p15d_wxtra) 
+      writeSpectrum_p(); /* replaces writeSpectrum, writeFlux */
+    writeAtmos_p();      /* replaces writeInput, writeAtmos, writeGeometry */
     writeMPI_p();
-    writeAux_p();      /* replaces writeAtom, writePopulations, writeRadrate, 
-                          writeCollisionRate, writeDamping, and writeOpacity */
-
-    //freeAtom(&atmos.atoms[0]);
-    //free(spectrum.lambda);
-   
-    // This will not work because active atoms cannot be freed with freeAtom,
-    // as the line->lambda pointer has be repointed to spectrum.lambda. Must
-    // create freeActiveaAtom. Use atom->active for this. 
- 
-    /*
-    for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
-      atom = atmos.activeatoms[nact];
-      printf("### Freeing atom %s\n",atom->ID);
-      freeAtom(atom);
-    }
-    */
-    
-
-    // TODO: must write stuff to put the molecules
-   
-    /*
-    for (nact = 0;  nact < atmos.Nactivemol;  nact++) {
-      molecule = atmos.activemols[nact];
-      writeMolPops(molecule);
-    }
-    */
-   
+    writeAux_p();       /* replaces writeAtom, writePopulations, writeRadrate, 
+                           writeCollisionRate, writeDamping, and writeOpacity */
 
     getCPU(1, TIME_POLL, "Write output");
 
   } /* End of main task loop */
 
-
-  /* Direct log stream back into main */
-  //commandline.logfile = mpi.main_logfile;
-  //mpi.single_log      = TRUE;
 
 
   closeParallelIO(run_ray = FALSE);

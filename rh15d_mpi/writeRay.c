@@ -12,6 +12,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "rh.h"
 #include "atom.h"
@@ -47,11 +48,14 @@ void init_ncdf_ray(void)
   const char routineName[] = "init_ncdf_ray";
   int     ierror, ncid, nx_id, ny_id, nspect_id, wave_var, wave_sel_id, 
           nspace_id, intensity_var, stokes_u_var, stokes_q_var, stokes_v_var,
-          chi_l_var, eta_l_var, chi_c_var, eta_c_var, sca_c_var, chi_var, 
-          S_var, wave_idx_var, dimids[4];
+          //chi_l_var, eta_l_var, chi_c_var, eta_c_var, sca_c_var, 
+          chi_var, S_var, wave_idx_var, dimids[4];
   bool_t  write_xtra;
   FILE   *test;
   double *lambda_air;
+  char    timestr[ARR_STRLEN];
+  time_t  curtime;
+  struct tm *loctime;
 
   
   write_xtra = (io.ray_nwave_sel > 0);
@@ -73,9 +77,7 @@ void init_ncdf_ray(void)
 				atmos.ID ))) ERR(ierror,routineName);
 
   // More stuff to add as global attributes:
-  // * date of creation (master node only?)
-  // * hostname (master node only?)
-  // * version of the code
+  // * version of the code --Not yet
 
   /* Create dimensions */ 
   if ((ierror = nc_def_dim( ncid, "nx",     mpi.nx,          &nx_id      ))) 
@@ -138,8 +140,6 @@ void init_ncdf_ray(void)
   }
 
 
-  // TODO: Put unit attributes in variables!!!
-
   /* Array with wavelengths */
   dimids[0] = nspect_id;
   if ((ierror = nc_def_var(ncid, WAVE_NAME, NC_DOUBLE, 1, dimids,&wave_var)))
@@ -152,9 +152,16 @@ void init_ncdf_ray(void)
       ERR(ierror,routineName);
   }
 
-  /* Write attributes */
-  // time of creation (mpi.rank == 0)
-  // units
+  /* --- Write attributes --- */
+  /* Time of creation in ISO 8601 */
+  curtime = time(NULL);
+  loctime = localtime(&curtime);
+  strftime(timestr, ARR_STRLEN, "%Y-%m-%dT%H:%M:%S%z", loctime);
+  
+  if ((ierror = nc_put_att_text(ncid, NC_GLOBAL, "creation_time", strlen(timestr),
+      (const char *) &timestr )))     ERR(ierror,routineName); 
+
+  /*  units  */
   if ((ierror = nc_put_att_text( ncid, intensity_var,   "units",  23,
                          "J s^-1 m^-2 Hz^-1 sr^-1" ))) ERR(ierror,routineName);
 
@@ -169,8 +176,12 @@ void init_ncdf_ray(void)
   if (write_xtra) {
     if ((ierror = nc_put_att_text( ncid, S_var,         "units",  23,
 			 "J s^-1 m^-2 Hz^-1 sr^-1" ))) ERR(ierror,routineName);
+    if ((ierror = nc_put_att_text( ncid, S_var,       "description",    40,
+        "Total source function (line + continuum)" ))) ERR(ierror,routineName);
     if ((ierror = nc_put_att_text( ncid, chi_var,       "units",  4,
 			 "m^-1" ))) ERR(ierror,routineName);
+    if ((ierror = nc_put_att_text( ncid, chi_var,       "description",  35,
+             "Total absorption (line + continuum)" ))) ERR(ierror,routineName);
   }
 
   /* End define mode */

@@ -1,14 +1,14 @@
 /* ------- file: -------------------------- brs_p.c ---------------
 
-       Version:       rh2.0
-       Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Thu Jan  3 14:35:46 2008 --
+       Version:       rh2.0, 1.5-D plane-parallel
+       Author:        Tiago Pereira (tiago.pereira@nasa.gov)
+       Last modified: Tue Jan 18 17:23:39 2010 --
 
        --------------------------                      ----------RH-- */
 
 /* --- Routines to write and read background record structure to file.
 
-       XDR (external data representation) version. --  -------------- */
+       NetCDF version. --                              -------------- */
 
 
 #include <stdlib.h>
@@ -20,7 +20,6 @@
 #include "atmos.h"
 #include "spectrum.h"
 #include "error.h"
-#include "xdr.h"
 #include "geometry.h"
 #include "parallel.h"
 #include "io.h"

@@ -184,9 +184,6 @@ void writeJlambda_ncdf(int nspect, double *J)
   start[3] = nspect;
   count[2] = atmos.Nspace;
 
-  //printf("start = %d %d %d %d\n", start[0],start[1],start[2],start[3]);
-  //printf("count = %d %d %d %d\n", count[0],count[1],count[2],count[3]);
-
   if ((ierror = nc_put_vara_double(io.j_ncid, io.j_jlambda_var, start, count,
 				   J ))) ERR(ierror,routineName);
 

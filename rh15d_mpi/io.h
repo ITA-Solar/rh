@@ -31,6 +31,9 @@
 #define  NE_NAME   "electron_density"
 #define  NH_NAME   "hydrogen_populations"
 #define  Z_NAME    "z"
+#define  BX_NAME   "B_x"
+#define  BY_NAME   "B_y"
+#define  BZ_NAME   "B_z"
 
 /* Definitions for background_p */
 #define  FILE_EXT ".dat"
@@ -79,6 +82,7 @@
 #define RJI_L_NAME  "Rji_line"
 #define RIJ_C_NAME  "Rij_continuum"
 #define RJI_C_NAME  "Rji_continuum"
+#define EM_NAME     "energy_matrix"
 #define COLL_NAME   "collision_rates"
 #define DAMP_NAME   "damping"
 #define VBROAD_NAME "broadening_velocity"
@@ -118,6 +122,8 @@ typedef struct {
   int  aux_ncid,         *aux_atom_ncid,     aux_op_ncid,      *aux_atom_pop,
       *aux_atom_poplte,  *aux_atom_RijL,    *aux_atom_RjiL,    *aux_atom_RijC,
       *aux_atom_RjiC,    *aux_atom_coll,    *aux_atom_damp,    *aux_atom_vbroad,
+      *aux_mol_ncid,     *aux_mol_pop,      *aux_mol_poplte,   *aux_mol_E, 
+      *aux_mol_vbroad,
        aux_op_chi_ai,     aux_op_chi_ad,     aux_op_eta_ai,     aux_op_eta_ad;
   /* for atom file positions */
   long *atom_file_pos;

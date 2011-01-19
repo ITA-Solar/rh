@@ -112,6 +112,9 @@ void Iterate_p(int NmaxIter, double iterLimit)
     sprintf(messageStr, "Total Iteration %3d", niter);
     getCPU(2, TIME_POLL, messageStr);
 
+    /* Save niter */
+    mpi.niter = niter;
+
     if (dpopsmax < iterLimit) break;
     niter++;
 
@@ -125,8 +128,7 @@ void Iterate_p(int NmaxIter, double iterLimit)
     }
   }
 
-  /* Save niter, dpopsmax, convergence */
-  mpi.niter       = niter;
+  /* Save dpopsmax, convergence */
   mpi.dpopsmax    = dpopsmax;
   mpi.convergence = (dpopsmax < iterLimit);
 

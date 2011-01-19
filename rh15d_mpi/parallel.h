@@ -14,7 +14,7 @@
 typedef struct {
   int      size, rank, namelen, Ntasks, task, my_start, nx, ny, ix, iy;
   int     *xnum, *ynum, **taskmap, niter, nconv, nnoconv, ncrash, convergence;
-  int    **rh_converged;
+  int    **rh_converged, StokesMode_save;
   double   dpopsmax;
   bool_t   single_log, stop;
   FILE    *logfile, *main_logfile;
@@ -80,6 +80,8 @@ void SolveLinearEq_p(int N, double **A, double *b, bool_t improve);
 
 #define MPILOG_TEMPLATE     "scratch/rh_p%d.log"
 #define RAY_MPILOG_TEMPLATE "scratch/solveray_p%d.log"
+#define PRD_FILE_TEMPLATE   "scratch/PRD_%s_%d-%d_p%d.dat"
+#define PRD_FILE_TEMPLATE1  "scratch/PRD_%.1s_%d-%d_p%d.dat"
 
 #endif /* !__PARALLEL_H__ */
 

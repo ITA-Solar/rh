@@ -31,7 +31,6 @@
 #include "statistics.h"
 #include "inputs.h"
 #include "error.h"
-#include "xdr.h"
 #include "parallel.h"
 #include "io.h"
 
@@ -72,11 +71,10 @@ int main(int argc, char *argv[])
   int     Nspect, Nread, Nrequired, checkPoint, *wave_index = NULL;
   double  muz, *S, *chi, *J;
   FILE   *fp_out, *fp_ray, *fp_stokes;
-  XDR     xdrs;
   ActiveSet *as;
 
   /* --- Set up MPI ----------------------             -------------- */
-  initParallel(&argc, &argv, run_ray=FALSE);
+  initParallel(&argc, &argv, run_ray=TRUE);
 
   setOptions(argc, argv);
   getCPU(0, TIME_START, NULL);
@@ -97,7 +95,6 @@ int main(int argc, char *argv[])
   init_ncdf_atmos(&atmos, &geometry, &infile);
 
   /* --- Find out the work load for each process --    -------------- */
-  // at the moment, this must be the same as in rh15d
   distribute_jobs();
 
   /* --- Find out which columns converged in the RH run ------------- */
@@ -154,9 +151,6 @@ int main(int argc, char *argv[])
   geometry.wmu[0] = 1.0;
 
   input.startJ = OLD_J;
-
-  // Temporary
-  //mpi.Ntasks = 1;
 
   /* Main loop over tasks */
   for (mpi.task = 0; mpi.task < mpi.Ntasks; mpi.task++) {
