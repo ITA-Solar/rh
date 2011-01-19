@@ -36,6 +36,7 @@ void writeBRS_ncdf(void);
 
 void init_ncdf_J(void);
 void close_ncdf_J(void);
+void writeJ_p(void);
 void writeJlambda_ncdf(int nspect, double *J);
 void writeJ20_ncdf(int nspect, double *J);
 void readJlambda_ncdf(int nspect, double *J);

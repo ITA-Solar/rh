@@ -67,11 +67,6 @@ void init_ncdf_spec(void)
   if ((ierror = nc_put_att_text(ncid, NC_GLOBAL, "atmosID", strlen(atmos.ID),
 				atmos.ID ))) ERR(ierror,routineName);
 
-  // More stuff to add as global attributes:
-  // * date of creation (master node only?)
-  // * hostname (master node only?)
-  // * version of the code
-
   /* Create dimensions */ 
   if ((ierror = nc_def_dim( ncid, "nx",    mpi.nx,          &nx_id     ))) 
     ERR(ierror,routineName);
@@ -110,15 +105,28 @@ void init_ncdf_spec(void)
   if ((ierror = nc_def_var( ncid,  FLUX_NAME, NC_FLOAT, 3, dimids, &flux_var)))
     ERR(ierror,routineName);
 
-  // A variable for the ray intensity should be added in solveray... 
-
-  // TODO: Put unit attributes in variables!!!
-
   /* Array with wavelengths */
   dimids[0] = nspect_id;
 
   if ((ierror = nc_def_var( ncid, WAVE_NAME, NC_DOUBLE, 1, dimids, &wave_var)))
     ERR(ierror,routineName);
+
+  /* Write units */
+  if ((ierror = nc_put_att_text( ncid, wave_var,       "units",  2,
+                         "nm" )))                      ERR(ierror,routineName);
+  if ((ierror = nc_put_att_text( ncid, intensity_var,  "units",  23,
+                         "J s^-1 m^-2 Hz^-1 sr^-1" ))) ERR(ierror,routineName);
+  if ((ierror = nc_put_att_text( ncid, flux_var,       "units",  17,
+                         "J s^-1 m^-2 Hz^-1" )))       ERR(ierror,routineName);
+  
+  if (atmos.Stokes || input.backgr_pol) {
+    if ((ierror = nc_put_att_text( ncid, stokes_q_var, "units",  23,
+                         "J s^-1 m^-2 Hz^-1 sr^-1" ))) ERR(ierror,routineName);
+    if ((ierror = nc_put_att_text( ncid, stokes_u_var, "units",  23,
+                         "J s^-1 m^-2 Hz^-1 sr^-1" ))) ERR(ierror,routineName);
+    if ((ierror = nc_put_att_text( ncid, stokes_v_var, "units",  23,
+                         "J s^-1 m^-2 Hz^-1 sr^-1" ))) ERR(ierror,routineName);
+  }
 
   /* End define mode */
   if ((ierror = nc_enddef(ncid))) ERR(ierror,routineName);
@@ -212,20 +220,6 @@ void writeSpectrum_p(void)
   if ((ierror = nc_put_vara_double(io.spec_ncid, io.spec_flux_var, start, count,
 				   flux ))) ERR(ierror,routineName);  
   free(wmuz); free(flux);
-
-
-  /* --- Write angle-averaged mean intensity to file -- ------------- */
-
-  if (spectrum.updateJ && !input.limit_memory) {
-    for (nspect = 0;  nspect < spectrum.Nspect;  nspect++)
-      writeJlambda_ncdf(nspect, spectrum.J[nspect]);
-
-    /* --- Write the anisotropy J^2_0 in the z-direction -- --------- */
-    if (input.backgr_pol) {
-      for (nspect = 0;  nspect < spectrum.Nspect;  nspect++)
-	writeJ20_ncdf(nspect, spectrum.J20[nspect]);
-    }
-  }
 
 
   return;

@@ -166,12 +166,13 @@ int main(int argc, char *argv[])
     /* --- Write output files --                         -------------- */
     getCPU(1, TIME_START, NULL);
 
-    if (input.p15d_wxtra) 
+    if (input.p15d_wspec) 
       writeSpectrum_p(); /* replaces writeSpectrum, writeFlux */
     writeAtmos_p();      /* replaces writeInput, writeAtmos, writeGeometry */
+    writeJ_p();
     writeMPI_p();
-    writeAux_p();       /* replaces writeAtom, writePopulations, writeRadrate, 
-                           writeCollisionRate, writeDamping, and writeOpacity */
+    writeAux_p();        /* replaces writeAtom, writePopulations, writeRadrate, 
+                            writeCollisionRate, writeDamping, and writeOpacity */
 
     getCPU(1, TIME_POLL, "Write output");
 

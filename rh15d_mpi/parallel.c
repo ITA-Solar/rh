@@ -81,7 +81,7 @@ void initParallelIO(bool_t run_ray) {
   init_ncdf_J();
   init_Background();
   if (!run_ray) {
-    if (input.p15d_wxtra) init_ncdf_spec();
+    if (input.p15d_wspec) init_ncdf_spec();
     init_ncdf_indata();
   }
 
@@ -112,7 +112,7 @@ void closeParallelIO(bool_t run_ray) {
   close_ncdf_J();
   close_Background();
   if (!run_ray) {
-    if (input.p15d_wxtra) close_ncdf_spec();
+    if (input.p15d_wspec) close_ncdf_spec();
     close_ncdf_indata();
   }
 

@@ -19,8 +19,8 @@
   Y_END   = 221
   Y_STEP  = 1
 
-  15D_WRITE_EXTRA    = FALSE 
-  15D_WRITE_SPECTRUM = TRUE
+  15D_WRITE_EXTRA    = FALSE
+  15D_WRITE_SPECTRUM = FALSE 
 
 # Set choice of number of rays (KEYWORD_OPTIONAL).
 

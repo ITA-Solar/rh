@@ -1,4 +1,4 @@
-/* ------- file: -------------------------- writeinputdata_p.c ---------
+/* ------- file: -------------------------- writeindata_p.c ------------
 
        Version:       rh2.0, 1.5-D plane-parallel
        Author:        Tiago Pereira (tiago.pereira@nasa.gov)

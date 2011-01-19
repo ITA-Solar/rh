@@ -162,6 +162,8 @@ void init_ncdf_ray(void)
       (const char *) &timestr )))     ERR(ierror,routineName); 
 
   /*  units  */
+  if ((ierror = nc_put_att_text( ncid, wave_var,        "units",  2,
+                         "nm" )))                      ERR(ierror,routineName);
   if ((ierror = nc_put_att_text( ncid, intensity_var,   "units",  23,
                          "J s^-1 m^-2 Hz^-1 sr^-1" ))) ERR(ierror,routineName);
 

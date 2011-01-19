@@ -156,6 +156,27 @@ void init_ncdf_J(void)
 
 /* ------- end ---------------------------- init_ncdf_J.c ----------- */
 
+/* ------- begin -------------------------- writeJ_p.c -------------- */
+void writeJ_p(void) {
+/* Writes J, J20 for all wavelengths */
+  int nspect;
+
+  /* --- Write angle-averaged mean intensity to file -- ------------- */
+
+  if (spectrum.updateJ && !input.limit_memory) {
+    for (nspect = 0;  nspect < spectrum.Nspect;  nspect++)
+      writeJlambda_ncdf(nspect, spectrum.J[nspect]);
+
+    /* --- Write the anisotropy J^2_0 in the z-direction -- --------- */
+    if (input.backgr_pol) {
+      for (nspect = 0;  nspect < spectrum.Nspect;  nspect++)
+	writeJ20_ncdf(nspect, spectrum.J20[nspect]);
+    }
+  }
+
+  return;
+}
+/* ------- end   -------------------------- writeJ_p.c -------------- */
 
 /* ------- begin -------------------------- close_ncdf_J.c ---------- */
 void close_ncdf_J(void)
