@@ -12,12 +12,15 @@
 
 # Stuff for 1.5D version:
   X_START = 214
-  X_END   = 244 
-  X_STEP  = 15 
+  X_END   = 215 
+  X_STEP  = 1 
 
   Y_START = 220
-  Y_END   = 250
-  Y_STEP  = 15
+  Y_END   = 221
+  Y_STEP  = 1
+
+  15D_WRITE_EXTRA    = FALSE 
+  15D_WRITE_SPECTRUM = TRUE
 
 # Set choice of number of rays (KEYWORD_OPTIONAL).
 
@@ -182,12 +185,12 @@
 
 # Input file for the magnetic field (KEYWORD_OPTIONAL). Default is "none".
 
-#  STOKES_INPUT = ../../Atmos/MACKKL_M_100_3500G_ver.B
+  STOKES_INPUT = ../../Atmos/MACKKL_M_100_3500G_ver.B
 
 # Input Stokes mode (KEYWORD_OPTIONAL). 
 # Options are: NO_STOKES, FIELD_FREE, POLARIZATION_FREE, and FULL_STOKES.
 
-#  STOKES_MODE = FIELD_FREE
+  STOKES_MODE = POLARIZATION_FREE
 
 # Include magneto-optical effects (KEYWORD_DEFAULT). Default is TRUE.
 
@@ -196,7 +199,7 @@
 # Typical value of magnetic field in Tesla (1 T = 1.0E+4 Gauss)
 # (KEYWORD_DEFAULT).
 
-#  B_STRENGTH_CHAR = 0.35
+  B_STRENGTH_CHAR = 0.01
 
 # Include scattering polarization in the background (KEYWORD_DEFAULT).
 # Default is FALSE.
