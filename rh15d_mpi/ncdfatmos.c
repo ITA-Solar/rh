@@ -200,7 +200,7 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 
   ncid = infile->ncid;
 
-  count[2] = infile->nz;
+  count[2] = atmos->Nspace;
   start[0] = (size_t) xi;
   start[1] = (size_t) yi;
   
@@ -239,17 +239,18 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   atmos->nH = matrix_double(atmos->NHydr, atmos->Nspace);
   for (j = 0; j < atmos->Nspace; j++) atmos->nHtot[j] = 0.0; 
 
-  /* read nH */ 
-  count_nh[3] = infile->nz;
+  /* read nH, all at once */ 
+  start_nh[0] = 0;
   start_nh[1] = (size_t) xi;
   start_nh[2] = (size_t) yi;
+  count_nh[0] = atmos->NHydr;
+  count_nh[3] = atmos->Nspace;
 
+  if ((ierror = nc_get_vara_double(ncid, infile->nh_varid, start_nh, count_nh, 
+				   atmos->nH[0]))) ERR(ierror,routineName);
+
+  /* Sum to get nHtot */
   for (i = 0; i < atmos->NHydr; i++){
-    start_nh[0] = i;
-    if ((ierror = nc_get_vara_double(ncid, infile->nh_varid, start_nh, count_nh, 
-				     atmos->nH[i]))) ERR(ierror,routineName);
-
-    /* Sum to get nHtot */
     for (j = 0; j < atmos->Nspace; j++) atmos->nHtot[j] += atmos->nH[i][j];
   }
   

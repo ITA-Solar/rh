@@ -297,7 +297,7 @@ void writeRay(void)
       readBackground(idx, 0, to_obs=TRUE);
       
       if (input.limit_memory) {
-	readJlambda_ncdf(idx, J);
+	readJlambda_single(idx, J);
       } else
 	J = spectrum.J[idx];
 

@@ -117,8 +117,7 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
   Jdag = (double *) malloc(Nspace * sizeof(double));
   if (input.limit_memory) {
     J = (double *) malloc(atmos.Nspace *sizeof(double));
-    //readJlambda(nspect, Jdag);
-    readJlambda_ncdf(nspect, Jdag);
+    readJlambda_single(nspect, Jdag);
   } else {
     J = spectrum.J[nspect];
     for (k = 0;  k < Nspace;  k++) Jdag[k] = J[k];
@@ -131,7 +130,7 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
     J20dag = (double *) malloc(Nspace * sizeof(double));
     if (input.limit_memory) {
       J20 = (double *) malloc(Nspace * sizeof(double));
-      readJ20lambda(nspect, J20dag);
+      readJ20_single(nspect, J20dag);
     } else {
       J20 = spectrum.J20[nspect];
       for (k = 0;  k < Nspace;  k++)
@@ -264,11 +263,9 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
       dJmax = MAX(dJmax, dJ);
     }
     if (input.limit_memory) {
-      //writeJlambda(nspect, J);
-      writeJlambda_ncdf(nspect, J);
+      writeJlambda_single(nspect, J);
       if (input.backgr_pol) {
-	//writeJ20lambda(nspect, J20);
-	writeJ20_ncdf(nspect, J20);
+	writeJ20_single(nspect, J20);
       }
     }
   }

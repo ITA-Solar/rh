@@ -80,8 +80,9 @@ void init_ncdf_spec(void)
   /* Create variables */
   dimids[0] = nx_id;
   dimids[1] = ny_id;
-  dimids[2] = nrays_id;
-  dimids[3] = nspect_id;
+  dimids[2] = nspect_id;
+  dimids[3] = nrays_id;
+
 
   /* Intensity */
   if ((ierror = nc_def_var( ncid,  INT_NAME, NC_FLOAT, 4, dimids, &intensity_var)))
@@ -186,22 +187,23 @@ void writeSpectrum_p(void)
     if ((ierror = nc_put_var_double(io.spec_ncid, io.spec_wave_var, spectrum.lambda )))
       ERR(ierror,routineName);
 
-  /* Write intensity */
-  count[2] = atmos.Nrays;
-  for(nspect = 0; nspect < spectrum.Nspect; nspect++){
-    start[3] = nspect;
-    if ((ierror = nc_put_vara_double(io.spec_ncid, io.spec_int_var, start, count,
-				     spectrum.I[nspect] ))) ERR(ierror,routineName);
-    /* If necessary, write rest of Stokes vector */
-    if (atmos.Stokes || input.backgr_pol) {
-      if ((ierror = nc_put_vara_double(io.spec_ncid, io.spec_stokes_q_var, start, count,
-		 	       spectrum.Stokes_Q[nspect] ))) ERR(ierror,routineName);
-      if ((ierror = nc_put_vara_double(io.spec_ncid, io.spec_stokes_u_var, start, count,
-			       spectrum.Stokes_U[nspect] ))) ERR(ierror,routineName);  
-      if ((ierror = nc_put_vara_double(io.spec_ncid, io.spec_stokes_v_var, start, count,
-			       spectrum.Stokes_V[nspect] ))) ERR(ierror,routineName);  
-    }
+  /* Write intensity, all in one go */
+  count[2] = spectrum.Nspect;
+  count[3] = atmos.Nrays;
+
+  if ((ierror = nc_put_vara_double(io.spec_ncid, io.spec_int_var, start, count,
+				   spectrum.I[0] ))) ERR(ierror,routineName);
+
+  /* If necessary, write rest of Stokes vector */
+  if (atmos.Stokes || input.backgr_pol) {
+    if ((ierror = nc_put_vara_double(io.spec_ncid, io.spec_stokes_q_var, start,
+                       count, spectrum.Stokes_Q[0] ))) ERR(ierror,routineName);
+    if ((ierror = nc_put_vara_double(io.spec_ncid, io.spec_stokes_u_var, start,
+                       count, spectrum.Stokes_U[0] ))) ERR(ierror,routineName);  
+    if ((ierror = nc_put_vara_double(io.spec_ncid, io.spec_stokes_v_var, start,
+                       count, spectrum.Stokes_V[0] ))) ERR(ierror,routineName);
   }
+  
 
   /* Calculate flux */
   wmuz = (double *) malloc(atmos.Nrays * sizeof(double));

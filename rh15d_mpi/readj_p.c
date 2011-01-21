@@ -116,6 +116,8 @@ void init_ncdf_J(void)
 				  atmos.ID ))) ERR(ierror,routineName);
 
     /* Create dimensions */ 
+    if ((ierror = nc_def_dim(jncid, "nwave", spectrum.Nspect, &nspect_id ))) 
+      ERR(ierror,routineName);
     if ((ierror = nc_def_dim(jncid, "nx",    mpi.nx,          &nx_id     ))) 
       ERR(ierror,routineName);
     if ((ierror = nc_def_dim(jncid, "ny",    mpi.ny,          &ny_id     ))) 
@@ -124,14 +126,13 @@ void init_ncdf_J(void)
     // for the cases where more points are added (interpolated) to different columns
     if ((ierror = nc_def_dim(jncid, "nz",    atmos.Nspace,    &nspace_id ))) 
       ERR(ierror,routineName);
-    if ((ierror = nc_def_dim(jncid, "nwave", spectrum.Nspect, &nspect_id ))) 
-      ERR(ierror,routineName);
+
 
     /* Create variables */
-    dimids[0] = nx_id;
-    dimids[1] = ny_id;
-    dimids[2] = nspace_id;
-    dimids[3] = nspect_id;
+    dimids[0] = nspect_id;
+    dimids[1] = nx_id;
+    dimids[2] = ny_id;
+    dimids[3] = nspace_id;
 
     /* Jlambda */
     if ((ierror = nc_def_var(jncid, "Jlambda", NC_FLOAT, 4, dimids, &Jlambda_var)))
@@ -159,24 +160,57 @@ void init_ncdf_J(void)
 /* ------- begin -------------------------- writeJ_p.c -------------- */
 void writeJ_p(void) {
 /* Writes J, J20 for all wavelengths */
-  int nspect;
+  const char routineName[] = "writeJ_p";
+  int ierror;
+  size_t start[] = {0, 0, 0, 0};
+  size_t count[] = {1, 1, 1, 1};
 
-  /* --- Write angle-averaged mean intensity to file -- ------------- */
+  
+  /* Get variable */
+  count[0] = spectrum.Nspect;
+  start[1] = mpi.ix;  
+  start[2] = mpi.iy;
+  count[3] = atmos.Nspace;
 
-  if (spectrum.updateJ && !input.limit_memory) {
-    for (nspect = 0;  nspect < spectrum.Nspect;  nspect++)
-      writeJlambda_ncdf(nspect, spectrum.J[nspect]);
+  if ((ierror = nc_put_vara_double(io.j_ncid, io.j_jlambda_var, start, count,
+				   spectrum.J[0] ))) ERR(ierror,routineName);
 
-    /* --- Write the anisotropy J^2_0 in the z-direction -- --------- */
-    if (input.backgr_pol) {
-      for (nspect = 0;  nspect < spectrum.Nspect;  nspect++)
-	writeJ20_ncdf(nspect, spectrum.J20[nspect]);
-    }
-  }
+  if (input.backgr_pol) 
+    if ((ierror = nc_put_vara_double(io.j_ncid, io.j_j20_var, start, count,
+        		         spectrum.J20[0] ))) ERR(ierror,routineName);
 
   return;
 }
 /* ------- end   -------------------------- writeJ_p.c -------------- */
+
+
+/* ------- begin -------------------------- readJ_p.c -------------- */
+void readJ_p(void) {
+/* Reads J, J20 for all wavelengths */
+  const char routineName[] = "readJ_p";
+  int ierror;
+  size_t start[] = {0, 0, 0, 0};
+  size_t count[] = {1, 1, 1, 1};
+
+  
+  /* Get variable */
+  start[1] = mpi.ix;  
+  start[2] = mpi.iy;
+  count[0] = spectrum.Nspect;
+  count[3] = atmos.Nspace;
+
+
+  if ((ierror = nc_get_vara_double(io.j_ncid, io.j_jlambda_var, start, count,
+				   spectrum.J[0] ))) ERR(ierror,routineName);
+
+  if (input.backgr_pol) 
+    if ((ierror = nc_get_vara_double(io.j_ncid, io.j_j20_var, start, count,
+        		         spectrum.J20[0] ))) ERR(ierror,routineName);
+
+  return;
+}
+/* ------- end   -------------------------- readJ_p.c --------------- */
+
 
 /* ------- begin -------------------------- close_ncdf_J.c ---------- */
 void close_ncdf_J(void)
@@ -190,8 +224,8 @@ void close_ncdf_J(void)
 /* ------- end ---------------------------- close_ncdf_J.c ---------- */
 
 
-/* ------- begin -------------------------- writeJlambda_ncdf.c ----- */
-void writeJlambda_ncdf(int nspect, double *J)
+/* ------- begin -------------------------- writeJlambda_single.c --- */
+void writeJlambda_single(int nspect, double *J)
 {
   const char routineName[] = "writeJlambda_ncdf";
   int   ierror;
@@ -200,21 +234,21 @@ void writeJlambda_ncdf(int nspect, double *J)
 
   
   /* Get variable */
-  start[0] = mpi.ix;  
-  start[1] = mpi.iy;
-  start[3] = nspect;
-  count[2] = atmos.Nspace;
+  start[1] = mpi.ix;  
+  start[2] = mpi.iy;
+  start[0] = nspect;
+  count[3] = atmos.Nspace;
 
   if ((ierror = nc_put_vara_double(io.j_ncid, io.j_jlambda_var, start, count,
 				   J ))) ERR(ierror,routineName);
 
   return;
 }
-/* ------- end ---------------------------- writeJlambda_ncdf.c ----- */
+/* ------- end ---------------------------- writeJlambda_single.c --- */
 
 
-/* ------- begin -------------------------- writeJ20_ncdf.c --------- */
-void writeJ20_ncdf(int nspect, double *J)
+/* ------- begin -------------------------- writeJ20_single.c ------- */
+void writeJ20_single(int nspect, double *J)
 {
   const char routineName[] = "writeJ20_ncdf";
   int   ierror;
@@ -223,22 +257,22 @@ void writeJ20_ncdf(int nspect, double *J)
 
   
   /* Get variable */
-  start[0] = mpi.ix;  
-  start[1] = mpi.iy;
-  start[3] = nspect;
-  count[2] = atmos.Nspace;
+  start[1] = mpi.ix;  
+  start[2] = mpi.iy;
+  start[0] = nspect;
+  count[3] = atmos.Nspace;
 
   if ((ierror = nc_put_vara_double(io.j_ncid, io.j_j20_var, start, count,
 				   J ))) ERR(ierror,routineName);
 
   return;
 }
-/* ------- end ---------------------------- writeJ20_ncdf.c --------- */
+/* ------- end ---------------------------- writeJ20_single.c ------- */
 
 
 
-/* ------- begin -------------------------- readJlambda_ncdf.c ------ */
-void readJlambda_ncdf(int nspect, double *J)
+/* ------- begin -------------------------- readJlambda_single.c ---- */
+void readJlambda_single(int nspect, double *J)
 {
   const char routineName[] = "readJlambda_ncdf";
   int   ierror;
@@ -247,10 +281,10 @@ void readJlambda_ncdf(int nspect, double *J)
 
   
   /* Get variable */
-  start[0] = mpi.ix;
-  start[1] = mpi.iy;
-  start[3] = nspect;
-  count[2] = atmos.Nspace;
+  start[1] = mpi.ix;
+  start[2] = mpi.iy;
+  start[0] = nspect;
+  count[3] = atmos.Nspace;
 
   /* read as double, although it is written as float */
   if ((ierror = nc_get_vara_double(io.j_ncid, io.j_jlambda_var, start, count, J )))
@@ -259,11 +293,11 @@ void readJlambda_ncdf(int nspect, double *J)
 
   return;
 }
-/* ------- end ---------------------------- readJlambda_ncdf.c ------ */
+/* ------- end ---------------------------- readJlambda_single.c ---- */
 
 
-/* ------- begin -------------------------- readJ20_ncdf.c ---------- */
-void readJ20_ncdf(int nspect, double *J)
+/* ------- begin -------------------------- readJ20_single.c -------- */
+void readJ20_single(int nspect, double *J)
 {
   const char routineName[] = "readJ20_ncdf";
   int   ierror;
@@ -272,10 +306,10 @@ void readJ20_ncdf(int nspect, double *J)
 
   
   /* Get variable */
-  start[0] = mpi.ix; 
-  start[1] = mpi.iy;
-  start[3] = nspect;
-  count[2] = atmos.Nspace;
+  start[1] = mpi.ix; 
+  start[2] = mpi.iy;
+  start[0] = nspect;
+  count[3] = atmos.Nspace;
 
   /* read as double, although it is written as float */
   if ((ierror = nc_get_vara_double(io.j_ncid, io.j_j20_var, start, count, J )))
@@ -283,5 +317,5 @@ void readJ20_ncdf(int nspect, double *J)
 
   return;
 }
-/* ------- end ---------------------------- readJ20_ncdf.c ---------- */
+/* ------- end ---------------------------- readJ20_single.c ------- */
 

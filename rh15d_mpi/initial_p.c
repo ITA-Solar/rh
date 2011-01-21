@@ -239,18 +239,9 @@ void initSolution_p(void)
   /* --- Read angle-averaged intensity from previous run if necessary,
          and open file for J in case option for limited memory is set */
 
-  if (input.startJ == OLD_J) {
-
-    /* --- Fill matrix J with old values from previous run ----- -- */
-    for (nspect = 0;  nspect < spectrum.Nspect;  nspect++)
-      readJlambda_ncdf(nspect, spectrum.J[nspect]);
-    
-    if (input.backgr_pol) {
-      for (nspect = 0;  nspect < spectrum.Nspect;  nspect++)
-	readJ20_ncdf(nspect, spectrum.J20[nspect]);
-    } 
-  }
-
+  /* --- Fill matrix J with old values from previous run ----- -- */
+  if (input.startJ == OLD_J) readJ_p();
+ 
 
   for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
     atom = atmos.activeatoms[nact];
