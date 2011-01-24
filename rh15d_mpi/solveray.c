@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
 
     /* Printout some info */
     sprintf(messageStr,
-      "Process %d: --- START task %4d [of %4d], (xi,yi) = (%3d,%3d)\n",
+      "Process %d: --- START task %ld [of %ld], (xi,yi) = (%d,%d)\n",
 	    mpi.rank, mpi.task+1, mpi.Ntasks, mpi.xnum[mpi.ix], mpi.ynum[mpi.iy]);
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);
@@ -201,7 +201,7 @@ int main(int argc, char *argv[])
     /* If RH did not converge, do not calculate for this column */
     if (mpi.rh_converged[mpi.ix][mpi.iy] < 1) {
       sprintf(messageStr,
-	      "Process %d: *** SKIP  task %4d (RH did not converge)\n",
+	      "Process %d: *** SKIP  task %ld (RH did not converge)\n",
 	      mpi.rank,mpi.task+1);
       fprintf(mpi.main_logfile, messageStr);
       Error(MESSAGE, "main", messageStr);	
@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
     writeRay();
    
     sprintf(messageStr,
-      "Process %d: *** END   task %4d\n",
+      "Process %d: *** END   task %ld\n",
 	    mpi.rank, mpi.task+1, mpi.Ntasks);
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);	
@@ -234,7 +234,7 @@ int main(int argc, char *argv[])
   freeMatrix((void **) mpi.rh_converged);
 
   sprintf(messageStr,
-	  "*** Job ending. Total %d 1-D columns: %d computed, %d skipped.\n%s",
+	  "*** Job ending. Total %ld 1-D columns: %ld computed, %ld skipped.\n%s",
 	  mpi.Ntasks, mpi.nconv, mpi.ncrash,
 	  "*** Solveray finished gracefully.\n");	  
   if (mpi.rank == 0) fprintf(mpi.main_logfile, messageStr);

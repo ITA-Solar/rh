@@ -75,10 +75,10 @@ int main(int argc, char *argv[])
     /* Indices of x and y */
     mpi.ix = mpi.taskmap[mpi.task + mpi.my_start][0];
     mpi.iy = mpi.taskmap[mpi.task + mpi.my_start][1];
-
+   
     /* Printout some info */
     sprintf(messageStr,
-      "Process %d: --- START task %4d [of %4d], (xi,yi) = (%3d,%3d)\n",
+      "Process %d: --- START task %ld [of %ld], (xi,yi) = (%3d,%3d)\n",
        mpi.rank, mpi.task+1, mpi.Ntasks, mpi.xnum[mpi.ix], mpi.ynum[mpi.iy]);
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);
@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
     /* In case of crash, write dummy data and proceed to next task */
     if (mpi.stop) {
       sprintf(messageStr,
-	      "Process %d: *** SKIP  task %4d (crashed after %d iterations)\n",
+	      "Process %d: *** SKIP  task %ld (crashed after %d iterations)\n",
 	      mpi.rank, mpi.task+1, mpi.niter);
       fprintf(mpi.main_logfile, messageStr);
       Error(MESSAGE, "main", messageStr);
@@ -142,12 +142,12 @@ int main(int argc, char *argv[])
     /* Printout some info, finished iter */
     if (mpi.convergence) {
       sprintf(messageStr,
-       "Process %d: *** END   task %4d iter, iterations = %3d, CONVERGED\n",
+       "Process %d: *** END   task %ld iter, iterations = %3d, CONVERGED\n",
        mpi.rank, mpi.task+1, mpi.niter);
       mpi.nconv++;
     } else {
       sprintf(messageStr,
-       "Process %d: *** END   task %4d iter, iterations = %3d, NO convergence\n",
+       "Process %d: *** END   task %ld iter, iterations = %3d, NO convergence\n",
        mpi.rank, mpi.task+1, mpi.niter);
       mpi.nnoconv++;
     }
@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
   finish_jobs();
 
   sprintf(messageStr,
-   "*** Job ending. Total %d 1-D columns: %d converged, %d not converged, %d crashed.\n%s",
+   "*** Job ending. Total %ld 1-D columns: %ld converged, %ld not converged, %ld crashed.\n%s",
 	  mpi.Ntasks, mpi.nconv, mpi.nnoconv, mpi.ncrash,
 	  "*** RH finished gracefully.\n");	  
   if (mpi.rank == 0) fprintf(mpi.main_logfile, messageStr);

@@ -28,9 +28,10 @@
 
 /* --- Function prototypes --                          -------------- */
 
-int  *intrange(int start, int end, int step, int *N);
-int  *get_tasks(long ntotal, int size);
-int **get_taskmap(int *ntasks, int *my_start);
+int   *intrange(int start, int end, int step, int *N);
+long  *get_tasks(long ntotal, int size);
+long **get_taskmap(long *ntasks, long *my_start);
+long **matrix_long(long Nrow, long Ncol);
 
 /* --- Global variables --                             -------------- */
 
@@ -53,8 +54,7 @@ void distribute_jobs(void)
 
  */
 
-  int  *tasks;
-
+  long *tasks;
  
   mpi.backgrrecno = 0; 
 
@@ -78,15 +78,15 @@ void distribute_jobs(void)
   mpi.ynum = intrange(input.p15d_y0, input.p15d_y1, input.p15d_yst, &mpi.ny);
 
   /* Abort if more processes than tasks (avoid idle processes waiting forever */
-  if (mpi.size > mpi.nx*mpi.ny) {
+  if (mpi.size > (long) mpi.nx*mpi.ny) {
     sprintf(messageStr,
-            "\n*** More MPI processes (%d) than tasks (%d), aborting.\n",
-	    mpi.size,mpi.nx*mpi.ny);
+            "\n*** More MPI processes (%d) than tasks (%ld), aborting.\n",
+	    mpi.size, (long) mpi.nx*mpi.ny);
     Error(ERROR_LEVEL_2, "distribute_jobs", messageStr);
   }
 
   /* Calculate tasks and distribute */ 
-  tasks        = get_tasks(mpi.nx*mpi.ny, mpi.size);
+  tasks        = get_tasks((long) mpi.nx*mpi.ny, mpi.size);
   mpi.Ntasks   = tasks[mpi.rank];
   mpi.taskmap  = get_taskmap(tasks, &mpi.my_start);
 
@@ -96,20 +96,39 @@ void distribute_jobs(void)
 }
 /* ------- end   --------------------------   distribute_jobs.c   --- */
 
-/* ------- begin --------------------------   get_taskmap.c ----- --- */
-int **get_taskmap(int *ntasks, int *my_start)
+/* ------- begin --------------------------   get_tasks.c ------- --- */
+long *get_tasks(long ntotal, int size)
+/* Divides the ntotal tasks by 'size' processes */
 {
-  int i, j, k, *start, **taskmap;
+  long i, *tasks;
 
-  taskmap = matrix_int(mpi.nx*mpi.ny, 2);
-  start   = (int *) malloc(mpi.size * sizeof(int));
+  tasks = (long *) malloc(size * sizeof(long));
+  
+  for (i=0; i < size; i++) tasks[i] = ntotal/size;
+
+  /* Distribute remaining */
+  if ((ntotal % size) > 0) {
+    for (i=0; i < ntotal % size; i++) ++tasks[i];
+  }
+  
+  return tasks;
+}
+/* ------- end   --------------------------   get_tasks.c ------- --- */
+
+/* ------- begin --------------------------   get_taskmap.c ----- --- */
+long **get_taskmap(long *ntasks, long *my_start)
+{
+  long i, j, k, *start, **taskmap;
+
+  taskmap = matrix_long((long) mpi.nx*mpi.ny, (long) 2);
+  start   = (long *) malloc(mpi.size * sizeof(long));
 
   /* Create map of tasks */
   k = 0;
   for (i=0; i < mpi.nx; i++) {
     for (j=0; j < mpi.ny; j++) {
-      taskmap[k][0] = j;
-      taskmap[k][1] = i;
+      taskmap[k][0] = i;
+      taskmap[k][1] = j;
       ++k;
     }
   }
@@ -129,25 +148,6 @@ int **get_taskmap(int *ntasks, int *my_start)
   return taskmap;
 }
 /* ------- end   --------------------------   get_taskmap.c ----- --- */
-
-/* ------- begin --------------------------   get_tasks.c ------- --- */
-int *get_tasks(long ntotal, int size)
-/* Divides the ntotal tasks by 'size' processes */
-{
-  int i, *tasks;
-
-  tasks = (int *) malloc(size * sizeof(int));
-  
-  for (i=0; i < size; i++) tasks[i] = ntotal/size;
-
-  /* Distribute remaining */
-  if ((ntotal % size) > 0) {
-    for (i=0; i < ntotal % size; i++) ++tasks[i];
-  }
-  
-  return tasks;
-}
-/* ------- end   --------------------------   get_tasks.c ------- --- */
 
 /* ------- begin --------------------------   intrange.c -------- --- */
 int *intrange(int start, int end, int step, int *N)
@@ -176,10 +176,10 @@ void finish_jobs(void)
 {
 
   /* Get total number of tasks and convergence statuses */ 
-  MPI_Allreduce(MPI_IN_PLACE, &mpi.Ntasks,  1, MPI_INT, MPI_SUM, mpi.comm);
-  MPI_Allreduce(MPI_IN_PLACE, &mpi.ncrash,  1, MPI_INT, MPI_SUM, mpi.comm);
-  MPI_Allreduce(MPI_IN_PLACE, &mpi.nconv,   1, MPI_INT, MPI_SUM, mpi.comm);
-  MPI_Allreduce(MPI_IN_PLACE, &mpi.nnoconv, 1, MPI_INT, MPI_SUM, mpi.comm);
+  MPI_Allreduce(MPI_IN_PLACE, &mpi.Ntasks,  1, MPI_LONG, MPI_SUM, mpi.comm);
+  MPI_Allreduce(MPI_IN_PLACE, &mpi.ncrash,  1, MPI_LONG, MPI_SUM, mpi.comm);
+  MPI_Allreduce(MPI_IN_PLACE, &mpi.nconv,   1, MPI_LONG, MPI_SUM, mpi.comm);
+  MPI_Allreduce(MPI_IN_PLACE, &mpi.nnoconv, 1, MPI_LONG, MPI_SUM, mpi.comm);
 
   free(mpi.xnum);
   free(mpi.ynum);
@@ -187,3 +187,23 @@ void finish_jobs(void)
 
 }
 /* ------- end   -------------------------- finish_jobs.c ------- --- */
+
+
+
+/* ------- begin -------------------------- matrix_intl.c ----------- */
+
+long **matrix_long(long Nrow, long Ncol)
+{
+  register long i;
+
+  long *theMatrix, **Matrix;
+  long typeSize = sizeof(long), pointerSize = sizeof(long *);
+
+  theMatrix = (long *)  calloc(Nrow * Ncol, typeSize);
+  Matrix    = (long **) malloc(Nrow * pointerSize);
+  for (i = 0;  i < Nrow;  i++, theMatrix += Ncol)
+    Matrix[i] = theMatrix;
+
+  return Matrix;
+}
+/* ------- end ---------------------------- matrix_intl.c ----------- */

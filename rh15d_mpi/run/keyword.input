@@ -11,15 +11,15 @@
   ABUND_FILE = ../../Atoms/abundance.input
 
 # Stuff for 1.5D version:
-  X_START = 214
-  X_END   = 215 
-  X_STEP  = 1 
+  X_START = 0 
+  X_END   = 512 
+  X_STEP  = 4 
 
-  Y_START = 220
-  Y_END   = 221
-  Y_STEP  = 1
+  Y_START = 0
+  Y_END   = 256
+  Y_STEP  = 4
 
-  15D_WRITE_EXTRA    = FALSE
+  15D_WRITE_EXTRA    = FALSE 
   15D_WRITE_SPECTRUM = FALSE 
 
 # Set choice of number of rays (KEYWORD_OPTIONAL).
@@ -185,7 +185,7 @@
 
 # Input file for the magnetic field (KEYWORD_OPTIONAL). Default is "none".
 
-  STOKES_INPUT = ../../Atmos/MACKKL_M_100_3500G_ver.B
+#  STOKES_INPUT = ../../Atmos/MACKKL_M_100_3500G_ver.B
 
 # Input Stokes mode (KEYWORD_OPTIONAL). 
 # Options are: NO_STOKES, FIELD_FREE, POLARIZATION_FREE, and FULL_STOKES.

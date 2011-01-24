@@ -12,14 +12,14 @@
 #include <mpi.h>
 
 typedef struct {
-  int      size, rank, namelen, Ntasks, task, my_start, nx, ny, ix, iy;
-  int     *xnum, *ynum, **taskmap, niter, nconv, nnoconv, ncrash, convergence;
-  int    **rh_converged, StokesMode_save;
-  double   dpopsmax;
-  bool_t   single_log, stop;
-  FILE    *logfile, *main_logfile;
-  long     backgrrecno; /* record number for background file */
   char     name[MPI_MAX_PROCESSOR_NAME];
+  bool_t   single_log, stop;
+  int      size, rank, namelen, nx, ny, ix, iy, *xnum, *ynum, niter;
+  int    **rh_converged, StokesMode_save, convergence;
+  long     nconv, nnoconv, ncrash, my_start, backgrrecno;
+  long   **taskmap, task, Ntasks;
+  double   dpopsmax;
+  FILE    *logfile, *main_logfile;
   MPI_Comm comm;
   MPI_Info info;
 } MPI_data;

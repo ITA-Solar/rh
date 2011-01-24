@@ -313,15 +313,15 @@ void init_ncdf_indata(void)
 
   dimids[0] = nx_id;
   dimids[1] = ny_id;
-  if ((ierror = nc_def_var(ncid_mpi, TASK_MAP,    NC_USHORT, 2, dimids,
+  if ((ierror = nc_def_var(ncid_mpi, TASK_MAP,    NC_LONG, 2, dimids,
 			   &tm_var)))   ERR(ierror,routineName);
-  if ((ierror = nc_def_var(ncid_mpi, TASK_NUMBER, NC_USHORT, 2, dimids,
+  if ((ierror = nc_def_var(ncid_mpi, TASK_NUMBER, NC_LONG, 2, dimids,
 			   &tn_var)))   ERR(ierror,routineName);
-  if ((ierror = nc_def_var(ncid_mpi, ITER_NAME,   NC_USHORT, 2, dimids,
+  if ((ierror = nc_def_var(ncid_mpi, ITER_NAME,   NC_LONG, 2, dimids,
 			   &it_var)))   ERR(ierror,routineName);
-  if ((ierror = nc_def_var(ncid_mpi, CONV_NAME,   NC_SHORT,  2, dimids,
+  if ((ierror = nc_def_var(ncid_mpi, CONV_NAME,   NC_LONG,  2, dimids,
 			   &conv_var))) ERR(ierror,routineName);
-  if ((ierror = nc_def_var(ncid_mpi, DM_NAME,     NC_FLOAT,  2, dimids,
+  if ((ierror = nc_def_var(ncid_mpi, DM_NAME,     NC_LONG,  2, dimids,
 			   &dm_var)))   ERR(ierror,routineName);
 
   dimids[0] = nproc_id;
@@ -517,7 +517,7 @@ void writeMPI_p(void)
   start[1] = mpi.iy;
   if ((ierror = nc_put_var1_int(ncid,    io.in_mpi_tm, start, &mpi.rank )))
     ERR(ierror,routineName);
-  if ((ierror = nc_put_var1_int(ncid,    io.in_mpi_tn, start, &mpi.task )))
+  if ((ierror = nc_put_var1_long(ncid,    io.in_mpi_tn, start, &mpi.task )))
     ERR(ierror,routineName);
   if ((ierror = nc_put_var1_int(ncid,    io.in_mpi_it, start, &mpi.niter)))
     ERR(ierror,routineName);
@@ -529,7 +529,7 @@ void writeMPI_p(void)
 
   /* Number of tasks */
   start[0] = mpi.rank;
-  if ((ierror = nc_put_var1_int(ncid, io.in_mpi_ntsk, start, &mpi.Ntasks )))
+  if ((ierror = nc_put_var1_long(ncid, io.in_mpi_ntsk, start, &mpi.Ntasks )))
     ERR(ierror,routineName);
 
   /* Hostname of each process */
