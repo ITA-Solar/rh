@@ -23,7 +23,7 @@
 
 
 /* --- Function prototypes --                          -------------- */
-
+double MaxChange_p(struct Ng *Ngs, char *text, bool_t quiet);
 
 /* --- Global variables --                             -------------- */
 
@@ -88,10 +88,10 @@ void Redistribute(int NmaxIter, double iterLimit)
 	    PRDScatter(line, representation=LINEAR);
 
 	  accel = Accelerate(line->Ng_prd, line->rho_prd[0]);
-	  if (mpi.stop) return; /* Get out if there is a singular matrix */
 	  sprintf(messageStr, "  PRD: iter #%d, atom %s, line %d,",
 		  line->Ng_prd->count-1, atom->ID, kr);
-	  drho = MaxChange(line->Ng_prd, messageStr, quiet=FALSE);
+	  drho = MaxChange_p(line->Ng_prd, messageStr, quiet=FALSE);
+	  if (mpi.stop) return; /* Get out if singular matrix, or NAN in dmax */
 	  sprintf(messageStr, (accel) ? " (accelerated)\n" : "\n");
 	  Error(MESSAGE, routineName, messageStr);
 
@@ -100,6 +100,7 @@ void Redistribute(int NmaxIter, double iterLimit)
 	drhomaxa = MAX(drhomax, drhomaxa);
       }
     }
+
     /* --- Solve transfer equation with fixed populations -- -------- */
 
     solveSpectrum(eval_operator=FALSE, redistribute=TRUE);
@@ -109,3 +110,28 @@ void Redistribute(int NmaxIter, double iterLimit)
   }
 }
 /* ------- end ---------------------------- Redistribute.c ---------- */
+
+/* ------- begin -------------------------- MaxChange_p.c ------------- */
+
+double MaxChange_p(struct Ng *Ngs, char *text, bool_t quiet)
+{
+  register int k;
+
+  double dmax = 0.0, *old, *new;
+
+  if (Ngs->count < 2) return dmax;
+
+  old = Ngs->previous[(Ngs->count - 2) % (Ngs->Norder + 2)];
+  new = Ngs->previous[(Ngs->count - 1) % (Ngs->Norder + 2)];
+  for (k = 0;  k < Ngs->N;  k++) {
+    if (new[k])
+      dmax = MAX(dmax, fabs((new[k] - old[k]) / new[k]));
+  }
+  if (!quiet)
+    fprintf(commandline.logfile, "%s delta = %6.4E", text, dmax);
+
+  if (isnan(dmax) || isinf(dmax)) mpi.stop = TRUE;
+
+  return dmax;
+}
+/* ------- end ---------------------------- MaxChange_p.c ------------- */
