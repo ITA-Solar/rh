@@ -68,6 +68,7 @@
 #define ITER_NAME      "iterations"
 #define CONV_NAME      "convergence"
 #define DM_NAME        "delta_max"
+#define DMH_NAME       "delta_max_history"
 #define NTASKS         "ntasks"
 #define HOSTNAME       "hostname"
 #define FINISH_TIME    "finish_time"
@@ -99,6 +100,8 @@
 
 #define STOPFILE_TEMPLATE "scratch/STOP_FILE_p%d"
 
+/* Log files buffer size (in bytes) */
+#define BUFSIZ_MPILOG  52428800
 
 /* For keeping the netCDF file and variable IDs */
 typedef struct {
@@ -116,8 +119,8 @@ typedef struct {
        in_atmos_ew,       in_atmos_ab,       in_atmos_eid,      in_atmos_mu,
        in_atmos_wmu,      in_atmos_z,        in_atmos_x,        in_atmos_y;
   int  in_mpi_xnum,       in_mpi_ynum,       in_mpi_tm,         in_mpi_tn,
-       in_mpi_it,         in_mpi_conv,       in_mpi_dm,         in_mpi_ntsk,
-       in_mpi_host,       in_mpi_ft;
+       in_mpi_it,         in_mpi_conv,       in_mpi_dm,         in_mpi_dmh,
+       in_mpi_ntsk,       in_mpi_host,       in_mpi_ft;
   /* for the aux file */
   int  aux_ncid,         *aux_atom_ncid,     aux_op_ncid,      *aux_atom_pop,
       *aux_atom_poplte,  *aux_atom_RijL,    *aux_atom_RjiL,    *aux_atom_RijC,

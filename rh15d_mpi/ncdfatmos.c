@@ -121,7 +121,7 @@ void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *inf
   }
 
   /* read things that don't depend on x, y */
-  geometry->height = (double *) malloc(atmos->Nspace * sizeof(double));
+  geometry->height = (double *) malloc(infile->nz * sizeof(double));
   if ((ierror = nc_get_var_double(ncid, z_varid, geometry->height))) ERR(ierror,routineName);
   infile->y   = (double *) malloc(infile->ny * sizeof(double));
   if ((ierror = nc_get_var_double(ncid, y_varid, infile->y))) ERR(ierror,routineName);
@@ -218,13 +218,14 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 
   printf("Process %d: zcut = %d\n", mpi.rank, mpi.zcut);
 
-  /* Get z again */
+  /* Get z again */ 
   start[0] = mpi.zcut;  count[0] = atmos->Nspace;
 
   if ((ierror=nc_inq_varid(ncid, "z",  &z_varid)))          
     ERR(ierror,routineName);
   if ((ierror = nc_get_vara_double(ncid, z_varid, start, count, geometry->height))) 
     ERR(ierror,routineName);
+ 
 
 
   start[0] = (size_t) xi; count[0] = 1;
@@ -373,7 +374,7 @@ void realloc_ndep(Atmosphere *atmos, Geometry *geometry) {
   atmos->ne    = (double *) realloc(atmos->ne,    atmos->Nspace * sizeof(double));
   atmos->nHtot = (double *) realloc(atmos->nHtot, atmos->Nspace * sizeof(double));
   geometry->vel    = (double *) realloc(geometry->vel, 
-					atmos->Nspace * sizeof(double));
+					atmos->Nspace * sizeof(double));  
   geometry->height = (double *) realloc(geometry->height, 
 					atmos->Nspace * sizeof(double));
   if (atmos->nHmin != NULL) 

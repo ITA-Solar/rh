@@ -43,16 +43,17 @@ void init_ncdf_indata(void)
 /* Creates the netCDF file for the input data */
 {
   const char routineName[] = "init_ncdf_indata";
-  int    i, ierror, ncid, ncid_input, ncid_atmos, ncid_mpi, nx_id, ny_id, 
-         nspace_id, nhydr_id, nelem_id, nrays_id, nproc_id,  atstr_id,
-         temp_var, ne_var, vz_var, vturb_var, B_var, gB_var, chiB_var, nh_var,
-         ew_var, ab_var, eid_var, mu_var, wmu_var, height_var,x_var, y_var,
-         xnum_var, ynum_var, tm_var, tn_var, it_var, conv_var, dm_var, ntsk_var, 
-         host_var, ft_var, dimids[4];
+  int     i, ierror, ncid, ncid_input, ncid_atmos, ncid_mpi, nx_id, ny_id, 
+          nspace_id, nhydr_id, nelem_id, nrays_id, nproc_id, atstr_id, niter_id,
+          temp_var, ne_var, vz_var, vturb_var, B_var, gB_var, chiB_var, nh_var,
+          ew_var, ab_var, eid_var, mu_var, wmu_var, height_var,x_var, y_var,
+          xnum_var, ynum_var, tm_var, tn_var, it_var, conv_var, dm_var, dmh_var, 
+          ntsk_var, host_var, ft_var, z_varid, dimids[4];
   size_t  start[] = {0};
-  bool_t PRD_angle_dep, XRD;
-  char   startJ[MAX_LINE_SIZE], StokesMode[MAX_LINE_SIZE], angleSet[MAX_LINE_SIZE];
-  FILE  *test;
+  bool_t  PRD_angle_dep, XRD;
+  double *height;
+  char    startJ[MAX_LINE_SIZE], StokesMode[MAX_LINE_SIZE], angleSet[MAX_LINE_SIZE];
+  FILE   *test;
 
   /* Check if we can open the file */
   if ((test = fopen(INPUTDATA_FILE, "w")) == NULL) {
@@ -301,7 +302,9 @@ void init_ncdf_indata(void)
   
   /* --- Definitions for the MPI group --- */
   /* dimensions */
-  if ((ierror = nc_def_dim(ncid_mpi, "nprocesses",  mpi.size, &nproc_id))) 
+  if ((ierror = nc_def_dim(ncid_mpi, "nprocesses",   mpi.size,      &nproc_id))) 
+    ERR(ierror,routineName);  
+  if ((ierror = nc_def_dim(ncid_mpi, "niterations", input.NmaxIter, &niter_id))) 
     ERR(ierror,routineName);  
 
   /* variables*/
@@ -322,7 +325,7 @@ void init_ncdf_indata(void)
 			   &it_var)))   ERR(ierror,routineName);
   if ((ierror = nc_def_var(ncid_mpi, CONV_NAME,   NC_LONG,  2, dimids,
 			   &conv_var))) ERR(ierror,routineName);
-  if ((ierror = nc_def_var(ncid_mpi, DM_NAME,     NC_LONG,  2, dimids,
+  if ((ierror = nc_def_var(ncid_mpi, DM_NAME,     NC_FLOAT,  2, dimids,
 			   &dm_var)))   ERR(ierror,routineName);
 
   dimids[0] = nproc_id;
@@ -333,6 +336,13 @@ void init_ncdf_indata(void)
 			   &host_var))) ERR(ierror,routineName);
   if ((ierror = nc_def_var(ncid_mpi, FINISH_TIME, NC_CHAR,   2, dimids,
 			   &ft_var))) ERR(ierror,routineName);
+
+  dimids[0] = nx_id;
+  dimids[1] = ny_id;
+  dimids[2] = niter_id;
+  if ((ierror = nc_def_var(ncid_mpi, DMH_NAME,    NC_FLOAT,  3, dimids,
+			   &dmh_var))) ERR(ierror,routineName);
+
 
   /* attributes */
   if ((ierror=nc_put_att_int( ncid_mpi, NC_GLOBAL, "x_start", NC_INT, 1,
@@ -357,8 +367,20 @@ void init_ncdf_indata(void)
     ERR(ierror,routineName);   
   if ((ierror = nc_put_var_double(ncid_atmos, wmu_var,     geometry.wmu )))
     ERR(ierror,routineName);   
-  if ((ierror = nc_put_var_double(ncid_atmos, height_var,  geometry.height )))
+
+  /* Must read full z from NetCDF file */
+  height = (double *) malloc(infile.nz * sizeof(double));
+
+  if ((ierror=nc_inq_varid(infile.ncid, "z",  &z_varid)))   
+    ERR(ierror,routineName);
+  if ((ierror = nc_get_var_double(infile.ncid, z_varid, height))) 
+    ERR(ierror,routineName);
+    
+  if ((ierror = nc_put_var_double(ncid_atmos, height_var,  height)))
     ERR(ierror,routineName);   
+
+  free(height);
+  
 
 
   /* write x and y, convert from MPI indices to actual values */
@@ -406,6 +428,7 @@ void init_ncdf_indata(void)
   io.in_mpi_it     = it_var;
   io.in_mpi_conv   = conv_var;
   io.in_mpi_dm     = dm_var;
+  io.in_mpi_dmh    = dmh_var;
   io.in_mpi_ntsk   = ntsk_var;
   io.in_mpi_host   = host_var;
   io.in_mpi_ft     = ft_var;
@@ -528,6 +551,10 @@ void writeMPI_p(void)
     ERR(ierror,routineName);
   if ((ierror = nc_put_var1_int(ncid,  io.in_mpi_conv, start, &mpi.convergence)))
     ERR(ierror,routineName);
+
+  start[2] = 0; count[2] = mpi.niter;
+  if ((ierror = nc_put_vara_double(ncid, io.in_mpi_dmh, start, count, 
+				   mpi.dpopsmax_hist))) ERR(ierror,routineName);
 
 
   /* Number of tasks */

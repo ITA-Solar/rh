@@ -64,7 +64,7 @@ void init_ncdf_J(void)
 
     /* Check if we can open the file */
     if ((test = fopen(file_J, "r")) == NULL) {
-      sprintf(messageStr, "Could not read J output file %s", input.JFile);
+      sprintf(messageStr, "Could not read J output file %s", file_J);
       Error(ERROR_LEVEL_2, routineName, messageStr);
     } else {
       fclose(test);

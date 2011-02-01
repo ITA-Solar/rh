@@ -60,7 +60,8 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
 	    mpi.rank, logfile);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
-  setvbuf(mpi.logfile, NULL, _IOLBF, BUFSIZ);
+  /* _IOFBF for full buffering, _IOLBF for line buffering */
+  setvbuf(mpi.logfile, NULL, _IOFBF, BUFSIZ_MPILOG);
 
   mpi.stop    = FALSE;
   mpi.nconv   = 0;
@@ -95,8 +96,11 @@ void initParallelIO(bool_t run_ray) {
 
   /* Save StokesMode (before adjustStokesMode changes it...) */
   mpi.StokesMode_save = input.StokesMode;
-  
   mpi.single_log       = FALSE;  
+
+  /* Allocate some mpi. arrays */
+  mpi.dpopsmax_hist = (double *) malloc( input.NmaxIter * sizeof(double));
+
 
   return;
 }
@@ -117,6 +121,7 @@ void closeParallelIO(bool_t run_ray) {
   }
 
   free(io.atom_file_pos);
+  free(mpi.dpopsmax_hist);
 
   return;
 }

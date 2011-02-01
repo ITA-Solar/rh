@@ -201,6 +201,7 @@ void init_Background(bool_t init_BRS)
   /* --- Open background file --                        ------------- */
 
   /* get file name, with the MPI rank */
+  /*
   sprintf(file_background,"%s_p%d%s", input.background_File , mpi.rank, fext);
 
   if ((atmos.fd_background =
@@ -209,6 +210,7 @@ void init_Background(bool_t init_BRS)
 	    file_background);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
+  */
 
 
   /* --- Initialise netCDF BRS file --                  ------------- */
@@ -253,6 +255,7 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
          *Bnu, *chi_c, *eta_c, *sca_c, *chip, *chip_c;
   Atom   *He;
   flags   backgrflags;
+  char    file_background[MAX_MESSAGE_LENGTH], *fext = FILE_EXT;
 
   getCPU(2, TIME_START, NULL);
 
@@ -280,6 +283,22 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
   do_fudge     = bgdat.do_fudge;
   Nfudge       = bgdat.Nfudge;
   fudge        = bgdat.fudge;
+
+
+  /* --- Open background file --                        ------------- */
+
+  /* get file name, with the MPI rank */
+  sprintf(file_background,"%s_p%d%s", input.background_File , mpi.rank, fext);
+
+  if ((atmos.fd_background =
+       open(file_background, O_RDWR | O_CREAT | O_TRUNC, PERMISSIONS)) == -1) {
+    sprintf(messageStr, "Unable to open output file %s",
+	    file_background);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
+
+  /* Zero record number, as background file is being overwritten */
+  mpi.backgrrecno = 0;
 
 
   /* --- Allocate temporary storage space. The quantities are used

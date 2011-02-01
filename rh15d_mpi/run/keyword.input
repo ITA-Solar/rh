@@ -11,15 +11,15 @@
   ABUND_FILE = ../../Atoms/abundance.input
 
 # Stuff for 1.5D version:
-  X_START = 196
-  X_END   = 197
-  X_STEP  = 1
+  X_START = 154
+  X_END   = 215
+  X_STEP  = 150 
 
-  Y_START = 202
-  Y_END   = 203
-  Y_STEP  = 1
+  Y_START = 160
+  Y_END   = 221
+  Y_STEP  = 150
 
-  15D_WRITE_EXTRA    = TRUE 
+  15D_WRITE_EXTRA    = FALSE 
   15D_WRITE_SPECTRUM = TRUE 
 
   15D_TMAX_CUT = 50000.0

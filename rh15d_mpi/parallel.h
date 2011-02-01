@@ -18,7 +18,7 @@ typedef struct {
   int    **rh_converged, StokesMode_save, convergence;
   long     nconv, nnoconv, ncrash, my_start, backgrrecno;
   long   **taskmap, task, Ntasks;
-  double   dpopsmax;
+  double   dpopsmax, *dpopsmax_hist;
   FILE    *logfile, *main_logfile;
   MPI_Comm comm;
   MPI_Info info;

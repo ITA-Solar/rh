@@ -179,7 +179,6 @@ int main(int argc, char *argv[])
 
       SortLambda();
 
-      strcpy(input.background_File, "scratch/background.ray");
       bgdat.write_BRS = FALSE;
 
       initParallelIO(run_ray=TRUE);
