@@ -36,6 +36,7 @@ extern Atmosphere atmos;
 extern Spectrum spectrum;
 extern InputData input;
 extern char messageStr[];
+extern NCDF_Atmos_file infile;
 extern IO_data io;
 extern MPI_data mpi;
 
@@ -124,7 +125,7 @@ void init_ncdf_J(void)
       ERR(ierror,routineName);
     // in the future, this nz should be a maximum value of atmos.Nspace to account
     // for the cases where more points are added (interpolated) to different columns
-    if ((ierror = nc_def_dim(jncid, "nz",    atmos.Nspace,    &nspace_id ))) 
+    if ((ierror = nc_def_dim(jncid, "nz",    infile.nz,       &nspace_id ))) 
       ERR(ierror,routineName);
 
 
@@ -170,6 +171,7 @@ void writeJ_p(void) {
   count[0] = spectrum.Nspect;
   start[1] = mpi.ix;  
   start[2] = mpi.iy;
+  start[3] = mpi.zcut;
   count[3] = atmos.Nspace;
 
   if ((ierror = nc_put_vara_double(io.j_ncid, io.j_jlambda_var, start, count,
@@ -196,6 +198,7 @@ void readJ_p(void) {
   /* Get variable */
   start[1] = mpi.ix;  
   start[2] = mpi.iy;
+  start[3] = mpi.zcut;
   count[0] = spectrum.Nspect;
   count[3] = atmos.Nspace;
 
@@ -237,6 +240,7 @@ void writeJlambda_single(int nspect, double *J)
   start[1] = mpi.ix;  
   start[2] = mpi.iy;
   start[0] = nspect;
+  start[3] = mpi.zcut;
   count[3] = atmos.Nspace;
 
   if ((ierror = nc_put_vara_double(io.j_ncid, io.j_jlambda_var, start, count,
@@ -260,6 +264,7 @@ void writeJ20_single(int nspect, double *J)
   start[1] = mpi.ix;  
   start[2] = mpi.iy;
   start[0] = nspect;
+  start[3] = mpi.zcut;
   count[3] = atmos.Nspace;
 
   if ((ierror = nc_put_vara_double(io.j_ncid, io.j_j20_var, start, count,
@@ -284,6 +289,7 @@ void readJlambda_single(int nspect, double *J)
   start[1] = mpi.ix;
   start[2] = mpi.iy;
   start[0] = nspect;
+  start[3] = mpi.zcut;
   count[3] = atmos.Nspace;
 
   /* read as double, although it is written as float */
@@ -309,6 +315,7 @@ void readJ20_single(int nspect, double *J)
   start[1] = mpi.ix; 
   start[2] = mpi.iy;
   start[0] = nspect;
+  start[3] = mpi.zcut;
   count[3] = atmos.Nspace;
 
   /* read as double, although it is written as float */

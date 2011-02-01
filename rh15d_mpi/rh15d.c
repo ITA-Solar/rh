@@ -43,6 +43,7 @@ int main(int argc, char *argv[])
   Atom *atom;
   Molecule *molecule;
   AtomicLine *line;
+  ActiveSet *as;
 
 
   /* --- Set up MPI ----------------------             -------------- */
@@ -83,11 +84,12 @@ int main(int argc, char *argv[])
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);
 
+
     /* Read atmosphere column */
     readAtmos_ncdf(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
 
-
     if (atmos.Stokes) Bproject();
+
 
     /* --- Run only once --                                  --------- */
     if (mpi.task == 0) {
@@ -101,7 +103,7 @@ int main(int argc, char *argv[])
       /* Update quantities that depend on atmosphere and initialise others */
       UpdateAtmosDep();
     }
-    
+
     /* --- Calculate background opacities --             ------------- */
     Background_p(analyze_output=TRUE, equilibria_only=FALSE);
 
@@ -111,8 +113,25 @@ int main(int argc, char *argv[])
 
     getCPU(1, TIME_POLL, "Total Initialize");
 
+    /*
+    as = &spectrum.as[120];
+    for (i=0; i < atmos.Nspace; i++)
+       printf("###  %3d   %e   %e   %e   %e   %e\n",i, geometry.height[i],
+	      as->chi[i], as->chi_c[i], as->eta[i], as->eta_c[i]);
+    //printf("###  %3d   %e   %e   %e   %e   %e\n",i, geometry.height[i],
+    //	     atmos.T[i], atmos.ne[i], atmos.H->n[0][i]);
+
+    //temporary
+    writeAux_p();
+    writeAtmos_p();    
+    writeMPI_p();
+    writeJ_p();
+    //exit(2);
+    */
+
     /* --- Solve radiative transfer for active ingredients -- --------- */
     Iterate_p(input.NmaxIter, input.iterLimit);
+
 
     /* Treat odd cases as a crash */
     if (isnan(mpi.dpopsmax) || isinf(mpi.dpopsmax) || (mpi.dpopsmax <= 0))

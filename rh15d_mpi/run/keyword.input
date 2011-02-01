@@ -11,16 +11,18 @@
   ABUND_FILE = ../../Atoms/abundance.input
 
 # Stuff for 1.5D version:
-  X_START = 0 
-  X_END   = 512 
-  X_STEP  = 4 
+  X_START = 196
+  X_END   = 197
+  X_STEP  = 1
 
-  Y_START = 0
-  Y_END   = 256
-  Y_STEP  = 4
+  Y_START = 202
+  Y_END   = 203
+  Y_STEP  = 1
 
-  15D_WRITE_EXTRA    = FALSE 
-  15D_WRITE_SPECTRUM = FALSE 
+  15D_WRITE_EXTRA    = TRUE 
+  15D_WRITE_SPECTRUM = TRUE 
+
+  15D_TMAX_CUT = 50000.0
 
 # Set choice of number of rays (KEYWORD_OPTIONAL).
 
@@ -128,7 +130,7 @@
 # Set HYDROGEN_LTE = TRUE if hydrogen in the background has to be
 # treated with LTE populations (KEYWORD_DEFAULT). Default is FALSE
 
-##  HYDROGEN_LTE = TRUE
+## HYDROGEN_LTE = TRUE
 ##  HYDROSTATIC = TRUE
 ##  NON_ICE = TRUE
 

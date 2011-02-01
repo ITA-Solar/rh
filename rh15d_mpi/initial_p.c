@@ -73,18 +73,36 @@ void initSolution_alloc(void) {
   /* --- Allocate space for angle-averaged mean intensity -- -------- */
 
   if (!input.limit_memory) {
+    if (spectrum.J != NULL) freeMatrix((void **) spectrum.J);
     spectrum.J = matrix_double(spectrum.Nspect, atmos.Nspace);
 
     /* --- If we do background polarization we need space for the
            anisotropy --                               -------------- */
 
     if (input.backgr_pol)
+    if (spectrum.J20 != NULL) freeMatrix((void **) spectrum.J20);
       spectrum.J20 = matrix_double(spectrum.Nspect, atmos.Nspace);
   }
   /* --- Allocate space for the emergent intensity --  -------------- */
 
+  if (atmos.Stokes || input.backgr_pol) {
+    if (spectrum.Stokes_Q != NULL) {
+      freeMatrix((void **) spectrum.Stokes_Q);
+      spectrum.Stokes_Q = NULL;
+    }
+    if (spectrum.Stokes_U != NULL) {
+      freeMatrix((void **) spectrum.Stokes_U);
+      spectrum.Stokes_U = NULL;
+    }
+    if (spectrum.Stokes_V != NULL) {
+      freeMatrix((void **) spectrum.Stokes_V);
+      spectrum.Stokes_V = NULL;
+    }
+  }
+  
   switch (topology) {
   case ONE_D_PLANE:
+    if (spectrum.I != NULL) freeMatrix((void **) spectrum.I);
     spectrum.I = matrix_double(spectrum.Nspect, atmos.Nrays);
     if (atmos.Stokes || input.backgr_pol) {
       spectrum.Stokes_Q = matrix_double(spectrum.Nspect, atmos.Nrays);
@@ -130,60 +148,64 @@ void initSolution_alloc(void) {
 
 
 
-  /* --- Need storage for angle-dependent specific intensities for
-         angle-dependent PRD --                        -------------- */
+  /* Things to be done only for the first task */
+  if (mpi.task == 0) {
+    /* --- Need storage for angle-dependent specific intensities for
+       angle-dependent PRD --                        -------------- */
 
-  if (atmos.NPRDactive > 0 && input.PRD_angle_dep) {
-    oflag = 0;
-    if (input.startJ == OLD_J) {
-      if (spectrum.updateJ) {
-	strcpy(permission, "r+");
-	oflag |= O_RDWR;
+    if (atmos.NPRDactive > 0 && input.PRD_angle_dep) {
+      oflag = 0;
+      if (input.startJ == OLD_J) {
+	if (spectrum.updateJ) {
+	  strcpy(permission, "r+");
+	  oflag |= O_RDWR;
+	} else {
+	  strcpy(permission, "r");
+	  oflag |= O_RDONLY;
+	}
       } else {
-	strcpy(permission, "r");
-	oflag |= O_RDONLY;
+	strcpy(permission, "w+");
+	oflag |= (O_RDWR | O_CREAT);
       }
-    } else {
-      strcpy(permission, "w+");
-      oflag |= (O_RDWR | O_CREAT);
-    }
-    /* Imu file name, this may not work very well in the mpi version... */
-    sprintf(file_imu, IMU_FILE_TEMPLATE, mpi.rank);
-
-    if ((spectrum.fd_Imu = open(file_imu, oflag, PERMISSIONS)) == -1) {
-      sprintf(messageStr, "Unable to open %s file %s with permission %s",
-	      (spectrum.updateJ) ? "update" : "input",
-	      file_imu, permission);
-      Error(ERROR_LEVEL_2, routineName, messageStr);
-    }
-    /* --- Fill the index list that keeps track of the location
-           of intensity Imu in file spectrum.fd_Imu at wavelength
-           corresponding to nspect. --                 -------------- */
-
-    spectrum.PRDindex = (int *) malloc(spectrum.Nspect * sizeof(int));
-    index = 0;
-    for (nspect = 0;  nspect < spectrum.Nspect;  nspect++) {
-      if (containsPRDline(&spectrum.as[nspect])) {
-	spectrum.PRDindex[nspect] = index++;
+      /* Imu file name, this may not work very well in the mpi version... */
+      sprintf(file_imu, IMU_FILE_TEMPLATE, mpi.rank);
+      
+      if ((spectrum.fd_Imu = open(file_imu, oflag, PERMISSIONS)) == -1) {
+	sprintf(messageStr, "Unable to open %s file %s with permission %s",
+		(spectrum.updateJ) ? "update" : "input",
+		file_imu, permission);
+	Error(ERROR_LEVEL_2, routineName, messageStr);
+      }
+      /* --- Fill the index list that keeps track of the location
+	 of intensity Imu in file spectrum.fd_Imu at wavelength
+	 corresponding to nspect. --                 -------------- */
+      
+      spectrum.PRDindex = (int *) malloc(spectrum.Nspect * sizeof(int));
+      index = 0;
+      for (nspect = 0;  nspect < spectrum.Nspect;  nspect++) {
+	if (containsPRDline(&spectrum.as[nspect])) {
+	  spectrum.PRDindex[nspect] = index++;
+	}
       }
     }
-  }
 
 
-  for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
-    atom = atmos.activeatoms[nact];
+    for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
+      atom = atmos.activeatoms[nact];
+      
+      /* --- Allocate memory for the rate equation matrix -- ---------- */
+      atom->Gamma = matrix_double(SQ(atom->Nlevel), atmos.Nspace);
+    }
 
-    /* --- Allocate memory for the rate equation matrix -- ---------- */
-    atom->Gamma = matrix_double(SQ(atom->Nlevel), atmos.Nspace);
-  }
 
+    for (nact = 0;  nact < atmos.Nactivemol;  nact++) {
+      molecule = atmos.activemols[nact];
+      
+      /* --- Allocate memory for the rate equation matrix -- ---------- */
+      molecule->Gamma = matrix_double(SQ(molecule->Nv), atmos.Nspace);
+    }
 
-  for (nact = 0;  nact < atmos.Nactivemol;  nact++) {
-    molecule = atmos.activemols[nact];
-
-    /* --- Allocate memory for the rate equation matrix -- ---------- */
-    molecule->Gamma = matrix_double(SQ(molecule->Nv), atmos.Nspace);
-  }
+  } /* End of first task condition */
 
 
 
@@ -207,34 +229,9 @@ void initSolution_p(void)
 
   getCPU(2, TIME_START, NULL);
 
-  if (mpi.task == 0) {
-    /* allocate memory only for the first time */
-    initSolution_alloc();
-  } else {
-    /* zeroing of some arrays */
-    
-    for (nspect = 0;  nspect < spectrum.Nspect;  nspect++) {
-      
-      /* --- Zero J arrays --- */
-      for (k = 0;  k < atmos.Nspace;  k++) {
-	spectrum.J[nspect][k] = 0.0;
-	if (input.backgr_pol) spectrum.J20[nspect][k] = 0.0;
-      }
-      
-      /* --- Zero intensity arrays --- */
-      for (k = 0;  k < atmos.Nrays;  k++) {
-	spectrum.I[nspect][k] = 0.0;
-	if (atmos.Stokes || input.backgr_pol) {
-	  spectrum.Stokes_Q[nspect][k] = 0.0;
-	  spectrum.Stokes_U[nspect][k] = 0.0;
-	  spectrum.Stokes_V[nspect][k] = 0.0;
-	}
-      }
+  /* allocate memory always (because of dynamic Nspace) */
+  initSolution_alloc();
 
-    }
-
-
-  }
 
   /* --- Read angle-averaged intensity from previous run if necessary,
          and open file for J in case option for limited memory is set */

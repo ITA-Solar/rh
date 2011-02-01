@@ -17,6 +17,7 @@
 #include "rh.h"
 #include "atom.h"
 #include "atmos.h"
+#include "geometry.h"
 #include "spectrum.h"
 #include "constant.h"
 #include "background.h"
@@ -37,6 +38,7 @@ extern Atmosphere atmos;
 extern Spectrum spectrum;
 extern InputData input;
 extern char messageStr[];
+extern NCDF_Atmos_file infile;
 extern MPI_data mpi;
 extern IO_data io; 
 
@@ -84,7 +86,7 @@ void init_ncdf_ray(void)
     ERR(ierror,routineName);
   if ((ierror = nc_def_dim( ncid, "ny",     mpi.ny,          &ny_id      ))) 
     ERR(ierror,routineName);
-  if ((ierror = nc_def_dim( ncid, "nz",     atmos.Nspace,    &nspace_id  ))) 
+  if ((ierror = nc_def_dim( ncid, "nz",     infile.nz,       &nspace_id  ))) 
     ERR(ierror,routineName);
   if ((ierror = nc_def_dim( ncid, "nwave",  spectrum.Nspect, &nspect_id  ))) 
     ERR(ierror,routineName);
@@ -304,6 +306,7 @@ void writeRay(void)
       start[0] = nspect;
       start[1] = mpi.ix;
       start[2] = mpi.iy;
+      start[3] = mpi.zcut;
       count[2] = 1;
       count[3] = atmos.Nspace;
 

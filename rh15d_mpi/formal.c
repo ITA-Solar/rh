@@ -48,7 +48,6 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
   bool_t   initialize, boundbound, polarized_as, polarized_c,
            PRD_angle_dep, to_obs, solveStokes, angle_dep;
   enum     FeautrierOrder F_order;     
-  long     Nspace = atmos.Nspace;
   int      Nrays = atmos.Nrays;
   double  *I, *chi, *S, **Ipol, **Spol, *Psi, *Jdag, wmu, dJmax, dJ,
           *J20dag, musq, threemu1, threemu2, *J, *J20;
@@ -97,46 +96,46 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
   /* --- Allocate temporary space --                   -------------- */
 
   if (eval_operator)
-    Psi = (double *) malloc(Nspace * sizeof(double));
+    Psi = (double *) malloc(atmos.Nspace * sizeof(double));
   else
     Psi = NULL;
 
   if (solveStokes) {
-    Ipol = matrix_double(4, Nspace);
+    Ipol = matrix_double(4, atmos.Nspace);
     I    = Ipol[0];
-    Spol = matrix_double(4, Nspace);
+    Spol = matrix_double(4, atmos.Nspace);
     S    = Spol[0];
   } else {
-    I = (double *) malloc(Nspace * sizeof(double));
-    S = (double *) malloc(Nspace * sizeof(double));
+    I = (double *) malloc(atmos.Nspace * sizeof(double));
+    S = (double *) malloc(atmos.Nspace * sizeof(double));
   }
-  chi = (double *) malloc(Nspace * sizeof(double));
+  chi = (double *) malloc(atmos.Nspace * sizeof(double));
 
   /* --- Store current mean intensity, initialize new one to zero - - */
 
-  Jdag = (double *) malloc(Nspace * sizeof(double));
+  Jdag = (double *) malloc(atmos.Nspace * sizeof(double));
   if (input.limit_memory) {
     J = (double *) malloc(atmos.Nspace *sizeof(double));
     readJlambda_single(nspect, Jdag);
   } else {
     J = spectrum.J[nspect];
-    for (k = 0;  k < Nspace;  k++) Jdag[k] = J[k];
+    for (k = 0;  k < atmos.Nspace;  k++) Jdag[k] = J[k];
   }
-  for (k = 0;  k < Nspace;  k++) J[k] = 0.0;
+  for (k = 0;  k < atmos.Nspace;  k++) J[k] = 0.0;
 
   /* --- Store current anisotropy, initialize new one to zero ---- -- */
 
   if (input.backgr_pol) {
-    J20dag = (double *) malloc(Nspace * sizeof(double));
+    J20dag = (double *) malloc(atmos.Nspace * sizeof(double));
     if (input.limit_memory) {
-      J20 = (double *) malloc(Nspace * sizeof(double));
+      J20 = (double *) malloc(atmos.Nspace * sizeof(double));
       readJ20_single(nspect, J20dag);
     } else {
       J20 = spectrum.J20[nspect];
-      for (k = 0;  k < Nspace;  k++)
+      for (k = 0;  k < atmos.Nspace;  k++)
 	J20dag[k] = J20[k];
     }
-    for (k = 0;  k < Nspace;  k++) J20[k] = 0.0;
+    for (k = 0;  k < atmos.Nspace;  k++) J20[k] = 0.0;
   }
   /* --- Case of angle-dependent opacity and source function -- ----- */
 
@@ -158,48 +157,48 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
 	  Opacity(nspect, mu, to_obs, initialize);
 
 	if (eval_operator) addtoCoupling(nspect);
-	for (k = 0;  k < Nspace;  k++) {
+	for (k = 0;  k < atmos.Nspace;  k++) {
 	  chi[k] = as->chi[k] + as->chi_c[k];
 	  S[k]   = as->eta[k] + as->eta_c[k] + as->sca_c[k]*Jdag[k];
 	}
 
 	if (solveStokes) {
-	  for (k = Nspace;  k < 4*Nspace;  k++) Spol[0][k] = 0.0;
+	  for (k = atmos.Nspace;  k < 4*atmos.Nspace;  k++) Spol[0][k] = 0.0;
 
           /* --- Add emissivity due to active set for Q, U, V -- ---- */
 
           if (polarized_as) {
-            for (k = Nspace;  k < 4*Nspace;  k++)
+            for (k = atmos.Nspace;  k < 4*atmos.Nspace;  k++)
 	      Spol[0][k] += as->eta[k];
 	  }
           /* --- Add emissivity due to background lines -- ---------- */
 
           if (polarized_c) {
-            for (k = Nspace;  k < 4*Nspace;  k++)
+            for (k = atmos.Nspace;  k < 4*atmos.Nspace;  k++)
 	      Spol[0][k] += as->eta_c[k];
 	  }
 	  /* --- Add emissivity due to background scattering -- ----- */
 
           if (input.backgr_pol && input.StokesMode == FULL_STOKES) {
-            for (k = 0;  k < Nspace;  k++) {
+            for (k = 0;  k < atmos.Nspace;  k++) {
 	      Spol[0][k] += threemu1 * as->sca_c[k]*J20dag[k];
               Spol[1][k] += threemu2 * as->sca_c[k]*J20dag[k];
 	    }
 	  }
 	  for (n = 0;  n < 4;  n++) {
-	    for (k = 0;  k < Nspace;  k++)
+	    for (k = 0;  k < atmos.Nspace;  k++)
 	      Spol[n][k] /= chi[k];
 	  }
 	  PiecewiseStokes(nspect, mu, to_obs, chi, Spol, Ipol, Psi);
 
 	} else {
-	  for (k = 0;  k < Nspace;  k++)
+	  for (k = 0;  k < atmos.Nspace;  k++)
 	    S[k] /= chi[k];
 	  Piecewise_1D(nspect, mu, to_obs, chi, S, I, Psi);
 	}
 
 	if (eval_operator) {
-          for (k = 0;  k < Nspace;  k++) Psi[k] /= chi[k];
+          for (k = 0;  k < atmos.Nspace;  k++) Psi[k] /= chi[k];
 	  addtoGamma(nspect, wmu, I, Psi);
 	}
 	addtoRates(nspect, mu, to_obs, wmu, I, redistribute);
@@ -208,12 +207,12 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
 
 	  /* --- Accumulate mean intensity --        -------------- */
 
-	  for (k = 0;  k < Nspace;  k++) J[k] += wmu * I[k];
+	  for (k = 0;  k < atmos.Nspace;  k++) J[k] += wmu * I[k];
 
 	  /* --- Accumulate anisotropy --            -------------- */
 
 	  if (input.backgr_pol) {
-	    for (k = 0;  k < Nspace;  k++)
+	    for (k = 0;  k < atmos.Nspace;  k++)
 	      J20[k] +=
 		(threemu1 * Ipol[0][k] + threemu2 * Ipol[1][k]) * wmu;
 	  }
@@ -237,7 +236,7 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
     Opacity(nspect, 0, 0, initialize=TRUE);
     if (eval_operator) addtoCoupling(nspect);
 
-    for (k = 0;  k < Nspace;  k++) {
+    for (k = 0;  k < atmos.Nspace;  k++) {
       chi[k] = as->chi[k] + as->chi_c[k];
       S[k]   = (as->eta[k] +
 		as->eta_c[k] + as->sca_c[k]*Jdag[k]) / chi[k];
@@ -247,18 +246,18 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
       spectrum.I[nspect][mu] = Feautrier(nspect, mu, chi, S,
 					 F_order=STANDARD, I, Psi);
       if (eval_operator) {
-	for (k = 0;  k < Nspace;  k++) Psi[k] /= chi[k];
+	for (k = 0;  k < atmos.Nspace;  k++) Psi[k] /= chi[k];
 	addtoGamma(nspect, geometry.wmu[mu], I, Psi);
       }
       addtoRates(nspect, mu, 0, geometry.wmu[mu], I, redistribute);
-      for (k = 0;  k < Nspace;  k++) J[k] += I[k] * geometry.wmu[mu];
+      for (k = 0;  k < atmos.Nspace;  k++) J[k] += I[k] * geometry.wmu[mu];
     }
   }
   /* --- Write new J for current position in the spectrum -- -------- */
 
   dJmax = 0.0;
   if (spectrum.updateJ) {
-    for (k = 0;  k < Nspace;  k++) {
+    for (k = 0;  k < atmos.Nspace;  k++) {
       dJ = fabs(1.0 - Jdag[k]/J[k]);
       dJmax = MAX(dJmax, dJ);
     }

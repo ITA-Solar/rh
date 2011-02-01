@@ -34,6 +34,7 @@ extern Geometry geometry;
 extern Spectrum spectrum;
 extern InputData input;
 extern char messageStr[];
+extern NCDF_Atmos_file infile;
 extern MPI_data mpi;
 extern IO_data io; 
 
@@ -94,7 +95,7 @@ void init_aux_new(void)
     ERR(ierror,routineName);
   if ((ierror = nc_def_dim(ncid, "ny",       mpi.ny,           &ny_id    ))) 
     ERR(ierror,routineName);
-  if ((ierror = nc_def_dim(ncid, "nz",       atmos.Nspace,     &nspace_id))) 
+  if ((ierror = nc_def_dim(ncid, "nz",       infile.nz,        &nspace_id))) 
     ERR(ierror,routineName);
 
   /* attributes */
@@ -402,18 +403,19 @@ void init_aux_old(void) {
   free(atmosID);
 
   /* Check that dimension sizes match */
+
   if ((ierror = nc_inq_dimid(io.aux_ncid, "nz", &dimid ))) 
     ERR(ierror,routineName);  
   if ((ierror = nc_inq_dimlen(io.aux_ncid, dimid, &nz ))) 
     ERR(ierror,routineName);    
 
-  if (nz != atmos.Nspace) {
+  if (nz < atmos.Nspace) {
     sprintf(messageStr,
 	    "Number of depth points mismatch: expected %ld, found %d.",
 	    atmos.Nspace, (int)nz);
     Error(WARNING, routineName, messageStr);
   }
-
+ 
 
   /* Create arrays for multiple-atom/molecule output */
   io.aux_atom_ncid   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
@@ -654,14 +656,15 @@ void writeAux_p(void) {
     /* --- write populations --- */
     start[1] = mpi.ix;
     start[2] = mpi.iy;
+    start[3] = mpi.zcut;
     count[0] = atom->Nlevel; 
     count[3] = atmos.Nspace;
     if (atom->n != NULL) 
       if ((ierror=nc_put_vara_double(ncid, io.aux_atom_pop[nact], start, count,
-     			     atom->n[0] )))     ERR(ierror,routineName);
+     			     atom->n[0] )))     ERR(ierror,"writeAux_p n");
     if (atom->nstar != NULL)
       if ((ierror=nc_put_vara_double(ncid, io.aux_atom_poplte[nact], start, count,
-			     atom->nstar[0] ))) ERR(ierror,routineName);
+				     atom->nstar[0] ))) ERR(ierror,"writeAux_p nstar");
       
     if (input.p15d_wxtra) {
       /* --- write damping --- */
@@ -673,7 +676,7 @@ void writeAux_p(void) {
       }
       count[0] = atom->Nline;
       if ((ierror=nc_put_vara_double(ncid, io.aux_atom_damp[nact], start, count,
-				     adamp[0] ))) ERR(ierror,routineName);
+				     adamp[0] ))) ERR(ierror,"writeAux_p adamp");
       freeMatrix((void **) adamp);
     }
 
@@ -685,43 +688,44 @@ void writeAux_p(void) {
       start[0] = kr;
       line = &atom->line[kr];
       if ((ierror=nc_put_vara_double(ncid, io.aux_atom_RijL[nact], start, count,
-				     line->Rij ))) ERR(ierror,routineName);
+				     line->Rij ))) ERR(ierror,"writeAux_p RijL");
       if ((ierror=nc_put_vara_double(ncid, io.aux_atom_RjiL[nact], start, count,
-				     line->Rji ))) ERR(ierror,routineName);
+				     line->Rji ))) ERR(ierror,"writeAux_p RjiL");
     }
     /* for bound-free transitions */
     for (kr=0; kr < atom->Ncont; kr++) {
       start[0] = kr;
       continuum = &atom->continuum[kr];
       if ((ierror=nc_put_vara_double(ncid, io.aux_atom_RijC[nact], start, count,
-				     continuum->Rij ))) ERR(ierror,routineName);
+				     continuum->Rij ))) ERR(ierror,"writeAux_p RijC");
       if ((ierror=nc_put_vara_double(ncid, io.aux_atom_RjiC[nact], start, count,
-				     continuum->Rji ))) ERR(ierror,routineName);
+				     continuum->Rji ))) ERR(ierror,"writeAux_p RjiC");
     }
 
     if (input.p15d_wxtra) {
       /* --- write broadening velocity --- */
       start[0] = mpi.ix;
       start[1] = mpi.iy;
-      start[2] = 0;
+      start[2] = mpi.zcut;
       count[0] = 1;
       count[1] = 1;
       count[2] = atmos.Nspace;
       if ((ierror=nc_put_vara_double(ncid, io.aux_atom_vbroad[nact], start, count,
-				     atom->vbroad ))) ERR(ierror,routineName);
+				     atom->vbroad ))) ERR(ierror,"writeAux_p vbroad");
 
       /* --- write collisional rates --- */
       start[0] = 0;
       start[1] = 0;
       start[2] = mpi.ix;
       start[3] = mpi.iy;
+      start[4] = mpi.zcut;
       count[0] = atom->Nlevel;
       count[1] = atom->Nlevel;
       count[2] = 1;
       count[3] = 1;
       count[4] = atmos.Nspace;
       if ((ierror=nc_put_vara_double(ncid, io.aux_atom_coll[nact], start, count,
-				     atom->C[0] ))) ERR(ierror,routineName);
+				     atom->C[0] ))) ERR(ierror,"writeAux_p C");
     }
 
   } /* End ATOM loop */
@@ -735,6 +739,7 @@ void writeAux_p(void) {
     /* --- write populations --- */
     start[1] = mpi.ix;
     start[2] = mpi.iy;
+    start[3] = mpi.zcut;
     count[0] = molecule->Nv; 
     count[3] = atmos.Nspace;
     if (molecule->nv != NULL) 
@@ -772,7 +777,7 @@ void writeAux_p(void) {
       /* --- write broadening velocity --- */
       start[0] = mpi.ix;
       start[1] = mpi.iy;
-      start[2] = 0;
+      start[2] = mpi.zcut;
       count[0] = 1;
       count[1] = 1;
       count[2] = atmos.Nspace;
@@ -806,9 +811,10 @@ void writeOpacity_p(void) {
 
   start_ai[1] = mpi.ix;
   start_ai[2] = mpi.iy;
+  start_ai[3] = mpi.zcut;
   start_ad[2] = mpi.ix;
   start_ad[3] = mpi.iy;
-
+  start_ad[4] = mpi.zcut;
   count_ai[3] = atmos.Nspace;
   count_ad[4] = atmos.Nspace;
 
@@ -924,7 +930,7 @@ void readPopulations(Atom *atom) {
   if ((ierror = nc_inq_dimlen(io.aux_ncid, dimid, &nz ))) 
     ERR(ierror,routineName);    
 
-  if (nz != atmos.Nspace) {
+  if (nz < atmos.Nspace) {
     sprintf(messageStr,
 	    "Number of depth points mismatch: expected %ld, found %d.",
 	    atmos.Nspace, (int)nz);
@@ -939,6 +945,7 @@ void readPopulations(Atom *atom) {
   /* --- Read data --- */
   start[1] = mpi.ix;
   start[2] = mpi.iy;
+  start[3] = mpi.zcut;
   
   count[0] = atom->Nlevel;
   count[3] = atmos.Nspace;
@@ -1004,7 +1011,7 @@ void readMolPops(Molecule *molecule) {
   if ((ierror = nc_inq_dimlen(io.aux_ncid, dimid, &nz ))) 
     ERR(ierror,routineName);    
 
-  if (nz != atmos.Nspace) {
+  if (nz < atmos.Nspace) {
     sprintf(messageStr,
 	    "Number of depth points mismatch: expected %ld, found %d.",
 	    atmos.Nspace, (int)nz);
@@ -1055,7 +1062,7 @@ void readMolPops(Molecule *molecule) {
   /* --- Read data --- */
   start[1] = mpi.ix;
   start[2] = mpi.iy;
-  
+  start[3] = mpi.zcut;
   count[0] = molecule->Nv;
   count[3] = atmos.Nspace;
 
@@ -1135,7 +1142,7 @@ bool_t readRadRate(Atom *atom) {
   if ((ierror = nc_inq_dimlen(io.aux_ncid, dimid, &nz ))) 
     ERR(ierror,routineName);    
 
-  if (nz != atmos.Nspace) {
+  if (nz < atmos.Nspace) {
     sprintf(messageStr,
 	    "Number of depth points mismatch: expected %ld, found %d.",
 	    atmos.Nspace, (int)nz);
@@ -1157,7 +1164,7 @@ bool_t readRadRate(Atom *atom) {
   /* --- Read data --- */
   start[1] = mpi.ix;
   start[2] = mpi.iy;
-  
+  start[3] = mpi.zcut;
   count[3] = atmos.Nspace;
 
   for (kr = 0; kr < atom->Nline; kr++) {
@@ -1243,7 +1250,7 @@ void readCollRates_p(Atom *atom) {
   if ((ierror = nc_inq_dimlen(io.aux_ncid, dimid, &nz ))) 
     ERR(ierror,routineName);    
 
-  if (nz != atmos.Nspace) {
+  if (nz < atmos.Nspace) {
     sprintf(messageStr,
 	    "Number of depth points mismatch: expected %ld, found %d.",
 	    atmos.Nspace, (int)nz);
@@ -1258,7 +1265,7 @@ void readCollRates_p(Atom *atom) {
   /* --- Read data --- */
   start[2] = mpi.ix;
   start[3] = mpi.iy;
-  
+  start[4] = mpi.zcut;
   count[0] = atom->Nlevel;
   count[1] = atom->Nlevel;
   count[4] = atmos.Nspace;
@@ -1315,7 +1322,7 @@ void readDamping_p(Atom *atom) {
   if ((ierror = nc_inq_dimlen(io.aux_ncid, dimid, &nz ))) 
     ERR(ierror,routineName);    
 
-  if (nz != atmos.Nspace) {
+  if (nz < atmos.Nspace) {
     sprintf(messageStr,
 	    "Number of depth points mismatch: expected %ld, found %d.",
 	    atmos.Nspace, (int)nz);
@@ -1331,7 +1338,7 @@ void readDamping_p(Atom *atom) {
   /* --- Read data --- */
   start[0] = mpi.ix;
   start[1] = mpi.iy;
-  
+  start[2] = mpi.zcut;
   count[2] = atmos.Nspace;
 
   /* read as double, although it is written as float */

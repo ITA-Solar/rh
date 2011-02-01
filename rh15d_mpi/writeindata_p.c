@@ -43,12 +43,13 @@ void init_ncdf_indata(void)
 /* Creates the netCDF file for the input data */
 {
   const char routineName[] = "init_ncdf_indata";
-  int    ierror, ncid, ncid_input, ncid_atmos, ncid_mpi, nx_id, ny_id, 
+  int    i, ierror, ncid, ncid_input, ncid_atmos, ncid_mpi, nx_id, ny_id, 
          nspace_id, nhydr_id, nelem_id, nrays_id, nproc_id,  atstr_id,
          temp_var, ne_var, vz_var, vturb_var, B_var, gB_var, chiB_var, nh_var,
          ew_var, ab_var, eid_var, mu_var, wmu_var, height_var,x_var, y_var,
          xnum_var, ynum_var, tm_var, tn_var, it_var, conv_var, dm_var, ntsk_var, 
          host_var, ft_var, dimids[4];
+  size_t  start[] = {0};
   bool_t PRD_angle_dep, XRD;
   char   startJ[MAX_LINE_SIZE], StokesMode[MAX_LINE_SIZE], angleSet[MAX_LINE_SIZE];
   FILE  *test;
@@ -76,7 +77,7 @@ void init_ncdf_indata(void)
     ERR(ierror,routineName);
   if ((ierror = nc_def_dim(ncid, "ny",     mpi.ny,       &ny_id    ))) 
     ERR(ierror,routineName);
-  if ((ierror = nc_def_dim(ncid, "nz",     atmos.Nspace, &nspace_id))) 
+  if ((ierror = nc_def_dim(ncid, "nz",     infile.nz,   &nspace_id))) 
     ERR(ierror,routineName);
   if ((ierror = nc_def_dim(ncid, "strlen", ARR_STRLEN,   &atstr_id ))) 
     ERR(ierror,routineName);
@@ -347,8 +348,33 @@ void init_ncdf_indata(void)
   if ((ierror=nc_put_att_int( ncid_mpi, NC_GLOBAL, "y_step",  NC_INT, 1,
 			      &input.p15d_yst ))) ERR(ierror,routineName);
 
-  /* End define mode */
+  /* --- End define mode --- */
   if ((ierror = nc_enddef(ncid))) ERR(ierror,routineName);
+
+  /* --- Write some data that does not depend on xi, yi --- */
+  /* arrays from geometry */
+  if ((ierror = nc_put_var_double(ncid_atmos, mu_var,      geometry.muz )))
+    ERR(ierror,routineName);   
+  if ((ierror = nc_put_var_double(ncid_atmos, wmu_var,     geometry.wmu )))
+    ERR(ierror,routineName);   
+  if ((ierror = nc_put_var_double(ncid_atmos, height_var,  geometry.height )))
+    ERR(ierror,routineName);   
+
+
+  /* write x and y, convert from MPI indices to actual values */
+  for (i=0; i < mpi.nx; i++) {
+    start[0] = (size_t) i;
+    if ((ierror = nc_put_var1_double(ncid_atmos, x_var,  &start[0], 
+	     &infile.x[mpi.xnum[i]]))) ERR(ierror,routineName);  
+  }
+
+  for (i=0; i < mpi.ny; i++) {
+    start[0] = (size_t) i;
+    if ((ierror = nc_put_var1_double(ncid_atmos, y_var,  &start[0], 
+	     &infile.y[mpi.ynum[i]]))) ERR(ierror,routineName);  
+  }
+
+
 
   /* Copy stuff to the IO data struct */
   io.in_ncid       = ncid;
@@ -412,10 +438,9 @@ void writeAtmos_p(void)
   ncid = io.in_atmos_ncid;
 
   /* put atmosphere variables */
-  start[0] = mpi.ix; 
-  start[1] = mpi.iy;
-  count[2] = atmos.Nspace;
-
+  start[0] = mpi.ix;   count[0] = 1;
+  start[1] = mpi.iy;   count[1] = 1;
+  start[2] = mpi.zcut; count[2] = atmos.Nspace;
 
   if ((ierror = nc_put_vara_double(ncid, io.in_atmos_T, start, count,
 				   atmos.T ))) ERR(ierror,routineName);
@@ -435,20 +460,19 @@ void writeAtmos_p(void)
   }
 
   /* put hydrogen populations */
-  start[1] = mpi.ix;
-  start[2] = mpi.iy;
-  count[2] = 1;
-  count[3] = atmos.Nspace;
+  count[0] = 1;
+  start[1] = mpi.ix;   count[1] = 1;
+  start[2] = mpi.iy;   count[2] = 1;
+  start[3] = mpi.zcut; count[3] = atmos.Nspace;
 
   for (i=0; i < atmos.H->Nlevel; i++) {
     start[0] = (size_t) i;
     if ((ierror = nc_put_vara_double(ncid, io.in_atmos_nh, start, count,
 				     atmos.H->n[i] ))) ERR(ierror,routineName);  
   }
-
   /* arrays of number of elements */
-  start[1] = 0;
-  count[1] = ATOM_ID_WIDTH+1;
+  count[0] = 1;
+  start[1] = 0;   count[1] = ATOM_ID_WIDTH+1;
   for (i=0; i < atmos.Nelem; i++) {
     start[0] = (size_t) i;
     if ((ierror = nc_put_var1_double(ncid, io.in_atmos_ew,  &start[0], 
@@ -457,27 +481,6 @@ void writeAtmos_p(void)
 		     &atmos.elements[i].abund )))  ERR(ierror,routineName); 
     if ((ierror = nc_put_vara_text(ncid, io.in_atmos_eid, start, count,
        (const char *)&atmos.elements[i].ID )))     ERR(ierror,routineName); 
-  }
-
-  /* arrays from geometry */
-  if ((ierror = nc_put_var_double(ncid, io.in_atmos_mu,  geometry.muz )))
-    ERR(ierror,routineName);   
-  if ((ierror = nc_put_var_double(ncid, io.in_atmos_wmu, geometry.wmu )))
-    ERR(ierror,routineName);   
-  if ((ierror = nc_put_var_double(ncid, io.in_atmos_z,   geometry.height )))
-    ERR(ierror,routineName);   
-
-  /* write x and y, convert from MPI indices to actual values */
-  for (i=0; i < mpi.nx; i++) {
-    start[0] = (size_t) i;
-    if ((ierror = nc_put_var1_double(ncid, io.in_atmos_x,  &start[0], 
-	     &infile.x[mpi.xnum[i]]))) ERR(ierror,routineName);  
-  }
-
-  for (i=0; i < mpi.ny; i++) {
-    start[0] = (size_t) i;
-    if ((ierror = nc_put_var1_double(ncid, io.in_atmos_y,  &start[0], 
-	     &infile.y[mpi.ynum[i]]))) ERR(ierror,routineName);  
   }
 
 

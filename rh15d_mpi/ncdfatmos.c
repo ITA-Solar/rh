@@ -33,7 +33,8 @@
 
 
 /* --- Function prototypes --                          -------------- */
-
+void setTcut(Atmosphere *atmos, Geometry *geometry, double Tmax);
+void realloc_ndep(Atmosphere *atmos, Geometry *geometry);
 
 /* --- Global variables --                             -------------- */
 
@@ -195,15 +196,41 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   size_t     count[]    = {1, 1, 1};
   size_t     start_nh[] = {0, 0, 0, 0};
   size_t     count_nh[] = {1, 1, 1, 1};
-  int        ncid, ierror, i, j;
+  int        ncid, ierror, i, j, z_varid;
   double    *Bx, *By, *Bz;
 
   ncid = infile->ncid;
 
-  count[2] = atmos->Nspace;
-  start[0] = (size_t) xi;
-  start[1] = (size_t) yi;
+  atmos->Nspace = geometry->Ndep = infile->nz;
+
+  /* read full T column, to see where to zcut */
+  start[0] = (size_t) xi; count[0] = 1;
+  start[1] = (size_t) yi; count[1] = 1;
+  start[2] = 0;           count[2] = infile->nz;
   
+  atmos->T = (double *) realloc(atmos->T, infile->nz * sizeof(double)); 
+
+  if ((ierror = nc_get_vara_double(ncid, infile->T_varid,  start, count, atmos->T)))
+    ERR(ierror,routineName);
+
+  /* Finds z value for Tmax cut, redefines Nspace, reallocates arrays */
+  setTcut(atmos, geometry, input.p15d_tmax);
+
+  printf("Process %d: zcut = %d\n", mpi.rank, mpi.zcut);
+
+  /* Get z again */
+  start[0] = mpi.zcut;  count[0] = atmos->Nspace;
+
+  if ((ierror=nc_inq_varid(ncid, "z",  &z_varid)))          
+    ERR(ierror,routineName);
+  if ((ierror = nc_get_vara_double(ncid, z_varid, start, count, geometry->height))) 
+    ERR(ierror,routineName);
+
+
+  start[0] = (size_t) xi; count[0] = 1;
+  start[1] = (size_t) yi; count[1] = 1;
+  start[2] = mpi.zcut;    count[2] = atmos->Nspace;
+
    /* read variables */
   if ((ierror = nc_get_vara_double(ncid, infile->T_varid,  start, count, atmos->T)))
     ERR(ierror,routineName);
@@ -240,12 +267,10 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   for (j = 0; j < atmos->Nspace; j++) atmos->nHtot[j] = 0.0; 
 
   /* read nH, all at once */ 
-  start_nh[0] = 0;
-  start_nh[1] = (size_t) xi;
-  start_nh[2] = (size_t) yi;
-  count_nh[0] = atmos->NHydr;
-  count_nh[3] = atmos->Nspace;
-
+  start_nh[0] = 0;           count_nh[0] = atmos->NHydr;
+  start_nh[1] = (size_t) xi; count_nh[1] = 1;
+  start_nh[2] = (size_t) yi; count_nh[2] = 1;
+  start_nh[3] = mpi.zcut;    count_nh[3] = atmos->Nspace;
   if ((ierror = nc_get_vara_double(ncid, infile->nh_varid, start_nh, count_nh, 
 				   atmos->nH[0]))) ERR(ierror,routineName);
 
@@ -263,8 +288,6 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
       break;
     }
   }
-
-
 
   return;
 
@@ -298,3 +321,77 @@ void close_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *in
 }
 
 /* ------- end ---------------------------- close_ncdf   ------------- */
+
+/* ------- begin--------------------------- setTcut      ------------- */
+void setTcut(Atmosphere *atmos, Geometry *geometry, double Tmax) {
+  /* Find the point where temperature (in TR region) gets below Tmax,
+     set atmos.Nspace to remaining points, repoint all the atmospheric
+     quantities to start at that point.  */
+
+  const char routineName[] = "setTcut";
+  int   i, cutpoint;
+
+  mpi.zcut =  0;
+
+  if (Tmax < 0) return; /* Do nothing when Tmax < 0 */
+
+  cutpoint = -1;
+
+  for (i=0; i < atmos->Nspace; i++) {
+    if (atmos->T[i] <= Tmax) {
+      cutpoint = i;
+      break;
+    }
+  }
+
+  if (cutpoint < 0) {
+    sprintf(messageStr,
+	    "\n-Could not find temperature cut point! Aborting.\n");
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
+
+  mpi.zcut = cutpoint;
+
+  /* subtract from total number of points */
+  atmos->Nspace  -= mpi.zcut;
+  geometry->Ndep -= mpi.zcut;
+
+  /* Reallocate arrays of Nspace */ 
+  realloc_ndep(atmos, geometry);
+   
+  return;
+}
+/* ------- end  --------------------------- setTcut      ----------- */
+
+/* ------- begin--------------------------- setTcut      ------------- */
+void realloc_ndep(Atmosphere *atmos, Geometry *geometry) {
+  /* Reallocates the arrays of Nspace */
+
+  
+
+  atmos->T     = (double *) realloc(atmos->T,     atmos->Nspace * sizeof(double));
+  atmos->ne    = (double *) realloc(atmos->ne,    atmos->Nspace * sizeof(double));
+  atmos->nHtot = (double *) realloc(atmos->nHtot, atmos->Nspace * sizeof(double));
+  geometry->vel    = (double *) realloc(geometry->vel, 
+					atmos->Nspace * sizeof(double));
+  geometry->height = (double *) realloc(geometry->height, 
+					atmos->Nspace * sizeof(double));
+  if (atmos->nHmin != NULL) 
+      atmos->nHmin = (double *) realloc(atmos->nHmin,
+					atmos->Nspace * sizeof(double));
+  
+  /* default zero */
+  free(atmos->vturb);
+  atmos->vturb  = (double *) calloc(atmos->Nspace , sizeof(double)); 
+
+  if (atmos->Stokes) {
+    atmos->B       = (double *) realloc(atmos->B, 
+					atmos->Nspace * sizeof(double));
+    atmos->gamma_B = (double *) realloc(atmos->gamma_B,
+					atmos->Nspace * sizeof(double));
+    atmos->chi_B   = (double *) realloc(atmos->chi_B,
+					atmos->Nspace * sizeof(double));
+  }
+
+  return;
+}

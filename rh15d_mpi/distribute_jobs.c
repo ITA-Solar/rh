@@ -183,7 +183,7 @@ void finish_jobs(void)
 
   free(mpi.xnum);
   free(mpi.ynum);
-  free(mpi.taskmap);
+  freeMatrix((void **) mpi.taskmap);
 
 }
 /* ------- end   -------------------------- finish_jobs.c ------- --- */

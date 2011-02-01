@@ -136,9 +136,25 @@ void UpdateAtmosDep(void) {
   /* Put back initial Stokes mode */
   input.StokesMode = mpi.StokesMode_save;
 
+
   /* Update atmos-dependent atomic  quantities --- --------------- */
   for (nact = 0; nact < atmos.Natom; nact++) {
     atom = &atmos.atoms[nact];
+
+    /* Reallocate some stuff (because of varying Nspace) */
+    atom->ntotal = (double *) realloc(atom->ntotal, atmos.Nspace * sizeof(double));
+    atom->vbroad = (double *) realloc(atom->vbroad, atmos.Nspace * sizeof(double));
+
+    if (atom->n != NULL) {
+      freeMatrix((void **) atom->n);
+      atom->n = matrix_double(atom->Nlevel, atmos.Nspace);
+    }
+    
+    if (atom->nstar != NULL) {
+      freeMatrix((void **) atom->nstar);
+      atom->nstar = matrix_double(atom->Nlevel, atmos.Nspace);
+    }
+
     for (k = 0;  k < atmos.Nspace;  k++)
       atom->ntotal[k] = atom->abundance * atmos.nHtot[k];
     
@@ -152,6 +168,7 @@ void UpdateAtmosDep(void) {
   /* Now only for active atoms */
   for (nact = 0; nact < atmos.Nactiveatom; nact++) {
     atom = atmos.activeatoms[nact];
+
     
     /* Rewind atom files to point just before collisional data */
     if ((ierror = fseek(atom->fp_input, io.atom_file_pos[nact], SEEK_SET))) {
@@ -159,37 +176,88 @@ void UpdateAtmosDep(void) {
       Error(ERROR_LEVEL_2, routineName, messageStr);
     }
     
+    /* Reallocate some stuff (because of varying Nspace) */
+
+
+
     /* Free collision rate array, will be reallocated by calls in Background_p */
-    if (atom->C != NULL) freeMatrix((void **) atom->C);
+    if (atom->C != NULL) {
+      freeMatrix((void **) atom->C);
+      atom->C = NULL;
+    }
 
     /* Allocate Gamma, as iterate released the memory */
     atom->Gamma = matrix_double(SQ(atom->Nlevel), atmos.Nspace);
+
+    
+    /* Initialise some continuum quantities */
+    for (kr = 0; kr < atom->Ncont; kr++) {
+      atom->continuum[kr].Rij = (double *) realloc(atom->continuum[kr].Rij,
+						   atmos.Nspace * sizeof(double));
+      atom->continuum[kr].Rji = (double *) realloc(atom->continuum[kr].Rji,
+						   atmos.Nspace * sizeof(double));
+      for (k = 0;  k < atmos.Nspace;  k++) {
+	atom->continuum[kr].Rij[k] = 0.0;
+	atom->continuum[kr].Rji[k] = 0.0;
+      }
+    }
+    
     
     /* Initialise some line quantities */
     for (kr = 0;  kr < atom->Nline;  kr++) {
       line = &atom->line[kr];
       
-      if (line->phi  != NULL) freeMatrix((void **) line->phi);
-      if (line->wphi != NULL) free(line->wphi);
+      if (line->phi  != NULL) {
+	freeMatrix((void **) line->phi);
+	line->phi = NULL;
+      }
+      if (line->wphi != NULL) {
+	free(line->wphi);
+	line->wphi = NULL;
+      }
       
       if (atmos.moving && line->polarizable && (input.StokesMode>FIELD_FREE)) {
 	
-	if (line->phi_Q != NULL) freeMatrix((void **) line->phi_Q);
-	if (line->phi_U != NULL) freeMatrix((void **) line->phi_U);
-	if (line->phi_V != NULL) freeMatrix((void **) line->phi_V);
+	if (line->phi_Q != NULL) {
+	  freeMatrix((void **) line->phi_Q);
+	  line->phi_Q = NULL;
+	}
+	if (line->phi_U != NULL) {
+	  freeMatrix((void **) line->phi_U);
+	  line->phi_U = NULL;
+	}
+	if (line->phi_V != NULL) {
+	  freeMatrix((void **) line->phi_V);
+	  line->phi_V = NULL;
+	}
 	
 
 	if (input.magneto_optical) {
-	  if (line->psi_Q != NULL) freeMatrix((void **) line->psi_Q);
-	  if (line->psi_U != NULL) freeMatrix((void **) line->psi_U);
-	  if (line->psi_V != NULL) freeMatrix((void **) line->psi_V);
+	  if (line->psi_Q != NULL) {
+	    freeMatrix((void **) line->psi_Q);
+	    line->psi_Q = NULL;
+	  }
+	  if (line->psi_U != NULL) {
+	    freeMatrix((void **) line->psi_U);
+	    line->psi_U = NULL;
+	  }
+	  if (line->psi_V != NULL) {
+	    freeMatrix((void **) line->psi_V);
+	    line->psi_V = NULL;
+	  }
 	}
       }
 	
+
+      /* realloc because of varying Nspace */
+      line->Rij = (double *) realloc(line->Rij, atmos.Nspace * sizeof(double));
+      line->Rji = (double *) realloc(line->Rji, atmos.Nspace * sizeof(double));
+
       for (k = 0;  k < atmos.Nspace;  k++) {
 	line->Rij[k] = 0.0;
 	line->Rji[k] = 0.0;
       }	
+     
       
       if (line->PRD) {
 	if (line->Ng_prd != NULL) {
@@ -206,6 +274,14 @@ void UpdateAtmosDep(void) {
 	  Nlamu = 2*atmos.Nrays * line->Nlambda;
 	else
 	  Nlamu = line->Nlambda;
+	
+
+	// Idea: instead of doing this, why not free and just set line->rho_prd = NULL,
+	// (and also line->Qelast?), because profile.c will act on that and reallocate
+	freeMatrix((void **) line->rho_prd);
+	line->rho_prd = matrix_double(Nlamu, atmos.Nspace);
+	
+	line->Qelast = (double *) realloc(line->Qelast, atmos.Nspace * sizeof(double));
 
 	/* Initialize the ratio of PRD to CRD profiles to 1.0 */
 	for (la = 0;  la < Nlamu;  la++) {
@@ -215,7 +291,7 @@ void UpdateAtmosDep(void) {
       }
     }
   }
-  
+
   distribute_nH();
 
   
@@ -223,21 +299,51 @@ void UpdateAtmosDep(void) {
   for (nact = 0; nact < atmos.Nmolecule; nact++) {
     molecule = &atmos.molecules[nact];
 
+    /* Reallocate some stuff, because of varying Nspace */
+    molecule->vbroad = (double *) realloc(molecule->vbroad, atmos.Nspace * sizeof(double));
+    molecule->pf     = (double *) realloc(molecule->pf,     atmos.Nspace * sizeof(double));
+    molecule->n      = (double *) realloc(molecule->n,      atmos.Nspace * sizeof(double));
+    if (molecule->nv != NULL) {
+      freeMatrix((void **) molecule->nv);
+      molecule->nv = matrix_double(molecule->Nv, atmos.Nspace);
+    }
+    if (molecule->nvstar != NULL) {
+      freeMatrix((void **) molecule->nvstar);
+      molecule->nvstar = matrix_double(molecule->Nv, atmos.Nspace);
+    }
+    if (molecule->pfv != NULL) {
+      freeMatrix((void **) molecule->pfv);
+      molecule->pfv = matrix_double(molecule->Nv, atmos.Nspace);
+    }
+    
+
     vtherm = 2.0*KBOLTZMANN / (AMU * molecule->weight);
     for (k = 0;  k < atmos.Nspace;  k++)
       molecule->vbroad[k] = sqrt(vtherm*atmos.T[k] + SQ(atmos.vturb[k]));
     
     if (molecule->active) {
+      /* Allocate Gamma, as iterate released the memory */
+      molecule->Gamma = matrix_double(SQ(molecule->Nv), atmos.Nspace);
+      
       LTEmolecule(molecule);
 
       /* Free CO collision rate array, will be reallocated in initSolution_p */
-      if (strstr(molecule->ID, "CO")) free(molecule->C_ul);
+      if (strstr(molecule->ID, "CO")) {
+	free(molecule->C_ul);
+	molecule->C_ul = NULL;
+      }
 
       /* Free some line quantities */
       for (kr = 0;  kr < molecule->Nrt;  kr++) {
 	mrt = &molecule->mrt[kr];
-	if (mrt->phi  != NULL) freeMatrix((void **) mrt->phi);
-	if (mrt->wphi != NULL) free(mrt->wphi);
+	if (mrt->phi  != NULL) {
+	  freeMatrix((void **) mrt->phi);
+	  mrt->phi = NULL;
+	}
+	if (mrt->wphi != NULL) {
+	  free(mrt->wphi);
+	  mrt->wphi = NULL;
+	}
       }
 
     } else {
@@ -254,6 +360,24 @@ void UpdateAtmosDep(void) {
 }
 /* ------- end   --------------------------  updateAtmosDep.c     --- */
 
+/* ------- begin --------------------------  ERR.c ------         --- */
+void ERR(int ierror, const char *rname) {
+  /* Processes NetCDF errors */
+
+
+  /* For conversion not representable (ie, NaNs, Inf, etc.), return so
+     that process can go to next task */
+  if (ierror == NC_ERANGE) {
+    Error(WARNING, rname, "NetCDF: Numeric conversion not representable");
+    return; 
+  } 
+
+  printf("Process %d: (EEE) %s: %d %s\n", mpi.rank, rname, ierror,
+	 nc_strerror(ierror));
+  MPI_Abort(mpi.comm, 2);
+
+}
+/* ------- end   --------------------------  ERR.c ------         --- */
 
 /* ------- begin --------------------------  Error_p.c --         --- */
 void Error(enum errorlevel level, const char *routineName,
@@ -270,10 +394,10 @@ void Error(enum errorlevel level, const char *routineName,
     return;
   case WARNING:
     if ((mpi.single_log) && (mpi.rank != 0)) 
-      fprintf(mpi.logfile, "\n-WARNING in routine %s\n %s\n",
-	      routineName, (messageStr) ? messageStr : " (Undocumented)\n");
-    fprintf(commandline.logfile, "\n-WARNING in routine %s\n %s\n",
-	    routineName, (messageStr) ? messageStr : " (Undocumented)\n");
+      fprintf(mpi.logfile, "\nProcess %d: -WARNING in routine %s\n %s\n",
+	      mpi.rank, routineName, (messageStr) ? messageStr : " (Undocumented)\n");
+    fprintf(commandline.logfile, "\nProcess %d: -WARNING in routine %s\n %s\n",
+	    mpi.rank, routineName, (messageStr) ? messageStr : " (Undocumented)\n");
     return;
   default:
     if (level < defaultLevel) {

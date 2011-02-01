@@ -14,7 +14,7 @@
 typedef struct {
   char     name[MPI_MAX_PROCESSOR_NAME];
   bool_t   single_log, stop;
-  int      size, rank, namelen, nx, ny, ix, iy, *xnum, *ynum, niter;
+  int      size, rank, namelen, nx, ny, ix, iy, *xnum, *ynum, niter, zcut;
   int    **rh_converged, StokesMode_save, convergence;
   long     nconv, nnoconv, ncrash, my_start, backgrrecno;
   long   **taskmap, task, Ntasks;
@@ -63,7 +63,6 @@ void init_aux_old(void);
 void close_ncdf_aux(void);
 void writeAux_p(void);
 void writeOpacity_p(void);
-//void readPopulations_p(Atom *atom);
 
 void initParallel(int *argc, char **argv[], bool_t run_ray);
 void initParallelIO(bool_t run_ray);
@@ -71,14 +70,13 @@ void closeParallelIO(bool_t run_ray);
 void UpdateAtmosDep(void);
 void RequestStop_p(void);
 bool_t StopRequested_p(void);
+void ERR(int ierror, const char *rname);
 
 void Iterate_p(int NmaxIter, double iterLimit);
 double solveSpectrum_p(bool_t eval_operator, bool_t redistribute);
 
 void SolveLinearEq_p(int N, double **A, double *b, bool_t improve);
 
-
-#define ERR(e,r) {printf("Process %d: (EEE) %s: NetCDF: %s\n", mpi.rank, r, nc_strerror(e)); exit(EXIT_FAILURE);}
 
 #define MPILOG_TEMPLATE     "scratch/rh_p%d.log"
 #define RAY_MPILOG_TEMPLATE "scratch/solveray_p%d.log"
