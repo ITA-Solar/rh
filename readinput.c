@@ -182,7 +182,15 @@ void readInput()
     {"Y_END", "-1",  FALSE, KEYWORD_OPTIONAL, &input.p15d_y1,
      setintValue},
     {"Y_STEP", "1",  FALSE, KEYWORD_OPTIONAL, &input.p15d_yst,
-     setintValue}
+     setintValue},
+
+    {"15D_WRITE_EXTRA",    "TRUE",  FALSE, KEYWORD_OPTIONAL, &input.p15d_wxtra,
+     setboolValue},
+    {"15D_WRITE_SPECTRUM", "TRUE",  FALSE, KEYWORD_OPTIONAL, &input.p15d_wspec,
+     setboolValue},
+
+    {"15D_TMAX_CUT", "-1.0",  FALSE, KEYWORD_OPTIONAL, &input.p15d_tmax,
+     setdoubleValue}
 
   };
   Nkeyword = sizeof(theKeywords) / sizeof(Keyword);

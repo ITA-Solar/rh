@@ -67,8 +67,7 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
   char    inputLine[MAX_LINE_SIZE], shapeStr[20], vdWstr[20], nuDepStr[20],
           symmStr[20], optionStr[20], labelStr[MAX_LINE_SIZE];
   bool_t  Debeye, exit_on_EOF, match;
-  int     i, j, Nlevel, Nrad, Nline, Ncont, Nfixed, 
-          Nspace = atmos.Nspace,
+  int     i, j, Nlevel, Nrad, Nline, Ncont, Nfixed,
           Nread, Nrequired, checkPoint, L, nq, status;
   double  f, C, lambda0, lambdamin, vtherm, S, Ju, Jl,
           c_sum, waveratio;
@@ -163,19 +162,19 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
 
-  atom->nstar  = matrix_double(Nlevel, Nspace);
-  atom->ntotal = (double *) malloc(Nspace * sizeof(double));
+  atom->nstar  = matrix_double(Nlevel, atmos.Nspace);
+  atom->ntotal = (double *) malloc(atmos.Nspace * sizeof(double));
 
-  for (k = 0;  k < Nspace;  k++)
+  for (k = 0;  k < atmos.Nspace;  k++)
     atom->ntotal[k] = atom->abundance * atmos.nHtot[k];
 
   /* --- Ratio of thermal velocity and speed of light for use in
          Doppler width for this particular atomic weight --  -------- */
 
   if (atom->Nline > 0) {
-    atom->vbroad = (double *) malloc(Nspace * sizeof(double));
+    atom->vbroad = (double *) malloc(atmos.Nspace * sizeof(double));
     vtherm = 2.0*KBOLTZMANN/(AMU * atom->weight);
-    for (k = 0;  k < Nspace;  k++)
+    for (k = 0;  k < atmos.Nspace;  k++)
       atom->vbroad[k] = sqrt(vtherm*atmos.T[k] + SQ(atmos.vturb[k]));
   }
 
@@ -304,8 +303,8 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
 
       /* --- Allocate space for up- and downward radiative rates -- - */
 
-      line->Rij = (double *) malloc(Nspace * sizeof(double));
-      line->Rji = (double *) malloc(Nspace * sizeof(double));
+      line->Rij = (double *) malloc(atmos.Nspace * sizeof(double));
+      line->Rji = (double *) malloc(atmos.Nspace * sizeof(double));
 
       /* --- Initialize the mutex lock for the radiative rates if there
              is more than one thread --                -------------- */
@@ -402,8 +401,8 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
 
       /* --- Allocate space for up- and downward radiative rates -- - */
 
-      continuum->Rij = (double *) malloc(Nspace * sizeof(double));
-      continuum->Rji = (double *) malloc(Nspace * sizeof(double));
+      continuum->Rij = (double *) malloc(atmos.Nspace * sizeof(double));
+      continuum->Rji = (double *) malloc(atmos.Nspace * sizeof(double));
 
       /* --- Initialize the mutex lock for the radiative rates if there
              is more than one thread --                -------------- */
@@ -534,7 +533,7 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
            for populations --                          -------------- */
 
     for (kr = 0;  kr < Nline;  kr++) getLambda(atom->line + kr);
-    atom->n = matrix_double(Nlevel, Nspace);
+    atom->n = matrix_double(Nlevel, atmos.Nspace);
 
     /* --- Allocate space for thread dependent quantities -- -------- */
 

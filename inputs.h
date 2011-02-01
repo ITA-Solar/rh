@@ -80,6 +80,8 @@ typedef struct {
          NmaxScatter, Nthreads;
   /* Tiago, added this for 1.5D version */
   int    p15d_x0, p15d_x1, p15d_xst, p15d_y0, p15d_y1, p15d_yst;
+  double p15d_tmax;
+  bool_t p15d_wxtra, p15d_wspec;
   double iterLimit, PRDiterLimit, metallicity;
 
   pthread_attr_t thread_attr;

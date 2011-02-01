@@ -83,7 +83,8 @@ void CollisionRate(struct Atom *atom, FILE *fp_atom)
           labelStr[MAX_LINE_SIZE];
   bool_t  hunt, exit_on_EOF;
   int     nitem, i1, i2, i, j, ij, ji, Nlevel = atom->Nlevel, Nitem,
-          Nspace = atmos.Nspace, status;
+          status;
+  long    Nspace = atmos.Nspace;
   double  dE, C0, *T, *coeff, *C, Cdown, Cup, gij, *np;
 
   getCPU(3, TIME_START, NULL);
