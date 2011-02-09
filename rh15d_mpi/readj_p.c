@@ -37,8 +37,9 @@ extern Spectrum spectrum;
 extern InputData input;
 extern char messageStr[];
 extern NCDF_Atmos_file infile;
-extern IO_data io;
-extern MPI_data mpi;
+extern IO_data   io;
+extern IO_buffer iobuf;
+extern MPI_data  mpi;
 
 /* ------- begin -------------------------- init_ncdf_J.c ----------- */
 void init_ncdf_J(void)
@@ -71,7 +72,8 @@ void init_ncdf_J(void)
     }
 
     /* Read existing file */
-    if ((ierror = nc_open_par(file_J, NC_WRITE | NC_MPIIO, mpi.comm, mpi.info,
+    if ((ierror = nc_open_par(file_J, NC_WRITE | NC_MPIPOSIX, mpi.comm, mpi.info,
+    //if ((ierror = nc_open_par(file_J, NC_WRITE | NC_MPIIO, mpi.comm, mpi.info,
 			      &jncid))) ERR(ierror,routineName); 
 
     /* Get the variable ids */
@@ -109,7 +111,7 @@ void init_ncdf_J(void)
     }
 
     /* Create the file, when NEW_J is used */
-    if ((ierror = nc_create_par(file_J, NC_NETCDF4 | NC_CLOBBER | NC_MPIIO, 
+    if ((ierror = nc_create_par(file_J, NC_NETCDF4 | NC_CLOBBER | NC_MPIPOSIX, 
 				mpi.comm, mpi.info, &jncid))) ERR(ierror,routineName);
 
     /* Write atmos.ID as global attribute */
@@ -157,6 +159,46 @@ void init_ncdf_J(void)
 }
 
 /* ------- end ---------------------------- init_ncdf_J.c ----------- */
+
+/* ------- begin -------------------------- writeJ_all.c ------------ */
+void writeJ_all(void) {
+/* Writes J for all the tasks */
+
+  const char routineName[] = "writeJ_p";
+  int       ierror, task;
+  long      ind;
+  size_t    start[] = {0, 0, 0, 0};
+  size_t    count[] = {1, 1, 1, 1};
+
+  
+  start[0] = 0;   count[0] = spectrum.Nspect;
+
+  ind = 0;
+
+  /* Set collective access for variables
+  if ((ierror = nc_var_par_access(io.j_ncid, io.j_jlambda_var, NC_COLLECTIVE)))
+    ERR(ierror,routineName);
+  */
+
+  for (task = 0; task < mpi.Ntasks; task++) {
+    
+    /* If there was a crash, no data were written into buffer variables */
+    if (mpi.convergence[task] < 0) continue;
+
+    start[1] = mpi.taskmap[task + mpi.my_start][0];  count[2] = 1;
+    start[2] = mpi.taskmap[task + mpi.my_start][1];  count[2] = 1;
+    start[3] = mpi.zcut_hist[task];   count[3] = infile.nz - start[3];
+
+    if ((ierror = nc_put_vara_double(io.j_ncid, io.j_jlambda_var, start, count,
+				     &iobuf.J[ind] ))) ERR(ierror,routineName);
+
+    ind += spectrum.Nspect*count[3];
+  }
+
+
+  return;
+}
+/* ------- end ---------------------------- writeJ_all.c ------------ */
 
 /* ------- begin -------------------------- writeJ_p.c -------------- */
 void writeJ_p(void) {

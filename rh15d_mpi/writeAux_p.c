@@ -35,8 +35,9 @@ extern Spectrum spectrum;
 extern InputData input;
 extern char messageStr[];
 extern NCDF_Atmos_file infile;
-extern MPI_data mpi;
-extern IO_data io; 
+extern MPI_data  mpi;
+extern IO_data   io; 
+extern IO_buffer iobuf; 
 
 /* ------- begin --------------------------   init_ncdf_aux.c     --- */
 void init_ncdf_aux(void) {
@@ -85,7 +86,8 @@ void init_aux_new(void)
   }
 
   /* Create the file  */
-  if ((ierror = nc_create_par(AUX_FILE, NC_NETCDF4 | NC_CLOBBER | NC_MPIIO, 
+  if ((ierror = nc_create_par(AUX_FILE, NC_NETCDF4 | NC_CLOBBER | NC_MPIPOSIX, 
+  //if ((ierror = nc_create_par(AUX_FILE, NC_NETCDF4 | NC_CLOBBER | NC_MPIIO, 
 			      mpi.comm, mpi.info, &ncid))) ERR(ierror,routineName);
   
   
@@ -381,7 +383,7 @@ void init_aux_old(void) {
   }
 
   /* --- Open the file --- */
-  if ((ierror = nc_open_par(AUX_FILE, NC_WRITE | NC_MPIIO, 
+  if ((ierror = nc_open_par(AUX_FILE, NC_WRITE | NC_MPIPOSIX, 
                   mpi.comm, mpi.info, &io.aux_ncid))) ERR(ierror,routineName);
 
   /* --- Consistency checks --- */
@@ -633,6 +635,98 @@ void close_ncdf_aux(void)
   return; 
 }
 /* ------- end   --------------------------   close_ncdf_aux.c --- */
+
+/* ------- begin --------------------------   writeAux_all.c   --- */
+void writeAux_all(void) {
+  const char routineName[] = "writeAux_all";
+  int        ncid, ierror, nact, task;
+  long       ind = 0;
+  size_t     start[] = {0, 0, 0, 0};
+  size_t     count[] = {1, 1, 1, 1};
+  Atom      *atom;
+  Molecule  *molecule;
+
+
+
+  /* --- Task loop --- */
+  for (task = 0; task < mpi.Ntasks; task++) {
+    
+    /* If there was a crash, no data were written into buffer variables */
+    if (mpi.convergence[task] < 0) continue;
+
+    start[1] = mpi.taskmap[task + mpi.my_start][0];  count[2] = 1;
+    start[2] = mpi.taskmap[task + mpi.my_start][1];  count[2] = 1;
+    start[3] = mpi.zcut_hist[task];   count[3] = infile.nz - start[3];
+
+    /* ATOM loop */
+    for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
+      atom = atmos.activeatoms[nact];
+      ncid = io.aux_atom_ncid[nact];
+
+      /* Set collective access for variables 
+      if ((ierror = nc_var_par_access(ncid, io.aux_atom_pop[nact], NC_COLLECTIVE)))
+	ERR(ierror,routineName);
+      if ((ierror = nc_var_par_access(ncid, io.aux_atom_poplte[nact], NC_COLLECTIVE)))
+	ERR(ierror,routineName);
+      if ((ierror = nc_var_par_access(ncid, io.aux_atom_RijL[nact], NC_COLLECTIVE)))
+	ERR(ierror,routineName);
+      if ((ierror = nc_var_par_access(ncid, io.aux_atom_RjiL[nact], NC_COLLECTIVE)))
+	ERR(ierror,routineName);
+      if ((ierror = nc_var_par_access(ncid, io.aux_atom_RijC[nact], NC_COLLECTIVE)))
+	ERR(ierror,routineName);
+      if ((ierror = nc_var_par_access(ncid, io.aux_atom_RjiC[nact], NC_COLLECTIVE)))
+	ERR(ierror,routineName);
+      // end collective set 
+      */
+
+
+      /* n, nstar */
+      start[0] = 0; count[0] = atom->Nlevel;
+      if ((ierror=nc_put_vara_double(ncid, io.aux_atom_pop[nact], start, count,
+	    	    &iobuf.n[nact][ind*atom->Nlevel] ))) ERR(ierror,routineName);
+
+      if ((ierror=nc_put_vara_double(ncid,io.aux_atom_poplte[nact], start, count,
+                &iobuf.nstar[nact][ind*atom->Nlevel] ))) ERR(ierror,routineName); 
+
+      /* Rij, Rji for lines */
+      start[0] = 0; count[0] = atom->Nline;
+      if ((ierror=nc_put_vara_double(ncid, io.aux_atom_RijL[nact], start, count,
+                 &iobuf.RijL[nact][ind*atom->Nline] ))) ERR(ierror,routineName);  
+  
+      if ((ierror=nc_put_vara_double(ncid, io.aux_atom_RjiL[nact], start, count,
+                 &iobuf.RjiL[nact][ind*atom->Nline] ))) ERR(ierror,routineName);  
+
+      /* Rij, Rji for continua */
+      start[0] = 0; count[0] = atom->Ncont;
+      if ((ierror=nc_put_vara_double(ncid, io.aux_atom_RijC[nact], start, count,
+                 &iobuf.RijC[nact][ind*atom->Ncont] ))) ERR(ierror,routineName);  
+       
+      if ((ierror=nc_put_vara_double(ncid, io.aux_atom_RjiC[nact], start, count,
+                 &iobuf.RjiC[nact][ind*atom->Ncont] ))) ERR(ierror,routineName); 
+    }
+
+    /* MOLECULE loop */
+    for (nact = 0;  nact < atmos.Nactivemol;  nact++) {
+      molecule = atmos.activemols[nact];
+      
+      /* nv, nvstar */
+      start[0] = 0; count[0] = molecule->Nv;
+      if ((ierror=nc_put_vara_double(ncid, io.aux_mol_pop[nact],   start, count,
+       	          &iobuf.nv[nact][ind*molecule->Nv] ))) ERR(ierror,routineName);
+
+      if ((ierror=nc_put_vara_double(ncid,io.aux_mol_poplte[nact], start, count,
+              &iobuf.nvstar[nact][ind*molecule->Nv] ))) ERR(ierror,routineName);  
+    }
+
+    ind += count[3];
+  } 
+  /* --- End task loop --- */
+
+
+  return;
+}
+/* ------- end --------------------------   writeAux_all.c   --- */
+
 
 /* ------- begin --------------------------   writeAux_p.c     --- */
 void writeAux_p(void) {

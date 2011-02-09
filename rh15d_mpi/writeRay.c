@@ -71,7 +71,7 @@ void init_ncdf_ray(void)
   }
 
   /* Create the file  */
-  if ((ierror = nc_create_par(RAY_FILE, NC_NETCDF4 | NC_CLOBBER | NC_MPIIO, 
+  if ((ierror = nc_create_par(RAY_FILE, NC_NETCDF4 | NC_CLOBBER | NC_MPIPOSIX, 
 			      mpi.comm, mpi.info, &ncid))) ERR(ierror,routineName);
   
   /* Write atmos.ID as global attribute */

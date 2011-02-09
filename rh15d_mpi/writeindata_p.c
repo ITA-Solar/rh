@@ -45,15 +45,21 @@ void init_ncdf_indata(void)
   const char routineName[] = "init_ncdf_indata";
   int     i, ierror, ncid, ncid_input, ncid_atmos, ncid_mpi, nx_id, ny_id, 
           nspace_id, nhydr_id, nelem_id, nrays_id, nproc_id, atstr_id, niter_id,
-          temp_var, ne_var, vz_var, vturb_var, B_var, gB_var, chiB_var, nh_var,
+          temp_var, ne_var, vz_var, vturb_var, Bx_var, By_var, Bz_var, nh_var, 
+          /* B_var, gB_var, chiB_var, */
           ew_var, ab_var, eid_var, mu_var, wmu_var, height_var,x_var, y_var,
           xnum_var, ynum_var, tm_var, tn_var, it_var, conv_var, dm_var, dmh_var, 
-          ntsk_var, host_var, ft_var, z_varid, dimids[4];
-  size_t  start[] = {0};
+          zch_var, ntsk_var, host_var, st_var, ft_var, z_varid, dimids[4];
+  long    task;
+  size_t  start[] = {0, 0, 0};
+  size_t  count[] = {1, 1, 1};
   bool_t  PRD_angle_dep, XRD;
   double *height;
-  char    startJ[MAX_LINE_SIZE], StokesMode[MAX_LINE_SIZE], angleSet[MAX_LINE_SIZE];
+  char    startJ[MAX_LINE_SIZE], StokesMode[MAX_LINE_SIZE], angleSet[MAX_LINE_SIZE],
+          hostname[ARR_STRLEN], timestr[ARR_STRLEN];
   FILE   *test;
+  time_t  curtime;
+  struct tm *loctime;
 
   /* Check if we can open the file */
   if ((test = fopen(INPUTDATA_FILE, "w")) == NULL) {
@@ -64,7 +70,8 @@ void init_ncdf_indata(void)
   }
 
   /* Create the file  */
-  if ((ierror = nc_create_par(INPUTDATA_FILE, NC_NETCDF4 | NC_CLOBBER | NC_MPIIO, 
+  if ((ierror = nc_create_par(INPUTDATA_FILE, NC_NETCDF4 | NC_CLOBBER | NC_MPIPOSIX, 
+  //if ((ierror = nc_create_par(INPUTDATA_FILE, NC_NETCDF4 | NC_CLOBBER | NC_MPIIO, 
 			      mpi.comm, mpi.info, &ncid))) ERR(ierror,routineName);
 
   /* Create groups */
@@ -233,6 +240,21 @@ void init_ncdf_indata(void)
   if ((ierror = nc_def_var(ncid_atmos, "velocity_turbulent", NC_FLOAT, 3, dimids,
 			   &vturb_var))) ERR(ierror,routineName); 
   if (atmos.Stokes) {
+    /* New definitions (Bx, By, Bz) */
+    if ((ierror=nc_def_var(ncid_atmos, "Bx", NC_FLOAT, 3, dimids,
+			   &Bx_var)))  ERR(ierror,routineName); 
+    if ((ierror=nc_put_att_text( ncid_atmos, Bx_var, "units", 1, "T" ))) 
+                                         ERR(ierror,routineName);
+    if ((ierror=nc_def_var(ncid_atmos, "By", NC_FLOAT, 3, dimids,
+			   &By_var)))  ERR(ierror,routineName); 
+    if ((ierror=nc_put_att_text( ncid_atmos, By_var, "units", 1, "T" ))) 
+                                         ERR(ierror,routineName);
+    if ((ierror=nc_def_var(ncid_atmos, "Bz", NC_FLOAT, 3, dimids,
+			   &Bz_var)))  ERR(ierror,routineName); 
+    if ((ierror=nc_put_att_text( ncid_atmos, Bz_var, "units", 1, "T" ))) 
+                                         ERR(ierror,routineName);
+
+    /* Old definitions (B, gamma_B, chi_B) 
     if ((ierror=nc_def_var(ncid_atmos, "B",                  NC_FLOAT, 3, dimids,
 			   &B_var)))     ERR(ierror,routineName); 
     if ((ierror=nc_put_att_text( ncid_atmos, B_var,    "units", 1, "T"   ))) 
@@ -245,6 +267,7 @@ void init_ncdf_indata(void)
 			   &chiB_var)))  ERR(ierror,routineName); 
     if ((ierror=nc_put_att_text( ncid_atmos, chiB_var, "units", 3, "rad" ))) 
                                          ERR(ierror,routineName);
+    */
   }
   dimids[0] = nhydr_id;
   dimids[1] = nx_id;
@@ -327,6 +350,8 @@ void init_ncdf_indata(void)
 			   &conv_var))) ERR(ierror,routineName);
   if ((ierror = nc_def_var(ncid_mpi, DM_NAME,     NC_FLOAT,  2, dimids,
 			   &dm_var)))   ERR(ierror,routineName);
+  if ((ierror = nc_def_var(ncid_mpi, ZC_NAME,     NC_INT,    2, dimids,
+			   &zch_var))) ERR(ierror,routineName);
 
   dimids[0] = nproc_id;
   dimids[1] = atstr_id;
@@ -334,6 +359,8 @@ void init_ncdf_indata(void)
 			   &ntsk_var))) ERR(ierror,routineName);
   if ((ierror = nc_def_var(ncid_mpi, HOSTNAME,    NC_CHAR,   2, dimids,
 			   &host_var))) ERR(ierror,routineName);
+  if ((ierror = nc_def_var(ncid_mpi, START_TIME,  NC_CHAR,   2, dimids,
+			   &st_var))) ERR(ierror,routineName);
   if ((ierror = nc_def_var(ncid_mpi, FINISH_TIME, NC_CHAR,   2, dimids,
 			   &ft_var))) ERR(ierror,routineName);
 
@@ -361,44 +388,112 @@ void init_ncdf_indata(void)
   /* --- End define mode --- */
   if ((ierror = nc_enddef(ncid))) ERR(ierror,routineName);
 
-  /* --- Write some data that does not depend on xi, yi --- */
-  /* arrays from geometry */
-  if ((ierror = nc_put_var_double(ncid_atmos, mu_var,      geometry.muz )))
-    ERR(ierror,routineName);   
-  if ((ierror = nc_put_var_double(ncid_atmos, wmu_var,     geometry.wmu )))
-    ERR(ierror,routineName);   
 
-  /* Must read full z from NetCDF file */
-  height = (double *) malloc(infile.nz * sizeof(double));
+  if (mpi.rank == 0) printf("writeindata end of define\n");
+  /* --- Write some data that does not depend on xi, yi, ATMOS group --- */
+  /* only the first process needs to write the constant things */
+  if (mpi.rank == 0) {
+    /* arrays of number of elements */
+    count[0] = 1;
+    start[1] = 0;   count[1] = ATOM_ID_WIDTH+1;
+    for (i=0; i < atmos.Nelem; i++) {
+      start[0] = (size_t) i;
+      if ((ierror = nc_put_var1_double(ncid_atmos, ew_var,  &start[0], 
+		      &atmos.elements[i].weight ))) ERR(ierror,routineName);  
+      if ((ierror = nc_put_var1_double(ncid_atmos, ab_var,  &start[0], 
+		      &atmos.elements[i].abund )))  ERR(ierror,routineName); 
+      if ((ierror = nc_put_vara_text(ncid_atmos,  eid_var, start, count,
+       (const char *)&atmos.elements[i].ID )))     ERR(ierror,routineName); 
+    }
 
-  if ((ierror=nc_inq_varid(infile.ncid, "z",  &z_varid)))   
-    ERR(ierror,routineName);
-  if ((ierror = nc_get_var_double(infile.ncid, z_varid, height))) 
-    ERR(ierror,routineName);
+    /* arrays from geometry */
+    if ((ierror = nc_put_var_double(ncid_atmos, mu_var,      geometry.muz )))
+      ERR(ierror,routineName);   
+    if ((ierror = nc_put_var_double(ncid_atmos, wmu_var,     geometry.wmu )))
+      ERR(ierror,routineName);   
+
+    /* Must read full z from NetCDF file */
+    height = (double *) malloc(infile.nz * sizeof(double));
+
+    if ((ierror=nc_inq_varid(infile.ncid, "z",  &z_varid)))   
+      ERR(ierror,routineName);
+    if ((ierror = nc_get_var_double(infile.ncid, z_varid, height))) 
+      ERR(ierror,routineName);
     
-  if ((ierror = nc_put_var_double(ncid_atmos, height_var,  height)))
-    ERR(ierror,routineName);   
+    if ((ierror = nc_put_var_double(ncid_atmos, height_var,  height)))
+      ERR(ierror,routineName);   
 
-  free(height);
+    free(height);
+
+    /* write x and y, convert from MPI indices to actual values */
+    for (i=0; i < mpi.nx; i++) {
+      start[0] = (size_t) i;
+      if ((ierror = nc_put_var1_double(ncid_atmos, x_var,  &start[0], 
+	       &infile.x[mpi.xnum[i]]))) ERR(ierror,routineName);  
+    }
+    
+    for (i=0; i < mpi.ny; i++) {
+      start[0] = (size_t) i;
+      if ((ierror = nc_put_var1_double(ncid_atmos, y_var,  &start[0], 
+	       &infile.y[mpi.ynum[i]]))) ERR(ierror,routineName);  
+    }
+  }
+
+  /* --- Write some data that does not depend on xi, yi, MPI group --- */
+
+  if (mpi.rank == 0) {
+  /* xnum, ynum */
+    if ((ierror = nc_put_var_int(ncid_mpi, xnum_var, mpi.xnum))) 
+      ERR(ierror,routineName);
+    if ((ierror = nc_put_var_int(ncid_mpi, ynum_var, mpi.ynum))) 
+      ERR(ierror,routineName);
+  }
+
+  if (mpi.rank == 0) printf("writeindata end of mpi.rank=0 writes\n");
+
+  /* Number of tasks */
+  start[0] = mpi.rank;
+  if ((ierror = nc_put_var1_long(ncid_mpi, ntsk_var, start, &mpi.Ntasks )))
+    ERR(ierror,routineName);
+
+  /* Hostname of each process */
+  if ((ierror = gethostname((char *) &hostname, ARR_STRLEN)) != 0 )
+    printf("(EEE) %s: error getting hostname.\n",routineName);
+
+  start[0] = mpi.rank; count[0] = 1;
+  start[1] = 0;        count[1] = strlen(hostname);
+  if ((ierror = nc_put_vara_text(ncid_mpi, host_var, start, count,
+      (const char *) &hostname )))     ERR(ierror,routineName); 
+
+  if (mpi.rank == 0) printf("writeindata end of hostname\n");
+
+  /* Get time in ISO 8601 */
+  curtime = time(NULL);
+  loctime = localtime(&curtime);
+  strftime(timestr, ARR_STRLEN, "%Y-%m-%dT%H:%M:%S%z", loctime);
   
+  start[1] = 0; count[1] = strlen(timestr);
+  if ((ierror = nc_put_vara_text(ncid_mpi, st_var, start, count,
+      (const char *) &timestr )))     ERR(ierror,routineName); 
 
+  if (mpi.rank == 0) printf("writeindata end of time\n");
+  /* Write arrays of Ntasks, one value at a time */
+  for (task = 0; task < mpi.Ntasks; task++) {
 
-  /* write x and y, convert from MPI indices to actual values */
-  for (i=0; i < mpi.nx; i++) {
-    start[0] = (size_t) i;
-    if ((ierror = nc_put_var1_double(ncid_atmos, x_var,  &start[0], 
-	     &infile.x[mpi.xnum[i]]))) ERR(ierror,routineName);  
+    start[0] = mpi.taskmap[task + mpi.my_start][0];  count[0] = 1;
+    start[1] = mpi.taskmap[task + mpi.my_start][1];  count[1] = 1;
+    
+    /* Task map */
+    if ((ierror = nc_put_var1_int(ncid_mpi,  tm_var, start, &mpi.rank )))
+      ERR(ierror,routineName);
+    /* Task number */
+    if ((ierror = nc_put_var1_long(ncid_mpi, tn_var, start, &task )))
+      ERR(ierror,routineName);
   }
+  
+  if (mpi.rank == 0) printf("writeindata end of task maps\n");
 
-  for (i=0; i < mpi.ny; i++) {
-    start[0] = (size_t) i;
-    if ((ierror = nc_put_var1_double(ncid_atmos, y_var,  &start[0], 
-	     &infile.y[mpi.ynum[i]]))) ERR(ierror,routineName);  
-  }
-
-
-
-  /* Copy stuff to the IO data struct */
+  /* --- Copy stuff to the IO data struct --- */
   io.in_ncid       = ncid;
   io.in_input_ncid = ncid_input;
   io.in_atmos_ncid = ncid_atmos;
@@ -408,9 +503,14 @@ void init_ncdf_indata(void)
   io.in_atmos_ne   = ne_var;
   io.in_atmos_vz   = vz_var;
   io.in_atmos_vt   = vturb_var;
+  io.in_atmos_Bx   = Bx_var;
+  io.in_atmos_By   = By_var;
+  io.in_atmos_Bz   = Bz_var;
+  /*
   io.in_atmos_B    = B_var;
   io.in_atmos_gB   = gB_var;
   io.in_atmos_chiB = chiB_var;
+  */
   io.in_atmos_nh   = nh_var;
   io.in_atmos_ew   = ew_var;
   io.in_atmos_ab   = ab_var;
@@ -426,9 +526,11 @@ void init_ncdf_indata(void)
   io.in_mpi_tm     = tm_var;
   io.in_mpi_tn     = tn_var;
   io.in_mpi_it     = it_var;
+  io.in_mpi_st     = st_var;
   io.in_mpi_conv   = conv_var;
   io.in_mpi_dm     = dm_var;
   io.in_mpi_dmh    = dmh_var;
+  io.in_mpi_zc     = zch_var;
   io.in_mpi_ntsk   = ntsk_var;
   io.in_mpi_host   = host_var;
   io.in_mpi_ft     = ft_var;
@@ -440,7 +542,7 @@ void init_ncdf_indata(void)
 
 /* ------- begin --------------------------   close_ncdf_indata.c --- */
 void close_ncdf_indata(void)
-/* Closes the spec netCDF file */ 
+/* Closes the indata netCDF file */ 
 {
   const char routineName[] = "close_ncdf_indata";
   int        ierror;
@@ -451,10 +553,111 @@ void close_ncdf_indata(void)
 /* ------- end   --------------------------   close_ncdf_indata.c --- */
 
 /* ------- begin --------------------------   writeAtmos_p.c --- */
+void writeAtmos_all(void) {
+/* Reads the NCDF atmos file, and writes data into indata file */
+
+  const char routineName[] = "writeAtmos_all";
+  int        ierror, ncid_in, ncid_out, task;
+  size_t     start[]  = {0, 0, 0, 0};
+  size_t     count[]  = {1, 1, 1, 1};
+  size_t     starti[] = {0, 0, 0, 0};
+  double    *tmp, **mtmp, *zeros;
+  size_t    *st, *ct, *sti;
+
+
+  ncid_in  = infile.ncid;
+  ncid_out = io.in_atmos_ncid;
+
+  /* set collective access for variables 
+  if ((ierror = nc_var_par_access(ncid_out, io.in_atmos_T, NC_COLLECTIVE)))
+    ERR(ierror,routineName);
+  if ((ierror = nc_var_par_access(ncid_out, io.in_atmos_ne, NC_COLLECTIVE)))
+    ERR(ierror,routineName);
+  if ((ierror = nc_var_par_access(ncid_out, io.in_atmos_vz, NC_COLLECTIVE)))
+    ERR(ierror,routineName);
+  if ((ierror = nc_var_par_access(ncid_out, io.in_atmos_vt, NC_COLLECTIVE)))
+    ERR(ierror,routineName);
+  if ((ierror = nc_var_par_access(ncid_out, io.in_atmos_nh, NC_COLLECTIVE)))
+    ERR(ierror,routineName);
+  */
+  // end collective set
+
+
+  tmp   = (double *) calloc(infile.nz,  sizeof(double));
+  zeros = (double *) calloc(infile.nz,  sizeof(double)); 
+  mtmp  = matrix_double(atmos.NHydr, infile.nz);
+
+  for (task = 0; task < mpi.Ntasks; task++) {
+    start[0] = 0;   ; count[0] = atmos.NHydr;
+    start[1] = mpi.taskmap[task + mpi.my_start][0];  count[2] = 1;
+    start[2] = mpi.taskmap[task + mpi.my_start][1];  count[2] = 1;
+    start[3] = mpi.zcut_hist[task];   count[3] = infile.nz - start[3];
+
+    /* convert ix, iy into xnum, ynum of the original file */
+    starti[0] = start[0];           starti[3] = start[3]; 
+    starti[1] = mpi.xnum[start[1]]; starti[2] = mpi.ynum[start[2]];
+
+    st = &start[1];  ct = &count[1];  sti = &starti[1];
+
+    /* Temperature */
+    if ((ierror = nc_get_vara_double(ncid_in,  infile.T_varid, sti, ct, tmp)))
+      ERR(ierror,routineName);
+    if ((ierror = nc_put_vara_double(ncid_out, io.in_atmos_T,  st,  ct, tmp)))
+      ERR(ierror,routineName);
+
+    /* Electron density */
+    if ((ierror = nc_get_vara_double(ncid_in,  infile.ne_varid, sti, ct, tmp)))
+      ERR(ierror,routineName);
+    if ((ierror = nc_put_vara_double(ncid_out, io.in_atmos_ne,  st,  ct, tmp)))
+      ERR(ierror,routineName);
+
+    /* Vz */
+    if ((ierror = nc_get_vara_double(ncid_in,  infile.vz_varid, sti, ct, tmp)))
+      ERR(ierror,routineName);
+    if ((ierror = nc_put_vara_double(ncid_out, io.in_atmos_vz,  st,  ct, tmp)))
+      ERR(ierror,routineName);
+
+    /* Vturb is always zero for now, so writing zeros array */
+    if ((ierror = nc_put_vara_double(ncid_out, io.in_atmos_vt,  st, ct, zeros)))
+      ERR(ierror,routineName);
+
+    if (atmos.Stokes) {
+      /* Bx, By, Bz */
+      if ((ierror = nc_get_vara_double(ncid_in,  infile.Bx_varid, sti, ct, tmp)))
+	ERR(ierror,routineName);
+      if ((ierror = nc_put_vara_double(ncid_out, io.in_atmos_Bx,  st,  ct, tmp)))
+	ERR(ierror,routineName);
+
+      if ((ierror = nc_get_vara_double(ncid_in,  infile.By_varid, sti, ct, tmp)))
+	ERR(ierror,routineName);
+      if ((ierror = nc_put_vara_double(ncid_out, io.in_atmos_By,  st,  ct, tmp)))
+	ERR(ierror,routineName);
+
+      if ((ierror = nc_get_vara_double(ncid_in,  infile.Bz_varid, sti, ct, tmp)))
+	ERR(ierror,routineName);
+      if ((ierror = nc_put_vara_double(ncid_out, io.in_atmos_Bz,  st,  ct, tmp)))
+	ERR(ierror,routineName);
+    }
+
+    /* Hydrogen populations */
+    if ((ierror=nc_get_vara_double(ncid_in,  infile.nh_varid, starti, count, 
+				   mtmp[0]))) ERR(ierror,routineName);
+    if ((ierror=nc_put_vara_double(ncid_out, io.in_atmos_nh,  start,  count,
+				   mtmp[0]))) ERR(ierror,routineName);
+  }
+
+  free(tmp);
+  free(zeros);
+  freeMatrix((void **) mtmp);
+
+  return;
+}
+
+/* ------- begin --------------------------   writeAtmos_p.c --- */
 void writeAtmos_p(void)
 {
   const char routineName[] = "writeAtmos_p";
-  int     ierror, ncid, i;
+  int     ierror, ncid;
   size_t  start[] = {0, 0, 0, 0};
   size_t  count[] = {1, 1, 1, 1};
 
@@ -474,37 +677,25 @@ void writeAtmos_p(void)
   if ((ierror = nc_put_vara_double(ncid, io.in_atmos_vt, start, count,
 				   atmos.vturb ))) ERR(ierror,routineName);  
   if (atmos.Stokes) {
+    /* These are commented out, because now we're writing Bx, By, Bz,
+       in writeAtmos_all. 
     if ((ierror = nc_put_vara_double(ncid, io.in_atmos_B, start, count,
 				     atmos.B ))) ERR(ierror,routineName); 
     if ((ierror = nc_put_vara_double(ncid, io.in_atmos_gB, start, count,
 				     atmos.gamma_B ))) ERR(ierror,routineName);
     if ((ierror = nc_put_vara_double(ncid, io.in_atmos_chiB, start, count,
 				     atmos.chi_B ))) ERR(ierror,routineName);
+    */
   }
 
   /* put hydrogen populations */
-  count[0] = 1;
+  start[0] = 0;        count[0] = atmos.H->Nlevel;
   start[1] = mpi.ix;   count[1] = 1;
   start[2] = mpi.iy;   count[2] = 1;
   start[3] = mpi.zcut; count[3] = atmos.Nspace;
 
-  for (i=0; i < atmos.H->Nlevel; i++) {
-    start[0] = (size_t) i;
-    if ((ierror = nc_put_vara_double(ncid, io.in_atmos_nh, start, count,
-				     atmos.H->n[i] ))) ERR(ierror,routineName);  
-  }
-  /* arrays of number of elements */
-  count[0] = 1;
-  start[1] = 0;   count[1] = ATOM_ID_WIDTH+1;
-  for (i=0; i < atmos.Nelem; i++) {
-    start[0] = (size_t) i;
-    if ((ierror = nc_put_var1_double(ncid, io.in_atmos_ew,  &start[0], 
-		     &atmos.elements[i].weight ))) ERR(ierror,routineName);  
-    if ((ierror = nc_put_var1_double(ncid, io.in_atmos_ab,  &start[0], 
-		     &atmos.elements[i].abund )))  ERR(ierror,routineName); 
-    if ((ierror = nc_put_vara_text(ncid, io.in_atmos_eid, start, count,
-       (const char *)&atmos.elements[i].ID )))     ERR(ierror,routineName); 
-  }
+  if ((ierror=nc_put_vara_double(ncid, io.in_atmos_nh, start, count,
+				 atmos.H->n[0] )))   ERR(ierror,routineName);  
 
 
   return;
@@ -512,39 +703,73 @@ void writeAtmos_p(void)
 /* ------- end   --------------------------   writeAtmos_p.c --- */
 
 /* ------- begin --------------------------   writeMPI_p.c --- */
-void writeMPI_p(void)
-{
+void writeMPI_all(void) {
+/* Writes output on indata file, MPI group, all tasks at once */ 
   const char routineName[] = "writeMPI_p";
-  int     ierror, ncid, i;
+  int     ierror, task;
   size_t  start[] = {0, 0, 0, 0};
   size_t  count[] = {1, 1, 1, 1};
-  char    hostname[ARR_STRLEN], timestr[ARR_STRLEN];
-  time_t  curtime;
+  char       timestr[ARR_STRLEN];
+  time_t     curtime;
   struct tm *loctime;
 
 
+  /* set collective access for variables 
+  if ((ierror = nc_var_par_access(io.in_mpi_ncid, io.in_mpi_ft, NC_COLLECTIVE)))
+    ERR(ierror,routineName);
+  if ((ierror = nc_var_par_access(io.in_mpi_ncid, io.in_mpi_it, NC_COLLECTIVE)))
+    ERR(ierror,routineName);
+  if ((ierror = nc_var_par_access(io.in_mpi_ncid, io.in_mpi_conv, NC_COLLECTIVE)))
+    ERR(ierror,routineName);
+  if ((ierror = nc_var_par_access(io.in_mpi_ncid, io.in_mpi_dm, NC_COLLECTIVE)))
+    ERR(ierror,routineName);
+  if ((ierror = nc_var_par_access(io.in_mpi_ncid, io.in_mpi_dmh, NC_COLLECTIVE)))
+    ERR(ierror,routineName);
+    end set collective */
+
+
+
+  /* Get finish time in ISO 8601 */
+  curtime = time(NULL);
+  loctime = localtime(&curtime);
+  strftime(timestr, ARR_STRLEN, "%Y-%m-%dT%H:%M:%S%z", loctime);
+  
+  start[0] = mpi.rank; count[0] = 1;
+  start[1] = 0;        count[1] = strlen(timestr);
+  if ((ierror = nc_put_vara_text(io.in_mpi_ncid, io.in_mpi_ft, start, count,
+      (const char *) &timestr )))     ERR(ierror,routineName); 
+
+  /* Write arrays of Ntasks, one value at a time */
+  for (task = 0; task < mpi.Ntasks; task++) {
+
+    start[0] = mpi.taskmap[task + mpi.my_start][0];  count[0] = 1;
+    start[1] = mpi.taskmap[task + mpi.my_start][1];  count[1] = 1;
+    start[2] = 0;                                    count[2] = mpi.niter[task];
+
+    /* number of iterations */
+    if ((ierror = nc_put_var1_int(io.in_mpi_ncid,    io.in_mpi_it, start, 
+			  &mpi.niter[task])))        ERR(ierror,routineName);
+    /* convergence */
+    if ((ierror = nc_put_var1_int(io.in_mpi_ncid,    io.in_mpi_conv, start, 
+			  &mpi.convergence[task])))  ERR(ierror,routineName);  
+    /* zcut hist */
+    if ((ierror = nc_put_var1_int(io.in_mpi_ncid,    io.in_mpi_zc, start,
+		          &mpi.zcut_hist[task])))  ERR(ierror,routineName);
+    /* dpopsmax */
+    if ((ierror = nc_put_var1_double(io.in_mpi_ncid, io.in_mpi_dm, start, 
+			  &mpi.dpopsmax[task])))     ERR(ierror,routineName); 
+    /* dpopsmax hist */
+    if ((ierror = nc_put_vara_double(io.in_mpi_ncid, io.in_mpi_dmh, start,
+		     count, mpi.dpopsmax_hist[task])))  ERR(ierror,routineName);
+  }
+  
+
+
+  /*
   ncid = io.in_mpi_ncid;
-
-
-  /* write x and y, convert from MPI indices to initial atmos indices */
-  for (i=0; i < mpi.nx; i++) {
-    start[0] = (size_t) i;
-    if ((ierror = nc_put_var1_int(ncid, io.in_mpi_xnum,  &start[0], 
-	     &mpi.xnum[i]))) ERR(ierror,routineName);  
-  }
-
-  for (i=0; i < mpi.ny; i++) {
-    start[0] = (size_t) i;
-    if ((ierror = nc_put_var1_int(ncid, io.in_mpi_ynum,  &start[0], 
-	     &mpi.ynum[i]))) ERR(ierror,routineName);  
-  }
 
   start[0] = mpi.ix;
   start[1] = mpi.iy;
-  if ((ierror = nc_put_var1_int(ncid,    io.in_mpi_tm, start, &mpi.rank )))
-    ERR(ierror,routineName);
-  if ((ierror = nc_put_var1_long(ncid,    io.in_mpi_tn, start, &mpi.task )))
-    ERR(ierror,routineName);
   if ((ierror = nc_put_var1_int(ncid,    io.in_mpi_it, start, &mpi.niter)))
     ERR(ierror,routineName);
   if ((ierror = nc_put_var1_double(ncid, io.in_mpi_dm, start, &mpi.dpopsmax)))
@@ -557,31 +782,7 @@ void writeMPI_p(void)
 				   mpi.dpopsmax_hist))) ERR(ierror,routineName);
 
 
-  /* Number of tasks */
-  start[0] = mpi.rank;
-  if ((ierror = nc_put_var1_long(ncid, io.in_mpi_ntsk, start, &mpi.Ntasks )))
-    ERR(ierror,routineName);
-
-  /* Hostname of each process */
-  if ((ierror = gethostname((char *) &hostname, ARR_STRLEN)) != 0 )
-    printf("(EEE) %s: error getting hostname.\n",routineName);
-
-  start[1] = 0;
-  count[1] = strlen(hostname);
-  if ((ierror = nc_put_vara_text(ncid, io.in_mpi_host, start, count,
-      (const char *) &hostname )))     ERR(ierror,routineName); 
-  
-
-  /* Get time in ISO 8601 */
-  curtime = time(NULL);
-  loctime = localtime(&curtime);
-  strftime(timestr, ARR_STRLEN, "%Y-%m-%dT%H:%M:%S%z", loctime);
-  
-  count[1] = strlen(timestr);
-  if ((ierror = nc_put_vara_text(ncid, io.in_mpi_ft, start, count,
-      (const char *) &timestr )))     ERR(ierror,routineName); 
-
-
+  */
   return;
 }
 

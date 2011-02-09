@@ -14,11 +14,11 @@
 typedef struct {
   char     name[MPI_MAX_PROCESSOR_NAME];
   bool_t   single_log, stop;
-  int      size, rank, namelen, nx, ny, ix, iy, *xnum, *ynum, niter, zcut;
-  int    **rh_converged, StokesMode_save, convergence;
+  int      size, rank, namelen, nx, ny, ix, iy, *xnum, *ynum, *niter, zcut;
+  int     *zcut_hist, **rh_converged, StokesMode_save, *convergence;
   long     nconv, nnoconv, ncrash, my_start, backgrrecno;
   long   **taskmap, task, Ntasks;
-  double   dpopsmax, *dpopsmax_hist;
+  double  *dpopsmax, **dpopsmax_hist;
   FILE    *logfile, *main_logfile;
   MPI_Comm comm;
   MPI_Info info;
@@ -36,6 +36,7 @@ void writeBRS_ncdf(void);
 
 void init_ncdf_J(void);
 void close_ncdf_J(void);
+void writeJ_all(void);
 void writeJ_p(void);
 void readJ_p(void);
 void writeJlambda_single(int nspect, double *J);
@@ -54,13 +55,14 @@ void writeSpectrum_p(void);
 
 void init_ncdf_indata(void);
 void close_ncdf_indata(void);
-void writeAtmos_p(void);
-void writeMPI_p(void);
+void writeAtmos_all(void);
+void writeMPI_all(void);
 
 void init_ncdf_aux(void);
 void init_aux_new(void);
 void init_aux_old(void);
 void close_ncdf_aux(void);
+void writeAux_all(void);
 void writeAux_p(void);
 void writeOpacity_p(void);
 
@@ -71,6 +73,8 @@ void UpdateAtmosDep(void);
 void RequestStop_p(void);
 bool_t StopRequested_p(void);
 void ERR(int ierror, const char *rname);
+void copyBufVars(void);
+void writeOutput(void); 
 
 void Iterate_p(int NmaxIter, double iterLimit);
 double solveSpectrum_p(bool_t eval_operator, bool_t redistribute);

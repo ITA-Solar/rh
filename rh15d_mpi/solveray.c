@@ -58,6 +58,7 @@ char messageStr[MAX_LINE_SIZE];
 BackgroundData bgdat;
 MPI_data mpi;
 IO_data io;
+IO_buffer iobuf;
 
 /* ------- begin -------------------------- solveray.c -------------- */
 
@@ -161,7 +162,7 @@ int main(int argc, char *argv[])
 
     /* Printout some info */
     sprintf(messageStr,
-      "Process %d: --- START task %ld [of %ld], (xi,yi) = (%d,%d)\n",
+      "Process %3d: --- START task %ld [of %ld], (xi,yi) = (%d,%d)\n",
 	    mpi.rank, mpi.task+1, mpi.Ntasks, mpi.xnum[mpi.ix], mpi.ynum[mpi.iy]);
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);
@@ -200,7 +201,7 @@ int main(int argc, char *argv[])
     /* If RH did not converge, do not calculate for this column */
     if (mpi.rh_converged[mpi.ix][mpi.iy] < 1) {
       sprintf(messageStr,
-	      "Process %d: *** SKIP  task %ld (RH did not converge)\n",
+	      "Process %3d: *** SKIP  task %ld (RH did not converge)\n",
 	      mpi.rank,mpi.task+1);
       fprintf(mpi.main_logfile, messageStr);
       Error(MESSAGE, "main", messageStr);	
@@ -217,7 +218,7 @@ int main(int argc, char *argv[])
     writeRay();
    
     sprintf(messageStr,
-      "Process %d: *** END   task %ld\n",
+      "Process %3d: *** END   task %ld\n",
 	    mpi.rank, mpi.task+1, mpi.Ntasks);
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);	

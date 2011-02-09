@@ -21,22 +21,27 @@
 #include "constant.h"
 #include "error.h"
 #include "inputs.h"
+#include "spectrum.h"
 #include "parallel.h"
 #include "io.h"
 
 
 /* --- Function prototypes --                          -------------- */
-void  distribute_nH(void);
+void distribute_nH(void);
+void  allocBufVars(void);
+void   freeBufVars(void);
 
 /* --- Global variables --                             -------------- */
 extern Atmosphere atmos;
 extern Geometry geometry;
 extern NCDF_Atmos_file infile;
 extern IO_data io;
+extern IO_buffer iobuf;
 extern InputData input;
 extern CommandLine commandline;
 extern char messageStr[];
 extern MPI_data mpi;
+extern Spectrum spectrum;
 
 /* ------- begin --------------------------   initParallel.c --   --- */
 void initParallel(int *argc, char **argv[], bool_t run_ray) {
@@ -99,8 +104,16 @@ void initParallelIO(bool_t run_ray) {
   mpi.single_log       = FALSE;  
 
   /* Allocate some mpi. arrays */
-  mpi.dpopsmax_hist = (double *) malloc( input.NmaxIter * sizeof(double));
+  mpi.niter       = (int *)    malloc(mpi.Ntasks * sizeof(int));
+  mpi.convergence = (int *)    malloc(mpi.Ntasks * sizeof(int));
+  mpi.zcut_hist   = (int *)    malloc(mpi.Ntasks * sizeof(int));
+  mpi.dpopsmax    = (double *) malloc(mpi.Ntasks * sizeof(double));
+  mpi.dpopsmax_hist = matrix_double(mpi.Ntasks, input.NmaxIter);
 
+  mpi.zcut_hist[mpi.task] = mpi.zcut;
+
+  /* buffer quantities for final writes */
+  allocBufVars();
 
   return;
 }
@@ -111,17 +124,23 @@ void initParallelIO(bool_t run_ray) {
 /* ------- begin --------------------------  closeParallelIO.c    --- */
 void closeParallelIO(bool_t run_ray) {
 
+  if (!run_ray) {
+    close_ncdf_indata();
+    if (input.p15d_wspec) close_ncdf_spec();
+  }
   close_ncdf_atmos(&atmos, &geometry, &infile);
   close_ncdf_aux();
   close_ncdf_J();
   close_Background();
-  if (!run_ray) {
-    if (input.p15d_wspec) close_ncdf_spec();
-    close_ncdf_indata();
-  }
 
   free(io.atom_file_pos);
-  free(mpi.dpopsmax_hist);
+  free(mpi.niter);
+  free(mpi.dpopsmax);
+  free(mpi.convergence);
+  freeMatrix((void **) mpi.dpopsmax_hist);
+
+  /* Free buffer variables */
+  freeBufVars();
 
   return;
 }
@@ -140,6 +159,8 @@ void UpdateAtmosDep(void) {
 
   /* Put back initial Stokes mode */
   input.StokesMode = mpi.StokesMode_save;
+
+  mpi.zcut_hist[mpi.task] = mpi.zcut;
 
 
   /* Update atmos-dependent atomic  quantities --- --------------- */
@@ -377,7 +398,7 @@ void ERR(int ierror, const char *rname) {
     return; 
   } 
 
-  printf("Process %d: (EEE) %s: %d %s\n", mpi.rank, rname, ierror,
+  printf("Process %3d: (EEE) %s: %d %s\n", mpi.rank, rname, ierror,
 	 nc_strerror(ierror));
   MPI_Abort(mpi.comm, 2);
 
@@ -399,7 +420,7 @@ void Error(enum errorlevel level, const char *routineName,
     return;
   case WARNING:
     if ((mpi.single_log) && (mpi.rank != 0)) 
-      fprintf(mpi.logfile, "\nProcess %d: -WARNING in routine %s\n %s\n",
+      fprintf(mpi.logfile, "\nProcess %3d: -WARNING in routine %s\n %s\n",
 	      mpi.rank, routineName, (messageStr) ? messageStr : " (Undocumented)\n");
     fprintf(commandline.logfile, "\nProcess %d: -WARNING in routine %s\n %s\n",
 	    mpi.rank, routineName, (messageStr) ? messageStr : " (Undocumented)\n");
@@ -410,7 +431,7 @@ void Error(enum errorlevel level, const char *routineName,
 	      routineName,(messageStr) ? messageStr : " (Undocumented)\n",
 	      "Trying to continue.....");
       if (commandline.logfile == mpi.logfile) 
-	fprintf(mpi.main_logfile, "\a\n-Process %d: ERROR in routine %s\n %s \n %s\n",
+	fprintf(mpi.main_logfile, "\a\n-Process %3d: ERROR in routine %s\n %s \n %s\n",
 		mpi.rank, routineName,(messageStr) ? messageStr : " (Undocumented)\n",
 		"Trying to continue.....");
       return;
@@ -419,7 +440,7 @@ void Error(enum errorlevel level, const char *routineName,
 	      routineName,(messageStr) ? messageStr : " (Undocumented)\n",
 	      "Exiting.....");
       if (commandline.logfile == mpi.logfile) 
-	fprintf(mpi.main_logfile, "\nProcess %d: %s", mpi.rank, errorStr);
+	fprintf(mpi.main_logfile, "\nProcess %3d: %s", mpi.rank, errorStr);
 
       fprintf(commandline.logfile, "%s", errorStr);
       if (commandline.logfile != stderr) fprintf(stderr, "%s", errorStr);
@@ -427,9 +448,257 @@ void Error(enum errorlevel level, const char *routineName,
       /* Make exception for Singular matrix error */
       if (!strstr(messageStr,"Singular matrix")) {
 	if (errno) perror(routineName);
-	exit(level);
+	MPI_Abort(mpi.comm, level);
       }
     }
   }
 }
 /* ------- end    --------------------------  Error_p.c --         --- */
+
+/* ------- begin -------------------------- copyBufVars.c ------------ */
+
+void copyBufVars(void) {
+/* Copies output variables to buffer arrays, to be written only at the end */
+  const  char routineName[] = "copyBufVars";
+  static long ind = 0;
+  int         nact, kr;
+  Atom       *atom;
+  Molecule   *molecule;
+  AtomicLine      *line;
+  AtomicContinuum *continuum;
+
+
+  /* J, J20  */
+  memcpy((void *) &iobuf.J[ind*spectrum.Nspect], (void *) spectrum.J[0],
+	 spectrum.Nspect * atmos.Nspace * sizeof(double));
+
+  if (input.backgr_pol) {
+    memcpy((void *) &iobuf.J20[ind*spectrum.Nspect], (void *) spectrum.J20[0],
+	   spectrum.Nspect * atmos.Nspace * sizeof(double));
+  }
+
+  /* --- ATOM loop --- */
+  for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
+    atom = atmos.activeatoms[nact];
+
+    /* n, nstar */
+    memcpy((void *) &iobuf.n[nact][ind*atom->Nlevel],     (void *) atom->n[0],
+	   atom->Nlevel * atmos.Nspace * sizeof(double));
+    memcpy((void *) &iobuf.nstar[nact][ind*atom->Nlevel], (void *) atom->nstar[0],
+	   atom->Nlevel * atmos.Nspace * sizeof(double));
+
+    /* Rij, Rji for lines */
+    for (kr=0; kr < atom->Nline; kr++) {
+      line = &atom->line[kr];
+      memcpy((void *) &iobuf.RijL[nact][ind*atom->Nline + kr*atmos.Nspace],
+	     (void *) line->Rij, atmos.Nspace * sizeof(double));
+      memcpy((void *) &iobuf.RjiL[nact][ind*atom->Nline + kr*atmos.Nspace],
+	     (void *) line->Rji, atmos.Nspace * sizeof(double));
+    }
+
+    /* Rij, Rji for continua */
+    for (kr=0; kr < atom->Ncont; kr++) {
+      continuum = &atom->continuum[kr];
+      memcpy((void *) &iobuf.RijC[nact][ind*atom->Ncont + kr*atmos.Nspace],
+	     (void *) continuum->Rij, atmos.Nspace * sizeof(double));
+      memcpy((void *) &iobuf.RjiC[nact][ind*atom->Ncont + kr*atmos.Nspace],
+	     (void *) continuum->Rji, atmos.Nspace * sizeof(double));
+    }
+
+  }
+
+  /* --- MOLECULE loop --- */
+  for (nact = 0;  nact < atmos.Nactivemol;  nact++) {
+    molecule = atmos.activemols[nact];
+
+    /* nv, nvstar */
+    memcpy((void *) &iobuf.nv[nact][ind*molecule->Nv],     
+	   (void *) molecule->nv[0], 
+	   molecule->Nv * atmos.Nspace * sizeof(double));
+    memcpy((void *) &iobuf.nvstar[nact][ind*molecule->Nv], 
+	   (void *) molecule->nvstar[0], 
+	   molecule->Nv * atmos.Nspace * sizeof(double));
+
+  }
+  
+  ind += atmos.Nspace;
+
+
+  return;
+}
+
+/* ------- end ---------------------------- copyBufVars.c ------------ */
+
+/* ------- begin -------------------------- allocBufVars.c ----------- */
+
+void allocBufVars(void) {
+/* Allocates buffer arrays, to be written only at the end */
+  const char routineName[] = "allocBufVars";
+  long jsize = mpi.Ntasks*spectrum.Nspect*infile.nz*sizeof(double);
+  long nsize, RLsize, RCsize;
+  int  nact;
+  Atom      *atom;
+  Molecule  *molecule;
+
+  /* J, J20 */
+  iobuf.J = (double *) malloc(jsize);
+  if (iobuf.J == NULL) Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
+
+  if (input.backgr_pol) {
+    iobuf.J20 = (double *) malloc(jsize);
+    if (iobuf.J20 == NULL) Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
+  }
+
+  
+  if (atmos.Nactiveatom > 0) {
+    iobuf.n     = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
+    iobuf.nstar = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
+    iobuf.RijL  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
+    iobuf.RjiL  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
+    iobuf.RijC  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
+    iobuf.RjiC  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
+  }
+
+  if (atmos.Nactivemol > 0) {
+    iobuf.nv     = (double **) malloc(atmos.Nactivemol * sizeof(double *));
+    iobuf.nvstar = (double **) malloc(atmos.Nactivemol * sizeof(double *));
+  }
+
+  /* --- Loop over active ATOMS --- */
+  for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
+    atom = atmos.activeatoms[nact];
+    nsize  = mpi.Ntasks * atom->Nlevel * infile.nz * sizeof(double);
+    RLsize = mpi.Ntasks * atom->Nline  * infile.nz * sizeof(double);
+    RCsize = mpi.Ntasks * atom->Ncont  * infile.nz * sizeof(double);
+    
+    /* n, nstar */
+    iobuf.n[nact]     = (double *) malloc(nsize);
+    if (iobuf.n[nact] == NULL) 
+      Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
+
+    iobuf.nstar[nact] = (double *) malloc(nsize);
+    if (iobuf.nstar[nact] == NULL) 
+      Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
+
+    /* Rij, Rji for lines */
+    iobuf.RijL[nact] = (double *) malloc(RLsize);
+    if (iobuf.RijL[nact] == NULL) 
+      Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
+
+    iobuf.RjiL[nact] = (double *) malloc(RLsize);
+    if (iobuf.RjiL[nact] == NULL) 
+      Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
+
+    /* Rij, Rji for continua */
+    iobuf.RijC[nact] = (double *) malloc(RCsize);
+    if (iobuf.RijC[nact] == NULL) 
+      Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
+
+    iobuf.RjiC[nact] = (double *) malloc(RCsize);
+    if (iobuf.RjiC[nact] == NULL) 
+      Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
+
+  }
+
+  /* --- Loop over active MOLECULES --- */
+  for (nact = 0;  nact < atmos.Nactivemol;  nact++) {
+    molecule = atmos.activemols[nact];
+    nsize  = mpi.Ntasks * molecule->Nv * infile.nz * sizeof(double);
+    
+    /* nv, nvstar */
+    iobuf.nv[nact]     = (double *) malloc(nsize);
+    if (iobuf.nv[nact] == NULL) 
+      Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
+
+    iobuf.nvstar[nact] = (double *) malloc(nsize);
+    if (iobuf.nvstar[nact] == NULL) 
+      Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
+  }
+
+
+
+  return;
+}
+
+/* ------- end ---------------------------- allocBufVars.c ----------- */
+
+/* ------- begin -------------------------- freeBufVars.c ------------ */
+
+void freeBufVars(void) {
+  int nact;
+
+  free(iobuf.J);
+
+  if (input.backgr_pol) free(iobuf.J20);
+
+  /* Loop over active ATOMS */
+  for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
+    free(iobuf.n[nact]);
+    free(iobuf.nstar[nact]);
+    free(iobuf.RijL[nact]);
+    free(iobuf.RjiL[nact]);
+    free(iobuf.RijC[nact]);
+    free(iobuf.RjiC[nact]);
+  }
+
+  free(iobuf.n);
+  free(iobuf.nstar);
+  free(iobuf.RijL);
+  free(iobuf.RjiL);
+  free(iobuf.RijC);
+  free(iobuf.RjiC);
+
+  /* Loop over active MOLECULES */
+  for (nact = 0;  nact < atmos.Nactivemol;  nact++) {
+    free(iobuf.nv[nact]);
+    free(iobuf.nvstar[nact]);
+  }
+
+  free(iobuf.nv);
+  free(iobuf.nvstar);
+  
+
+  return;
+}
+
+/* ------- end ---------------------------- freeBufVars.c ------------ */
+
+/* ------- begin -------------------------- writeOutput.c ------------ */
+void writeOutput(void) {
+/* Writes all output files, in the case where output all at once is active */
+  int msg;
+  MPI_Status status;
+
+  /* Write output in order of rank. First 0, then send to next, until all
+     processes have written the output. */
+
+  /* This can also be used with an integer, like if mpi.rank > ml,
+     and then adding ml to mpi.rank in the send. But for now not using 
+  if (mpi.rank > 0)
+    MPI_Recv(&msg, 0, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, mpi.comm, &status);
+  */
+
+  sprintf(messageStr, "Process %3d: --- START output\n", mpi.rank);
+  fprintf(mpi.main_logfile, messageStr);
+  Error(MESSAGE, "main", messageStr);
+  
+  writeMPI_all();
+  writeJ_all();
+  writeAux_all();
+  writeAtmos_all(); 
+  
+  sprintf(messageStr, "Process %3d: *** END output\n", mpi.rank);
+  fprintf(mpi.main_logfile, messageStr);
+  Error(MESSAGE, "main", messageStr);
+  
+  /*
+  if (mpi.rank < mpi.size - 1) {
+    MPI_Send(0, 0, MPI_INT, mpi.rank + 1, 111, mpi.comm);
+  }
+  */
+    
+
+
+  return;
+}
+/* ------- end ---------------------------- writeOutput.c ------------ */

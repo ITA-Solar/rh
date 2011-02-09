@@ -69,8 +69,10 @@
 #define CONV_NAME      "convergence"
 #define DM_NAME        "delta_max"
 #define DMH_NAME       "delta_max_history"
+#define ZC_NAME        "z_cut"
 #define NTASKS         "ntasks"
 #define HOSTNAME       "hostname"
+#define START_TIME     "starting_time"
 #define FINISH_TIME    "finish_time"
 
 
@@ -115,12 +117,14 @@ typedef struct {
   /* for the input data file. Note: this netCDF file has several groups */
   int  in_ncid,           in_input_ncid,     in_atmos_ncid,     in_mpi_ncid;
   int  in_atmos_T,        in_atmos_ne,       in_atmos_vz,       in_atmos_vt,
-       in_atmos_B,        in_atmos_gB,       in_atmos_chiB,     in_atmos_nh,
+       in_atmos_Bx,       in_atmos_By,       in_atmos_Bz,       in_atmos_nh,
+       /* in_atmos_B,        in_atmos_gB,       in_atmos_chiB,     in_atmos_nh, */
        in_atmos_ew,       in_atmos_ab,       in_atmos_eid,      in_atmos_mu,
        in_atmos_wmu,      in_atmos_z,        in_atmos_x,        in_atmos_y;
   int  in_mpi_xnum,       in_mpi_ynum,       in_mpi_tm,         in_mpi_tn,
        in_mpi_it,         in_mpi_conv,       in_mpi_dm,         in_mpi_dmh,
-       in_mpi_ntsk,       in_mpi_host,       in_mpi_ft;
+       in_mpi_ntsk,       in_mpi_host,       in_mpi_st,         in_mpi_ft,
+       in_mpi_zc;
   /* for the aux file */
   int  aux_ncid,         *aux_atom_ncid,     aux_op_ncid,      *aux_atom_pop,
       *aux_atom_poplte,  *aux_atom_RijL,    *aux_atom_RjiL,    *aux_atom_RijC,
@@ -137,6 +141,9 @@ typedef struct {
        ray_sca_c_var,     ray_chi_var,       ray_S_var,        *ray_wave_idx;
 } IO_data;
 
+typedef struct {
+  double *J, *J20, **n, **nstar, **nv, **nvstar, **RijL, **RjiL, **RijC, **RjiC;
+} IO_buffer;
 
 
 #endif /* !__IO_H__ */

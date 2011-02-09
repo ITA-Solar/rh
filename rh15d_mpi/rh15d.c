@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include <time.h>
+
 #include "rh.h"
 #include "atom.h"
 #include "atmos.h"
@@ -30,8 +32,9 @@ NCDF_Atmos_file infile;
 CommandLine commandline;
 char messageStr[MAX_MESSAGE_LENGTH];
 BackgroundData bgdat;
-MPI_data mpi;
-IO_data io;
+MPI_data  mpi;
+IO_data   io;
+IO_buffer iobuf;
 
 /* ------- begin -------------------------- rhf1d.c ----------------- */
 
@@ -44,6 +47,10 @@ int main(int argc, char *argv[])
   Molecule *molecule;
   AtomicLine *line;
   ActiveSet *as;
+
+  time_t     curtime;
+  struct tm *loctime;
+  char timestr[ARR_STRLEN];
 
 
   /* --- Set up MPI ----------------------             -------------- */
@@ -68,7 +75,7 @@ int main(int argc, char *argv[])
   distribute_jobs();
 
   // Temporary
-  //mpi.Ntasks = 2;
+  //mpi.Ntasks = 10;
 
   /* Main loop over tasks */
   for (mpi.task = 0; mpi.task < mpi.Ntasks; mpi.task++) {
@@ -79,7 +86,7 @@ int main(int argc, char *argv[])
    
     /* Printout some info */
     sprintf(messageStr,
-      "Process %d: --- START task %ld [of %ld], (xi,yi) = (%3d,%3d)\n",
+      "Process %3d: --- START task %ld [of %ld], (xi,yi) = (%3d,%3d)\n",
        mpi.rank, mpi.task+1, mpi.Ntasks, mpi.xnum[mpi.ix], mpi.ynum[mpi.iy]);
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);
@@ -87,6 +94,7 @@ int main(int argc, char *argv[])
 
     /* Read atmosphere column */
     readAtmos_ncdf(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
+    //readAtmos_ncdf(164,180, &atmos, &geometry, &infile);
 
     if (atmos.Stokes) Bproject();
 
@@ -134,24 +142,24 @@ int main(int argc, char *argv[])
 
 
     /* Treat odd cases as a crash */
-    if (isnan(mpi.dpopsmax) || isinf(mpi.dpopsmax) || (mpi.dpopsmax <= 0))
+    if (isnan(mpi.dpopsmax[mpi.task]) || isinf(mpi.dpopsmax[mpi.task]) || 
+	(mpi.dpopsmax[mpi.task] <= 0))
       mpi.stop = TRUE;
 
     /* In case of crash, write dummy data and proceed to next task */
     if (mpi.stop) {
       sprintf(messageStr,
-	      "Process %d: *** SKIP  task %ld (crashed after %d iterations)\n",
-	      mpi.rank, mpi.task+1, mpi.niter);
+	      "Process %3d: *** SKIP  task %ld (crashed after %d iterations)\n",
+	      mpi.rank, mpi.task+1, mpi.niter[mpi.task]);
       fprintf(mpi.main_logfile, messageStr);
       Error(MESSAGE, "main", messageStr);
 
       mpi.ncrash++;
       mpi.stop = FALSE;
-      mpi.dpopsmax = 0.0;
-      mpi.convergence = -1;
+      mpi.dpopsmax[mpi.task] = 0.0;
+      mpi.convergence[mpi.task] = -1;
 
-      writeAtmos_p();    
-      writeMPI_p();
+      //writeAtmos_p();    
 
       continue;
     }
@@ -159,15 +167,15 @@ int main(int argc, char *argv[])
 
 
     /* Printout some info, finished iter */
-    if (mpi.convergence) {
+    if (mpi.convergence[mpi.task]) {
       sprintf(messageStr,
-       "Process %d: *** END   task %ld iter, iterations = %3d, CONVERGED\n",
-       mpi.rank, mpi.task+1, mpi.niter);
+       "Process %3d: *** END   task %ld iter, iterations = %3d, CONVERGED\n",
+       mpi.rank, mpi.task+1, mpi.niter[mpi.task]);
       mpi.nconv++;
     } else {
       sprintf(messageStr,
-       "Process %d: *** END   task %ld iter, iterations = %3d, NO convergence\n",
-       mpi.rank, mpi.task+1, mpi.niter);
+       "Process %3d: *** END   task %ld iter, iterations = %3d, NO convergence\n",
+       mpi.rank, mpi.task+1, mpi.niter[mpi.task]);
       mpi.nnoconv++;
     }
 
@@ -185,12 +193,15 @@ int main(int argc, char *argv[])
     /* --- Write output files --                         -------------- */
     getCPU(1, TIME_START, NULL);
 
+    copyBufVars();
+
     if (input.p15d_wspec) 
       writeSpectrum_p(); /* replaces writeSpectrum, writeFlux */
-    writeAtmos_p();      /* replaces writeInput, writeAtmos, writeGeometry */
-    writeJ_p();
-    writeMPI_p();
-    writeAux_p();        /* replaces writeAtom, writePopulations, writeRadrate, 
+    //writeAtmos_p();      /* replaces writeInput, writeAtmos, writeGeometry */
+    //writeJ_p();
+    // copy to memory
+
+    /*writeAux_p();        /* replaces writeAtom, writePopulations, writeRadrate, 
                             writeCollisionRate, writeDamping, and writeOpacity */
 
     getCPU(1, TIME_POLL, "Write output");
@@ -198,6 +209,7 @@ int main(int argc, char *argv[])
   } /* End of main task loop */
 
 
+  writeOutput();
 
   closeParallelIO(run_ray = FALSE);
 

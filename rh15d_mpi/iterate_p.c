@@ -113,8 +113,8 @@ void Iterate_p(int NmaxIter, double iterLimit)
     getCPU(2, TIME_POLL, messageStr);
 
     /* Save niter, dpopsmax */
-    mpi.niter = niter;
-    mpi.dpopsmax_hist[niter-1] = dpopsmax;
+    mpi.niter[mpi.task] = niter;
+    mpi.dpopsmax_hist[mpi.task][niter-1] = dpopsmax;
 
     if (dpopsmax < iterLimit) break;
     niter++;
@@ -130,8 +130,8 @@ void Iterate_p(int NmaxIter, double iterLimit)
   }
 
   /* Save dpopsmax, convergence */
-  mpi.dpopsmax    = dpopsmax;
-  mpi.convergence = (dpopsmax < iterLimit);
+  mpi.dpopsmax[mpi.task]    = dpopsmax;
+  mpi.convergence[mpi.task] = (dpopsmax < iterLimit);
 
   for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
     atom = atmos.activeatoms[nact];
