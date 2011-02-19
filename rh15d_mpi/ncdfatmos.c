@@ -216,7 +216,7 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   /* Finds z value for Tmax cut, redefines Nspace, reallocates arrays */
   setTcut(atmos, geometry, input.p15d_tmax);
 
-  printf("Process %d: zcut = %d\n", mpi.rank, mpi.zcut);
+  //printf("Process %d: zcut = %d\n", mpi.rank, mpi.zcut);
 
   /* Get z again */ 
   start[0] = mpi.zcut;  count[0] = atmos->Nspace;

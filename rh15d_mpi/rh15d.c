@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
    
     /* Printout some info */
     sprintf(messageStr,
-      "Process %3d: --- START task %ld [of %ld], (xi,yi) = (%3d,%3d)\n",
+      "Process %3d: --- START task %3ld [of %ld], (xi,yi) = (%3d,%3d)\n",
        mpi.rank, mpi.task+1, mpi.Ntasks, mpi.xnum[mpi.ix], mpi.ynum[mpi.iy]);
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);
@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
     /* In case of crash, write dummy data and proceed to next task */
     if (mpi.stop) {
       sprintf(messageStr,
-	      "Process %3d: *** SKIP  task %ld (crashed after %d iterations)\n",
+	      "Process %3d: *** SKIP  task %3ld (crashed after %d iterations)\n",
 	      mpi.rank, mpi.task+1, mpi.niter[mpi.task]);
       fprintf(mpi.main_logfile, messageStr);
       Error(MESSAGE, "main", messageStr);
@@ -169,12 +169,12 @@ int main(int argc, char *argv[])
     /* Printout some info, finished iter */
     if (mpi.convergence[mpi.task]) {
       sprintf(messageStr,
-       "Process %3d: *** END   task %ld iter, iterations = %3d, CONVERGED\n",
+       "Process %3d: *** END   task %3ld iter, iterations = %3d, CONVERGED\n",
        mpi.rank, mpi.task+1, mpi.niter[mpi.task]);
       mpi.nconv++;
     } else {
       sprintf(messageStr,
-       "Process %3d: *** END   task %ld iter, iterations = %3d, NO convergence\n",
+       "Process %3d: *** END   task %3ld iter, iterations = %3d, NO convergence\n",
        mpi.rank, mpi.task+1, mpi.niter[mpi.task]);
       mpi.nnoconv++;
     }
