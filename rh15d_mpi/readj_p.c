@@ -132,9 +132,9 @@ void init_ncdf_J(void)
 
 
     /* Create variables */
-    dimids[0] = nspect_id;
-    dimids[1] = nx_id;
-    dimids[2] = ny_id;
+    dimids[0] = nx_id;
+    dimids[1] = ny_id;
+    dimids[2] = nspect_id;
     dimids[3] = nspace_id;
 
     /* Jlambda */
@@ -171,9 +171,9 @@ void writeJ_all(void) {
   size_t    count[] = {1, 1, 1, 1};
 
   
-  start[0] = 0;   count[0] = spectrum.Nspect;
+  start[2] = 0;   count[2] = spectrum.Nspect;
 
-  ind = 0;
+  //ind = 0;
 
   /* Set collective access for variables
   if ((ierror = nc_var_par_access(io.j_ncid, io.j_jlambda_var, NC_COLLECTIVE)))
@@ -185,14 +185,19 @@ void writeJ_all(void) {
     /* If there was a crash, no data were written into buffer variables */
     if (mpi.convergence[task] < 0) continue;
 
-    start[1] = mpi.taskmap[task + mpi.my_start][0];  count[2] = 1;
-    start[2] = mpi.taskmap[task + mpi.my_start][1];  count[2] = 1;
-    start[3] = mpi.zcut_hist[task];   count[3] = infile.nz - start[3];
+    start[0] = mpi.taskmap[task + mpi.my_start][0];  count[0] = 1;
+    start[1] = mpi.taskmap[task + mpi.my_start][1];  count[1] = 1;
+    //start[3] = mpi.zcut_hist[task];   count[3] = infile.nz - start[3];
+    start[3] = 0;   count[3] = infile.nz;
+    
+    ind = task*spectrum.Nspect*infile.nz;
 
-    if ((ierror = nc_put_vara_double(io.j_ncid, io.j_jlambda_var, start, count,
+    //if ((ierror = nc_put_vara_double(io.j_ncid, io.j_jlambda_var, start, count,
+    //				     &iobuf.J[ind] ))) ERR(ierror,routineName);
+    if ((ierror = nc_put_vara_float(io.j_ncid, io.j_jlambda_var, start, count,
 				     &iobuf.J[ind] ))) ERR(ierror,routineName);
 
-    ind += spectrum.Nspect*count[3];
+    //ind += spectrum.Nspect*count[3];
   }
 
 
@@ -210,11 +215,12 @@ void writeJ_p(void) {
 
   
   /* Get variable */
-  count[0] = spectrum.Nspect;
-  start[1] = mpi.ix;  
-  start[2] = mpi.iy;
-  start[3] = mpi.zcut;
-  count[3] = atmos.Nspace;
+
+  start[0] = mpi.ix;  
+  start[1] = mpi.iy;
+  start[2] = 0;         count[2] = spectrum.Nspect;	
+  start[3] = mpi.zcut;  count[3] = atmos.Nspace;
+
 
   if ((ierror = nc_put_vara_double(io.j_ncid, io.j_jlambda_var, start, count,
 				   spectrum.J[0] ))) ERR(ierror,routineName);
@@ -238,11 +244,10 @@ void readJ_p(void) {
 
   
   /* Get variable */
-  start[1] = mpi.ix;  
-  start[2] = mpi.iy;
-  start[3] = mpi.zcut;
-  count[0] = spectrum.Nspect;
-  count[3] = atmos.Nspace;
+  start[0] = mpi.ix;  
+  start[1] = mpi.iy;
+  start[2] = 0;         count[2] = spectrum.Nspect;
+  start[3] = mpi.zcut;  count[3] = atmos.Nspace;
 
 
   if ((ierror = nc_get_vara_double(io.j_ncid, io.j_jlambda_var, start, count,

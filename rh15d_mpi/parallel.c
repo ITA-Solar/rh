@@ -80,7 +80,7 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
 
 /* ------- begin --------------------------   initParallelIO.c    --- */
 void initParallelIO(bool_t run_ray) {
-  int    nact;
+  int    nact, i;
   Atom  *atom;
 
   init_ncdf_aux();
@@ -104,13 +104,16 @@ void initParallelIO(bool_t run_ray) {
   mpi.single_log       = FALSE;  
 
   /* Allocate some mpi. arrays */
-  mpi.niter       = (int *)    malloc(mpi.Ntasks * sizeof(int));
-  mpi.convergence = (int *)    malloc(mpi.Ntasks * sizeof(int));
-  mpi.zcut_hist   = (int *)    malloc(mpi.Ntasks * sizeof(int));
-  mpi.dpopsmax    = (double *) malloc(mpi.Ntasks * sizeof(double));
+  mpi.niter       = (int *)    calloc(mpi.Ntasks , sizeof(int));
+  mpi.convergence = (int *)    calloc(mpi.Ntasks , sizeof(int));
+  mpi.zcut_hist   = (int *)    calloc(mpi.Ntasks , sizeof(int));
+  mpi.dpopsmax    = (double *) calloc(mpi.Ntasks , sizeof(double));
   mpi.dpopsmax_hist = matrix_double(mpi.Ntasks, input.NmaxIter);
 
   mpi.zcut_hist[mpi.task] = mpi.zcut;
+  
+  /* Fill mpi.niter with ones, to avoid problems with crashes on 1st iteration */
+  for (i=0; i < mpi.Ntasks; i++) mpi.niter[i] = 1;
 
   /* buffer quantities for final writes */
   allocBufVars();
@@ -461,16 +464,26 @@ void copyBufVars(void) {
 /* Copies output variables to buffer arrays, to be written only at the end */
   const  char routineName[] = "copyBufVars";
   static long ind = 0;
-  int         nact, kr;
+  int         i, ndep, nspect, nact, kr;
   Atom       *atom;
   Molecule   *molecule;
   AtomicLine      *line;
   AtomicContinuum *continuum;
 
 
-  /* J, J20  */
+  /* J, J20  
   memcpy((void *) &iobuf.J[ind*spectrum.Nspect], (void *) spectrum.J[0],
 	 spectrum.Nspect * atmos.Nspace * sizeof(double));
+  */
+
+  for (nspect=0; nspect < spectrum.Nspect; nspect++) {
+    i = 0;
+    for (ndep=mpi.zcut; ndep < infile.nz; ndep++, i++) {
+      iobuf.J[(mpi.task*spectrum.Nspect + nspect)*infile.nz + ndep] = 
+          (float) spectrum.J[nspect][i];
+    }
+  }
+
 
   if (input.backgr_pol) {
     memcpy((void *) &iobuf.J20[ind*spectrum.Nspect], (void *) spectrum.J20[0],
@@ -534,18 +547,18 @@ void copyBufVars(void) {
 void allocBufVars(void) {
 /* Allocates buffer arrays, to be written only at the end */
   const char routineName[] = "allocBufVars";
-  long jsize = mpi.Ntasks*spectrum.Nspect*infile.nz*sizeof(double);
+  long jsize = mpi.Ntasks*spectrum.Nspect*infile.nz;
   long nsize, RLsize, RCsize;
   int  nact;
   Atom      *atom;
   Molecule  *molecule;
 
   /* J, J20 */
-  iobuf.J = (double *) malloc(jsize);
+  iobuf.J = (float *) calloc(jsize, sizeof(float));
   if (iobuf.J == NULL) Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
 
   if (input.backgr_pol) {
-    iobuf.J20 = (double *) malloc(jsize);
+    iobuf.J20 = (float *) calloc(jsize, sizeof(float));
     if (iobuf.J20 == NULL) Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
   }
 

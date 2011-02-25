@@ -11,18 +11,19 @@
   ABUND_FILE = ../../Atoms/abundance.input
 
 # Stuff for 1.5D version:
-  X_START = 0 
-  X_END   = 512
+  X_START = 412 
+  X_END   = 413 
   X_STEP  = 1 
 
-  Y_START = 127
-  Y_END   = 128
+  Y_START = 140 
+  Y_END   = 141 
   Y_STEP  = 1 
 
   15D_WRITE_EXTRA    = FALSE 
   15D_WRITE_SPECTRUM = FALSE 
 
-  15D_TMAX_CUT = 50000.0
+  15D_TMAX_CUT = 75000.
+
 
 # Set choice of number of rays (KEYWORD_OPTIONAL).
 
@@ -73,10 +74,11 @@
 
 # Parameters for Ng convergence acceleration (all are KEYWORD_OPTIONAL)
 # (default for NG_ORDER = 0 --> no acceleration)
+# this was: 20, 2, 9
 
-  NG_DELAY  = 20
-  NG_ORDER  = 2
-  NG_PERIOD = 9
+  NG_DELAY  = 20 
+  NG_ORDER  = 2 
+  NG_PERIOD = 18
 
 # PRD specific parameters. PRD_N_MAX_ITER is the maximum number of
 # PRD iterations per main iteration. PRD_ITER_LIMIT is the convergence
@@ -104,7 +106,7 @@
 # Temporary files for mean intensities and background opacities
 # (KEYWORD_REQUIRED).
 
-  J_FILE          = scratch/J.dat
+  J_FILE          = output/J.dat
   STARTING_J      = NEW_J
   BACKGROUND_FILE = scratch/background
 
@@ -215,7 +217,7 @@
 # Set this value to TRUE to get printout on CPU usage (may take some
 # extra CPU usage though!).
 
-  PRINT_CPU = TRUE
+  PRINT_CPU = FALSE 
 
 # Enable program to do the formal solution for N_THREADS wavelengths
 # concurrently (KEYWORD_OPTIONAL). Maximum number of threads is limited

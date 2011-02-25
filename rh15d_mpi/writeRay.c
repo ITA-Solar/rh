@@ -116,10 +116,11 @@ void init_ncdf_ray(void)
 
 
   if (write_xtra) {
-    dimids[0] = wave_sel_id;
-    dimids[1] = nx_id;
-    dimids[2] = ny_id;
-    dimids[3] = nspace_id;
+
+    dimids[0] = nx_id;
+    dimids[1] = ny_id;
+    dimids[2] = nspace_id;
+    dimids[3] = wave_sel_id;
     /* Source function, opacity and emissivity, line and continuum */
     if ((ierror = nc_def_var( ncid, CHI_NAME,  NC_FLOAT, 4, dimids, &chi_var)))
       ERR(ierror,routineName); 
@@ -252,8 +253,9 @@ void writeRay(void)
 /* Writes ray data to netCDF file. */
 {
   const char routineName[] = "writeRay";
-  int        ierror, idx, ncid, k, nspect;
-  double    *sca, *J, *chi, *S;
+  int        ierror, idx, ncid, k, l, nspect;
+  double    *sca, *J;
+  float    **chi, **S;
   size_t     start[] = {0, 0, 0, 0};
   size_t     count[] = {1, 1, 1, 1};
   bool_t     write_xtra, crosscoupling, to_obs, initialize;
@@ -285,9 +287,12 @@ void writeRay(void)
     /* Write opacity and emissivity for line and continuum */
 
     /* compute scattering emissivity (from continuum) */
+    // make chi and S matrix float arrays, write into netcdf in one step
+    // and not for each wavelength!!!
     sca = (double *) malloc(atmos.Nspace * sizeof(double));
-    chi = (double *) malloc(atmos.Nspace * sizeof(double));
-    S   = (double *) malloc(atmos.Nspace * sizeof(double));
+    chi = matrix_float(infile.nz, io.ray_nwave_sel);
+    S   = matrix_float(infile.nz, io.ray_nwave_sel);
+
     if (input.limit_memory) J = (double *) malloc(atmos.Nspace * sizeof(double));
 
     for (nspect = 0; nspect < io.ray_nwave_sel; nspect++) {
@@ -303,25 +308,26 @@ void writeRay(void)
       } else
 	J = spectrum.J[idx];
 
-      start[0] = nspect;
-      start[1] = mpi.ix;
-      start[2] = mpi.iy;
-      start[3] = mpi.zcut;
-      count[2] = 1;
-      count[3] = atmos.Nspace;
-
-
-      for (k = 0;  k < atmos.Nspace;  k++) {
-	sca[k] = as->sca_c[k]*J[k];
-	chi[k] = as->chi[k] + as->chi_c[k];
-	S[k]   = (as->eta[k] + as->eta_c[k] + sca[k]) / chi[k];
+      /* Zero S and chi */
+      for (k = 0; k < infile.nz; k++) {
+	S[k][nspect]   = 0.0;
+	chi[k][nspect] = 0.0;
       }
 
-      /* Write variables */
+      for (k = 0;  k < atmos.Nspace;  k++) {
+	l = k + mpi.zcut;
+	sca[k] = as->sca_c[k]*J[k];
+	chi[l][nspect] = (float) (as->chi[k] + as->chi_c[k]);
+	S[l][nspect]   = (float) ((as->eta[k] + as->eta_c[k] + sca[k]) /
+				  (as->chi[k] + as->chi_c[k]));
+      }
+
+      /* Write variables 
       if ((ierror=nc_put_vara_double(ncid, io.ray_chi_var, start, count,
 				     chi ))) ERR(ierror,routineName);
       if ((ierror=nc_put_vara_double(ncid, io.ray_S_var,   start, count,
 				     S )))   ERR(ierror,routineName);
+      */
       /* Tiago: these take too much space, so not writing them at the moment
       if ((ierror=nc_put_vara_double(ncid, io.ray_chi_l_var, start, count,
 				     as->chi )))   ERR(ierror,routineName);
@@ -335,7 +341,21 @@ void writeRay(void)
 				     sca )))       ERR(ierror,routineName);     
       */
     }
-    free(sca); free(chi); free(S);
+    
+    /* Write variables */
+    start[0] = mpi.ix;  count[0] = 1;
+    start[1] = mpi.iy;  count[1] = 1;
+    start[2] = 0;       count[2] = infile.nz;
+    start[3] = 0;       count[3] = io.ray_nwave_sel;
+
+
+    if ((ierror=nc_put_vara_float(ncid, io.ray_chi_var, start, count,
+				  chi[0] ))) ERR(ierror,routineName);
+    if ((ierror=nc_put_vara_float(ncid, io.ray_S_var,   start, count,
+				  S[0] )))   ERR(ierror,routineName);
+    
+    
+    free(sca); freeMatrix((void **) chi); freeMatrix((void **) S);
     if (input.limit_memory) free(J);
   }
 

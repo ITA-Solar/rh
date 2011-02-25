@@ -39,7 +39,7 @@
 #define  FILE_EXT ".dat"
 
 /* Definitions for the spectrum file */
-#define SPEC_FILE   "output_spectrum.ncdf"
+#define SPEC_FILE   "output/output_spectrum.ncdf"
 #define INT_NAME    "intensity"
 #define FLUX_NAME   "flux"
 #define STOKES_Q    "stokes_Q"
@@ -48,7 +48,7 @@
 #define WAVE_NAME   "wavelength"
 
 /* Definitions for the ray file */
-#define RAY_FILE     "output_ray.ncdf"
+#define RAY_FILE     "output/output_ray.ncdf"
 #define WAVE_SEL     "wavelength_selected"
 #define WAVE_SEL_IDX "wavelength_indices"
 #define CHI_NAME     "chi"
@@ -60,7 +60,7 @@
 #define SCA_C_NAME   "scattering_eta_continuum" // This is actually sca*J
 
 /* Definitions for the input data file */
-#define INPUTDATA_FILE "output_indata.ncdf"
+#define INPUTDATA_FILE "output/output_indata.ncdf"
 #define XNUM_NAME      "xnum"
 #define YNUM_NAME      "ynum"
 #define TASK_MAP       "task_map"
@@ -78,7 +78,7 @@
 
 /* Definitions for the Aux file */
 #define ARR_STRLEN  30
-#define AUX_FILE    "output_aux.ncdf"
+#define AUX_FILE    "output/output_aux.ncdf"
 #define POP_NAME    "populations"
 #define POPLTE_NAME "populations_LTE"
 #define RIJ_L_NAME  "Rij_line"
@@ -142,7 +142,8 @@ typedef struct {
 } IO_data;
 
 typedef struct {
-  double *J, *J20, **n, **nstar, **nv, **nvstar, **RijL, **RjiL, **RijC, **RjiC;
+  double  **n, **nstar, **nv, **nvstar, **RijL, **RjiL, **RijC, **RjiC;
+  float   *J,  *J20;
 } IO_buffer;
 
 

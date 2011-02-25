@@ -63,9 +63,8 @@ void init_ncdf_aux(void) {
 /* ------- end --------------------------   init_ncdf_aux.c     --- */
 
 /* ------- begin --------------------------   init_aux_new.c --   --- */
-void init_aux_new(void)
+void init_aux_new(void) {
 /* Creates the netCDF file for the auxiliary data */
-{
   const char routineName[] = "init_ncdf_aux";
   int     ierror, ncid, ncid_atom, ncid_mol, ncid_op, i, nx_id, ny_id, nspace_id,
           nrays_id, nwad_id, nwai_id, nlevel_id, nline_id, ncont_id, dimids[5];
@@ -657,6 +656,7 @@ void writeAux_all(void) {
     start[1] = mpi.taskmap[task + mpi.my_start][0];  count[2] = 1;
     start[2] = mpi.taskmap[task + mpi.my_start][1];  count[2] = 1;
     start[3] = mpi.zcut_hist[task];   count[3] = infile.nz - start[3];
+    
 
     /* ATOM loop */
     for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
