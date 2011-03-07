@@ -174,15 +174,27 @@ void UpdateAtmosDep(void) {
     atom->ntotal = (double *) realloc(atom->ntotal, atmos.Nspace * sizeof(double));
     atom->vbroad = (double *) realloc(atom->vbroad, atmos.Nspace * sizeof(double));
 
-    if (atom->n != NULL) {
-      freeMatrix((void **) atom->n);
-      atom->n = matrix_double(atom->Nlevel, atmos.Nspace);
-    }
-    
     if (atom->nstar != NULL) {
       freeMatrix((void **) atom->nstar);
       atom->nstar = matrix_double(atom->Nlevel, atmos.Nspace);
     }
+    
+    /* When H is treated in LTE, n is just a pointer to nstar,
+       so we don't need to free it */
+    if (nact == 0) {
+      if (!atmos.H_LTE) {
+        freeMatrix((void **) atom->n);
+	atom->n = matrix_double(atom->Nlevel, atmos.Nspace);	
+      } 
+    } else {
+      if (atom->n != NULL) {
+        freeMatrix((void **) atom->n);
+	atom->n = matrix_double(atom->Nlevel, atmos.Nspace);
+      }
+    }
+
+
+    
 
     for (k = 0;  k < atmos.Nspace;  k++)
       atom->ntotal[k] = atom->abundance * atmos.nHtot[k];

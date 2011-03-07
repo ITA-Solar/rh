@@ -93,14 +93,21 @@ void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *inf
   if ((ierror = nc_inq_dimid( ncid, "nz", &infile->nz_id)))       ERR(ierror,routineName);
   if ((ierror = nc_inq_dimlen(ncid, infile->nz_id, &infile->nz))) ERR(ierror,routineName);
 
-  if ((ierror = nc_inq_dimid( ncid, "nhydr", &infile->nhyd_id)))  ERR(ierror,routineName);
-  if ((ierror = nc_inq_dimlen(ncid, infile->nhyd_id, &nn)))       ERR(ierror,routineName);
+  if ((ierror = nc_inq_dimid( ncid, "nhydr", &infile->nhyd_id))) ERR(ierror, routineName);
+  if ((ierror = nc_inq_dimlen(ncid, infile->nhyd_id, &nn)))      ERR(ierror, routineName);
+
 
   /* get some values in atmos/geometry structures */
   geometry->Ndep = (int)  infile->nz;
   atmos->Nspace  = (long) infile->nz;
   atmos->NHydr   = (int)  nn;
 
+
+  if (atmos->NHydr < 2  &&  !atmos->H_LTE) {
+    sprintf(messageStr, "NHydr has to be at least 2, not %d to run with"
+	    " NLTE hydrogen populations in background\n", atmos->NHydr);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
 
   /* Get the varids */
   if ((ierror=nc_inq_varid(ncid, TEMP_NAME, &infile->T_varid)))  ERR(ierror,routineName);
@@ -264,7 +271,7 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   }
 
   /* allocate and zero nHtot */
-  atmos->nH = matrix_double(atmos->NHydr, atmos->Nspace);
+  atmos->nH = matrix_double(atmos->NHydr, atmos->Nspace);  
   for (j = 0; j < atmos->Nspace; j++) atmos->nHtot[j] = 0.0; 
 
   /* read nH, all at once */ 
