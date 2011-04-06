@@ -170,6 +170,8 @@ void readInput()
      &input.allow_passive_bb, setboolValue},
 
     /* --- 1.5D version related inputs go here --     --------------- */
+    {"SNAPSHOT", "0", FALSE, KEYWORD_OPTIONAL, &input.p15d_nt,
+     setintValue},
     {"X_START", "0", FALSE, KEYWORD_OPTIONAL, &input.p15d_x0,
      setintValue},
     {"X_END", "-1",  FALSE, KEYWORD_OPTIONAL, &input.p15d_x1,
