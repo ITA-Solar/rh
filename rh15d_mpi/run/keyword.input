@@ -7,22 +7,25 @@
 # First specify input files for atmosphere and abundances
 # (both KEYWORD_REQUIRED).
 
-  ATMOS_FILE = /Users/tiago/data/bifrost/bifrost_s20_slice2.ncdf 
+#  ATMOS_FILE = /Users/tiago/data/bifrost/bifrost_s20_slice2.ncdf
+  ATMOS_FILE = /Users/tiago/data/bifrost/bifrost_hr_s40-44.ncdf  
   ABUND_FILE = ../../Atoms/abundance.input
 
 # Stuff for 1.5D version:
-  X_START = 412 
-  X_END   = 413 
-  X_STEP  = 1 
+  SNAPSHOT = 3
 
-  Y_START = 140 
-  Y_END   = 141 
-  Y_STEP  = 1 
+  X_START = 0 
+  X_END   = 100 
+  X_STEP  = 4 
+
+  Y_START = 0
+  Y_END   = 100
+  Y_STEP  = 4 
 
   15D_WRITE_EXTRA    = FALSE 
   15D_WRITE_SPECTRUM = FALSE 
 
-  15D_TMAX_CUT = 75000.
+  15D_TMAX_CUT = 30000.
 
 
 # Set choice of number of rays (KEYWORD_OPTIONAL).
@@ -57,7 +60,7 @@
 # Maximum number of iterations to initialize scattering radiation
 # field in the background (KEYWORD_OPTIONAL).
 
-  N_MAX_SCATTER = 3
+  N_MAX_SCATTER = 5
 
 # Row of statistical equilibrium equation that is to be eliminated
 # to enforce particle conservation (KEYWORD_REQUIRED). If set to -1
@@ -70,7 +73,7 @@
 # (both KEYWORD_REQUIRED).
 
   N_MAX_ITER = 150 
-  ITER_LIMIT = 1.0E-2
+  ITER_LIMIT = 1.0E-02
 
 # Parameters for Ng convergence acceleration (all are KEYWORD_OPTIONAL)
 # (default for NG_ORDER = 0 --> no acceleration)
@@ -84,18 +87,18 @@
 # PRD iterations per main iteration. PRD_ITER_LIMIT is the convergence
 # limit of PRD iterations in each main iteration. If PRD_ITER_LIMIT is
 # negative, the dpopsmax of the current main iteration is taken as the
-# PRD convergence limit. Both are KEYWORD_OPTIONAL. If PRD_N_MAX_ITER
+# PRD convergence limit. Both are KEYWORD_OPTIONAL. If PRD_N_MAX_ITER = 0
 # all lines will be treated in CRD.
 
-  PRD_N_MAX_ITER = 3
+  PRD_N_MAX_ITER = 0
   PRD_ITER_LIMIT = 1.0E-2
 
 # PRD_NG_?? are the Ng accelleration parameters for PRD iterations
 # (all are KEYWORD_OPTIONAL).
 
-#  PRD_NG_DELAY   = 0
+#  PRD_NG_DELAY   = 200
 #  PRD_NG_ORDER   = 2
-#  PRD_NG_PERIOD  = 3
+#  PRD_NG_PERIOD  = 5
 
 # If PRD_ANGLE_DEP is set to TRUE angle-dependent PRD is used
 # (KEYWORD_DEFAULT). The default is FALSE.
@@ -132,7 +135,7 @@
 # Set HYDROGEN_LTE = TRUE if hydrogen in the background has to be
 # treated with LTE populations (KEYWORD_DEFAULT). Default is FALSE
 
-## HYDROGEN_LTE = TRUE
+HYDROGEN_LTE = TRUE
 ##  HYDROSTATIC = TRUE
 ##  NON_ICE = TRUE
 
@@ -189,12 +192,13 @@
 
 # Input file for the magnetic field (KEYWORD_OPTIONAL). Default is "none".
 
-#  STOKES_INPUT = ../../Atmos/MACKKL_M_100_3500G_ver.B
+  STOKES_INPUT = ../../Atmos/MACKKL_M_100_3500G_ver.B
+
 
 # Input Stokes mode (KEYWORD_OPTIONAL). 
 # Options are: NO_STOKES, FIELD_FREE, POLARIZATION_FREE, and FULL_STOKES.
 
-  STOKES_MODE = POLARIZATION_FREE
+  STOKES_MODE = FIELD_FREE
 
 # Include magneto-optical effects (KEYWORD_DEFAULT). Default is TRUE.
 

@@ -412,12 +412,14 @@ void init_ncdf_indata(void)
     if ((ierror = nc_put_var_double(ncid_atmos, wmu_var,     geometry.wmu )))
       ERR(ierror,routineName);   
 
-    /* Must read full z from NetCDF file */
+    /* Must read full z from NetCDF file */  
+    start[0] = input.p15d_nt; count[0] = 1;
+    start[1] = 0;             count[1] = infile.nz;
     height = (double *) malloc(infile.nz * sizeof(double));
 
     if ((ierror=nc_inq_varid(infile.ncid, "z",  &z_varid)))   
       ERR(ierror,routineName);
-    if ((ierror = nc_get_var_double(infile.ncid, z_varid, height))) 
+    if ((ierror = nc_get_vara_double(infile.ncid, z_varid, start, count, height))) 
       ERR(ierror,routineName);
     
     if ((ierror = nc_put_var_double(ncid_atmos, height_var,  height)))
@@ -560,9 +562,10 @@ void writeAtmos_all(void) {
   int        ierror, ncid_in, ncid_out, task;
   size_t     start[]  = {0, 0, 0, 0};
   size_t     count[]  = {1, 1, 1, 1};
-  size_t     starti[] = {0, 0, 0, 0};
+  size_t     starti[] = {0, 0, 0, 0, 0};
+  size_t     counti[] = {1, 1, 1, 1, 1};
   double    *tmp, **mtmp, *zeros;
-  size_t    *st, *ct, *sti;
+  size_t    *st, *ct;
 
 
   ncid_in  = infile.ncid;
@@ -586,33 +589,38 @@ void writeAtmos_all(void) {
   tmp   = (double *) calloc(infile.nz,  sizeof(double));
   zeros = (double *) calloc(infile.nz,  sizeof(double)); 
   mtmp  = matrix_double(atmos.NHydr, infile.nz);
+  
+  starti[0] = input.p15d_nt; counti[0] = 1;
 
   for (task = 0; task < mpi.Ntasks; task++) {
-    start[0] = 0;   ; count[0] = atmos.NHydr;
+    start[0] = 0;   count[0] = atmos.NHydr;
     start[1] = mpi.taskmap[task + mpi.my_start][0];  count[2] = 1;
     start[2] = mpi.taskmap[task + mpi.my_start][1];  count[2] = 1;
     start[3] = mpi.zcut_hist[task];   count[3] = infile.nz - start[3];
 
     /* convert ix, iy into xnum, ynum of the original file */
-    starti[0] = start[0];           starti[3] = start[3]; 
-    starti[1] = mpi.xnum[start[1]]; starti[2] = mpi.ynum[start[2]];
+    //starti[0] = start[0];           starti[3] = start[3];
+    starti[0] = input.p15d_nt;      counti[0] = 1;
+    starti[1] = mpi.xnum[start[1]]; counti[1] = 1;
+    starti[2] = mpi.ynum[start[2]]; counti[2] = 1;
+    starti[3] = start[3];           counti[3] = count[3];
 
-    st = &start[1];  ct = &count[1];  sti = &starti[1];
+    st = &start[1];  ct = &count[1];  
 
     /* Temperature */
-    if ((ierror = nc_get_vara_double(ncid_in,  infile.T_varid, sti, ct, tmp)))
+    if ((ierror = nc_get_vara_double(ncid_in,  infile.T_varid, starti, counti, tmp)))
       ERR(ierror,routineName);
     if ((ierror = nc_put_vara_double(ncid_out, io.in_atmos_T,  st,  ct, tmp)))
       ERR(ierror,routineName);
 
     /* Electron density */
-    if ((ierror = nc_get_vara_double(ncid_in,  infile.ne_varid, sti, ct, tmp)))
+    if ((ierror = nc_get_vara_double(ncid_in,  infile.ne_varid, starti, counti, tmp)))
       ERR(ierror,routineName);
     if ((ierror = nc_put_vara_double(ncid_out, io.in_atmos_ne,  st,  ct, tmp)))
       ERR(ierror,routineName);
 
     /* Vz */
-    if ((ierror = nc_get_vara_double(ncid_in,  infile.vz_varid, sti, ct, tmp)))
+    if ((ierror = nc_get_vara_double(ncid_in,  infile.vz_varid, starti, counti, tmp)))
       ERR(ierror,routineName);
     if ((ierror = nc_put_vara_double(ncid_out, io.in_atmos_vz,  st,  ct, tmp)))
       ERR(ierror,routineName);
@@ -623,24 +631,29 @@ void writeAtmos_all(void) {
 
     if (atmos.Stokes) {
       /* Bx, By, Bz */
-      if ((ierror = nc_get_vara_double(ncid_in,  infile.Bx_varid, sti, ct, tmp)))
+      if ((ierror = nc_get_vara_double(ncid_in,  infile.Bx_varid, starti, counti, tmp)))
 	ERR(ierror,routineName);
       if ((ierror = nc_put_vara_double(ncid_out, io.in_atmos_Bx,  st,  ct, tmp)))
 	ERR(ierror,routineName);
 
-      if ((ierror = nc_get_vara_double(ncid_in,  infile.By_varid, sti, ct, tmp)))
+      if ((ierror = nc_get_vara_double(ncid_in,  infile.By_varid, starti, counti, tmp)))
 	ERR(ierror,routineName);
       if ((ierror = nc_put_vara_double(ncid_out, io.in_atmos_By,  st,  ct, tmp)))
 	ERR(ierror,routineName);
 
-      if ((ierror = nc_get_vara_double(ncid_in,  infile.Bz_varid, sti, ct, tmp)))
+      if ((ierror = nc_get_vara_double(ncid_in,  infile.Bz_varid, starti, counti, tmp)))
 	ERR(ierror,routineName);
       if ((ierror = nc_put_vara_double(ncid_out, io.in_atmos_Bz,  st,  ct, tmp)))
 	ERR(ierror,routineName);
     }
 
     /* Hydrogen populations */
-    if ((ierror=nc_get_vara_double(ncid_in,  infile.nh_varid, starti, count, 
+    starti[0] = input.p15d_nt;      counti[0] = 1;
+    starti[1] = 0;                  counti[1] = atmos.NHydr;
+    starti[2] = mpi.xnum[start[1]]; counti[2] = 1;
+    starti[3] = mpi.ynum[start[2]]; counti[3] = 1;
+    starti[4] = start[3];           counti[4] = count[3];
+    if ((ierror=nc_get_vara_double(ncid_in,  infile.nh_varid, starti, counti, 
 				   mtmp[0]))) ERR(ierror,routineName);
     if ((ierror=nc_put_vara_double(ncid_out, io.in_atmos_nh,  start,  count,
 				   mtmp[0]))) ERR(ierror,routineName);

@@ -96,6 +96,7 @@ int main(int argc, char *argv[])
     readAtmos_ncdf(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
     //readAtmos_ncdf(164,180, &atmos, &geometry, &infile);
 
+
     if (atmos.Stokes) Bproject();
 
 
@@ -137,13 +138,14 @@ int main(int argc, char *argv[])
     //exit(2);
     */
 
+
     /* --- Solve radiative transfer for active ingredients -- --------- */
     Iterate_p(input.NmaxIter, input.iterLimit);
 
 
     /* Treat odd cases as a crash */
     if (isnan(mpi.dpopsmax[mpi.task]) || isinf(mpi.dpopsmax[mpi.task]) || 
-	(mpi.dpopsmax[mpi.task] <= 0))
+	(mpi.dpopsmax[mpi.task] < 0))
       mpi.stop = TRUE;
 
     /* In case of crash, write dummy data and proceed to next task */

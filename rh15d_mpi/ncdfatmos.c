@@ -52,6 +52,8 @@ void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *inf
   struct  stat statBuffer;
   int ierror, ncid, x_varid, y_varid, z_varid, has_B;
   size_t nn;
+  size_t start[] = {0, 0};
+  size_t count[] = {1, 1};
   char *filename;
 
 
@@ -128,8 +130,13 @@ void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *inf
   }
 
   /* read things that don't depend on x, y */
+  start[0] = input.p15d_nt; count[0] = 1;
+  start[1] = 0;             count[1] = infile->nz;
+
   geometry->height = (double *) malloc(infile->nz * sizeof(double));
-  if ((ierror = nc_get_var_double(ncid, z_varid, geometry->height))) ERR(ierror,routineName);
+  if ((ierror = nc_get_vara_double(ncid, z_varid, start, count, geometry->height))) 
+    ERR(ierror,routineName);
+
   infile->y   = (double *) malloc(infile->ny * sizeof(double));
   if ((ierror = nc_get_var_double(ncid, y_varid, infile->y))) ERR(ierror,routineName);
   infile->x   = (double *) malloc(infile->nx * sizeof(double));
@@ -199,10 +206,10 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 /* Reads the variables T, ne, vel, nh for a given (xi,yi) pair */ 
 {
   const char routineName[] = "readAtmos_ncdf";
-  size_t     start[]    = {0, 0, 0}; /* starting values */
-  size_t     count[]    = {1, 1, 1};
-  size_t     start_nh[] = {0, 0, 0, 0};
-  size_t     count_nh[] = {1, 1, 1, 1};
+  size_t     start[]    = {0, 0, 0, 0}; /* starting values */
+  size_t     count[]    = {1, 1, 1, 1};
+  size_t     start_nh[] = {0, 0, 0, 0, 0};
+  size_t     count_nh[] = {1, 1, 1, 1, 1};
   int        ncid, ierror, i, j, z_varid;
   double    *Bx, *By, *Bz;
 
@@ -211,9 +218,10 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   atmos->Nspace = geometry->Ndep = infile->nz;
 
   /* read full T column, to see where to zcut */
-  start[0] = (size_t) xi; count[0] = 1;
-  start[1] = (size_t) yi; count[1] = 1;
-  start[2] = 0;           count[2] = infile->nz;
+  start[0] = input.p15d_nt; count[0] = 1;
+  start[1] = (size_t) xi;   count[1] = 1;
+  start[2] = (size_t) yi;   count[2] = 1;
+  start[3] = 0;             count[3] = infile->nz;
   
   atmos->T = (double *) realloc(atmos->T, infile->nz * sizeof(double)); 
 
@@ -225,8 +233,9 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 
   //printf("Process %d: zcut = %d\n", mpi.rank, mpi.zcut);
 
-  /* Get z again */ 
-  start[0] = mpi.zcut;  count[0] = atmos->Nspace;
+  /* Get z again */
+  start[0] = input.p15d_nt; count[0] = 1;
+  start[1] = mpi.zcut;      count[1] = atmos->Nspace;
 
   if ((ierror=nc_inq_varid(ncid, "z",  &z_varid)))          
     ERR(ierror,routineName);
@@ -234,10 +243,10 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
     ERR(ierror,routineName);
  
 
-
-  start[0] = (size_t) xi; count[0] = 1;
-  start[1] = (size_t) yi; count[1] = 1;
-  start[2] = mpi.zcut;    count[2] = atmos->Nspace;
+  start[0] = input.p15d_nt; count[0] = 1;
+  start[1] = (size_t) xi;   count[1] = 1;
+  start[2] = (size_t) yi;   count[2] = 1;
+  start[3] = mpi.zcut;      count[3] = atmos->Nspace;
 
    /* read variables */
   if ((ierror = nc_get_vara_double(ncid, infile->T_varid,  start, count, atmos->T)))
@@ -274,11 +283,12 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   atmos->nH = matrix_double(atmos->NHydr, atmos->Nspace);  
   for (j = 0; j < atmos->Nspace; j++) atmos->nHtot[j] = 0.0; 
 
-  /* read nH, all at once */ 
-  start_nh[0] = 0;           count_nh[0] = atmos->NHydr;
-  start_nh[1] = (size_t) xi; count_nh[1] = 1;
-  start_nh[2] = (size_t) yi; count_nh[2] = 1;
-  start_nh[3] = mpi.zcut;    count_nh[3] = atmos->Nspace;
+  /* read nH, all at once */
+  start_nh[0] = input.p15d_nt; count_nh[0] = 1;
+  start_nh[1] = 0;             count_nh[1] = atmos->NHydr;
+  start_nh[2] = (size_t) xi;   count_nh[2] = 1;
+  start_nh[3] = (size_t) yi;   count_nh[3] = 1;
+  start_nh[4] = mpi.zcut;      count_nh[4] = atmos->Nspace;
   if ((ierror = nc_get_vara_double(ncid, infile->nh_varid, start_nh, count_nh, 
 				   atmos->nH[0]))) ERR(ierror,routineName);
 

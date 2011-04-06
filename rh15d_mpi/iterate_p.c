@@ -57,7 +57,12 @@ void Iterate_p(int NmaxIter, double iterLimit)
   Atom *atom;
   Molecule *molecule;
 
-  if (NmaxIter <= 0) return;
+  if (NmaxIter <= 0) {
+    /* For compatibility */
+    mpi.dpopsmax[mpi.task]    = 0;
+    mpi.convergence[mpi.task] = TRUE;
+    return;
+  }
   getCPU(1, TIME_START, NULL);
 
   /* --- Initialize structures for Ng acceleration of population
