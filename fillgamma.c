@@ -41,7 +41,7 @@ extern char messageStr[];
 
 /* ------- begin -------------------------- initGammaAtom.c --------- */
 
-void initGammaAtom(Atom *atom)
+void initGammaAtom(Atom *atom, double cswitch)
 {
   register int ij, k;
 
@@ -49,7 +49,7 @@ void initGammaAtom(Atom *atom)
 
   for (ij = 0;  ij < SQ(atom->Nlevel);  ij++) {
     for (k = 0;  k < atmos.Nspace;  k++)
-      atom->Gamma[ij][k] = atom->C[ij][k];
+      atom->Gamma[ij][k] = atom->C[ij][k] * cswitch;
   }
 }
 /* ------- end ---------------------------- initGammaAtom.c --------- */

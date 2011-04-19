@@ -206,7 +206,7 @@ void initAtom(Atom *atom);
 void initAtomicLine(AtomicLine *line);
 void initAtomicContinuum(AtomicContinuum *continuum);
 
-void initGammaAtom(Atom *atom);
+void initGammaAtom(Atom *atom, double cswitch);
 void initGammaMolecule(Molecule *molecule);
 
 void LTEpops(Atom *atom, bool_t Debeye);

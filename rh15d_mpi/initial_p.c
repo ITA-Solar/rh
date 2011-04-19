@@ -268,7 +268,7 @@ void initSolution_p(void)
       twoc   = 2.0*CLIGHT / CUBE(NM_TO_M);
       fourPI = 4.0 * PI;
 
-      initGammaAtom(atom);
+      initGammaAtom(atom, 1.0);
 
       /* --- Then add radiative contributions of active transitions --  */
 

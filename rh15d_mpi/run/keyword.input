@@ -7,25 +7,36 @@
 # First specify input files for atmosphere and abundances
 # (both KEYWORD_REQUIRED).
 
-#  ATMOS_FILE = /Users/tiago/data/bifrost/bifrost_s20_slice2.ncdf
+#  ATMOS_FILE = /Users/tiago/data/bifrost/bifrost_s20_slice_new.ncdf
   ATMOS_FILE = /Users/tiago/data/bifrost/bifrost_hr_s40-44.ncdf  
   ABUND_FILE = ../../Atoms/abundance.input
 
 # Stuff for 1.5D version:
-  SNAPSHOT = 3
+  SNAPSHOT = 4
 
-  X_START = 0 
-  X_END   = 100 
-  X_STEP  = 4 
+  X_START = 170 
+  X_END   = 171 
+  X_STEP  = 1 
 
-  Y_START = 0
-  Y_END   = 100
-  Y_STEP  = 4 
+  Y_START = 158
+  Y_END   = 159
+  Y_STEP  = 1 
 
   15D_WRITE_EXTRA    = FALSE 
   15D_WRITE_SPECTRUM = FALSE 
 
-  15D_TMAX_CUT = 30000.
+  15D_TMAX_CUT = 12000.
+
+# COLLRAD_SWITCH defines if collisional-radiative switching is on
+# If < 0, switching parameter is constant (and equal to COLLRAD_SWITCH_INI)
+# If = 0, no collisional-radiative switching
+# If > 0, collisional-radiative switching decreases by COLLRAD_SWITCH per log decade,
+#         starting with the COLLRAD_SWITCH_INI value.
+# worked: (25, 50), (x,y,snap) = (300,150,0) [20 SLICE]
+# lead to non-conv instead of crash: (15, 5555500), (x,y,snap) = (400,150,4) 
+
+  COLLRAD_SWITCH = 0.
+  COLLRAD_SWITCH_INI = 300.
 
 
 # Set choice of number of rays (KEYWORD_OPTIONAL).
@@ -60,7 +71,7 @@
 # Maximum number of iterations to initialize scattering radiation
 # field in the background (KEYWORD_OPTIONAL).
 
-  N_MAX_SCATTER = 5
+  N_MAX_SCATTER = 50
 
 # Row of statistical equilibrium equation that is to be eliminated
 # to enforce particle conservation (KEYWORD_REQUIRED). If set to -1

@@ -145,8 +145,9 @@ int main(int argc, char *argv[])
 
     /* Treat odd cases as a crash */
     if (isnan(mpi.dpopsmax[mpi.task]) || isinf(mpi.dpopsmax[mpi.task]) || 
-	(mpi.dpopsmax[mpi.task] < 0))
+	(mpi.dpopsmax[mpi.task] < 0) || ((mpi.dpopsmax[mpi.task] == 0) && (input.NmaxIter > 0)))
       mpi.stop = TRUE;
+      
 
     /* In case of crash, write dummy data and proceed to next task */
     if (mpi.stop) {

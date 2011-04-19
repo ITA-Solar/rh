@@ -51,6 +51,7 @@ void Iterate_p(int NmaxIter, double iterLimit)
 {
   const char routineName[] = "Iterate";
   register int niter, nact;
+  double cswitch;
 
   bool_t eval_operator;
   double dpopsmax, PRDiterlimit;
@@ -82,11 +83,18 @@ void Iterate_p(int NmaxIter, double iterLimit)
   /* --- Start of the main iteration loop --             ------------ */
 
   niter = 1;
+  
+  /* Collisional-radiative switching ? */
+  if (input.crsw != 0.0)
+    cswitch = input.crsw_ini;
+  else
+    cswitch = 1.0;
+  
   while (niter <= NmaxIter && !StopRequested()) {
     getCPU(2, TIME_START, NULL);
 
     for (nact = 0;  nact < atmos.Nactiveatom;  nact++)
-      initGammaAtom(atmos.activeatoms[nact]);
+      initGammaAtom(atmos.activeatoms[nact], cswitch); 
     for (nact = 0;  nact < atmos.Nactivemol;  nact++)
       initGammaMolecule(atmos.activemols[nact]);
 
@@ -96,7 +104,7 @@ void Iterate_p(int NmaxIter, double iterLimit)
 
     /* --- Solve statistical equilibrium equations --  -------------- */
 
-    sprintf(messageStr, "\n -- Iteration %3d\n", niter);
+    sprintf(messageStr, "\n -- Iteration %3d, switch = %.2f\n", niter, cswitch);
     Error(MESSAGE, routineName, messageStr);
     dpopsmax = updatePopulations(niter);
     if (mpi.stop) return;
@@ -111,6 +119,7 @@ void Iterate_p(int NmaxIter, double iterLimit)
 	PRDiterlimit = input.PRDiterLimit;
       Redistribute(input.PRD_NmaxIter, PRDiterlimit);
       if (mpi.stop) return;
+  
 
     }
 
@@ -121,8 +130,12 @@ void Iterate_p(int NmaxIter, double iterLimit)
     mpi.niter[mpi.task] = niter;
     mpi.dpopsmax_hist[mpi.task][niter-1] = dpopsmax;
 
-    if (dpopsmax < iterLimit) break;
+    if (dpopsmax < iterLimit && cswitch <= 1.0 ) break;
     niter++;
+    
+    /* Update collisional multiplier factor */
+    if (input.crsw > 0)
+      cswitch = MAX(1.0, cswitch * pow(0.1, 1./input.crsw));
 
     if (atmos.hydrostatic) {
       if (!atmos.atoms[0].active) {
