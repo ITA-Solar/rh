@@ -190,6 +190,9 @@ void readInput()
      setdoubleValue},
     {"COLLRAD_SWITCH_INI", "1.0", FALSE, KEYWORD_OPTIONAL, &input.crsw_ini,
      setdoubleValue},
+     
+    {"N_PESC_ITER", "3",  FALSE, KEYWORD_OPTIONAL, &input.NpescIter,
+     setintValue},
 
     {"15D_WRITE_EXTRA",    "TRUE",  FALSE, KEYWORD_OPTIONAL, &input.p15d_wxtra,
      setboolValue},

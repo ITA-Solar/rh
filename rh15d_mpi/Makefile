@@ -33,7 +33,7 @@ ONE_D_OBJS = anglequad.o      feautrier.o     formal.o           hydrostat.o   \
              readj_p.o        scatter_p.o     writespect_p.o     initial_p.o   \
              writeindata_p.o  writeAux_p.o    parallel.o         iterate_p.o   \
              ludcmp_p.o       accelerate_p.o  redistribute_p.o   statequil_p.o \
-	     distribute_jobs.o
+	     escape.o         distribute_jobs.o
 
 SUBSTITUTE = pops_xdr.o
 
@@ -44,7 +44,7 @@ SUBSTITUTE = pops_xdr.o
              writespect_p.o   writeAux_p.o    writeindata_p.o   background_p.o \
              initial_p.o      scatter_p.o     writeRay.o        project.o      \
              piecestokes.o    piecewise.o     riiplane.o        solveray.o     \
-             distribute_jobs.o
+             escape.o         distribute_jobs.o
 
 BACKGROPAC = anglequad.o      backgrcontr.o   multiatmos.o      project.o
 
@@ -105,6 +105,12 @@ distribute_jobs.o:      ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../inputs.h      ../error.h       \
                         parallel.h       io.h             distribute_jobs.c
 	$(CC) $(CFLAGS) -Wall -c  -o $@  distribute_jobs.c
+
+escape.o:               ../rh.h          ../atom.h        ../atmos.h       \
+                        ../background.h  geometry.h       ../spectrum.h    \
+			../error.h       ../inputs.h      ../constant.h    \
+			parallel.h       escape.c
+	$(CC) $(CFLAGS) -Wall -c  -o $@  escape.c
 
 
 feautrier.o:            ../rh.h          ../atom.h        ../atmos.h       \

@@ -12,20 +12,25 @@
   ABUND_FILE = ../../Atoms/abundance.input
 
 # Stuff for 1.5D version:
-  SNAPSHOT = 4
+  SNAPSHOT = 0
 
-  X_START = 170 
-  X_END   = 171 
+  X_START = 278 
+  X_END   = 279 
   X_STEP  = 1 
 
-  Y_START = 158
-  Y_END   = 159
+  Y_START = 150
+  Y_END   = 151
   Y_STEP  = 1 
 
   15D_WRITE_EXTRA    = FALSE 
   15D_WRITE_SPECTRUM = FALSE 
 
-  15D_TMAX_CUT = 12000.
+  15D_TMAX_CUT = 22000.
+
+# N_PESC_ITER sets the number of escape probility iterations
+# It only works if ESCAPE_PROBABILITY is chosen as initial solution method
+# for any of the active atoms. 
+  N_PESC_ITER = 4
 
 # COLLRAD_SWITCH defines if collisional-radiative switching is on
 # If < 0, switching parameter is constant (and equal to COLLRAD_SWITCH_INI)
@@ -71,7 +76,7 @@
 # Maximum number of iterations to initialize scattering radiation
 # field in the background (KEYWORD_OPTIONAL).
 
-  N_MAX_SCATTER = 50
+  N_MAX_SCATTER = 15
 
 # Row of statistical equilibrium equation that is to be eliminated
 # to enforce particle conservation (KEYWORD_REQUIRED). If set to -1

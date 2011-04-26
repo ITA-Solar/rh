@@ -121,6 +121,9 @@ void init_ncdf_indata(void)
   case OLD_POPULATIONS:
     strcpy(startJ, "OLD_POPULATIONS");
     break;
+  case ESCAPE_PROBABILITY:
+    strcpy(startJ, "ESCAPE_PROBABILITY");
+    break;
   case NEW_J:
     strcpy(startJ, "NEW_J");
     break;

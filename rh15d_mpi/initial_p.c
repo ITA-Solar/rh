@@ -46,7 +46,7 @@
 
 
 /* --- Function prototypes --                          -------------- */
-
+void Escape(Atom *atom); 
 
 /* --- Global variables --                             -------------- */
 
@@ -315,6 +315,22 @@ void initSolution_p(void)
       /* --- Solve statistical equilibrium equations --  ------------ */
 
       statEquil(atom, (input.isum == -1) ? 0 : input.isum);
+      break;
+    
+    case ESCAPE_PROBABILITY:
+      for (k=0; k < input.NpescIter; k++) {
+	printf("--- Escape probability iteration %i\n", k+1);
+	
+	/* set the Gamma rate matrix equal to the collisional rates */
+	initGammaAtom(atom, 1.0);
+	
+	/* Perform escape probability approximation */
+	Escape(atom);
+	
+	/* Get populations from statistical equilibrium */
+	statEquil(atom, (input.isum == -1) ? 0 : input.isum);
+      }
+      
       break;
 
     case OLD_POPULATIONS:

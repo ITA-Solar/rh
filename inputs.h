@@ -80,6 +80,8 @@ typedef struct {
          NmaxScatter, Nthreads;
   /* Tiago, for collisional-radiative switching */
   double crsw, crsw_ini;
+  /* Tiago, for escape probability iterations */
+  int    NpescIter;
   /* Tiago, added this for 1.5D version */
   int    p15d_nt, p15d_x0, p15d_x1, p15d_xst, p15d_y0, p15d_y1, p15d_yst;
   double p15d_tmax;
