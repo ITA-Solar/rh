@@ -274,6 +274,13 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
       atmos->B[j]       = sqrt(SQ(Bx[j]) + SQ(By[j]) + SQ(Bz[j]));
       atmos->gamma_B[j] = acos(Bz[j]/atmos->B[j]);
       atmos->chi_B[j]   = atan(By[j]/Bx[j]);
+      
+      /* Protect from undefined cases */
+      if ((Bx[j] == 0) && (By[j] == 0) && (Bz[j] == 0))
+	atmos->gamma_B[j] = 0;
+      
+      if ((Bx[j] == 0) && (By[j] == 0))
+	atmos->chi_B[j]   = 1;
     }
 
     free(Bx); free(By); free(Bz);
