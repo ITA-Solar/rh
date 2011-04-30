@@ -559,7 +559,7 @@ void close_ncdf_indata(void)
 
 /* ------- begin --------------------------   writeAtmos_p.c --- */
 void writeAtmos_all(void) {
-/* Reads the NCDF atmos file, and writes data into indata file */
+/* Reads the NCDF atmos file, and writes data into indata file, all tasks at once */
 
   const char routineName[] = "writeAtmos_all";
   int        ierror, ncid_in, ncid_out, task;
