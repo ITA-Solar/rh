@@ -187,15 +187,17 @@ void UpdateAtmosDep(void) {
 	atom->n = matrix_double(atom->Nlevel, atmos.Nspace);	
       } 
     } else {
-      if (atom->n != NULL) {
-        freeMatrix((void **) atom->n);
-	atom->n = matrix_double(atom->Nlevel, atmos.Nspace);
-      }
+	/* Only allocate n again for active or atoms with read populations */
+	if ((atom->active) || (atom->popsFile)) {
+	  if (atom->n != NULL) freeMatrix((void **) atom->n);
+	  atom->n = matrix_double(atom->Nlevel, atmos.Nspace);
+	} else {
+	  /* alias to nstar again, just in case */
+	  atom->n = atom->nstar; 
+	}
     }
-
-
     
-
+    
     for (k = 0;  k < atmos.Nspace;  k++)
       atom->ntotal[k] = atom->abundance * atmos.nHtot[k];
     
