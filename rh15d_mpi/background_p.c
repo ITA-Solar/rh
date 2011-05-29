@@ -669,6 +669,9 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
   }
   /* --- Clean up but keep H, H2, and active atom and/or molecule
          if appropriate, only for last task --           ------------ */
+  
+  /* Tiago: commenting this big block for now. Gives problems with rh15d_ray,
+            and not really necessary (only for tidying up) 
   if (mpi.task == mpi.Ntasks - 1) {
     if (atmos.Natom > 1) {
       for (n = 1;  n < atmos.Natom;  n++)
@@ -694,7 +697,9 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
       free(lambda_fudge);
       freeMatrix((void **) fudge);
     }
-  }
+  } */
+  
+  
   getCPU(3, TIME_POLL, "Background Opacity");
 
   /* --- Free the temporary space allocated in the ff routines -- --- */
@@ -734,19 +739,16 @@ void SetLTEQuantities_p(void)
     atom = &atmos.atoms[n];
 
     /* --- Get LTE populations for each atom --        -------------- */
-
     LTEpops(atom, Debeye);
-
+      
     if (atom->active) {
       
       /* --- Read the collisional data (in MULTI's GENCOL format).
              After this we can close the input file for the active
              atom. --                                  -------------- */
-
       CollisionRate(atom, atom->fp_input);
 
       /* --- Compute the fixed rates and store in Cij -- ------------ */
-
       if (atom->Nfixed > 0) FixedRate(atom);
     }
   }

@@ -37,6 +37,7 @@ extern enum Topology topology;
 extern Atmosphere atmos;
 extern Spectrum spectrum;
 extern InputData input;
+extern Geometry geometry;
 extern char messageStr[];
 extern NCDF_Atmos_file infile;
 extern MPI_data mpi;
@@ -364,3 +365,92 @@ void writeRay(void)
 }
 /* ------- end   -------------------------- writeRay.c -------------- */
 
+/* ------- begin -------------------------- calculate_ray.c --------- */
+void calculate_ray(void) {
+  /* performs necessary reallocations and inits, and solves for ray */
+  
+      int i, nact, ierror;
+      bool_t analyze_output, equilibria_only;
+      Atom *atom;
+      AtomicLine *line;
+      
+      
+          /*
+    atom = atmos.activeatoms[0];
+    for (i=0; i < atmos.Nspace; i++) printf("%e  %e  %e  %e\n", atom->nstar[0][i], atom->nstar[1][i],
+					    atom->nstar[2][i], atom->nstar[3][i]);  
+    */
+      
+  
+      /* Must calculate background opacity for new ray, need some prep first */
+      for (nact = 0; nact < atmos.Nactiveatom; nact++) {
+	atom = atmos.activeatoms[nact];
+	
+        /* Rewind atom files to point just before collisional data */
+        if ((ierror = fseek(atom->fp_input, io.atom_file_pos[nact], SEEK_SET))) {
+          sprintf(messageStr, "Unable to rewind atom file for %s", atom->ID);
+          Error(ERROR_LEVEL_2, "rh15d_ray", messageStr);
+	}
+	
+	/* Free collisions matrix, going to be re-allocated in background */
+	if (atom->C != NULL) {
+	  freeMatrix((void **) atom->C);
+	  atom->C = NULL;
+	}
+	
+	/* Recalculate line profiles for new angle */
+	for (i = 0; i < atom->Nline; i++) {
+	  line = &atom->line[i];
+	  
+	  if (line->wphi != NULL) {
+	    free(line->wphi);
+	    line->wphi = NULL;
+	  }
+	  
+	  if (line->phi  != NULL) {
+	    freeMatrix((void **) line->phi);
+	    line->phi = NULL;
+	  }
+	  
+	  Profile(line);  
+	}
+      }
+      
+      /* reallocate intensities for correct number of rays */
+      if (spectrum.I != NULL) freeMatrix((void **) spectrum.I);
+      spectrum.I = matrix_double(spectrum.Nspect, atmos.Nrays);
+      if (atmos.Stokes || input.backgr_pol) {
+	if (spectrum.Stokes_Q != NULL) freeMatrix((void **) spectrum.Stokes_Q);
+	spectrum.Stokes_Q = matrix_double(spectrum.Nspect, atmos.Nrays);
+	if (spectrum.Stokes_U != NULL) freeMatrix((void **) spectrum.Stokes_U);
+	spectrum.Stokes_U = matrix_double(spectrum.Nspect, atmos.Nrays);
+	if (spectrum.Stokes_V != NULL) freeMatrix((void **) spectrum.Stokes_V);
+	spectrum.Stokes_V = matrix_double(spectrum.Nspect, atmos.Nrays);
+      }
+      
+      
+      Background_p(analyze_output=FALSE, equilibria_only=FALSE);
+        
+      /*
+      as = &spectrum.as[176];
+      alloc_as(176, FALSE);
+      readBackground(176, 0, 0);
+      Opacity(176, 0, 0, TRUE);
+      
+      for (i=0; i < atmos.Nspace; i++) {
+        printf("%e   %e   %e   %e   %e   %e\n", as->chi_c[i], as->eta_c[i],
+       as->chi[i], as->eta[i], as->sca_c[i], spectrum.J[176][i]);	     
+      } */
+      
+      /* --- Solve radiative transfer for ray --           -------------- */
+      solveSpectrum(FALSE, FALSE);
+    
+      /*
+      for (i=0; i < spectrum.Nspect; i++) {
+	printf("%i   %e\n", i, spectrum.I[i][0]);
+      } */
+    
+  
+}
+
+/* ------- end   -------------------------- calculate_ray.c --------- */
