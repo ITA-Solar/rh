@@ -53,7 +53,7 @@ char messageStr[MAX_MESSAGE_LENGTH];
 int main(int argc, char *argv[])
 {
   bool_t analyze_output, equilibria_only;
-  int    niter, nact,i;
+  int    niter, nact;
 
   Atom *atom;
   Molecule *molecule;
@@ -104,6 +104,14 @@ int main(int argc, char *argv[])
   getCPU(1, TIME_POLL, "Total Initialize");
 
   /* --- Solve radiative transfer for active ingredients -- --------- */
+  /*
+  for (i=0; i < spectrum.Nspect; i++) {
+    //printf("%8.4f  %e  %e\n", spectrum.lambda[i], spectrum.isave1[i],spectrum.isave2[i]);
+    printf("%d  %8.4f  %e  %e  %e  %e  %e  %e\n", i, spectrum.lambda[i], spectrum.Jgas[i][30], spectrum.Jgas[i][80], spectrum.Jgas[i][170], spectrum.J[i][30], spectrum.J[i][80], spectrum.J[i][170]);
+  }
+  exit(1);
+  */
+  
 
   Iterate(input.NmaxIter, input.iterLimit);
 

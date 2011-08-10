@@ -48,9 +48,10 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
   bool_t   initialize, boundbound, polarized_as, polarized_c,
            PRD_angle_dep, to_obs, solveStokes, angle_dep;
   enum     FeautrierOrder F_order;     
-  int      Nspace = atmos.Nspace, Nrays = atmos.Nrays;
+  int      Nspace = atmos.Nspace, Nrays = atmos.Nrays, idx;
   double  *I, *chi, *S, **Ipol, **Spol, *Psi, *Jdag, wmu, dJmax, dJ,
-          *J20dag, musq, threemu1, threemu2, *J, *J20;
+          *J20dag, musq, threemu1, threemu2, *J, *J20, *lambda, sign,
+	  Ilast, dl1, dl2, lambda_gas;
   ActiveSet *as;
 
   /* --- Retrieve active set as of transitions at wavelength nspect - */
@@ -70,7 +71,7 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
 
   /* --- Check for line with angle-dependent PRD in set -- ---------- */
 
-  PRD_angle_dep = (containsPRDline(as) && input.PRD_angle_dep);
+  PRD_angle_dep = (containsPRDline(as) && input.PRD_angle_dep != PRD_ANGLE_INDEP);
 
   /* --- Check for polarized bound-bound transition in active set - - */
 
@@ -122,6 +123,9 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
     for (k = 0;  k < Nspace;  k++) Jdag[k] = J[k];
   }
   for (k = 0;  k < Nspace;  k++) J[k] = 0.0;
+  
+  if (input.PRD_angle_dep == PRD_ANGLE_APPROX)
+    for (k = 0;  k < Nspace;  k++) spectrum.Jgas[nspect][k] = 0.0;
 
   /* --- Store current anisotropy, initialize new one to zero ---- -- */
 
@@ -215,8 +219,53 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
 	      J20[k] +=
 		(threemu1 * Ipol[0][k] + threemu2 * Ipol[1][k]) * wmu;
 	  }
+	  
+	  /* --- Accumulate gas-frame mean intensity ------------- */
+	  if ((input.PRD_angle_dep == PRD_ANGLE_APPROX) && (containsPRDline(as))) {
+	    
+	    sign = (to_obs) ? 1.0 : -1.0;
+	    	    	  
+	    for (k = 0;  k < Nspace;  k++) {
+	      Ilast  = spectrum.Ilast[to_obs*Nrays + mu][k];
+	      lambda = spectrum.lambda;
+	      
+	      /* Finding which index of lambda_gas is suitable */
+	      
+	      // Tiago: this is not needed all the time. Must find way of doing this
+	      //        only once, and then recover the indices. Perhaps using Hunt().
+	      for (idx = 0; idx < spectrum.Nspect - 1; idx++) {
+		/* Wavelength shifted to gas rest frame */
+		lambda_gas = lambda[idx]*(1.+spectrum.v_los[mu][k]*sign/CLIGHT);
+		
+		if ((lambda[nspect] >= lambda_gas) && (lambda[nspect-1] < lambda_gas)) {
+		    /* Manual linear interpolation */
+		    dl1 = lambda_gas     - lambda[nspect-1];
+		    dl2 = lambda[nspect] - lambda[nspect-1];
+		    
+		    spectrum.Jgas[idx][k] += wmu * (Ilast + dl1 * (I[k]-Ilast) / dl2);
+		    
+		    /*
+		    if ((to_obs==1) && (k==30) && (nspect < 231) && (nspect > 222)) {
+		      printf("%d  %d  %d  %8.4f  %8.4f  %8.4f  %e  %e  %e  %e\n",
+			     mu, nspect, idx, lambda[nspect-1], lambda_gas,
+			     lambda[nspect], Ilast, Ilast + dl1 * (I[k]-Ilast), I[k],
+			     spectrum.Jgas[225][k]);
+		    }
+		    */
+		}
+	      } 
+	        
+	      /* Boundary cases */
+	      if ((idx==nspect) || (nspect==0)) spectrum.Jgas[nspect][k] += wmu * I[k];
+	          
+	      /* Update Ilast for next nspect */ 
+	      spectrum.Ilast[to_obs*Nrays + mu][k] = I[k];
+	    }
+	  }
+	  
 	}
-	if (PRD_angle_dep) writeImu(nspect, mu, to_obs, I);
+	if (containsPRDline(as) && input.PRD_angle_dep == PRD_ANGLE_DEP)
+	  writeImu(nspect, mu, to_obs, I);
       }
       /* --- Save emergent intensity --              -------------- */
 
