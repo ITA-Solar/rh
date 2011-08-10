@@ -55,7 +55,7 @@ void writeInput(void)
   }
   xdrstdio_create(&xdrs, fp_out, XDR_ENCODE);
 
-  PRD_angle_dep = (input.PRD_angle_dep  &&  atmos.NPRDactive > 0);
+  PRD_angle_dep = (input.PRD_angle_dep != PRD_ANGLE_INDEP  &&  atmos.NPRDactive > 0);
   XRD           = (input.XRD  &&  atmos.NPRDactive > 0);
 
   /* --- Write various input parameters to file --     -------------- */      

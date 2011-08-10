@@ -208,7 +208,7 @@ void Opacity(int nspect, int mu, bool_t to_obs, bool_t initialize)
 	/* --- PRD correction to emission profile --   -------------- */
 
 	if (line->PRD) {
-	  if (input.PRD_angle_dep) {
+	  if (input.PRD_angle_dep != PRD_ANGLE_INDEP) {
 	    lamu = 2*(atmos.Nrays*la + mu) + to_obs;
 	    for (k = 0;  k < atmos.Nspace;  k++)
 	      atom->rhth[nt].gij[n][k] *= line->rho_prd[lamu][k];

@@ -70,11 +70,12 @@ typedef struct {
          dampingFile[MAX_VALUE_LENGTH],
          coolingFile[MAX_VALUE_LENGTH],
          Itop[MAX_VALUE_LENGTH];
-  bool_t magneto_optical, PRD_angle_dep, XRD, Eddington, solve_ne,
+  bool_t magneto_optical, XRD, Eddington, solve_ne,
          backgr_pol, limit_memory, allow_passive_bb, NonICE;
   enum   solution startJ;
   enum   StokesMode StokesMode;
   enum   order_3D interpolate_3D;
+  enum   PRDangle PRD_angle_dep;
   int    isum, Ngdelay, Ngorder, Ngperiod, NmaxIter,
          PRD_NmaxIter, PRD_Ngdelay, PRD_Ngorder, PRD_Ngperiod,
          NmaxScatter, Nthreads;
@@ -107,6 +108,7 @@ void  setintValue(char *value, void *pointer);
 void  setdoubleValue(char *value, void *pointer);
 void  setstartValue(char *value, void *pointer);
 void  setStokesMode(char *value, void *pointer);
+void  setPRDangle(char *value, void *pointer);
 void  setThreadValue(char *value, void *pointer);
 void  setInterpolate_3D(char *value, void *pointer);
 void  showValues(int Nkeyword, Keyword *theKeywords);

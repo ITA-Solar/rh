@@ -49,10 +49,17 @@ void initScatter()
 	for (kr = 0;  kr < atom->Nline;  kr++) {
 	  line = atom->line + kr;
 	  if (line->PRD) {
-	    if (input.PRD_angle_dep)
-	      PRDAngleScatter(line, LINEAR);
-	    else
+	    switch (input.PRD_angle_dep) {
+	    case PRD_ANGLE_INDEP:
 	      PRDScatter(line, LINEAR);
+	      break;
+	    case PRD_ANGLE_APPROX:
+	      PRDAngleApproxScatter(line, LINEAR);
+	      break;
+	    case PRD_ANGLE_DEP:
+	      PRDAngleScatter(line, LINEAR);
+	      break;
+	    }
 	  }
 	}
       }

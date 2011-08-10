@@ -71,7 +71,7 @@ void writeOpacity(void)
   xdrstdio_create(&xdrs, fp_out, XDR_ENCODE);
 
   if (atmos.moving || atmos.Stokes ||
-      (atmos.NPRDactive > 0 && input.PRD_angle_dep))
+      (atmos.NPRDactive > 0 && input.PRD_angle_dep == PRD_ANGLE_DEP))
     Nrecord = atmos.Nrays*spectrum.Nspect;
   else
     Nrecord = spectrum.Nspect;
@@ -90,7 +90,7 @@ void writeOpacity(void)
              source functions are needed --            -------------- */ 
 
       boundbound    = containsBoundBound(as);
-      PRD_angle_dep = (containsPRDline(as) && input.PRD_angle_dep);
+      PRD_angle_dep = (containsPRDline(as) && input.PRD_angle_dep != PRD_ANGLE_INDEP);
       polarized     = containsPolarized(as);
 
       /* --- Case of angle-dependent opacity and source function -- - */
@@ -112,7 +112,7 @@ void writeOpacity(void)
 	result &= xdr_vector(&xdrs, (char *) as->eta, Nspace, 
 			    sizeof(double), (xdrproc_t) xdr_double);
 	if (atmos.moving || atmos.Stokes ||
-	    (atmos.NPRDactive > 0 && input.PRD_angle_dep)) {
+	    (atmos.NPRDactive > 0 && input.PRD_angle_dep == PRD_ANGLE_DEP)) {
 	  record++;
 	  for (mu = 0;  mu < atmos.Nrays;  mu++)
 	    as_rn[nspect*atmos.Nrays + mu] = record;
@@ -122,7 +122,7 @@ void writeOpacity(void)
       free_as(nspect, crosscoupling=FALSE);
     } else {
       if (atmos.moving || atmos.Stokes ||
-	  (atmos.NPRDactive > 0 && input.PRD_angle_dep))
+	  (atmos.NPRDactive > 0 && input.PRD_angle_dep != PRD_ANGLE_INDEP))
 	for (mu = 0;  mu < atmos.Nrays;  mu++)
 	  as_rn[nspect*atmos.Nrays + mu] = -1;
       else

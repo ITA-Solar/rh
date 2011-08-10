@@ -482,13 +482,13 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
 	      "pops.%.1s.out" : "pops.%.2s.out", atom->ID);
 
     if (atom->Nprd > 0) {
-      if (atmos.moving && !input.PRD_angle_dep) {
+      if (atmos.moving && input.PRD_angle_dep == PRD_ANGLE_INDEP) {
 	sprintf(messageStr,
 		"Using angle-averaged PRD in moving atmosphere for "
                 "atom %2s\n", atom->ID);
 	Error(WARNING, routineName, messageStr);
       }
-      if (!atmos.moving && input.PRD_angle_dep) {
+      if (!atmos.moving && input.PRD_angle_dep == PRD_ANGLE_DEP) {
 	sprintf(messageStr,
 		"Using angle-dependent PRD in static atmosphere for "
                 "atom %2s\n", atom->ID);

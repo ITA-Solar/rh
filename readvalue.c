@@ -279,6 +279,30 @@ void setStokesMode(char *value, void *pointer)
 }
 /* ------- end ---------------------------- setStokesMode.c --------- */
 
+
+/* ------- begin -------------------------- setPRDangle.c --------- */
+
+void setPRDangle(char *value, void *pointer)
+{
+  const char routineName[] = "setPRDangle";
+
+  enum PRDangle PRD_angle_dep;
+
+  if (!strcmp(value, "PRD_ANGLE_INDEP"))
+    PRD_angle_dep = PRD_ANGLE_INDEP;
+  else if (!strcmp(value, "PRD_ANGLE_APPROX"))
+    PRD_angle_dep = PRD_ANGLE_APPROX;
+  else if (!strcmp(value, "PRD_ANGLE_DEP"))
+    PRD_angle_dep = PRD_ANGLE_DEP;
+  else {
+    sprintf(messageStr,
+	     "Invalid value for keyword PRD_ANGLE_DEP: %s", value);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
+  memcpy(pointer, &PRD_angle_dep, sizeof(enum_t));
+}
+/* ------- end ---------------------------- setPRDangle.c --------- */
+
 /* ------- begin -------------------------- setThreadValue.c -------- */
 
 #define N_THREAD_LIMIT 32

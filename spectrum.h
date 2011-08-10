@@ -40,7 +40,8 @@ typedef struct{
 typedef struct {
   bool_t   vacuum_to_air, updateJ;
   int      Nspect, *PRDindex, fd_J, fd_J20, fd_Imu;
-  double  *lambda, **J, **I, **Stokes_Q, **Stokes_U, **Stokes_V, **J20;
+  double  *lambda, **J, **I, **Stokes_Q, **Stokes_U, **Stokes_V, **J20,
+         **Jgas, **Ilast, **v_los;
   ActiveSet *as;
 } Spectrum;
 

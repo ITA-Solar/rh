@@ -93,8 +93,8 @@ void readInput()
      setintValue},
     {"PRD_NG_PERIOD", "0", FALSE, KEYWORD_OPTIONAL, &input.PRD_Ngperiod,
      setintValue},
-    {"PRD_ANGLE_DEP", "FALSE", FALSE, KEYWORD_DEFAULT, &input.PRD_angle_dep,
-     setboolValue},
+    {"PRD_ANGLE_DEP", "PRD_ANGLE_INDEP", FALSE, KEYWORD_DEFAULT, &input.PRD_angle_dep,
+     setPRDangle},
     {"XRD", "FALSE", FALSE, KEYWORD_DEFAULT, &input.XRD, setboolValue}, 
 
     {"J_FILE",     "", FALSE, KEYWORD_REQUIRED, input.JFile, setcharValue},

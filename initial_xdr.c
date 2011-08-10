@@ -62,7 +62,7 @@ extern enum Topology topology;
 void initSolution(Atom *atom, Molecule *molecule)
 {
   const char routineName[] = "initSolution";
-  register int k, i, ij, nspect, n, kr, nact;
+  register int k, i, ij, nspect, mu, n, kr, nact;
 
   char    permission[3];
   bool_t  result, openJfile;
@@ -85,6 +85,21 @@ void initSolution(Atom *atom, Molecule *molecule)
 
     if (input.backgr_pol)
       spectrum.J20 = matrix_double(spectrum.Nspect, atmos.Nspace);
+      
+    /* --- Tiago: for the PRD angle approximation, we need to store J in
+           the gas frame, and intensity of last freq point --------- */
+    if (input.PRD_angle_dep == PRD_ANGLE_APPROX) {
+      spectrum.Jgas  = matrix_double(spectrum.Nspect, atmos.Nspace);
+      spectrum.Ilast = matrix_double(  2*atmos.Nrays, atmos.Nspace);
+      spectrum.v_los = matrix_double(    atmos.Nrays, atmos.Nspace);     
+      
+      /* Calculate line of sight velocity */
+      for (mu = 0;  mu < atmos.Nrays;  mu++) {
+	for (k = 0;  k < atmos.Nspace;  k++) {
+	  spectrum.v_los[mu][k] = vproject(k, mu); // / vbroad[k];
+	}
+      }
+    }
   }
   /* --- Allocate space for the emergent intensity --  -------------- */
 
@@ -217,7 +232,7 @@ void initSolution(Atom *atom, Molecule *molecule)
   /* --- Need storage for angle-dependent specific intensities for
          angle-dependent PRD --                        -------------- */
 
-  if (atmos.NPRDactive > 0 && input.PRD_angle_dep) {
+  if (atmos.NPRDactive > 0 && input.PRD_angle_dep == PRD_ANGLE_DEP) {
     oflag = 0;
     if (input.startJ == OLD_J) {
       if (spectrum.updateJ) {
@@ -241,7 +256,7 @@ void initSolution(Atom *atom, Molecule *molecule)
            of intensity Imu in file spectrum.fd_Imu at wavelength
            corresponding to nspect. --                 -------------- */
 
-    spectrum.PRDindex = (int *) malloc(spectrum.Nspect * sizeof(int));
+    spectrum.PRDindex = (int *) calloc(spectrum.Nspect , sizeof(int));
     index = 0;
     for (nspect = 0;  nspect < spectrum.Nspect;  nspect++) {
       if (containsPRDline(&spectrum.as[nspect])) {

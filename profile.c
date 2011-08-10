@@ -97,7 +97,7 @@ void Profile(AtomicLine *line)
          reinitialized. --                             -------------- */
 
   if (line->PRD && line->rho_prd == NULL) {
-    if (input.PRD_angle_dep)
+    if (input.PRD_angle_dep != PRD_ANGLE_INDEP) 
       Nlamu = 2*atmos.Nrays * line->Nlambda;
     else
       Nlamu = line->Nlambda;

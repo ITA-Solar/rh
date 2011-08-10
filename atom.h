@@ -269,6 +269,8 @@ void   Redistribute(int NmaxIter, double iterLimit);
 void   PRDScatter(AtomicLine *line, enum Interpolation representation);
 void   PRDAngleScatter(AtomicLine *PRDline,
 		       enum Interpolation representation);
+void   PRDAngleApproxScatter(AtomicLine *PRDline,
+			     enum Interpolation representation);
 
 
 /* --- Polarization related --                         -------------- */
