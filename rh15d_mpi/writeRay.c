@@ -402,16 +402,44 @@ void calculate_ray(void) {
 	for (i = 0; i < atom->Nline; i++) {
 	  line = &atom->line[i];
 	  
-	  if (line->wphi != NULL) {
-	    free(line->wphi);
-	    line->wphi = NULL;
-	  }
-	  
 	  if (line->phi  != NULL) {
 	    freeMatrix((void **) line->phi);
 	    line->phi = NULL;
 	  }
-	  
+	  if (line->wphi != NULL) {
+	    free(line->wphi);
+	    line->wphi = NULL;
+	  }
+      
+	  if (atmos.moving && line->polarizable && (input.StokesMode>FIELD_FREE)) {
+	    if (line->phi_Q != NULL) {
+	      freeMatrix((void **) line->phi_Q);
+	      line->phi_Q = NULL;
+	    }
+	    if (line->phi_U != NULL) {
+	      freeMatrix((void **) line->phi_U);
+	      line->phi_U = NULL;
+	    }
+	    if (line->phi_V != NULL) {
+	      freeMatrix((void **) line->phi_V);
+	      line->phi_V = NULL;
+	    }
+	    if (input.magneto_optical) {
+	      if (line->psi_Q != NULL) {
+	        freeMatrix((void **) line->psi_Q);
+	        line->psi_Q = NULL;
+	      }
+	      if (line->psi_U != NULL) {
+	        freeMatrix((void **) line->psi_U);
+	        line->psi_U = NULL;
+	      }
+	      if (line->psi_V != NULL) {
+	        freeMatrix((void **) line->psi_V);
+	        line->psi_V = NULL;
+	      }
+	    }
+	  }	  
+	  	  
 	  Profile(line);  
 	}
       }

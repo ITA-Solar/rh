@@ -44,7 +44,7 @@ IO_buffer iobuf;
 
 int main(int argc, char *argv[])
 {
-  bool_t analyze_output, equilibria_only, run_ray, exit_on_EOF;
+  bool_t analyze_output, equilibria_only, run_ray, writej, exit_on_EOF;
   int    niter, nact, i, Nspect, Ntest, k, Nread, Nrequired, ierror,
          checkPoint, save_Nrays, *wave_index = NULL;
   double muz, save_muz, save_mux, save_muy, save_wmu;
@@ -150,8 +150,7 @@ int main(int argc, char *argv[])
       readMolecularModels();
 
       SortLambda();
-      initParallelIO(run_ray=FALSE);
-      
+      initParallelIO(run_ray=FALSE, writej=FALSE);
       init_ncdf_ray();
 
     } else {
@@ -167,9 +166,6 @@ int main(int argc, char *argv[])
     initScatter();
 
     getCPU(1, TIME_POLL, "Total Initialize");
-
- 
-
 
     /* --- Solve radiative transfer for active ingredients -- --------- */
     Iterate_p(input.NmaxIter, input.iterLimit);
@@ -223,7 +219,7 @@ int main(int argc, char *argv[])
       niter++;
     }
       
-    copyBufVars();
+    copyBufVars(writej=FALSE);
       
  
     
@@ -253,6 +249,7 @@ int main(int argc, char *argv[])
 
     /* --- Write output files --                         -------------- */
     getCPU(1, TIME_START, NULL);
+    writeAtmos_p();
 
 
     if (input.p15d_wspec) 
@@ -263,9 +260,9 @@ int main(int argc, char *argv[])
   } /* End of main task loop */
 
 
-  writeOutput();
+  writeOutput(writej=FALSE);
 
-  closeParallelIO(run_ray = FALSE);
+  closeParallelIO(run_ray=FALSE, writej=FALSE);
   close_ncdf_ray();
 
   /* Frees from memory stuff used for job control */

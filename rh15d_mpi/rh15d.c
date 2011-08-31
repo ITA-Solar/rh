@@ -40,7 +40,7 @@ IO_buffer iobuf;
 
 int main(int argc, char *argv[])
 {
-  bool_t analyze_output, equilibria_only, run_ray;
+  bool_t analyze_output, equilibria_only, run_ray, writej;
   int    niter, nact, i, Ntest, k;
 
   Atom *atom;
@@ -103,10 +103,10 @@ int main(int argc, char *argv[])
     /* --- Run only once --                                  --------- */
     if (mpi.task == 0) {
       readAtomicModels();   
-      readMolecularModels();
+      readMolecularModels(); 
 
       SortLambda();
-      initParallelIO(run_ray=FALSE);
+      initParallelIO(run_ray=FALSE, writej=TRUE);
 
     } else {
       /* Update quantities that depend on atmosphere and initialise others */
@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
     /* --- Write output files --                         -------------- */
     getCPU(1, TIME_START, NULL);
 
-    copyBufVars();
+    copyBufVars(writej=TRUE);
 
     if (input.p15d_wspec) 
       writeSpectrum_p(); /* replaces writeSpectrum, writeFlux */
@@ -212,9 +212,9 @@ int main(int argc, char *argv[])
   } /* End of main task loop */
 
 
-  writeOutput();
+  writeOutput(writej=TRUE);
 
-  closeParallelIO(run_ray = FALSE);
+  closeParallelIO(run_ray=FALSE, writej=TRUE);
 
   /* Frees from memory stuff used for job control */
   finish_jobs();

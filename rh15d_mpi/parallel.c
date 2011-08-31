@@ -28,8 +28,8 @@
 
 /* --- Function prototypes --                          -------------- */
 void distribute_nH(void);
-void  allocBufVars(void);
-void   freeBufVars(void);
+void  allocBufVars(bool_t writej);
+void   freeBufVars(bool_t writej);
 
 /* --- Global variables --                             -------------- */
 extern Atmosphere atmos;
@@ -66,7 +66,7 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
   /* _IOFBF for full buffering, _IOLBF for line buffering */
-  setvbuf(mpi.logfile, NULL, _IOFBF, BUFSIZ_MPILOG);
+  setvbuf(mpi.logfile, NULL, _IOLBF, BUFSIZ_MPILOG);
 
   mpi.stop    = FALSE;
   mpi.nconv   = 0;
@@ -79,12 +79,12 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
 /* ------- end   --------------------------   initParallel.c --   --- */
 
 /* ------- begin --------------------------   initParallelIO.c    --- */
-void initParallelIO(bool_t run_ray) {
+void initParallelIO(bool_t run_ray, bool_t writej) {
   int    nact, i;
   Atom  *atom;
 
   init_ncdf_aux();
-  init_ncdf_J();
+  if (writej) init_ncdf_J();
   init_Background();
   if (!run_ray) {
     if (input.p15d_wspec) init_ncdf_spec();
@@ -116,7 +116,7 @@ void initParallelIO(bool_t run_ray) {
   for (i=0; i < mpi.Ntasks; i++) mpi.niter[i] = 1;
 
   /* buffer quantities for final writes */
-  allocBufVars();
+  allocBufVars(writej);
 
   return;
 }
@@ -125,7 +125,7 @@ void initParallelIO(bool_t run_ray) {
 
 
 /* ------- begin --------------------------  closeParallelIO.c    --- */
-void closeParallelIO(bool_t run_ray) {
+void closeParallelIO(bool_t run_ray, bool_t writej) {
 
   if (!run_ray) {
     close_ncdf_indata();
@@ -133,7 +133,7 @@ void closeParallelIO(bool_t run_ray) {
   }
   close_ncdf_atmos(&atmos, &geometry, &infile);
   close_ncdf_aux();
-  close_ncdf_J();
+  if (writej) close_ncdf_J();
   close_Background();
 
   free(io.atom_file_pos);
@@ -143,7 +143,7 @@ void closeParallelIO(bool_t run_ray) {
   freeMatrix((void **) mpi.dpopsmax_hist);
 
   /* Free buffer variables */
-  freeBufVars();
+  freeBufVars(writej);
 
   return;
 }
@@ -474,7 +474,7 @@ void Error(enum errorlevel level, const char *routineName,
 
 /* ------- begin -------------------------- copyBufVars.c ------------ */
 
-void copyBufVars(void) {
+void copyBufVars(bool_t writej) {
 /* Copies output variables to buffer arrays, to be written only at the end */
   const  char routineName[] = "copyBufVars";
   static long ind = 0;
@@ -490,18 +490,19 @@ void copyBufVars(void) {
 	 spectrum.Nspect * atmos.Nspace * sizeof(double));
   */
 
-  for (nspect=0; nspect < spectrum.Nspect; nspect++) {
-    i = 0;
-    for (ndep=mpi.zcut; ndep < infile.nz; ndep++, i++) {
-      iobuf.J[(mpi.task*spectrum.Nspect + nspect)*infile.nz + ndep] = 
-          (float) spectrum.J[nspect][i];
+  if (writej) {
+    for (nspect=0; nspect < spectrum.Nspect; nspect++) {
+      i = 0;
+      for (ndep=mpi.zcut; ndep < infile.nz; ndep++, i++) {
+        iobuf.J[(mpi.task*spectrum.Nspect + nspect)*infile.nz + ndep] = 
+            (float) spectrum.J[nspect][i];
+      }
     }
-  }
-
-
-  if (input.backgr_pol) {
-    memcpy((void *) &iobuf.J20[ind*spectrum.Nspect], (void *) spectrum.J20[0],
-	   spectrum.Nspect * atmos.Nspace * sizeof(double));
+    
+    if (input.backgr_pol) {
+      memcpy((void *) &iobuf.J20[ind*spectrum.Nspect], (void *) spectrum.J20[0],
+      	   spectrum.Nspect * atmos.Nspace * sizeof(double));
+    }
   }
 
   /* --- ATOM loop --- */
@@ -558,7 +559,7 @@ void copyBufVars(void) {
 
 /* ------- begin -------------------------- allocBufVars.c ----------- */
 
-void allocBufVars(void) {
+void allocBufVars(bool_t writej) {
 /* Allocates buffer arrays, to be written only at the end */
   const char routineName[] = "allocBufVars";
   long jsize = mpi.Ntasks*spectrum.Nspect*infile.nz;
@@ -568,12 +569,14 @@ void allocBufVars(void) {
   Molecule  *molecule;
 
   /* J, J20 */
-  iobuf.J = (float *) calloc(jsize, sizeof(float));
-  if (iobuf.J == NULL) Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
-
-  if (input.backgr_pol) {
-    iobuf.J20 = (float *) calloc(jsize, sizeof(float));
-    if (iobuf.J20 == NULL) Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
+  if (writej) {
+    iobuf.J = (float *) calloc(jsize, sizeof(float));
+    if (iobuf.J == NULL) Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
+    
+    if (input.backgr_pol) {
+      iobuf.J20 = (float *) calloc(jsize, sizeof(float));
+      if (iobuf.J20 == NULL) Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
+    }
   }
 
   
@@ -651,10 +654,10 @@ void allocBufVars(void) {
 
 /* ------- begin -------------------------- freeBufVars.c ------------ */
 
-void freeBufVars(void) {
+void freeBufVars(bool_t writej) {
   int nact;
 
-  free(iobuf.J);
+  if (writej) free(iobuf.J);
 
   if (input.backgr_pol) free(iobuf.J20);
 
@@ -691,7 +694,7 @@ void freeBufVars(void) {
 /* ------- end ---------------------------- freeBufVars.c ------------ */
 
 /* ------- begin -------------------------- writeOutput.c ------------ */
-void writeOutput(void) {
+void writeOutput(bool_t writej) {
 /* Writes all output files, in the case where output all at once is active */
   int msg;
   MPI_Status status;
@@ -710,9 +713,9 @@ void writeOutput(void) {
   Error(MESSAGE, "main", messageStr);
   
   writeMPI_all();
-  writeJ_all();
+  if (writej) writeJ_all();
   writeAux_all();
-  writeAtmos_all(); 
+  //writeAtmos_all(); 
   
   sprintf(messageStr, "Process %3d: *** END output\n", mpi.rank);
   fprintf(mpi.main_logfile, messageStr);

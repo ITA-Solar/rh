@@ -24,6 +24,8 @@
 #include "atom.h"
 #include "atmos.h"
 #include "geometry.h"
+#include "constant.h"
+#include "background.h"
 #include "error.h"
 #include "inputs.h"
 #include "statistics.h"
@@ -35,6 +37,7 @@
 /* --- Function prototypes --                          -------------- */
 void setTcut(Atmosphere *atmos, Geometry *geometry, double Tmax);
 void realloc_ndep(Atmosphere *atmos, Geometry *geometry);
+void depth_refine(Atmosphere *atmos, Geometry *geometry);
 
 /* --- Global variables --                             -------------- */
 
@@ -285,6 +288,8 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 
     free(Bx); free(By); free(Bz);
   }
+  
+
 
   /* allocate and zero nHtot */
   atmos->nH = matrix_double(atmos->NHydr, atmos->Nspace);  
@@ -298,6 +303,9 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   start_nh[4] = mpi.zcut;      count_nh[4] = atmos->Nspace;
   if ((ierror = nc_get_vara_double(ncid, infile->nh_varid, start_nh, count_nh, 
 				   atmos->nH[0]))) ERR(ierror,routineName);
+
+  /* Depth grid refinement */
+  depth_refine(atmos, geometry);
 
   /* Sum to get nHtot */
   for (i = 0; i < atmos->NHydr; i++){
@@ -315,7 +323,6 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   }
 
   return;
-
 }
 
 
@@ -388,7 +395,7 @@ void setTcut(Atmosphere *atmos, Geometry *geometry, double Tmax) {
 }
 /* ------- end  --------------------------- setTcut      ----------- */
 
-/* ------- begin--------------------------- setTcut      ------------- */
+/* ------- begin--------------------------- realloc_ndep ----------- */
 void realloc_ndep(Atmosphere *atmos, Geometry *geometry) {
   /* Reallocates the arrays of Nspace */
 
@@ -420,3 +427,154 @@ void realloc_ndep(Atmosphere *atmos, Geometry *geometry) {
 
   return;
 }
+/* ------- end  --------------------------- realloc_ndep ----------- */
+
+/* ------- begin--------------------------- depth_refine ----------- */
+void depth_refine(Atmosphere *atmos, Geometry *geometry) {
+  /* Performs depth refinement to optimise for gradients in temperature,
+     density and optical depth. In the same fashion as multi23's ipol_dscal
+     (in fact, shamelessly copied). 
+  */
+  
+  bool_t nhm_flag, hunt;
+  long    i, k, k1;
+  size_t  bufsize;
+  double  CI, PhiHmin, *chi, *eta, *tau, tdiv, rdiv, taudiv, *aind, *xpt;
+  double *new_height, *buf;
+  const double taumax = 100.0, lg1 = log10(1.1);
+  
+  
+  chi = (double *) malloc(atmos->Nspace * sizeof(double));
+  eta = (double *) malloc(atmos->Nspace * sizeof(double));
+  tau = (double *) calloc(atmos->Nspace , sizeof(double));
+  xpt = (double *) calloc(atmos->Nspace , sizeof(double));
+  buf = (double *) malloc(atmos->Nspace * sizeof(double));
+  aind = (double *) calloc(atmos->Nspace , sizeof(double));
+  new_height = (double *) calloc(atmos->Nspace , sizeof(double));
+  
+  bufsize = atmos->Nspace * sizeof(double);
+  
+  nhm_flag = FALSE;
+  CI = (HPLANCK/(2.0*PI*M_ELECTRON)) * (HPLANCK/KBOLTZMANN);
+  k1 = atmos->Nspace;
+  
+  /* --- Calculate tau500 scale from H-bf opacity alone. --- */
+  /* First, build nHmin because ChemicalEquilibrium has not been called yet.
+     Unless H level pops are given in ncdf file, all H is assumed neutral.  */
+  if (atmos->nHmin == NULL) {
+    atmos->nHmin = (double *) malloc(atmos->Nspace * sizeof(double));
+    nhm_flag = TRUE;
+  }
+  
+  for (k = 0; k < atmos->Nspace; k++) {
+    PhiHmin = 0.25*pow(CI/atmos->T[k], 1.5) *
+        exp(0.754 * EV / (KBOLTZMANN * atmos->T[k]));
+    atmos->nHmin[k] = atmos->ne[k] * atmos->nH[0][k] * PhiHmin;
+  }
+  
+  Hminus_bf(500.0, chi, eta);
+  
+  /* integrate for optical depth */
+  for (k = 1; k < atmos->Nspace; k++) { 
+    tau[k] = tau[k-1] + 0.5 * (chi[k] + chi[k-1]) *
+      (fabs(geometry->height[k-1] - geometry->height[k]));
+    if (tau[k] < taumax) k1 = k;
+    xpt[k] = (double) k;
+  }
+  
+  /* --- Compute log variations --- */
+  for (k = 2; k <= k1; k++) { 
+    tdiv = fabs(log10(atmos->T[k]) - log10(atmos->T[k-1]))/lg1;
+    /* rho is not available, so nH[0] used instead */
+    rdiv = fabs(log10(atmos->nH[0][k]) - log10(atmos->nH[0][k-1]))/lg1;
+    taudiv = fabs(log10(tau[k]) - log10(tau[k-1]))/0.1;
+    aind[k] = aind[k-1] + MAX(MAX(tdiv,rdiv),taudiv);
+  }
+
+  for (k = 1; k <= k1; k++) 
+    aind[k] *= (atmos->Nspace-1)/aind[k1];
+    
+  /*
+  printf("Original quantities:\n---------------------\n");
+  for (k = 0; k < atmos->Nspace; k++) 
+    printf("%4i  %12.4e   %12.4e   %12.4e   %12.4e   %12.4e   %12.4e\n", k, geometry->height[k],atmos->T[k], atmos->ne[k], geometry->vel[k], atmos->B[k], atmos->gamma_B[k]);
+  */
+    
+    
+  /* --- Create new height scale --- */ 
+  splineCoef(k1, &aind[1], &geometry->height[1]);
+  splineEval(atmos->Nspace, xpt, new_height, hunt=FALSE);
+ 
+  
+  /* --- Interpolate quantities to new scale --- */
+  /* Take logs of densities to avoid interpolation to negatives */
+  for (k = 0; k < atmos->Nspace; k++) {
+    atmos->ne[k] = log(atmos->ne[k]);
+    for (i = 0; i < atmos->NHydr; i++)
+      atmos->nH[i][k] = log(atmos->nH[i][k]);    
+  }
+
+  /*
+  Linear(atmos->Nspace, geometry->height, atmos->T, atmos->Nspace, new_height,
+         buf, FALSE);
+  */
+  splineCoef(atmos->Nspace, geometry->height, atmos->T);
+  splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
+  memcpy((void *) atmos->T, (void *) buf, bufsize);
+  /* condition for T < 1000 K ? */
+ 
+  splineCoef(atmos->Nspace, geometry->height, atmos->ne);
+  splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
+  memcpy((void *) atmos->ne, (void *) buf, bufsize);
+  
+  for (i = 0; i < atmos->NHydr; i++) {
+    splineCoef(atmos->Nspace, geometry->height, atmos->nH[i]);
+    splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
+    memcpy((void *) atmos->nH[i], (void *) buf, bufsize);
+  }
+  
+  splineCoef(atmos->Nspace, geometry->height, geometry->vel);
+  splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
+  memcpy((void *) geometry->vel, (void *) buf, bufsize);
+  
+  if (atmos->Stokes) {
+    splineCoef(atmos->Nspace, geometry->height, atmos->B);
+    splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
+    memcpy((void *) atmos->B, (void *) buf, bufsize);
+
+    splineCoef(atmos->Nspace, geometry->height, atmos->gamma_B);
+    splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
+    memcpy((void *) atmos->gamma_B, (void *) buf, bufsize);
+
+    splineCoef(atmos->Nspace, geometry->height, atmos->chi_B);
+    splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
+    memcpy((void *) atmos->chi_B, (void *) buf, bufsize);
+  }
+  
+  /* Take back logs */
+  for (k = 0; k < atmos->Nspace; k++) {
+    atmos->ne[k] = exp(atmos->ne[k]);
+    for (i = 0; i < atmos->NHydr; i++)
+      atmos->nH[i][k] = exp(atmos->nH[i][k]);    
+  }
+  
+  memcpy((void *) geometry->height, (void *) new_height, bufsize);
+  
+  /*
+  printf("Interpolated quantities:\n---------------------\n");
+  for (k = 0; k < atmos->Nspace; k++) 
+    printf("%4i  %12.4e   %12.4e   %12.4e   %12.4e   %12.4e   %12.4e\n", k, geometry->height[k],atmos->T[k], atmos->ne[k], geometry->vel[k], atmos->B[k], atmos->gamma_B[k]);
+  */
+  
+    
+  if (nhm_flag) {
+    free(atmos->nHmin);
+    atmos->nHmin = NULL;
+  }
+  free(buf); free(new_height);
+  free(chi); free(eta);
+  free(tau); free(aind); free(xpt);
+  
+  return; 
+}
+/* ------- end  --------------------------- depth_refine ----------- */

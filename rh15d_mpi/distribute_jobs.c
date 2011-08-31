@@ -77,7 +77,7 @@ void distribute_jobs(void)
   mpi.xnum = intrange(input.p15d_x0, input.p15d_x1, input.p15d_xst, &mpi.nx);
   mpi.ynum = intrange(input.p15d_y0, input.p15d_y1, input.p15d_yst, &mpi.ny);
 
-  /* Abort if more processes than tasks (avoid idle processes waiting forever */
+  /* Abort if more processes than tasks (avoid idle processes waiting forever) */
   if (mpi.size > (long) mpi.nx*mpi.ny) {
     sprintf(messageStr,
             "\n*** More MPI processes (%d) than tasks (%ld), aborting.\n",

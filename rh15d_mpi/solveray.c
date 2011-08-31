@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
 
   char    rayFileName[14], inputLine[MAX_LINE_SIZE];
   bool_t  result, exit_on_EOF, to_obs, initialize, crosscoupling,
-          analyze_output, equilibria_only, run_ray;
+          analyze_output, equilibria_only, run_ray, writej;
   int     Nspect, Nread, Nrequired, checkPoint, *wave_index = NULL;
   double  muz, *S, *chi, *J;
   FILE   *fp_out, *fp_ray, *fp_stokes;
@@ -182,7 +182,8 @@ int main(int argc, char *argv[])
 
       bgdat.write_BRS = FALSE;
 
-      initParallelIO(run_ray=TRUE);
+      /* writej=TRUE here is only for reading old J, not writing anything */
+      initParallelIO(run_ray=TRUE, writej=TRUE);
       init_ncdf_ray();
 
     } else {
@@ -227,7 +228,7 @@ int main(int argc, char *argv[])
     mpi.nconv++;
   }  /* End of main task loop */
 
-  closeParallelIO(run_ray = TRUE);
+  closeParallelIO(run_ray=TRUE, writej=TRUE);
   close_ncdf_ray();
 
   finish_jobs();

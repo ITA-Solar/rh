@@ -109,25 +109,31 @@ void Piecewise_1D(int nspect, int mu, bool_t to_obs,
 	fabs(geometry.height[k] - geometry.height[k+dk]);
       dS_dw   = (S[k] - S[k+dk]) / dtau_dw;
 
+
+      /* Tiago: commenting this out to always keep linear piecewise
       c1 = (dS_uw*dtau_dw + dS_dw*dtau_uw);
       c2 = (dS_uw - dS_dw);
       I[k] = (1.0 - w[0])*I_upw + w[0]*S[k] +
 	(w[1]*c1 + w[2]*c2) / (dtau_uw + dtau_dw);
+      /*
 
       /* --- Try piecewise linear if quadratic gives negative
              monochromatic intensity --                -------------- */ 
+      /*
+      if (I[k] < 0.0) { */
+      c1   = dS_uw;
+      I[k] = (1.0 - w[0])*I_upw + w[0]*S[k] + w[1]*c1;
 
-      if (I[k] < 0.0) {
-        c1   = dS_uw;
-	I[k] = (1.0 - w[0])*I_upw + w[0]*S[k] + w[1]*c1;
-
-	if (Psi) Psi[k] = w[0] - w[1]/dtau_uw;
+      if (Psi) Psi[k] = w[0] - w[1]/dtau_uw;
+      
+      /*
       } else {
 	if (Psi) {
 	  c1 = dtau_uw - dtau_dw;
 	  Psi[k] = w[0] + (w[1]*c1 - w[2]) / (dtau_uw * dtau_dw);
 	}
       }
+      */
     } else {
 	
       /* --- Piecewise linear integration at end of ray -- ---------- */

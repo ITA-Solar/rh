@@ -292,6 +292,13 @@ void PRDScatter(AtomicLine *PRDline, enum Interpolation representation)
 }
 /* ------- end ---------------------------- PRDScatter.c ------------ */
 
+/* ------- begin -------------------------- PRDAngleApproxScatter.c - */
+
+void PRDAngleApproxScatter(AtomicLine *PRDline, enum Interpolation representation)
+{
+ // Tiago: empty for now 
+}
+
 /* ------- begin -------------------------- PRDAngleScatter.c ------- */
 
 void PRDAngleScatter(AtomicLine *PRDline,

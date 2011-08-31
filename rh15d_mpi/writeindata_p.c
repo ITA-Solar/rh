@@ -239,9 +239,13 @@ void init_ncdf_indata(void)
   if ((ierror = nc_def_var(ncid_atmos, "electron_density",   NC_DOUBLE, 3, dimids,
 			   &ne_var)))    ERR(ierror,routineName); 
   if ((ierror = nc_def_var(ncid_atmos, "velocity_z",         NC_FLOAT, 3, dimids,
-			   &vz_var)))    ERR(ierror,routineName); 
+			   &vz_var)))    ERR(ierror,routineName);
+  /* No need to write vturb, at least for now... 
   if ((ierror = nc_def_var(ncid_atmos, "velocity_turbulent", NC_FLOAT, 3, dimids,
-			   &vturb_var))) ERR(ierror,routineName); 
+			   &vturb_var))) ERR(ierror,routineName);
+  */
+  if ((ierror = nc_def_var(ncid_atmos, "height",              NC_FLOAT, 3, dimids,
+			   &height_var))) ERR(ierror,routineName);
   if (atmos.Stokes) {
     /* New definitions (Bx, By, Bz) */
     if ((ierror=nc_def_var(ncid_atmos, "Bx", NC_FLOAT, 3, dimids,
@@ -291,10 +295,12 @@ void init_ncdf_indata(void)
   if ((ierror = nc_def_var(ncid_atmos, "muz",                 NC_DOUBLE,1, dimids,
 			   &mu_var)))    ERR(ierror,routineName);  
   if ((ierror = nc_def_var(ncid_atmos, "wmu",                 NC_DOUBLE,1, dimids,
-			   &wmu_var)))   ERR(ierror,routineName);  
+			   &wmu_var)))   ERR(ierror,routineName);
+  /*
   dimids[0] = nspace_id;
   if ((ierror = nc_def_var(ncid_atmos, "height",              NC_FLOAT, 1, dimids,
 			   &height_var))) ERR(ierror,routineName);
+  */
   dimids[0] = nx_id;
   if ((ierror = nc_def_var(ncid_atmos, "x",                   NC_FLOAT, 1, dimids,
 			   &x_var)))      ERR(ierror,routineName);
@@ -415,7 +421,10 @@ void init_ncdf_indata(void)
     if ((ierror = nc_put_var_double(ncid_atmos, wmu_var,     geometry.wmu )))
       ERR(ierror,routineName);   
 
-    /* Must read full z from NetCDF file */  
+    /* Must read full z from NetCDF file */
+    /* Not writing z anymore, with dept_refine this is now a 3D variable and is
+       written later.
+       
     start[0] = input.p15d_nt; count[0] = 1;
     start[1] = 0;             count[1] = infile.nz;
     height = (double *) malloc(infile.nz * sizeof(double));
@@ -429,6 +438,7 @@ void init_ncdf_indata(void)
       ERR(ierror,routineName);   
 
     free(height);
+    */
 
     /* write x and y, convert from MPI indices to actual values */
     for (i=0; i < mpi.nx; i++) {
@@ -628,9 +638,10 @@ void writeAtmos_all(void) {
     if ((ierror = nc_put_vara_double(ncid_out, io.in_atmos_vz,  st,  ct, tmp)))
       ERR(ierror,routineName);
 
-    /* Vturb is always zero for now, so writing zeros array */
+    /* Vturb is always zero for now, not writing anything 
     if ((ierror = nc_put_vara_double(ncid_out, io.in_atmos_vt,  st, ct, zeros)))
       ERR(ierror,routineName);
+    */
 
     if (atmos.Stokes) {
       /* Bx, By, Bz */
@@ -672,6 +683,11 @@ void writeAtmos_all(void) {
 /* ------- begin --------------------------   writeAtmos_p.c --- */
 void writeAtmos_p(void)
 {
+  /* Write atmos arrays. This has now been modified and writes the interpolated
+     arrays, from depth_refine. With that, now this is the only viable option
+     to write the atmos data, as there is no option to save in memory and
+     writeAtmos_all just writes from the input file, not the interpolated
+     quantities  */
   const char routineName[] = "writeAtmos_p";
   int     ierror, ncid;
   size_t  start[] = {0, 0, 0, 0};
@@ -682,7 +698,7 @@ void writeAtmos_p(void)
   /* put atmosphere variables */
   start[0] = mpi.ix;   count[0] = 1;
   start[1] = mpi.iy;   count[1] = 1;
-  start[2] = mpi.zcut; count[2] = atmos.Nspace;
+  start[2] = 0;        count[2] = atmos.Nspace;
 
   if ((ierror = nc_put_vara_double(ncid, io.in_atmos_T, start, count,
 				   atmos.T ))) ERR(ierror,routineName);
@@ -690,8 +706,13 @@ void writeAtmos_p(void)
 				   atmos.ne ))) ERR(ierror,routineName);
   if ((ierror = nc_put_vara_double(ncid, io.in_atmos_vz, start, count,
 				   geometry.vel ))) ERR(ierror,routineName);
+  if ((ierror = nc_put_vara_double(ncid, io.in_atmos_z, start, count,
+				   geometry.height ))) ERR(ierror,routineName);
+  
+  /*
   if ((ierror = nc_put_vara_double(ncid, io.in_atmos_vt, start, count,
-				   atmos.vturb ))) ERR(ierror,routineName);  
+				   atmos.vturb ))) ERR(ierror,routineName);
+  */
   if (atmos.Stokes) {
     /* These are commented out, because now we're writing Bx, By, Bz,
        in writeAtmos_all. 
@@ -708,7 +729,7 @@ void writeAtmos_p(void)
   start[0] = 0;        count[0] = atmos.H->Nlevel;
   start[1] = mpi.ix;   count[1] = 1;
   start[2] = mpi.iy;   count[2] = 1;
-  start[3] = mpi.zcut; count[3] = atmos.Nspace;
+  start[3] = 0;        count[3] = atmos.Nspace;
 
   if ((ierror=nc_put_vara_double(ncid, io.in_atmos_nh, start, count,
 				 atmos.H->n[0] )))   ERR(ierror,routineName);  
