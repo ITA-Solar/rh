@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 {
   bool_t analyze_output, equilibria_only, run_ray, writej, exit_on_EOF;
   int    niter, nact, i, Nspect, Ntest, k, Nread, Nrequired, ierror,
-         checkPoint, save_Nrays, *wave_index = NULL;
+         checkPoint, save_Nrays, *wave_index = NULL, conv_iter;
   double muz, save_muz, save_mux, save_muy, save_wmu;
   Atom *atom;
   Molecule *molecule;
@@ -125,57 +125,106 @@ int main(int argc, char *argv[])
 
   /* Main loop over tasks */
   for (mpi.task = 0; mpi.task < mpi.Ntasks; mpi.task++) {
-
-    /* Indices of x and y */
-    mpi.ix = mpi.taskmap[mpi.task + mpi.my_start][0];
-    mpi.iy = mpi.taskmap[mpi.task + mpi.my_start][1];
+    
    
-    /* Printout some info */
-    sprintf(messageStr,
-      "Process %3d: --- START task %3ld [of %ld], (xi,yi) = (%3d,%3d)\n",
-       mpi.rank, mpi.task+1, mpi.Ntasks, mpi.xnum[mpi.ix], mpi.ynum[mpi.iy]);
-    fprintf(mpi.main_logfile, messageStr);
-    Error(MESSAGE, "main", messageStr);
-
-
-    /* Read atmosphere column */
-    readAtmos_ncdf(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
-
-    if (atmos.Stokes) Bproject();
-
-
-    /* --- Run only once --                                  --------- */
-    if (mpi.task == 0) {
-      readAtomicModels();   
-      readMolecularModels();
-
-      SortLambda();
-      initParallelIO(run_ray=FALSE, writej=FALSE);
-      init_ncdf_ray();
-
-    } else {
-      /* Update quantities that depend on atmosphere and initialise others */
-      UpdateAtmosDep();
-    }
-
-    /* --- Calculate background opacities --             ------------- */
-    Background_p(analyze_output=TRUE, equilibria_only=FALSE);
-
-    getProfiles();
-    initSolution_p();
-    initScatter();
-
-    getCPU(1, TIME_POLL, "Total Initialize");
-
-    /* --- Solve radiative transfer for active ingredients -- --------- */
-    Iterate_p(input.NmaxIter, input.iterLimit);
-
-
-    /* Treat odd cases as a crash */
-    if (isnan(mpi.dpopsmax[mpi.task]) || isinf(mpi.dpopsmax[mpi.task]) || 
-	(mpi.dpopsmax[mpi.task] < 0) || ((mpi.dpopsmax[mpi.task] == 0) && (input.NmaxIter > 0)))
-      mpi.stop = TRUE;
+    /* "convergence" loop: if there is no convergence, change some options and
+        run again. For now limited at two tries, changing the initial solution
+        from ZERO_RADIATION to ESCAPE_PROBABILITY, or vice-versa.           */ 
+    for (conv_iter = 0; conv_iter < 1; conv_iter++) {
+      mpi.isfirst = (mpi.task == 0) && (conv_iter == 0);
       
+      if (mpi.stop) mpi.stop = FALSE;
+      
+      if (conv_iter == 1) {
+	for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
+	  if (atmos.activeatoms[nact]->initial_solution == ZERO_RADIATION) {
+	   atmos.activeatoms[nact]->initial_solution = ESCAPE_PROBABILITY;
+	  } else if (atmos.activeatoms[nact]->initial_solution == ESCAPE_PROBABILITY)
+	   atmos.activeatoms[nact]->initial_solution = ZERO_RADIATION;
+	}
+      }
+      
+      /* Indices of x and y */
+      mpi.ix = mpi.taskmap[mpi.task + mpi.my_start][0];
+      mpi.iy = mpi.taskmap[mpi.task + mpi.my_start][1];
+    
+      /* Printout some info */
+      sprintf(messageStr,
+        "Process %3d: --- START task %3ld [of %ld], (xi,yi) = (%3d,%3d)\n",
+         mpi.rank, mpi.task+1, mpi.Ntasks, mpi.xnum[mpi.ix], mpi.ynum[mpi.iy]);
+      fprintf(mpi.main_logfile, messageStr);
+      Error(MESSAGE, "main", messageStr);
+	
+            
+      /* Read atmosphere column */
+      readAtmos_ncdf(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
+      
+      if (atmos.Stokes) Bproject();
+      
+      
+      /* --- Run only once --                                  --------- */
+      if (mpi.isfirst) {
+        readAtomicModels();   
+        readMolecularModels();
+	
+        SortLambda();
+        initParallelIO(run_ray=FALSE, writej=FALSE);
+        init_ncdf_ray();
+      
+      } else {
+        /* Update quantities that depend on atmosphere and initialise others */
+        UpdateAtmosDep();
+      }
+      
+      // TIAGO, DELETE!!!
+      //writeAtmos_p();
+      //mpi.stop = TRUE;
+      //continue;
+      
+      
+      /* --- Calculate background opacities --             ------------- */
+      Background_p(analyze_output=TRUE, equilibria_only=FALSE);
+      
+      getProfiles();
+      initSolution_p();
+      initScatter();
+      
+      getCPU(1, TIME_POLL, "Total Initialize");
+      
+      /* --- Solve radiative transfer for active ingredients -- --------- */
+      Iterate_p(input.NmaxIter, input.iterLimit);
+      
+      
+      /* Treat odd cases as a crash */
+      if (isnan(mpi.dpopsmax[mpi.task]) || isinf(mpi.dpopsmax[mpi.task]) || 
+	  (mpi.dpopsmax[mpi.task] < 0) || ((mpi.dpopsmax[mpi.task] == 0) && (input.NmaxIter > 0)))
+        mpi.stop = TRUE;
+      
+      
+      /* If there is convergence, get out */
+      if ((!mpi.stop) && (mpi.convergence[mpi.task])) {
+	break;
+      } else {
+	if (conv_iter == 0) {
+	  sprintf(messageStr,
+	          "Process %3d: --- RETRY task %3ld (lack of convergence)\n",
+		  mpi.rank, mpi.task+1);
+	  fprintf(mpi.main_logfile, messageStr);
+	  Error(MESSAGE, "main", messageStr);
+	}
+      }
+      
+    } /* end of conv_iter loop */
+
+    /* put back initial settings for initial solution */
+    if (conv_iter > 0) {
+      for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
+        if (atmos.activeatoms[nact]->initial_solution == ZERO_RADIATION) {
+	  atmos.activeatoms[nact]->initial_solution = ESCAPE_PROBABILITY;
+        } else if (atmos.activeatoms[nact]->initial_solution == ESCAPE_PROBABILITY)
+	  atmos.activeatoms[nact]->initial_solution = ZERO_RADIATION;
+      }
+    }
 
     /* In case of crash, write dummy data and proceed to next task */
     if (mpi.stop) {

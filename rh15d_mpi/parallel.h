@@ -13,7 +13,7 @@
 
 typedef struct {
   char     name[MPI_MAX_PROCESSOR_NAME];
-  bool_t   single_log, stop;
+  bool_t   single_log, stop, isfirst;
   int      size, rank, namelen, nx, ny, ix, iy, *xnum, *ynum, *niter, zcut;
   int     *zcut_hist, **rh_converged, StokesMode_save, *convergence;
   long     nconv, nnoconv, ncrash, my_start, backgrrecno;
@@ -67,14 +67,14 @@ void writeAux_p(void);
 void writeOpacity_p(void);
 
 void initParallel(int *argc, char **argv[], bool_t run_ray);
-void initParallelIO(bool_t run_ray);
-void closeParallelIO(bool_t run_ray);
+void initParallelIO(bool_t run_ray, bool_t writej);
+void closeParallelIO(bool_t run_ray, bool_t writej);
 void UpdateAtmosDep(void);
 void RequestStop_p(void);
 bool_t StopRequested_p(void);
 void ERR(int ierror, const char *rname);
-void copyBufVars(void);
-void writeOutput(void); 
+void copyBufVars(bool_t writej);
+void writeOutput(bool_t writej); 
 
 void Iterate_p(int NmaxIter, double iterLimit);
 double solveSpectrum_p(bool_t eval_operator, bool_t redistribute);

@@ -37,7 +37,7 @@
 /* --- Function prototypes --                          -------------- */
 void setTcut(Atmosphere *atmos, Geometry *geometry, double Tmax);
 void realloc_ndep(Atmosphere *atmos, Geometry *geometry);
-void depth_refine(Atmosphere *atmos, Geometry *geometry);
+void depth_refine(Atmosphere *atmos, Geometry *geometry, double tmax);
 
 /* --- Global variables --                             -------------- */
 
@@ -232,7 +232,9 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
     ERR(ierror,routineName);
 
   /* Finds z value for Tmax cut, redefines Nspace, reallocates arrays */
+  /* Tiago: not using this at the moment, only z cut in depth_refine
   setTcut(atmos, geometry, input.p15d_tmax);
+  mpi.zcut = 0; */
 
   //printf("Process %d: zcut = %d\n", mpi.rank, mpi.zcut);
 
@@ -305,7 +307,7 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 				   atmos->nH[0]))) ERR(ierror,routineName);
 
   /* Depth grid refinement */
-  depth_refine(atmos, geometry);
+  depth_refine(atmos, geometry, input.p15d_tmax);
 
   /* Sum to get nHtot */
   for (i = 0; i < atmos->NHydr; i++){
@@ -430,19 +432,20 @@ void realloc_ndep(Atmosphere *atmos, Geometry *geometry) {
 /* ------- end  --------------------------- realloc_ndep ----------- */
 
 /* ------- begin--------------------------- depth_refine ----------- */
-void depth_refine(Atmosphere *atmos, Geometry *geometry) {
+void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
   /* Performs depth refinement to optimise for gradients in temperature,
      density and optical depth. In the same fashion as multi23's ipol_dscal
      (in fact, shamelessly copied). 
   */
   
   bool_t nhm_flag, hunt;
-  long    i, k, k1;
+  long    i, k, k0=0, k1=0;
   size_t  bufsize;
   double  CI, PhiHmin, *chi, *eta, *tau, tdiv, rdiv, taudiv, *aind, *xpt;
   double *new_height, *buf;
   const double taumax = 100.0, lg1 = log10(1.1);
   
+  if (Tmax < 0) Tmax = 1.e20; /* No zcut if Tmax is negative */ 
   
   chi = (double *) malloc(atmos->Nspace * sizeof(double));
   eta = (double *) malloc(atmos->Nspace * sizeof(double));
@@ -475,37 +478,39 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry) {
   Hminus_bf(500.0, chi, eta);
   
   /* integrate for optical depth */
-  for (k = 1; k < atmos->Nspace; k++) { 
+  for (k = 1; k < atmos->Nspace; k++) {
+    if ((atmos->T[k] > Tmax) && (k0 == k - 1)) k0 = k;
     tau[k] = tau[k-1] + 0.5 * (chi[k] + chi[k-1]) *
       (fabs(geometry->height[k-1] - geometry->height[k]));
     if (tau[k] < taumax) k1 = k;
     xpt[k] = (double) k;
   }
   
+  tau[0] = tau[1];
+  
   /* --- Compute log variations --- */
-  for (k = 2; k <= k1; k++) { 
+  for (k = k0+1; k <= k1; k++) {  
     tdiv = fabs(log10(atmos->T[k]) - log10(atmos->T[k-1]))/lg1;
     /* rho is not available, so nH[0] used instead */
     rdiv = fabs(log10(atmos->nH[0][k]) - log10(atmos->nH[0][k-1]))/lg1;
     taudiv = fabs(log10(tau[k]) - log10(tau[k-1]))/0.1;
     aind[k] = aind[k-1] + MAX(MAX(tdiv,rdiv),taudiv);
   }
-
-  for (k = 1; k <= k1; k++) 
+  
+  for (k = 1; k <= k1; k++)  
     aind[k] *= (atmos->Nspace-1)/aind[k1];
     
   /*
   printf("Original quantities:\n---------------------\n");
   for (k = 0; k < atmos->Nspace; k++) 
-    printf("%4i  %12.4e   %12.4e   %12.4e   %12.4e   %12.4e   %12.4e\n", k, geometry->height[k],atmos->T[k], atmos->ne[k], geometry->vel[k], atmos->B[k], atmos->gamma_B[k]);
+    printf("%4li  %12.4e   %12.4e   %12.4e   %12.4e   %12.4e   %12.4e\n", k, geometry->height[k],atmos->T[k], atmos->ne[k], geometry->vel[k], atmos->B[k], atmos->gamma_B[k]);
   */
     
     
-  /* --- Create new height scale --- */ 
-  splineCoef(k1, &aind[1], &geometry->height[1]);
+  /* --- Create new height scale --- */
+  splineCoef(k1-k0+1, &aind[k0], &geometry->height[k0]);
   splineEval(atmos->Nspace, xpt, new_height, hunt=FALSE);
- 
-  
+    
   /* --- Interpolate quantities to new scale --- */
   /* Take logs of densities to avoid interpolation to negatives */
   for (k = 0; k < atmos->Nspace; k++) {
@@ -559,13 +564,12 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry) {
   }
   
   memcpy((void *) geometry->height, (void *) new_height, bufsize);
-  
+
   /*
   printf("Interpolated quantities:\n---------------------\n");
   for (k = 0; k < atmos->Nspace; k++) 
-    printf("%4i  %12.4e   %12.4e   %12.4e   %12.4e   %12.4e   %12.4e\n", k, geometry->height[k],atmos->T[k], atmos->ne[k], geometry->vel[k], atmos->B[k], atmos->gamma_B[k]);
+    printf("%4li  %12.4e   %12.4e   %12.4e   %12.4e   %12.4e   %12.4e\n", k, geometry->height[k],atmos->T[k], atmos->ne[k], geometry->vel[k], atmos->B[k], atmos->gamma_B[k]);
   */
-  
     
   if (nhm_flag) {
     free(atmos->nHmin);

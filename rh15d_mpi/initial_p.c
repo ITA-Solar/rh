@@ -149,7 +149,7 @@ void initSolution_alloc(void) {
 
 
   /* Things to be done only for the first task */
-  if (mpi.task == 0) {
+  if (mpi.isfirst) {
     /* --- Need storage for angle-dependent specific intensities for
        angle-dependent PRD --                        -------------- */
 
@@ -319,8 +319,6 @@ void initSolution_p(void)
     
     case ESCAPE_PROBABILITY:
       for (k=0; k < input.NpescIter; k++) {
-	printf("--- Escape probability iteration %i\n", k+1);
-	
 	/* set the Gamma rate matrix equal to the collisional rates */
 	initGammaAtom(atom, 1.0);
 	

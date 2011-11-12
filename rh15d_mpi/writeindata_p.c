@@ -236,8 +236,10 @@ void init_ncdf_indata(void)
   dimids[2] = nspace_id;
   if ((ierror = nc_def_var(ncid_atmos, "temperature",        NC_FLOAT, 3, dimids,
 			   &temp_var)))  ERR(ierror,routineName);
+  /*
   if ((ierror = nc_def_var(ncid_atmos, "electron_density",   NC_DOUBLE, 3, dimids,
-			   &ne_var)))    ERR(ierror,routineName); 
+			   &ne_var)))    ERR(ierror,routineName);
+  */
   if ((ierror = nc_def_var(ncid_atmos, "velocity_z",         NC_FLOAT, 3, dimids,
 			   &vz_var)))    ERR(ierror,routineName);
   /* No need to write vturb, at least for now... 
@@ -247,7 +249,7 @@ void init_ncdf_indata(void)
   if ((ierror = nc_def_var(ncid_atmos, "height",              NC_FLOAT, 3, dimids,
 			   &height_var))) ERR(ierror,routineName);
   if (atmos.Stokes) {
-    /* New definitions (Bx, By, Bz) */
+    /* New definitions (Bx, By, Bz) 
     if ((ierror=nc_def_var(ncid_atmos, "Bx", NC_FLOAT, 3, dimids,
 			   &Bx_var)))  ERR(ierror,routineName); 
     if ((ierror=nc_put_att_text( ncid_atmos, Bx_var, "units", 1, "T" ))) 
@@ -260,6 +262,7 @@ void init_ncdf_indata(void)
 			   &Bz_var)))  ERR(ierror,routineName); 
     if ((ierror=nc_put_att_text( ncid_atmos, Bz_var, "units", 1, "T" ))) 
                                          ERR(ierror,routineName);
+    */
 
     /* Old definitions (B, gamma_B, chi_B) 
     if ((ierror=nc_def_var(ncid_atmos, "B",                  NC_FLOAT, 3, dimids,
@@ -279,9 +282,11 @@ void init_ncdf_indata(void)
   dimids[0] = nhydr_id;
   dimids[1] = nx_id;
   dimids[2] = ny_id;
-  dimids[3] = nspace_id; 
+  dimids[3] = nspace_id;
+  /*
   if ((ierror = nc_def_var(ncid_atmos, "hydrogen_populations",NC_FLOAT, 4, dimids,
-			   &nh_var)))    ERR(ierror,routineName); 
+			   &nh_var)))    ERR(ierror,routineName);
+  */
   dimids[0] = nelem_id;
   if ((ierror = nc_def_var(ncid_atmos, "element_weight",      NC_DOUBLE,1, dimids,
 			   &ew_var)))    ERR(ierror,routineName);  
@@ -315,14 +320,18 @@ void init_ncdf_indata(void)
 	             (unsigned char *) &atmos.Stokes ))) ERR(ierror,routineName);
   if ((ierror = nc_put_att_text( ncid_atmos, temp_var,  "units",  1,
 				 "K" ))) ERR(ierror,routineName);
+  /*
   if ((ierror = nc_put_att_text( ncid_atmos, ne_var,    "units",  4,
 				 "m^-3" ))) ERR(ierror,routineName);
+  */
   if ((ierror = nc_put_att_text( ncid_atmos, vz_var,    "units",  6,
 				 "m s^-1" ))) ERR(ierror,routineName);
+  /*
   if ((ierror = nc_put_att_text( ncid_atmos, vturb_var, "units",  6,
 				 "m s^-1" ))) ERR(ierror,routineName);
   if ((ierror = nc_put_att_text( ncid_atmos, nh_var,    "units",  4,
 				 "m^-3" ))) ERR(ierror,routineName);
+  */
   if ((ierror = nc_put_att_text( ncid_atmos, ew_var,    "units", 17,
 				 "atomic_mass_units" ))) ERR(ierror,routineName);
   if ((ierror = nc_put_att_text( ncid_atmos, height_var,"units",  1,
@@ -626,11 +635,12 @@ void writeAtmos_all(void) {
     if ((ierror = nc_put_vara_double(ncid_out, io.in_atmos_T,  st,  ct, tmp)))
       ERR(ierror,routineName);
 
-    /* Electron density */
+    /* Electron density 
     if ((ierror = nc_get_vara_double(ncid_in,  infile.ne_varid, starti, counti, tmp)))
       ERR(ierror,routineName);
     if ((ierror = nc_put_vara_double(ncid_out, io.in_atmos_ne,  st,  ct, tmp)))
       ERR(ierror,routineName);
+    */
 
     /* Vz */
     if ((ierror = nc_get_vara_double(ncid_in,  infile.vz_varid, starti, counti, tmp)))
@@ -644,7 +654,7 @@ void writeAtmos_all(void) {
     */
 
     if (atmos.Stokes) {
-      /* Bx, By, Bz */
+      /* Bx, By, Bz 
       if ((ierror = nc_get_vara_double(ncid_in,  infile.Bx_varid, starti, counti, tmp)))
 	ERR(ierror,routineName);
       if ((ierror = nc_put_vara_double(ncid_out, io.in_atmos_Bx,  st,  ct, tmp)))
@@ -659,9 +669,10 @@ void writeAtmos_all(void) {
 	ERR(ierror,routineName);
       if ((ierror = nc_put_vara_double(ncid_out, io.in_atmos_Bz,  st,  ct, tmp)))
 	ERR(ierror,routineName);
+      */
     }
 
-    /* Hydrogen populations */
+    /* Hydrogen populations 
     starti[0] = input.p15d_nt;      counti[0] = 1;
     starti[1] = 0;                  counti[1] = atmos.NHydr;
     starti[2] = mpi.xnum[start[1]]; counti[2] = 1;
@@ -671,6 +682,7 @@ void writeAtmos_all(void) {
 				   mtmp[0]))) ERR(ierror,routineName);
     if ((ierror=nc_put_vara_double(ncid_out, io.in_atmos_nh,  start,  count,
 				   mtmp[0]))) ERR(ierror,routineName);
+    */
   }
 
   free(tmp);
@@ -687,7 +699,12 @@ void writeAtmos_p(void)
      arrays, from depth_refine. With that, now this is the only viable option
      to write the atmos data, as there is no option to save in memory and
      writeAtmos_all just writes from the input file, not the interpolated
-     quantities  */
+     quantities
+     
+     IMPORTANT: at the moment this is a trimmed version, only writing z to save
+                space and computational time.
+     
+     */
   const char routineName[] = "writeAtmos_p";
   int     ierror, ncid;
   size_t  start[] = {0, 0, 0, 0};
@@ -700,12 +717,16 @@ void writeAtmos_p(void)
   start[1] = mpi.iy;   count[1] = 1;
   start[2] = 0;        count[2] = atmos.Nspace;
 
+
+  /* Tiago: modified, now only writing T, vz, and z */
+  
   if ((ierror = nc_put_vara_double(ncid, io.in_atmos_T, start, count,
 				   atmos.T ))) ERR(ierror,routineName);
-  if ((ierror = nc_put_vara_double(ncid, io.in_atmos_ne, start, count,
-				   atmos.ne ))) ERR(ierror,routineName);
+  //if ((ierror = nc_put_vara_double(ncid, io.in_atmos_ne, start, count,
+  //				   atmos.ne ))) ERR(ierror,routineName);
   if ((ierror = nc_put_vara_double(ncid, io.in_atmos_vz, start, count,
 				   geometry.vel ))) ERR(ierror,routineName);
+  
   if ((ierror = nc_put_vara_double(ncid, io.in_atmos_z, start, count,
 				   geometry.height ))) ERR(ierror,routineName);
   
@@ -726,6 +747,7 @@ void writeAtmos_p(void)
   }
 
   /* put hydrogen populations */
+  /*
   start[0] = 0;        count[0] = atmos.H->Nlevel;
   start[1] = mpi.ix;   count[1] = 1;
   start[2] = mpi.iy;   count[2] = 1;
@@ -733,7 +755,7 @@ void writeAtmos_p(void)
 
   if ((ierror=nc_put_vara_double(ncid, io.in_atmos_nh, start, count,
 				 atmos.H->n[0] )))   ERR(ierror,routineName);  
-
+  */
 
   return;
 }
