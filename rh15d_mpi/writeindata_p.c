@@ -715,7 +715,7 @@ void writeAtmos_p(void)
   /* put atmosphere variables */
   start[0] = mpi.ix;   count[0] = 1;
   start[1] = mpi.iy;   count[1] = 1;
-  start[2] = 0;        count[2] = atmos.Nspace;
+  start[2] = mpi.zcut; count[2] = atmos.Nspace;
 
 
   /* Tiago: modified, now only writing T, vz, and z */
