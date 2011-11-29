@@ -17,6 +17,7 @@
 
 #define COMMENT_CHAR    "#"
 #define RAY_INPUT_FILE  "ray.input"
+#define SVN_ID "$Id$"
 
 /* --- Function prototypes --                          -------------- */
 void init_ncdf_ray(void);
@@ -74,6 +75,7 @@ int main(int argc, char *argv[])
   /* Direct log stream into MPI log files */
   mpi.main_logfile     = commandline.logfile;
   commandline.logfile  = mpi.logfile;
+  strcpy(mpi.svn_id, SVN_ID); /* save SVN version */
 
   /* --- Read input data and initialize --             -------------- */
   readInput();

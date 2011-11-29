@@ -12,7 +12,7 @@
 #include <mpi.h>
 
 typedef struct {
-  char     name[MPI_MAX_PROCESSOR_NAME];
+  char     name[MPI_MAX_PROCESSOR_NAME], svn_id[MAX_LINE_SIZE];
   bool_t   single_log, stop, isfirst;
   int      size, rank, namelen, nx, ny, ix, iy, *xnum, *ynum, *niter, zcut;
   int     *zcut_hist, **rh_converged, StokesMode_save, *convergence, snap_number;

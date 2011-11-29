@@ -106,6 +106,8 @@ void init_ncdf_indata_new(void)
   /* attributes */
   if ((ierror = nc_put_att_text(ncid, NC_GLOBAL, "atmosID", strlen(atmos.ID),
 				atmos.ID ))) ERR(ierror,routineName);
+  if ((ierror = nc_put_att_text(ncid, NC_GLOBAL, "svn_id", strlen(mpi.svn_id),
+				mpi.svn_id ))) ERR(ierror,routineName);
 
   /* --- Definitions for the INPUT group --- */
   /* attributes */

@@ -8,8 +8,6 @@
 
 /* --- Writes data from solveray into output file  --  -------------- */
 
-
-
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -93,8 +91,10 @@ void init_ncdf_ray_new(void)
 
   if ((ierror = nc_put_att_int(ncid, NC_GLOBAL, "snapshot_number", NC_USHORT, 1,
 			       &mpi.snap_number))) ERR(ierror,routineName);
-  // More stuff to add as global attributes:
-  // * version of the code --Not yet
+  
+  if ((ierror = nc_put_att_text(ncid, NC_GLOBAL, "svn_id", strlen(mpi.svn_id),
+				mpi.svn_id ))) ERR(ierror,routineName);
+
   
 
   /* Create dimensions */ 
