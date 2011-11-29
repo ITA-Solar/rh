@@ -55,6 +55,8 @@ void Iterate(int NmaxIter, double iterLimit)
   double dpopsmax, PRDiterlimit;
   Atom *atom;
   Molecule *molecule;
+  AtomicLine *line;        // Tiago: DELETE
+  int i, mu, to_obs, lamu; // Tiago: DELETE
 
   if (NmaxIter <= 0) return;
   getCPU(1, TIME_START, NULL);
@@ -82,9 +84,16 @@ void Iterate(int NmaxIter, double iterLimit)
     cswitch = input.crsw_ini;
   else
     cswitch = 1.0;
+    
+  /* PRD switching ? */
+  if (input.prdsw > 0.0)
+    input.prdswitch = 0.0;
+  else
+    input.prdswitch = 1.0;
   
   while (niter <= NmaxIter && !StopRequested()) {
     getCPU(2, TIME_START, NULL);
+
 
     for (nact = 0;  nact < atmos.Nactiveatom;  nact++)
       initGammaAtom(atmos.activeatoms[nact], cswitch);
@@ -97,7 +106,8 @@ void Iterate(int NmaxIter, double iterLimit)
 
     /* --- Solve statistical equilibrium equations --  -------------- */
 
-    sprintf(messageStr, "\n -- Iteration %3d, switch = %.2f\n", niter, cswitch);
+    sprintf(messageStr, "\n -- Iteration %3d, switch = %.2f, prd switch = %.2f\n",
+	    niter, cswitch, input.prdswitch);
     Error(MESSAGE, routineName, messageStr);
     dpopsmax = updatePopulations(niter);
 
@@ -115,12 +125,18 @@ void Iterate(int NmaxIter, double iterLimit)
     sprintf(messageStr, "Total Iteration %3d", niter);
     getCPU(2, TIME_POLL, messageStr);
 
-    if (dpopsmax < iterLimit && cswitch <= 1.0 ) break;
+    if (dpopsmax < iterLimit && cswitch <= 1.0 && input.prdswitch == 1.0 ) break;
     niter++;
     
     /* Update collisional multiplier factor */
     if (input.crsw > 0)
       cswitch = MAX(1.0, cswitch * pow(0.1, 1./input.crsw));
+
+    /* Update PRD switching */ 
+    if (input.prdsw > 0.0)
+      input.prdswitch = MIN(1.0, input.prdsw * (double) (niter * niter) ); // quadratic, for now
+
+
 
     if (atmos.hydrostatic) {
       if (!atmos.atoms[0].active) {
@@ -131,6 +147,38 @@ void Iterate(int NmaxIter, double iterLimit)
       Hydrostatic(N_MAX_HSE_ITER, HSE_ITER_LIMIT);
     }
   }
+  
+      // Tiago: temporary printouts to get PRD rho after iteration
+      /*
+       atom = atmos.activeatoms[0];
+       line = &atom->line[0];
+       
+       switch (input.PRD_angle_dep) {
+	case PRD_ANGLE_INDEP:
+	  printf("rho_prd = \n");
+	  for (i = 0; i < line->Nlambda; i++) {
+	    printf("%8.4f   %e   %e   %e   %e   %e\n", line->lambda[i], line->rho_prd[i][105], line->rho_prd[i][110], line->rho_prd[i][120], line->rho_prd[i][150], line->rho_prd[i][155]);
+	  }
+          //exit(1);
+	  break;
+	
+	case PRD_ANGLE_DEP:
+	    for (mu = 0; mu < atmos.Nrays; mu++) {
+	      for (to_obs = 0; to_obs <= 1; to_obs++) {
+	       for (i = 0; i < line->Nlambda; i++) {
+		lamu = 2*(atmos.Nrays*i + mu) + to_obs;
+		if ((to_obs == 1) && (mu == 4))
+		printf("%8.4f  %e   %e   %e   %e   %e\n", line->lambda[i], line->rho_prd[lamu][105],line->rho_prd[lamu][110],line->rho_prd[lamu][120], line->rho_prd[lamu][150], line->rho_prd[lamu][155] );
+	      }
+	    }
+	  }
+	  //exit(1);
+          break;
+       }
+      */
+      
+      
+  
 
   for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
     atom = atmos.activeatoms[nact];

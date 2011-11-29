@@ -211,10 +211,14 @@ void Opacity(int nspect, int mu, bool_t to_obs, bool_t initialize)
 	  if (input.PRD_angle_dep != PRD_ANGLE_INDEP) {
 	    lamu = 2*(atmos.Nrays*la + mu) + to_obs;
 	    for (k = 0;  k < atmos.Nspace;  k++)
-	      atom->rhth[nt].gij[n][k] *= line->rho_prd[lamu][k];
+	      //atom->rhth[nt].gij[n][k] *= line->rho_prd[lamu][k];
+	      // Tiago: adding PRD switching
+	      atom->rhth[nt].gij[n][k] *= line->rho_prd[lamu][k] * input.prdswitch +
+					    (1 - input.prdswitch);
 	  } else {
 	    for (k = 0;  k < atmos.Nspace;  k++)
-	      atom->rhth[nt].gij[n][k] *= line->rho_prd[la][k];
+	      atom->rhth[nt].gij[n][k] *= line->rho_prd[la][k] * input.prdswitch +
+					    (1 - input.prdswitch);
 	  }
 	}
 	/* --- Store wavelength integration weights -- -------------- */

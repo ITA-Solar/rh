@@ -354,6 +354,7 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
     Nread = sscanf(inputLine, "%d %d %lf %d %s %lf",
 		   &j, &i, &continuum->alpha0, &continuum->Nlambda,
 		   nuDepStr, &lambdamin);
+    
     checkNread(Nread, Nrequired=6, routineName, checkPoint=5);
 
     continuum->j = MAX(i, j);  continuum->i = MIN(i, j);

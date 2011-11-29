@@ -191,9 +191,20 @@ void readInput()
     {"COLLRAD_SWITCH_INI", "1.0", FALSE, KEYWORD_OPTIONAL, &input.crsw_ini,
      setdoubleValue},
      
+    {"PRD_SWITCH",     "0.0", FALSE, KEYWORD_OPTIONAL, &input.prdsw,
+     setdoubleValue},     
+     
     {"N_PESC_ITER", "3",  FALSE, KEYWORD_OPTIONAL, &input.NpescIter,
      setintValue},
-
+     
+    {"VTURB_MULTIPLIER",     "1.0", FALSE, KEYWORD_OPTIONAL, &input.vturb_mult,
+     setdoubleValue},
+     
+    {"VTURB_ADD",     "0.0", FALSE, KEYWORD_OPTIONAL, &input.vturb_add,
+     setdoubleValue},
+     
+    {"15D_RERUN", "FALSE", FALSE, KEYWORD_OPTIONAL, &input.p15d_rerun,
+     setboolValue},
     {"15D_WRITE_EXTRA",    "TRUE",  FALSE, KEYWORD_OPTIONAL, &input.p15d_wxtra,
      setboolValue},
     {"15D_WRITE_SPECTRUM", "TRUE",  FALSE, KEYWORD_OPTIONAL, &input.p15d_wspec,
