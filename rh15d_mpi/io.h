@@ -26,14 +26,16 @@
 #define  J_FILE_TEMPLATE "%s.ncdf"
 
 /* Definitions for readatmos_ncdf */
-#define  TEMP_NAME "temperature"
-#define  VZ_NAME   "velocity_z"
-#define  NE_NAME   "electron_density"
-#define  NH_NAME   "hydrogen_populations"
-#define  Z_NAME    "z"
-#define  BX_NAME   "B_x"
-#define  BY_NAME   "B_y"
-#define  BZ_NAME   "B_z"
+#define  TEMP_NAME  "temperature"
+#define  VTURB_NAME "velocity_turbulent"
+#define  VZ_NAME    "velocity_z"
+#define  NE_NAME    "electron_density"
+#define  NH_NAME    "hydrogen_populations"
+#define  Z_NAME     "z"
+#define  BX_NAME    "B_x"
+#define  BY_NAME    "B_y"
+#define  BZ_NAME    "B_z"
+#define  SNAPNAME   "snapshot_number"
 
 /* Definitions for background_p */
 #define  FILE_EXT ".dat"

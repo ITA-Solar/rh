@@ -30,7 +30,7 @@
 
 int   *intrange(int start, int end, int step, int *N);
 long  *get_tasks(long ntotal, int size);
-long **get_taskmap(long *ntasks, long *my_start);
+long **get_taskmap(long remain_tasks, long *ntasks, long *my_start);
 long **matrix_long(long Nrow, long Ncol);
 
 /* --- Global variables --                             -------------- */
@@ -54,7 +54,7 @@ void distribute_jobs(void)
 
  */
 
-  long *tasks;
+  long *tasks, remain_tasks, i, j;
  
   mpi.backgrrecno = 0; 
 
@@ -77,21 +77,41 @@ void distribute_jobs(void)
   mpi.xnum = intrange(input.p15d_x0, input.p15d_x1, input.p15d_xst, &mpi.nx);
   mpi.ynum = intrange(input.p15d_y0, input.p15d_y1, input.p15d_yst, &mpi.ny);
 
+  /* Find how many tasks to perform */
+  if (input.p15d_rerun) {
+    /* If rerun, read convergence info, calculate only for non-converged columns */
+    readConvergence();
+    remain_tasks = 0;
+    
+    for (i = 0; i < mpi.nx; i++) {
+      for (j = 0; j < mpi.ny; j++) {
+       if (mpi.rh_converged[i][j] < 1) remain_tasks++;
+      }
+    }
+    
+  } else {
+    /* If running first time, use all columns */
+    remain_tasks = mpi.nx * mpi.ny;
+    mpi.rh_converged = matrix_int(mpi.nx, mpi.ny);
+    
+  }
+  
   /* Abort if more processes than tasks (avoid idle processes waiting forever) */
-  if (mpi.size > (long) mpi.nx*mpi.ny) {
+  if (mpi.size > remain_tasks) {
     sprintf(messageStr,
             "\n*** More MPI processes (%d) than tasks (%ld), aborting.\n",
-	    mpi.size, (long) mpi.nx*mpi.ny);
+	    mpi.size, remain_tasks);
     Error(ERROR_LEVEL_2, "distribute_jobs", messageStr);
   }
 
-  /* Calculate tasks and distribute */ 
-  tasks        = get_tasks((long) mpi.nx*mpi.ny, mpi.size);
+  
+  /* Calculate tasks and distribute */
+  tasks        = get_tasks(remain_tasks, mpi.size);
   mpi.Ntasks   = tasks[mpi.rank];
-  mpi.taskmap  = get_taskmap(tasks, &mpi.my_start);
-
+  mpi.taskmap  = get_taskmap(remain_tasks, tasks, &mpi.my_start);
+  
   free(tasks);
-
+  
   return;
 }
 /* ------- end   --------------------------   distribute_jobs.c   --- */
@@ -115,21 +135,26 @@ long *get_tasks(long ntotal, int size)
 }
 /* ------- end   --------------------------   get_tasks.c ------- --- */
 
-/* ------- begin --------------------------   get_taskmap.c ----- --- */
-long **get_taskmap(long *ntasks, long *my_start)
+/* ------- begin --------------------------   get_retaskmap.c --- --- */
+long **get_taskmap(long remain_tasks, long *ntasks, long *my_start)
+/* Distributes the tasks by the processes (defined by global taskmap and local
+   my_start and mpi.Ntasks). Uses mpi.rh_converged to filter out already converged
+   columns (if rerun is used).  */
 {
   long i, j, k, *start, **taskmap;
 
-  taskmap = matrix_long((long) mpi.nx*mpi.ny, (long) 2);
+  taskmap = matrix_long(remain_tasks, (long) 2);
   start   = (long *) malloc(mpi.size * sizeof(long));
 
   /* Create map of tasks */
   k = 0;
   for (i=0; i < mpi.nx; i++) {
     for (j=0; j < mpi.ny; j++) {
-      taskmap[k][0] = i;
-      taskmap[k][1] = j;
-      ++k;
+      if (mpi.rh_converged[i][j] < 1) {
+	taskmap[k][0] = i;
+	taskmap[k][1] = j;
+	++k;
+      }
     }
   }
 
@@ -147,7 +172,7 @@ long **get_taskmap(long *ntasks, long *my_start)
 
   return taskmap;
 }
-/* ------- end   --------------------------   get_taskmap.c ----- --- */
+/* ------- end   --------------------------   get_retaskmap.c --- --- */
 
 /* ------- begin --------------------------   intrange.c -------- --- */
 int *intrange(int start, int end, int step, int *N)

@@ -29,7 +29,7 @@ typedef struct {
 typedef struct {
   char     *file_name;
   int       ncid,     nx_id,    ny_id,    nz_id,   nhyd_id;
-  int       T_varid,  ne_varid, vz_varid, nh_varid; 
+  int       T_varid,  ne_varid, vz_varid, nh_varid, vturb_varid; 
   int       Bx_varid, By_varid, Bz_varid;
   size_t    nx,       ny,       nz,       NHydr;
   double   *x, *y;

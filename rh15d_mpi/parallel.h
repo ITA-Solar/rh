@@ -15,7 +15,7 @@ typedef struct {
   char     name[MPI_MAX_PROCESSOR_NAME];
   bool_t   single_log, stop, isfirst;
   int      size, rank, namelen, nx, ny, ix, iy, *xnum, *ynum, *niter, zcut;
-  int     *zcut_hist, **rh_converged, StokesMode_save, *convergence;
+  int     *zcut_hist, **rh_converged, StokesMode_save, *convergence, snap_number;
   long     nconv, nnoconv, ncrash, my_start, backgrrecno;
   long   **taskmap, task, Ntasks;
   double  *dpopsmax, **dpopsmax_hist;
@@ -54,6 +54,8 @@ void close_ncdf_spec(void);
 void writeSpectrum_p(void);
 
 void init_ncdf_indata(void);
+void init_ncdf_indata_new(void);
+void init_ncdf_indata_old(void);
 void close_ncdf_indata(void);
 void writeAtmos_all(void);
 void writeMPI_all(void);

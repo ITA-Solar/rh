@@ -53,7 +53,7 @@ void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *inf
 { 
   const char routineName[] = "init_ncdf";
   struct  stat statBuffer;
-  int ierror, ncid, x_varid, y_varid, z_varid, has_B;
+  int ierror, ncid, x_varid, y_varid, z_varid, has_B, sn_varid;
   size_t nn;
   size_t start[] = {0, 0};
   size_t count[] = {1, 1};
@@ -98,9 +98,8 @@ void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *inf
   if ((ierror = nc_inq_dimid( ncid, "nz", &infile->nz_id)))       ERR(ierror,routineName);
   if ((ierror = nc_inq_dimlen(ncid, infile->nz_id, &infile->nz))) ERR(ierror,routineName);
 
-  if ((ierror = nc_inq_dimid( ncid, "nhydr", &infile->nhyd_id))) ERR(ierror, routineName);
-  if ((ierror = nc_inq_dimlen(ncid, infile->nhyd_id, &nn)))      ERR(ierror, routineName);
-
+  if ((ierror = nc_inq_dimid( ncid, "nhydr", &infile->nhyd_id)))  ERR(ierror,routineName);
+  if ((ierror = nc_inq_dimlen(ncid, infile->nhyd_id, &nn)))       ERR(ierror,routineName);
 
   /* get some values in atmos/geometry structures */
   geometry->Ndep = (int)  infile->nz;
@@ -122,6 +121,13 @@ void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *inf
   if ((ierror=nc_inq_varid(ncid, "z",       &z_varid)))          ERR(ierror,routineName);
   if ((ierror=nc_inq_varid(ncid, "y",       &y_varid)))          ERR(ierror,routineName);
   if ((ierror=nc_inq_varid(ncid, "x",       &x_varid)))          ERR(ierror,routineName);
+  if ((ierror=nc_inq_varid(ncid, SNAPNAME,  &sn_varid)))         ERR(ierror,routineName);
+  
+  /* Microturbulence, get ID if variable found */
+  if ((ierror=nc_inq_varid(ncid, VTURB_NAME, &infile->vturb_varid))) {
+    /* exception for variable not found (errcode -49)*/
+    (ierror == -49) ? infile->vturb_varid = -1 : ERR(ierror,routineName);
+  }
 
   if (atmos->Stokes) {
       if ((ierror = nc_inq_varid(ncid, BX_NAME, &infile->Bx_varid)))
@@ -145,6 +151,8 @@ void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *inf
   infile->x   = (double *) malloc(infile->nx * sizeof(double));
   if ((ierror = nc_get_var_double(ncid, x_varid, infile->x))) ERR(ierror,routineName);
 
+  if ((ierror = nc_get_var1_int(ncid, sn_varid, start, &mpi.snap_number)))
+    ERR(ierror,routineName);
 
   /* allocate arrays */
   geometry->vel = (double *) malloc(atmos->Nspace * sizeof(double));
@@ -232,9 +240,10 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
     ERR(ierror,routineName);
 
   /* Finds z value for Tmax cut, redefines Nspace, reallocates arrays */
-  /* Tiago: not using this at the moment, only z cut in depth_refine
+  /* Tiago: not using this at the moment, only z cut in depth_refine */
   setTcut(atmos, geometry, input.p15d_tmax);
-  mpi.zcut = 0; */
+  
+  /* mpi.zcut = 0; */
 
   //printf("Process %d: zcut = %d\n", mpi.rank, mpi.zcut);
 
@@ -260,6 +269,12 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
     ERR(ierror,routineName);
   if ((ierror = nc_get_vara_double(ncid, infile->vz_varid, start, count, geometry->vel)))
     ERR(ierror,routineName);
+  /* vturb, if available */   
+  if (infile->vturb_varid != -1) {
+    if ((ierror = nc_get_vara_double(ncid, infile->vturb_varid, &start[3], &count[3],
+				     atmos->vturb))) ERR(ierror,routineName);
+  }
+
 
   /* Read magnetic field */
   if (atmos->Stokes) {
@@ -307,7 +322,13 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 				   atmos->nH[0]))) ERR(ierror,routineName);
 
   /* Depth grid refinement */
-  depth_refine(atmos, geometry, input.p15d_tmax);
+  //depth_refine(atmos, geometry, input.p15d_tmax);
+  
+  /* Fix vturb: remove zeros, use multiplier and add */
+  for (i = 0; i < atmos->Nspace; i++) {
+    if (atmos->vturb[i] < 0.0) atmos->vturb[i] = 0.0;
+    atmos->vturb[i] = atmos->vturb[i] * input.vturb_mult + input.vturb_add;
+  }
 
   /* Sum to get nHtot */
   for (i = 0; i < atmos->NHydr; i++){
@@ -406,6 +427,7 @@ void realloc_ndep(Atmosphere *atmos, Geometry *geometry) {
   atmos->T     = (double *) realloc(atmos->T,     atmos->Nspace * sizeof(double));
   atmos->ne    = (double *) realloc(atmos->ne,    atmos->Nspace * sizeof(double));
   atmos->nHtot = (double *) realloc(atmos->nHtot, atmos->Nspace * sizeof(double));
+  atmos->vturb = (double *) realloc(atmos->vturb, atmos->Nspace * sizeof(double));
   geometry->vel    = (double *) realloc(geometry->vel, 
 					atmos->Nspace * sizeof(double));  
   geometry->height = (double *) realloc(geometry->height, 
@@ -413,10 +435,6 @@ void realloc_ndep(Atmosphere *atmos, Geometry *geometry) {
   if (atmos->nHmin != NULL) 
       atmos->nHmin = (double *) realloc(atmos->nHmin,
 					atmos->Nspace * sizeof(double));
-  
-  /* default zero */
-  free(atmos->vturb);
-  atmos->vturb  = (double *) calloc(atmos->Nspace , sizeof(double)); 
 
   if (atmos->Stokes) {
     atmos->B       = (double *) realloc(atmos->B, 
@@ -542,6 +560,10 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
   splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
   memcpy((void *) geometry->vel, (void *) buf, bufsize);
   
+  splineCoef(atmos->Nspace, geometry->height, atmos->vturb);
+  splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
+  memcpy((void *) atmos->vturb, (void *) buf, bufsize);
+  
   if (atmos->Stokes) {
     splineCoef(atmos->Nspace, geometry->height, atmos->B);
     splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
@@ -568,8 +590,9 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
   /*
   printf("Interpolated quantities:\n---------------------\n");
   for (k = 0; k < atmos->Nspace; k++) 
-    printf("%4li  %12.4e   %12.4e   %12.4e   %12.4e   %12.4e   %12.4e\n", k, geometry->height[k],atmos->T[k], atmos->ne[k], geometry->vel[k], atmos->B[k], atmos->gamma_B[k]);
+    printf("%4li  %12.4e   %12.4e   %12.4e   %12.4e   %12.4e   %12.4e\n", k, geometry->height[k],atmos->T[k], atmos->ne[k], geometry->vel[k],atmos->vturb[k] , 0.);//atmos->B[k], atmos->gamma_B[k]);
   */
+    
     
   if (nhm_flag) {
     free(atmos->nHmin);

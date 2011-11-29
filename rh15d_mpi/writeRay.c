@@ -29,6 +29,8 @@
 
 /* --- Function prototypes --                          -------------- */
 
+void init_ncdf_ray_new(void);
+void init_ncdf_ray_old(void);
 
 /* --- Global variables --                             -------------- */
 
@@ -44,11 +46,21 @@ extern MPI_data mpi;
 extern IO_data io; 
 
 
-/* ------- begin -------------------------- init_ncdf_spec.c -------- */
-void init_ncdf_ray(void)
+/* ------- begin --------------------------   init_ncdf_ray.c  ------ */
+void init_ncdf_ray(void) {
+  /* Wrapper to find out if we should use old file or create new one. */
+  
+  if (input.p15d_rerun) init_ncdf_ray_old(); else init_ncdf_ray_new();
+  
+  return;
+}
+/* ------- end   --------------------------   init_ncdf_ray.c  ------ */
+
+/* ------- begin -------------------------- init_ncdf_ray_new.c ----- */
+void init_ncdf_ray_new(void)
 /* Creates the netCDF file for the ray */
 {
-  const char routineName[] = "init_ncdf_ray";
+  const char routineName[] = "init_ncdf_ray_new";
   int     ierror, ncid, nx_id, ny_id, nspect_id, wave_var, wave_sel_id, 
           nspace_id, intensity_var, stokes_u_var, stokes_q_var, stokes_v_var,
           //chi_l_var, eta_l_var, chi_c_var, eta_c_var, sca_c_var, 
@@ -75,12 +87,15 @@ void init_ncdf_ray(void)
   if ((ierror = nc_create_par(RAY_FILE, NC_NETCDF4 | NC_CLOBBER | NC_MPIPOSIX, 
 			      mpi.comm, mpi.info, &ncid))) ERR(ierror,routineName);
   
-  /* Write atmos.ID as global attribute */
+  /* Global attributes */
   if ((ierror = nc_put_att_text(ncid, NC_GLOBAL, "atmosID", strlen(atmos.ID),
 				atmos.ID ))) ERR(ierror,routineName);
 
+  if ((ierror = nc_put_att_int(ncid, NC_GLOBAL, "snapshot_number", NC_USHORT, 1,
+			       &mpi.snap_number))) ERR(ierror,routineName);
   // More stuff to add as global attributes:
   // * version of the code --Not yet
+  
 
   /* Create dimensions */ 
   if ((ierror = nc_def_dim( ncid, "nx",     mpi.nx,          &nx_id      ))) 
@@ -234,7 +249,82 @@ void init_ncdf_ray(void)
   return; 
 }
 
-/* ------- end   -------------------------- init_ncdf_ray.c ---------- */
+/* ------- end   -------------------------- init_ncdf_ray_new.c ------- */
+
+
+/* ------- begin -------------------------- init_ncdf_ray_old.c ------ */
+void init_ncdf_ray_old(void)
+/* Opens an existing ray netCDF file */
+{
+  const char routineName[] = "init_ncdf_ray_old";
+  int     ierror, ncid;
+  bool_t  write_xtra;
+  size_t  len_id;
+  FILE   *test;
+  char   *atmosID;
+
+  
+  write_xtra = (io.ray_nwave_sel > 0);
+
+  /* Check if we can open the file */
+  if ((test = fopen(RAY_FILE, "a")) == NULL) {
+    sprintf(messageStr, "Unable to open spectrum output file %s", SPEC_FILE);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  } else {
+    fclose(test);
+  }
+
+  /* Open the file  */
+  if ((ierror = nc_open_par(RAY_FILE, NC_WRITE | NC_MPIPOSIX, 
+			      mpi.comm, mpi.info, &ncid))) ERR(ierror,routineName);
+  io.ray_ncid = ncid;
+  
+  /* --- Consistency checks --- */
+  /* Check that atmosID is the same */
+  if ((ierror = nc_inq_attlen(ncid, NC_GLOBAL, "atmosID", &len_id ))) 
+    ERR(ierror,routineName);
+
+  atmosID = (char *) malloc(len_id+1);
+
+  if ((ierror = nc_get_att_text(io.aux_ncid, NC_GLOBAL, "atmosID", atmosID ))) 
+    ERR(ierror,routineName);
+
+  if (!strstr(atmosID, atmos.ID)) {
+    sprintf(messageStr,
+         "Populations were derived from different atmosphere (%s) than current",
+	    atmosID);
+    Error(WARNING, routineName, messageStr);
+    }
+  free(atmosID);
+
+  /* --- Get variable IDs ---*/
+  if ((ierror = nc_inq_varid(ncid, INT_NAME,  &io.ray_int_var ))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(ncid, WAVE_NAME, &io.ray_wave_var))) 
+      ERR(ierror,routineName);
+      
+  if (atmos.Stokes || input.backgr_pol) {
+    if ((ierror = nc_inq_varid(ncid, STOKES_Q, &io.ray_stokes_q_var))) 
+        ERR(ierror,routineName);
+    if ((ierror = nc_inq_varid(ncid, STOKES_U, &io.ray_stokes_u_var))) 
+        ERR(ierror,routineName);
+    if ((ierror = nc_inq_varid(ncid, STOKES_V, &io.ray_stokes_v_var))) 
+        ERR(ierror,routineName);
+  }
+  
+  if (write_xtra) {
+    if ((ierror = nc_inq_varid(ncid, CHI_NAME,     &io.ray_chi_var     ))) 
+        ERR(ierror,routineName);
+    if ((ierror = nc_inq_varid(ncid, S_NAME,       &io.ray_S_var       ))) 
+        ERR(ierror,routineName);
+    if ((ierror = nc_inq_varid(ncid, WAVE_SEL_IDX, &io.ray_wave_idx_var))) 
+        ERR(ierror,routineName);
+  }
+  
+  return; 
+}
+
+/* ------- end   -------------------------- init_ncdf_ray_old.c ------ */
 
 /* ------- begin -------------------------- close_ncdf_ray.c --------- */
 void close_ncdf_ray(void)
@@ -469,10 +559,10 @@ void calculate_ray(void) {
         printf("%e   %e   %e   %e   %e   %e\n", as->chi_c[i], as->eta_c[i],
        as->chi[i], as->eta[i], as->sca_c[i], spectrum.J[176][i]);	     
       } */
-      
+
       /* --- Solve radiative transfer for ray --           -------------- */
       solveSpectrum(FALSE, FALSE);
-    
+
       /*
       for (i=0; i < spectrum.Nspect; i++) {
 	printf("%i   %e\n", i, spectrum.I[i][0]);

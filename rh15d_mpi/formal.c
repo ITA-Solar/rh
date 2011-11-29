@@ -112,6 +112,7 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
   chi = (double *) malloc(atmos.Nspace * sizeof(double));
 
   /* --- Store current mean intensity, initialize new one to zero - - */
+  
 
   Jdag = (double *) malloc(atmos.Nspace * sizeof(double));
   if (input.limit_memory) {
@@ -121,7 +122,8 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
     J = spectrum.J[nspect];
     for (k = 0;  k < atmos.Nspace;  k++) Jdag[k] = J[k];
   }
-  for (k = 0;  k < atmos.Nspace;  k++) J[k] = 0.0;
+
+  if (spectrum.updateJ) for (k = 0;  k < atmos.Nspace;  k++) J[k] = 0.0;  
 
   /* --- Store current anisotropy, initialize new one to zero ---- -- */
 

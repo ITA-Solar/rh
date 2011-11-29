@@ -56,7 +56,7 @@ void init_ncdf_aux(void) {
     }
   }
 
-  if (use_old) init_aux_old(); else init_aux_new();
+  if ((use_old) || (input.p15d_rerun)) init_aux_old(); else init_aux_new();
 
   return;
 }
@@ -403,8 +403,7 @@ void init_aux_old(void) {
     }
   free(atmosID);
 
-  /* Check that dimension sizes match */
-
+  /* Check that dimension sizes match 
   if ((ierror = nc_inq_dimid(io.aux_ncid, "nz", &dimid ))) 
     ERR(ierror,routineName);  
   if ((ierror = nc_inq_dimlen(io.aux_ncid, dimid, &nz ))) 
@@ -416,7 +415,7 @@ void init_aux_old(void) {
 	    atmos.Nspace, (int)nz);
     Error(WARNING, routineName, messageStr);
   }
- 
+  */
 
   /* Create arrays for multiple-atom/molecule output */
   io.aux_atom_ncid   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
@@ -498,7 +497,7 @@ void init_aux_old(void) {
       ERR(ierror,routineName);
     if ((ierror = nc_inq_varid(ncid, RIJ_C_NAME,  &io.aux_atom_RijC[i]   ))) 
       ERR(ierror,routineName);
-    if ((ierror = nc_inq_varid(ncid, RJI_C_NAME,  &io.aux_atom_RijC[i]   ))) 
+    if ((ierror = nc_inq_varid(ncid, RJI_C_NAME,  &io.aux_atom_RjiC[i]   ))) 
       ERR(ierror,routineName);  
 
     if (input.p15d_wxtra) {
@@ -699,10 +698,10 @@ void writeAux_all(void) {
       /* Rij, Rji for continua */
       start[0] = 0; count[0] = atom->Ncont;
       if ((ierror=nc_put_vara_double(ncid, io.aux_atom_RijC[nact], start, count,
-                 &iobuf.RijC[nact][ind*atom->Ncont] ))) ERR(ierror,routineName);  
-       
+                 &iobuf.RijC[nact][ind*atom->Ncont] ))) ERR(ierror,routineName);
+      
       if ((ierror=nc_put_vara_double(ncid, io.aux_atom_RjiC[nact], start, count,
-                 &iobuf.RjiC[nact][ind*atom->Ncont] ))) ERR(ierror,routineName); 
+                 &iobuf.RjiC[nact][ind*atom->Ncont] ))) ERR(ierror,routineName);
     }
 
     /* MOLECULE loop */

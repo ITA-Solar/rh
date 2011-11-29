@@ -39,10 +39,21 @@ extern MPI_data mpi;
 extern IO_data io; 
 
 /* ------- begin --------------------------   init_ncdf_indata.c  --- */
-void init_ncdf_indata(void)
+void init_ncdf_indata(void) {
+  /* Wrapper to find out if we should use old file or create new one */
+  
+  if (input.p15d_rerun) init_ncdf_indata_old(); else init_ncdf_indata_new();
+  
+  return;
+}
+/* ------- end   --------------------------   init_ncdf_indata.c  --- */
+
+
+/* ------- begin --------------------------   init_ncdf_indata.c  --- */
+void init_ncdf_indata_new(void)
 /* Creates the netCDF file for the input data */
 {
-  const char routineName[] = "init_ncdf_indata";
+  const char routineName[] = "init_ncdf_indata_new";
   int     i, ierror, ncid, ncid_input, ncid_atmos, ncid_mpi, nx_id, ny_id, 
           nspace_id, nhydr_id, nelem_id, nrays_id, nproc_id, atstr_id, niter_id,
           temp_var, ne_var, vz_var, vturb_var, Bx_var, By_var, Bz_var, nh_var, 
@@ -50,6 +61,8 @@ void init_ncdf_indata(void)
           ew_var, ab_var, eid_var, mu_var, wmu_var, height_var,x_var, y_var,
           xnum_var, ynum_var, tm_var, tn_var, it_var, conv_var, dm_var, dmh_var, 
           zch_var, ntsk_var, host_var, st_var, ft_var, z_varid, dimids[4];
+  /* This value is harcoded for efficiency. Maximum number of iterations ever needed */
+  int     NMaxIter = 500; 
   long    task;
   size_t  start[] = {0, 0, 0};
   size_t  count[] = {1, 1, 1};
@@ -343,9 +356,9 @@ void init_ncdf_indata(void)
   
   /* --- Definitions for the MPI group --- */
   /* dimensions */
-  if ((ierror = nc_def_dim(ncid_mpi, "nprocesses",   mpi.size,      &nproc_id))) 
+  if ((ierror = nc_def_dim(ncid_mpi, "nprocesses",  mpi.size, &nproc_id))) 
     ERR(ierror,routineName);  
-  if ((ierror = nc_def_dim(ncid_mpi, "niterations", input.NmaxIter, &niter_id))) 
+  if ((ierror = nc_def_dim(ncid_mpi, "niterations", NMaxIter, &niter_id))) 
     ERR(ierror,routineName);  
 
   /* variables*/
@@ -563,6 +576,124 @@ void init_ncdf_indata(void)
   return;
 }
 /* ------- end   --------------------------   init_ncdf_indata.c  --- */
+
+/* ------- begin --------------------------   init_ncdf_indata_old.c  --- */
+void init_ncdf_indata_old(void)
+/* Opens an existing NetCDF input data file, loads structures and ids */
+{
+  const char routineName[] = "init_ncdf_indata_old";
+  int     i, ierror, ncid, ncid_input, ncid_atmos, ncid_mpi, nx_id, ny_id, 
+          nspace_id, nhydr_id, nelem_id, nrays_id, nproc_id, atstr_id, niter_id,
+          temp_var, ne_var, vz_var, vturb_var, Bx_var, By_var, Bz_var, nh_var, 
+          /* B_var, gB_var, chiB_var, */
+          ew_var, ab_var, eid_var, mu_var, wmu_var, height_var,x_var, y_var,
+          xnum_var, ynum_var, tm_var, tn_var, it_var, conv_var, dm_var, dmh_var, 
+          zch_var, ntsk_var, host_var, st_var, ft_var, z_varid, dimids[4];
+  long    task;
+  size_t  start[] = {0, 0, 0};
+  size_t  count[] = {1, 1, 1};
+  size_t  len_id;
+  bool_t  PRD_angle_dep, XRD;
+  double *height;
+  char    startJ[MAX_LINE_SIZE], StokesMode[MAX_LINE_SIZE], angleSet[MAX_LINE_SIZE],
+          hostname[ARR_STRLEN], timestr[ARR_STRLEN], *atmosID;
+  FILE   *test;
+  time_t  curtime;
+  struct tm *loctime;
+
+  /* Check if we can open the file */
+  if ((test = fopen(INPUTDATA_FILE, "a")) == NULL) {
+    sprintf(messageStr, "Unable to open spectrum output file %s", INPUTDATA_FILE);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  } else {
+    fclose(test);
+  }
+
+  /* Opwn the file  */
+  if ((ierror = nc_open_par(INPUTDATA_FILE, NC_WRITE | NC_MPIPOSIX, 
+			      mpi.comm, mpi.info, &ncid))) ERR(ierror,routineName);
+  io.in_ncid = ncid;
+
+  /* --- Consistency checks --- */
+  /* Check that atmosID is the same */
+  if ((ierror = nc_inq_attlen(ncid, NC_GLOBAL, "atmosID", &len_id ))) 
+    ERR(ierror,routineName);
+
+  atmosID = (char *) malloc(len_id+1);
+
+  if ((ierror = nc_get_att_text(ncid, NC_GLOBAL, "atmosID", atmosID ))) 
+    ERR(ierror,routineName);
+
+  if (!strstr(atmosID, atmos.ID)) {
+    sprintf(messageStr,
+         "Populations were derived from different atmosphere (%s) than current",
+	    atmosID);
+    Error(WARNING, routineName, messageStr);
+    }
+  free(atmosID);
+    
+  /* Get group IDs */
+  if ((ierror = nc_inq_ncid(ncid, "input", &io.in_input_ncid))) ERR(ierror,routineName);
+  if ((ierror = nc_inq_ncid(ncid, "atmos", &io.in_atmos_ncid))) ERR(ierror,routineName);
+  if ((ierror = nc_inq_ncid(ncid, "mpi",   &io.in_mpi_ncid  ))) ERR(ierror,routineName);
+
+  /* --- Definitions for the ATMOS group --- */
+  /* get variable IDs */
+  if ((ierror = nc_inq_varid(io.in_atmos_ncid, "temperature",       &io.in_atmos_T  ))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(io.in_atmos_ncid, "velocity_z",        &io.in_atmos_vz ))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(io.in_atmos_ncid, "height",            &io.in_atmos_z  ))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(io.in_atmos_ncid, "element_weight",    &io.in_atmos_ew ))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(io.in_atmos_ncid, "element_abundance", &io.in_atmos_ab ))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(io.in_atmos_ncid, "element_id",        &io.in_atmos_eid))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(io.in_atmos_ncid, "muz",               &io.in_atmos_mu ))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(io.in_atmos_ncid, "wmu",               &io.in_atmos_wmu))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(io.in_atmos_ncid, "x",                 &io.in_atmos_x  ))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(io.in_atmos_ncid, "y",                 &io.in_atmos_y  ))) 
+      ERR(ierror,routineName);
+
+  
+  /* --- Definitions for the MPI group --- */
+  /* get variable IDs */
+  if ((ierror = nc_inq_varid(io.in_mpi_ncid, XNUM_NAME,   &io.in_mpi_xnum))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(io.in_mpi_ncid, YNUM_NAME,   &io.in_mpi_ynum))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(io.in_mpi_ncid, TASK_MAP,    &io.in_mpi_tm  ))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(io.in_mpi_ncid, TASK_NUMBER, &io.in_mpi_tn  ))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(io.in_mpi_ncid, ITER_NAME,   &io.in_mpi_it  ))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(io.in_mpi_ncid, CONV_NAME,   &io.in_mpi_conv))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(io.in_mpi_ncid, DM_NAME,     &io.in_mpi_dm  ))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(io.in_mpi_ncid, ZC_NAME,     &io.in_mpi_zc  ))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(io.in_mpi_ncid, NTASKS,      &io.in_mpi_ntsk))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(io.in_mpi_ncid, HOSTNAME,    &io.in_mpi_host))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(io.in_mpi_ncid, START_TIME,  &io.in_mpi_st  ))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(io.in_mpi_ncid, FINISH_TIME, &io.in_mpi_ft  ))) 
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(io.in_mpi_ncid, DMH_NAME,    &io.in_mpi_dmh ))) 
+      ERR(ierror,routineName);
+
+  return;
+}
+/* ------- end   --------------------------   init_ncdf_indata_old.c  --- */
+
 
 /* ------- begin --------------------------   close_ncdf_indata.c --- */
 void close_ncdf_indata(void)

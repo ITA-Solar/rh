@@ -19,6 +19,8 @@
 
 /* --- Function prototypes --                          -------------- */
 void init_ncdf_ray(void);
+void init_ncdf_ray_new(void);
+void init_ncdf_ray_old(void);
 void writeRay(void);
 void close_ncdf_ray(void);
 void calculate_ray(void);
