@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
 
     wave_index = io.ray_wave_idx;
   }
-
+  
   /* --- Save geometry values to change back after --    ------------ */
   save_Nrays = atmos.Nrays;   save_wmu = geometry.wmu[0];
   save_muz = geometry.muz[0]; save_mux = geometry.mux[0]; save_muy = geometry.muy[0];
@@ -131,24 +131,11 @@ int main(int argc, char *argv[])
   /* Main loop over tasks */
   for (mpi.task = 0; mpi.task < mpi.Ntasks; mpi.task++) {
     
-   
-    /* "convergence" loop: if there is no convergence, change some options and
-        run again. For now limited at two tries, changing the initial solution
-        from ZERO_RADIATION to ESCAPE_PROBABILITY, or vice-versa.           */ 
-    for (conv_iter = 0; conv_iter < 1; conv_iter++) {
-      mpi.isfirst = (mpi.task == 0) && (conv_iter == 0);
+      mpi.isfirst = (mpi.task == 0); 
       
       if (mpi.stop) mpi.stop = FALSE;
       
-      if (conv_iter == 1) {
-	for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
-	  if (atmos.activeatoms[nact]->initial_solution == ZERO_RADIATION) {
-	   atmos.activeatoms[nact]->initial_solution = ESCAPE_PROBABILITY;
-	  } else if (atmos.activeatoms[nact]->initial_solution == ESCAPE_PROBABILITY)
-	   atmos.activeatoms[nact]->initial_solution = ZERO_RADIATION;
-	}
-      }
-      
+
       /* Indices of x and y */
       mpi.ix = mpi.taskmap[mpi.task + mpi.my_start][0];
       mpi.iy = mpi.taskmap[mpi.task + mpi.my_start][1];
@@ -173,6 +160,18 @@ int main(int argc, char *argv[])
         readMolecularModels();
 	
         SortLambda();
+	
+	/* Check if wavelength indices make sense */
+	for (i = 0;  i < Nspect;  i++) {
+	  if (wave_index[i] < 0  ||  wave_index[i] >= spectrum.Nspect) {
+  	      sprintf(messageStr, "Illegal value of wave_index[n]: %4d\n"
+  	      "Value has to be between 0 and %4d\n", 
+  	      wave_index[i], spectrum.Nspect);
+	      Error(ERROR_LEVEL_2, argv[0], messageStr);
+	      continue;
+	  }
+	}
+	
         initParallelIO(run_ray=FALSE, writej=FALSE);
         init_ncdf_ray();
       
@@ -205,31 +204,6 @@ int main(int argc, char *argv[])
 	  (mpi.dpopsmax[mpi.task] < 0) || ((mpi.dpopsmax[mpi.task] == 0) && (input.NmaxIter > 0)))
         mpi.stop = TRUE;
       
-      
-      /* If there is convergence, get out */
-      if ((!mpi.stop) && (mpi.convergence[mpi.task])) {
-	break;
-      } else {
-	if (conv_iter == 0) {
-	  sprintf(messageStr,
-	          "Process %3d: --- RETRY task %3ld (lack of convergence)\n",
-		  mpi.rank, mpi.task+1);
-	  fprintf(mpi.main_logfile, messageStr);
-	  Error(MESSAGE, "main", messageStr);
-	}
-      }
-      
-    } /* end of conv_iter loop */
-
-    /* put back initial settings for initial solution */
-    if (conv_iter > 0) {
-      for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
-        if (atmos.activeatoms[nact]->initial_solution == ZERO_RADIATION) {
-	  atmos.activeatoms[nact]->initial_solution = ESCAPE_PROBABILITY;
-        } else if (atmos.activeatoms[nact]->initial_solution == ESCAPE_PROBABILITY)
-	  atmos.activeatoms[nact]->initial_solution = ZERO_RADIATION;
-      }
-    }
 
     /* In case of crash, write dummy data and proceed to next task */
     if (mpi.stop) {

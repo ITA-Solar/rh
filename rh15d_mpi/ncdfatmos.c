@@ -322,7 +322,7 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 				   atmos->nH[0]))) ERR(ierror,routineName);
 
   /* Depth grid refinement */
-  //depth_refine(atmos, geometry, input.p15d_tmax);
+  depth_refine(atmos, geometry, input.p15d_tmax);
   
   /* Fix vturb: remove zeros, use multiplier and add */
   for (i = 0; i < atmos->Nspace; i++) {
@@ -427,7 +427,6 @@ void realloc_ndep(Atmosphere *atmos, Geometry *geometry) {
   atmos->T     = (double *) realloc(atmos->T,     atmos->Nspace * sizeof(double));
   atmos->ne    = (double *) realloc(atmos->ne,    atmos->Nspace * sizeof(double));
   atmos->nHtot = (double *) realloc(atmos->nHtot, atmos->Nspace * sizeof(double));
-  atmos->vturb = (double *) realloc(atmos->vturb, atmos->Nspace * sizeof(double));
   geometry->vel    = (double *) realloc(geometry->vel, 
 					atmos->Nspace * sizeof(double));  
   geometry->height = (double *) realloc(geometry->height, 
@@ -435,6 +434,9 @@ void realloc_ndep(Atmosphere *atmos, Geometry *geometry) {
   if (atmos->nHmin != NULL) 
       atmos->nHmin = (double *) realloc(atmos->nHmin,
 					atmos->Nspace * sizeof(double));
+  /* default zero */
+  free(atmos->vturb);
+  atmos->vturb  = (double *) calloc(atmos->Nspace , sizeof(double)); 
 
   if (atmos->Stokes) {
     atmos->B       = (double *) realloc(atmos->B, 
