@@ -241,10 +241,12 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 
   /* Finds z value for Tmax cut, redefines Nspace, reallocates arrays */
   /* Tiago: not using this at the moment, only z cut in depth_refine */
-  setTcut(atmos, geometry, input.p15d_tmax);
+  if (input.p15d_zcut) {
+    setTcut(atmos, geometry, input.p15d_tmax);
+  } else {
+    mpi.zcut = 0;
+  }
   
-  /* mpi.zcut = 0; */
-
   //printf("Process %d: zcut = %d\n", mpi.rank, mpi.zcut);
 
   /* Get z again */
@@ -322,7 +324,8 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 				   atmos->nH[0]))) ERR(ierror,routineName);
 
   /* Depth grid refinement */
-  depth_refine(atmos, geometry, input.p15d_tmax);
+  if (input.p15d_refine)
+    depth_refine(atmos, geometry, input.p15d_tmax);
   
   /* Fix vturb: remove zeros, use multiplier and add */
   for (i = 0; i < atmos->Nspace; i++) {

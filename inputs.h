@@ -90,7 +90,7 @@ typedef struct {
   /* Tiago, added this for 1.5D version */
   int    p15d_nt, p15d_x0, p15d_x1, p15d_xst, p15d_y0, p15d_y1, p15d_yst;
   double p15d_tmax;
-  bool_t p15d_wxtra, p15d_wspec, p15d_rerun;
+  bool_t p15d_wxtra, p15d_wspec, p15d_rerun, p15d_refine, p15d_zcut;
   double iterLimit, PRDiterLimit, metallicity;
 
   pthread_attr_t thread_attr;

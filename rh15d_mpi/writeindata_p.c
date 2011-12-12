@@ -74,14 +74,6 @@ void init_ncdf_indata_new(void)
   time_t  curtime;
   struct tm *loctime;
 
-  /* Check if we can open the file */
-  if ((test = fopen(INPUTDATA_FILE, "w")) == NULL) {
-    sprintf(messageStr, "Unable to open spectrum output file %s", INPUTDATA_FILE);
-    Error(ERROR_LEVEL_2, routineName, messageStr);
-  } else {
-    fclose(test);
-  }
-
   /* Create the file  */
   if ((ierror = nc_create_par(INPUTDATA_FILE, NC_NETCDF4 | NC_CLOBBER | NC_MPIPOSIX, 
   //if ((ierror = nc_create_par(INPUTDATA_FILE, NC_NETCDF4 | NC_CLOBBER | NC_MPIIO, 
@@ -603,15 +595,7 @@ void init_ncdf_indata_old(void)
   time_t  curtime;
   struct tm *loctime;
 
-  /* Check if we can open the file */
-  if ((test = fopen(INPUTDATA_FILE, "a")) == NULL) {
-    sprintf(messageStr, "Unable to open spectrum output file %s", INPUTDATA_FILE);
-    Error(ERROR_LEVEL_2, routineName, messageStr);
-  } else {
-    fclose(test);
-  }
-
-  /* Opwn the file  */
+  /* Open the file  */
   if ((ierror = nc_open_par(INPUTDATA_FILE, NC_WRITE | NC_MPIPOSIX, 
 			      mpi.comm, mpi.info, &ncid))) ERR(ierror,routineName);
   io.in_ncid = ncid;
@@ -993,14 +977,6 @@ void readConvergence(void) {
 
   mpi.rh_converged = matrix_int(mpi.nx, mpi.ny);
   
-  /* --- Check if we can open the file --- */
-  if ((test = fopen(INPUTDATA_FILE, "r")) == NULL) {
-    sprintf(messageStr, "Unable to read input data file %s", AUX_FILE);
-    Error(ERROR_LEVEL_2, routineName, messageStr);
-  } else {
-    fclose(test);
-  }
-
   /* --- Open the inputdata file --- */
   if ((ierror=nc_open(INPUTDATA_FILE,NC_NOWRITE,&ncid))) ERR(ierror,routineName);
   

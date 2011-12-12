@@ -205,6 +205,10 @@ void readInput()
      
     {"15D_RERUN", "FALSE", FALSE, KEYWORD_OPTIONAL, &input.p15d_rerun,
      setboolValue},
+    {"15D_DEPTH_REFINE", "TRUE", FALSE, KEYWORD_OPTIONAL, &input.p15d_refine,
+     setboolValue},
+    {"15D_DEPTH_ZCUT", "TRUE", FALSE, KEYWORD_OPTIONAL, &input.p15d_zcut,
+     setboolValue},
     {"15D_WRITE_EXTRA",    "TRUE",  FALSE, KEYWORD_OPTIONAL, &input.p15d_wxtra,
      setboolValue},
     {"15D_WRITE_SPECTRUM", "TRUE",  FALSE, KEYWORD_OPTIONAL, &input.p15d_wspec,

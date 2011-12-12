@@ -51,14 +51,6 @@ void init_ncdf_spec(void)
           stokes_v_var, dimids[4];
   FILE   *test;
 
-  /* Check if we can open the file */
-  if ((test = fopen(SPEC_FILE, "w")) == NULL) {
-    sprintf(messageStr, "Unable to open spectrum output file %s", SPEC_FILE);
-    Error(ERROR_LEVEL_2, routineName, messageStr);
-  } else {
-    fclose(test);
-  }
-
   /* Create the file  */
   if ((ierror = nc_create_par(SPEC_FILE, NC_NETCDF4 | NC_CLOBBER | NC_MPIIO, 
 			      mpi.comm, mpi.info, &ncid))) ERR(ierror,routineName);

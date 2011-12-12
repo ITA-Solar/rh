@@ -73,14 +73,6 @@ void init_ncdf_ray_new(void)
   
   write_xtra = (io.ray_nwave_sel > 0);
 
-  /* Check if we can open the file */
-  if ((test = fopen(RAY_FILE, "w")) == NULL) {
-    sprintf(messageStr, "Unable to open spectrum output file %s", SPEC_FILE);
-    Error(ERROR_LEVEL_2, routineName, messageStr);
-  } else {
-    fclose(test);
-  }
-
   /* Create the file  */
   if ((ierror = nc_create_par(RAY_FILE, NC_NETCDF4 | NC_CLOBBER | NC_MPIPOSIX, 
 			      mpi.comm, mpi.info, &ncid))) ERR(ierror,routineName);
@@ -263,16 +255,7 @@ void init_ncdf_ray_old(void)
   FILE   *test;
   char   *atmosID;
 
-  
   write_xtra = (io.ray_nwave_sel > 0);
-
-  /* Check if we can open the file */
-  if ((test = fopen(RAY_FILE, "a")) == NULL) {
-    sprintf(messageStr, "Unable to open spectrum output file %s", SPEC_FILE);
-    Error(ERROR_LEVEL_2, routineName, messageStr);
-  } else {
-    fclose(test);
-  }
 
   /* Open the file  */
   if ((ierror = nc_open_par(RAY_FILE, NC_WRITE | NC_MPIPOSIX, 

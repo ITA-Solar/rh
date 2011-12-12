@@ -51,14 +51,6 @@ void init_ncdf_BRS(void)
   else
     Nrecno = spectrum.Nspect;
 
-  /* Check if we can open the file */
-  if ((test = fopen((char *)file_brs, "a")) == NULL) {
-    sprintf(messageStr, "Unable to open BRS output file %s", file_brs);
-    Error(ERROR_LEVEL_2, routineName, messageStr);
-  } else {
-    fclose(test);
-  }
-
   /* Create the file */
   if ((ierror = nc_create(file_brs, NC_NETCDF4 | NC_CLOBBER, &ncid)))
     ERR(ierror,routineName);
@@ -199,14 +191,6 @@ bool_t readBRS_ncdf(void)
 
   /* get file name, with the MPI rank */
   sprintf(file_brs,"scratch/%s%d%s", fname, mpi.rank, fext);
-
-  /* Check if we can open the file */
-  if ((test = fopen((const char *)file_brs, "r")) == NULL) {
-    sprintf(messageStr, "Unable to open BRS output file %s", file_brs);
-    Error(ERROR_LEVEL_2, routineName, messageStr);
-  } else {
-    fclose(test);
-  }
 
   /* Open the file */
   if ((ierror = nc_open(file_brs, NC_NOWRITE, &ncid))) ERR(ierror,routineName);

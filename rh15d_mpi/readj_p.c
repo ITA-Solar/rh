@@ -63,14 +63,6 @@ void init_ncdf_J(void)
   
   if (input.startJ == OLD_J) {
 
-    /* Check if we can open the file */
-    if ((test = fopen(file_J, "r")) == NULL) {
-      sprintf(messageStr, "Could not read J output file %s", file_J);
-      Error(ERROR_LEVEL_2, routineName, messageStr);
-    } else {
-      fclose(test);
-    }
-
     /* Read existing file */
     if ((ierror = nc_open_par(file_J, NC_WRITE | NC_MPIPOSIX, mpi.comm, mpi.info,
     //if ((ierror = nc_open_par(file_J, NC_WRITE | NC_MPIIO, mpi.comm, mpi.info,
@@ -101,14 +93,6 @@ void init_ncdf_J(void)
     free(atmosID);
 
   } else {  
-
-    /* Check if we can open the file */
-    if ((test = fopen(file_J, "a")) == NULL) {
-      sprintf(messageStr, "Could not create J output file %s", input.JFile);
-      Error(ERROR_LEVEL_2, routineName, messageStr);
-    } else {
-      fclose(test);
-    }
 
     /* Create the file, when NEW_J is used */
     if ((ierror = nc_create_par(file_J, NC_NETCDF4 | NC_CLOBBER | NC_MPIPOSIX, 

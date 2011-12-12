@@ -76,14 +76,6 @@ void init_aux_new(void) {
   Molecule *molecule;
   ActiveSet *as;
 
-  /* Check if we can open the file */
-  if ((test = fopen(AUX_FILE, "w")) == NULL) {
-    sprintf(messageStr, "Unable to open aux output file %s", AUX_FILE);
-    Error(ERROR_LEVEL_2, routineName, messageStr);
-  } else {
-    fclose(test);
-  }
-
   /* Create the file  */
   if ((ierror = nc_create_par(AUX_FILE, NC_NETCDF4 | NC_CLOBBER | NC_MPIPOSIX, 
   //if ((ierror = nc_create_par(AUX_FILE, NC_NETCDF4 | NC_CLOBBER | NC_MPIIO, 
@@ -374,14 +366,6 @@ void init_aux_old(void) {
   FILE   *test;
   Atom   *atom;
   Molecule *molecule;
-
-  /* Check if we can open the file */
-  if ((test = fopen(AUX_FILE, "a")) == NULL) {
-    sprintf(messageStr, "Unable to open aux output file %s", AUX_FILE);
-    Error(ERROR_LEVEL_2, routineName, messageStr);
-  } else {
-    fclose(test);
-  }
 
   /* --- Open the file --- */
   if ((ierror = nc_open_par(AUX_FILE, NC_WRITE | NC_MPIPOSIX, 
