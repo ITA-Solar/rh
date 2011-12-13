@@ -137,7 +137,7 @@ void Iterate_p(int NmaxIter, double iterLimit)
     mpi.niter[mpi.task] = niter;
     mpi.dpopsmax_hist[mpi.task][niter-1] = dpopsmax;
 
-    if (dpopsmax < iterLimit && cswitch <= 1.0 ) break;
+    if ((dpopsmax < iterLimit) && (cswitch <= 1.0) && (input.prdswitch <= 1.0)) break;
     niter++;
     
     /* Update collisional radiative switching */
