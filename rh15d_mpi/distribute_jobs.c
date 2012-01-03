@@ -96,6 +96,8 @@ void distribute_jobs(void)
     
   }
   
+  mpi.total_tasks = remain_tasks;
+  
   /* Abort if more processes than tasks (avoid idle processes waiting forever) */
   if (mpi.size > remain_tasks) {
     sprintf(messageStr,

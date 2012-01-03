@@ -482,12 +482,21 @@ void init_ncdf_indata_new(void)
 
   if (mpi.rank == 0) printf("writeindata end of mpi.rank=0 writes\n");
 
+  // Tiago: most of the arrays involving Ntasks or rank as index are not
+  //        currently being written. They should eventually be migrated into
+  //        arrays of [ix, iy] and be written for each task. This is to
+  //        avoid causing problems with pool mode, where these quantities are
+  //        not known from the start.
+
   /* Number of tasks */
+  /*
   start[0] = mpi.rank;
   if ((ierror = nc_put_var1_long(ncid_mpi, ntsk_var, start, &mpi.Ntasks )))
     ERR(ierror,routineName);
-
+  */
+  
   /* Hostname of each process */
+  /*
   if ((ierror = gethostname((char *) &hostname, ARR_STRLEN)) != 0 )
     printf("(EEE) %s: error getting hostname.\n",routineName);
 
@@ -497,8 +506,10 @@ void init_ncdf_indata_new(void)
       (const char *) &hostname )))     ERR(ierror,routineName); 
 
   if (mpi.rank == 0) printf("writeindata end of hostname\n");
-
+  */
+  
   /* Get time in ISO 8601 */
+  /*
   curtime = time(NULL);
   loctime = localtime(&curtime);
   strftime(timestr, ARR_STRLEN, "%Y-%m-%dT%H:%M:%S%z", loctime);
@@ -508,21 +519,25 @@ void init_ncdf_indata_new(void)
       (const char *) &timestr )))     ERR(ierror,routineName); 
 
   if (mpi.rank == 0) printf("writeindata end of time\n");
+  */
+  
   /* Write arrays of Ntasks, one value at a time */
+  /*
   for (task = 0; task < mpi.Ntasks; task++) {
 
     start[0] = mpi.taskmap[task + mpi.my_start][0];  count[0] = 1;
     start[1] = mpi.taskmap[task + mpi.my_start][1];  count[1] = 1;
     
-    /* Task map */
+    /* Task map 
     if ((ierror = nc_put_var1_int(ncid_mpi,  tm_var, start, &mpi.rank )))
       ERR(ierror,routineName);
-    /* Task number */
+    /* Task number 
     if ((ierror = nc_put_var1_long(ncid_mpi, tn_var, start, &task )))
       ERR(ierror,routineName);
   }
   
   if (mpi.rank == 0) printf("writeindata end of task maps\n");
+  */
 
   /* --- Copy stuff to the IO data struct --- */
   io.in_ncid       = ncid;
@@ -878,10 +893,10 @@ void writeAtmos_p(void)
 }
 /* ------- end   --------------------------   writeAtmos_p.c --- */
 
-/* ------- begin --------------------------   writeMPI_p.c --- */
+/* ------- begin --------------------------   writeMPI_all.c --- */
 void writeMPI_all(void) {
 /* Writes output on indata file, MPI group, all tasks at once */ 
-  const char routineName[] = "writeMPI_p";
+  const char routineName[] = "writeMPI_all";
   int     ierror, task;
   size_t  start[] = {0, 0, 0, 0};
   size_t  count[] = {1, 1, 1, 1};
@@ -962,8 +977,41 @@ void writeMPI_all(void) {
   return;
 }
 
-/* ------- end   --------------------------   writeMPI_p.c --- */
+/* ------- end   --------------------------   writeMPI_all.c --- */
 
+
+/* ------- begin --------------------------   writeMPI_p.c ----- */
+void writeMPI_p(void) {
+/* Writes output on indata file, MPI group, one task at once */ 
+  const char routineName[] = "writeMPI_p";
+  int     ierror;
+  size_t  start[] = {0, 0, 0, 0};
+  size_t  count[] = {1, 1, 1, 1};
+
+
+  start[0] = mpi.ix;  count[0] = 1;
+  start[1] = mpi.iy;  count[1] = 1;
+  start[2] = 0;       count[2] = mpi.niter[0];
+
+  /* number of iterations */
+  if ((ierror = nc_put_var1_int(io.in_mpi_ncid,    io.in_mpi_it, start, 
+			&mpi.niter[0])))        ERR(ierror,routineName);
+  /* convergence */
+  if ((ierror = nc_put_var1_int(io.in_mpi_ncid,    io.in_mpi_conv, start, 
+			&mpi.convergence[0])))  ERR(ierror,routineName);  
+  /* zcut hist */
+  if ((ierror = nc_put_var1_int(io.in_mpi_ncid,    io.in_mpi_zc, start,
+			&mpi.zcut_hist[0])))  ERR(ierror,routineName);
+  /* dpopsmax */
+  if ((ierror = nc_put_var1_double(io.in_mpi_ncid, io.in_mpi_dm, start, 
+			&mpi.dpopsmax[0])))     ERR(ierror,routineName); 
+  /* dpopsmax hist */
+  if ((ierror = nc_put_vara_double(io.in_mpi_ncid, io.in_mpi_dmh, start,
+		    count, mpi.dpopsmax_hist[0])))  ERR(ierror,routineName);
+  
+  return;
+}
+/* ------- end   --------------------------   writeMPI_p.c ------- */
 
 /* ------- begin -------------------------- readConvergence.c  --- */
 void readConvergence(void) {

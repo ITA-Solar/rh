@@ -17,7 +17,7 @@ typedef struct {
   int      size, rank, namelen, nx, ny, ix, iy, *xnum, *ynum, *niter, zcut;
   int     *zcut_hist, **rh_converged, StokesMode_save, *convergence, snap_number;
   long     nconv, nnoconv, ncrash, my_start, backgrrecno;
-  long   **taskmap, task, Ntasks;
+  long   **taskmap, task, Ntasks, total_tasks;
   double  *dpopsmax, **dpopsmax_hist;
   FILE    *logfile, *main_logfile;
   MPI_Comm comm;
@@ -59,6 +59,7 @@ void init_ncdf_indata_old(void);
 void close_ncdf_indata(void);
 void writeAtmos_all(void);
 void writeMPI_all(void);
+void writeMPI_p(void);
 
 void init_ncdf_aux(void);
 void init_aux_new(void);
