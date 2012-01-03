@@ -321,10 +321,14 @@ void UpdateAtmosDep(void) {
 
 	// Idea: instead of doing this, why not free and just set line->rho_prd = NULL,
 	// (and also line->Qelast?), because profile.c will act on that and reallocate
-	freeMatrix((void **) line->rho_prd);
+	if (line->rho_prd != NULL) freeMatrix((void **) line->rho_prd);
 	line->rho_prd = matrix_double(Nlamu, atmos.Nspace);
 	
-	line->Qelast = (double *) realloc(line->Qelast, atmos.Nspace * sizeof(double));
+	if (line->Qelast != NULL) {
+	  line->Qelast = (double *) realloc(line->Qelast, atmos.Nspace * sizeof(double));
+	} else {
+	  line->Qelast = (double *) malloc(atmos.Nspace * sizeof(double));
+	}
 
 	/* Initialize the ratio of PRD to CRD profiles to 1.0 */
 	for (la = 0;  la < Nlamu;  la++) {
