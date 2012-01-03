@@ -981,7 +981,7 @@ void writeMPI_all(void) {
 
 
 /* ------- begin --------------------------   writeMPI_p.c ----- */
-void writeMPI_p(void) {
+void writeMPI_p(int task) {
 /* Writes output on indata file, MPI group, one task at once */ 
   const char routineName[] = "writeMPI_p";
   int     ierror;
@@ -992,22 +992,28 @@ void writeMPI_p(void) {
   start[0] = mpi.ix;  count[0] = 1;
   start[1] = mpi.iy;  count[1] = 1;
   start[2] = 0;       count[2] = mpi.niter[0];
-
+  
+  /* task map */
+  if ((ierror = nc_put_var1_int(io.in_mpi_ncid, io.in_mpi_tm, start,
+		        &mpi.rank))) ERR(ierror,routineName);
+  /* task number */
+  if ((ierror = nc_put_var1_int(io.in_mpi_ncid, io.in_mpi_tn, start,
+		        &task))) ERR(ierror,routineName);
   /* number of iterations */
-  if ((ierror = nc_put_var1_int(io.in_mpi_ncid,    io.in_mpi_it, start, 
-			&mpi.niter[0])))        ERR(ierror,routineName);
+  if ((ierror = nc_put_var1_int(io.in_mpi_ncid, io.in_mpi_it, start, 
+			&mpi.niter[0]))) ERR(ierror,routineName);
   /* convergence */
-  if ((ierror = nc_put_var1_int(io.in_mpi_ncid,    io.in_mpi_conv, start, 
-			&mpi.convergence[0])))  ERR(ierror,routineName);  
+  if ((ierror = nc_put_var1_int(io.in_mpi_ncid, io.in_mpi_conv, start, 
+			&mpi.convergence[0]))) ERR(ierror,routineName);  
   /* zcut hist */
-  if ((ierror = nc_put_var1_int(io.in_mpi_ncid,    io.in_mpi_zc, start,
-			&mpi.zcut_hist[0])))  ERR(ierror,routineName);
+  if ((ierror = nc_put_var1_int(io.in_mpi_ncid, io.in_mpi_zc, start,
+			&mpi.zcut_hist[0]))) ERR(ierror,routineName);
   /* dpopsmax */
   if ((ierror = nc_put_var1_double(io.in_mpi_ncid, io.in_mpi_dm, start, 
-			&mpi.dpopsmax[0])))     ERR(ierror,routineName); 
+			&mpi.dpopsmax[0]))) ERR(ierror,routineName); 
   /* dpopsmax hist */
   if ((ierror = nc_put_vara_double(io.in_mpi_ncid, io.in_mpi_dmh, start,
-		    count, mpi.dpopsmax_hist[0])))  ERR(ierror,routineName);
+		    count, mpi.dpopsmax_hist[0]))) ERR(ierror,routineName);
   
   return;
 }

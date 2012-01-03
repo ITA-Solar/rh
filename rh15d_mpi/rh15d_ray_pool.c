@@ -339,7 +339,7 @@ void drone(void) {
       mpi.convergence[mpi.task] = -1;
       
       /* Write MPI output and send result to overlord*/
-      writeMPI_p();
+      writeMPI_p(task);
       MPI_Send(&result, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
       continue;
     }
@@ -394,7 +394,7 @@ void drone(void) {
     }
 
     /* --- Write output files, send result to overlord ---------- */
-    writeMPI_p();
+    writeMPI_p(task);
     writeAtmos_p();
     MPI_Send(&result, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 
