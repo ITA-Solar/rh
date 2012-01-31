@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Fri Jul 24 13:23:13 2009 --
+       Last modified: Mon Nov 22 11:20:47 2010 --
 
        --------------------------                      ----------RH-- */
 
@@ -381,6 +381,7 @@ void setInterpolate_3D(char *value, void *pointer)
   memcpy(pointer, &order, sizeof(enum order_3D));
 }
 /* ------- end ---------------------------- setInterpolate_3D.c ----- */
+
 /* ------- begin -------------------------- setstartValue.c --------- */
 
 void setstartValue(char *value, void *pointer)
@@ -402,3 +403,27 @@ void setstartValue(char *value, void *pointer)
   memcpy(pointer, &startvalue, sizeof(enum_t));
 }
 /* ------- end ---------------------------- setstartValue.c --------- */
+
+/* ------- begin -------------------------- setnesolution.c --------- */
+
+void setnesolution(char *value, void *pointer)
+{
+  const char routineName[] = "setnesolution";
+
+  enum ne_solution nesolution;
+
+  if (!strcmp(value, "NONE"))
+    nesolution = NONE;
+  else if (!strcmp(value, "ONCE"))
+    nesolution = ONCE;
+  else if (!strcmp(value, "ITERATION")) {
+    nesolution = ITERATION;
+  } else {
+    sprintf(messageStr,
+             "Invalid value for keyword SOLVE_NE: %s", value);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
+
+  memcpy(pointer, &nesolution, sizeof(enum_t));
+}
+/* ------- end ---------------------------- setnesolution.c --------- */

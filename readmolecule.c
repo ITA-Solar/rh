@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Wed Mar  3 14:45:32 2010 --
+       Last modified: Wed Oct 12 20:00:35 2011 --
 
        --------------------------                      ----------RH-- */
 
@@ -30,7 +30,20 @@
 
 
 #define COMMENT_CHAR   "#"
+
+
+/* --- Special case: C^13 fraction for CO --           -------------- */
+
 #define C13_FRACTION    0.011
+
+
+/* --- Special case: TI fractions for TiO --           -------------- */
+
+#define TI_46   0.08
+#define TI_47   0.0743
+#define TI_48   0.738
+#define TI_49   0.055
+#define TI_50   0.054
 
 
 /* --- Function prototypes --                          -------------- */
@@ -162,6 +175,8 @@ void readMolecule(Molecule *molecule, char *fileName, bool_t active)
     molecule->fit = KURUCZ_85;
   else if (strstr(fitStr, "SAUVAL_TATUM_84"))
     molecule->fit = SAUVAL_TATUM_84;
+  else if (strstr(fitStr, "IRWIN_81"))
+    molecule->fit = IRWIN_81;
   else if (strstr(fitStr, "TSUJI_73"))
     molecule->fit = TSUJI_73;
   else {
@@ -483,6 +498,20 @@ int stringcompare(const void *s1, const void *s2)
                    parity E
         16     --  Isotope ID (16 refers to O16 in this case)
 
+
+         -- KURUCZ_TIO
+
+          Molecular line list for TiO molecules
+
+  708.9002 -1.213 68.0  9920.304 67.0 24022.776822a04p1   b08m1   46
+|    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |
+0    5   10        20        30        40        50        60        70
+
+   Meaning of the numbers as above.
+
+   Parity translation p --> E, and m --> F, for the orbital angular
+   momentum pointing parallel or anti-parallel to the internuclear axis.
+
        --                                              -------------- */
 
 void readMolecularLines(struct Molecule *molecule, char *line_data)
@@ -592,7 +621,8 @@ void readMolecularLines(struct Molecule *molecule, char *line_data)
     mrt->polarizable = FALSE;
 
   } else if (strstr(format_string, "KURUCZ_CD18") ||
-	     strstr(format_string, "KURUCZ_NEW")) {
+	     strstr(format_string, "KURUCZ_NEW")  ||
+	     strstr(format_string, "KURUCZ_TIO")) {
 
     C = 2 * PI * (Q_ELECTRON/EPSILON_0) * (Q_ELECTRON/M_ELECTRON) / CLIGHT;
 
@@ -606,9 +636,18 @@ void readMolecularLines(struct Molecule *molecule, char *line_data)
       mrt->isotope_frac = 1.0;
 
       getLine(fp_lines, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
-      Nread = sscanf(inputLine, "%lf %lf %lf %lf %lf %lf",
-		     &lambda_air, &log_gf,
-		     &mrt->gi, &mrt->Ei, &mrt->gj, &mrt->Ej);
+
+      if (strstr(format_string, "KURUCZ_TIO")) {
+	Nread = sscanf(inputLine,
+		       "%10lf %7lf %5lf %10lf %5lf %10lf",
+		       &lambda_air, &log_gf,
+		       &mrt->gi, &mrt->Ei, &mrt->gj, &mrt->Ej);
+      } else {
+	Nread = sscanf(inputLine,
+		       "%10lf %7lf %5lf %10lf %5lf %11lf",
+		       &lambda_air, &log_gf,
+		       &mrt->gi, &mrt->Ei, &mrt->gj, &mrt->Ej);
+      }
       checkNread(Nread, Nrequired=6, routineName, checkPoint=3);
     
       mrt->Ei = (HPLANCK * CLIGHT) / CM_TO_M * fabs(mrt->Ei);
@@ -674,6 +713,44 @@ void readMolecularLines(struct Molecule *molecule, char *line_data)
 
 	Nread = sscanf(inputLine+57, "%1d", &mrt->subi);
 	Nread = sscanf(inputLine+65, "%1d", &mrt->subj);
+
+      } else if (strstr(format_string, "KURUCZ_TIO")) {
+
+	/* --- Electronic configuration --             -------------- */
+
+	strncpy(mrt->configi, inputLine+50, 2);
+	strncpy(mrt->configj, inputLine+59, 2);
+	mrt->configi[2] = '\0';
+	mrt->configj[2] = '\0';
+
+	/* --- Parity designation --                   -------------- */
+
+	mrt->parityi[0] = ((inputLine[53] == 'p') ? 'E' : 'F');
+	mrt->parityj[0] = ((inputLine[61] == 'p') ? 'E' : 'F');
+	mrt->parityi[1] = '\0';
+	mrt->parityj[1] = '\0';
+  
+	/* --- Vibrational quantum numbers --            ------------ */
+
+	Nread = sscanf(inputLine+51, "%2d", &mrt->vi);
+	Nread = sscanf(inputLine+59, "%2d", &mrt->vj);
+
+	/* --- Subbranch (F1, F2, ...., E1, E2, ...etc) -- ---------- */
+
+	Nread = sscanf(inputLine+54, "%1d", &mrt->subi);
+	Nread = sscanf(inputLine+62, "%1d", &mrt->subj);
+
+        /* --- Isotope fraction for Ti --                ------------ */
+
+        Nread = sscanf(inputLine+66, "%2d", &isotope);
+        switch (isotope) {
+	case 46: mrt->isotope_frac = TI_46;  break;
+	case 47: mrt->isotope_frac = TI_47;  break;
+	case 48: mrt->isotope_frac = TI_48;  break;
+	case 49: mrt->isotope_frac = TI_49;  break;
+	case 50: mrt->isotope_frac = TI_50;  break;
+	default: mrt->isotope_frac = 1.0;
+	}
       }
       /* --- read additional data for Zeeman polarization -- -------- */
 

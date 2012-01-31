@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Thu Oct 18 14:47:37 2001 --
+       Last modified: Wed Nov 17 10:07:34 2010 --
 
        --------------------------                      ----------RH-- */
 
@@ -37,7 +37,7 @@ void LTEpops(Atom *atom, bool_t Debeye)
   char    labelStr[MAX_LINE_SIZE];
   int     Z, dZ, *nDebeye;
   long    Nspace = atmos.Nspace;
-  double *cNe_T, *dE_kT, *dEion, dE, gi0, c1, *sum, c2;
+  double  cNe_T, dE_kT, dEion, dE, gi0, c1, sum, c2;
 
   /* --- Computes LTE populations of a given atom.
          Takes account of Debeye shielding and lowering of the ionization
@@ -69,55 +69,35 @@ void LTEpops(Atom *atom, bool_t Debeye)
       for (m = 1;  m <= (atom->stage[i] - atom->stage[0]);  m++, Z++)
 	nDebeye[i] += Z;
     }
-    dEion = (double *) malloc(Nspace * sizeof(double));
-    for (k = 0;  k < Nspace;  k++)
-      dEion[k] = c2 * sqrt(atmos.ne[k] / atmos.T[k]);
-  } else {
-    nDebeye = NULL;
-    dEion = NULL;
   }
-
-  cNe_T = (double *) malloc(Nspace * sizeof(double));
-  dE_kT = (double *) malloc(Nspace * sizeof(double));
-  sum   = (double *) malloc(Nspace * sizeof(double));
-
   /* --- Solve Saha-Boltzmann equilibrium equations --  ------------- */
 
   for (k = 0;  k < Nspace;  k++) {
-    cNe_T[k] = 0.5*atmos.ne[k] * pow(c1/atmos.T[k], 1.5);
-    sum[k]   = 1.0;
-  }
+    if (Debeye) dEion = c2 * sqrt(atmos.ne[k] / atmos.T[k]);
+    cNe_T = 0.5*atmos.ne[k] * pow(c1/atmos.T[k], 1.5);
+    sum   = 1.0;
 
-  for (i = 1;  i < atom->Nlevel;  i++) {
-    dE  = atom->E[i] - atom->E[0];
-    gi0 = atom->g[i] / atom->g[0];
-    dZ  = atom->stage[i] - atom->stage[0];
+    for (i = 1;  i < atom->Nlevel;  i++) {
+      dE  = atom->E[i] - atom->E[0];
+      gi0 = atom->g[i] / atom->g[0];
+      dZ  = atom->stage[i] - atom->stage[0];
 
-    if (Debeye) {
-      for (k = 0;  k < Nspace;  k++)
-	dE_kT[k] = (dE - nDebeye[i] * dEion[k]) / (KBOLTZMANN * atmos.T[k]);
-    } else {
-      for (k = 0;  k < Nspace;  k++) 
-	dE_kT[k] = dE / (KBOLTZMANN * atmos.T[k]);
+      if (Debeye)
+	dE_kT = (dE - nDebeye[i] * dEion) / (KBOLTZMANN * atmos.T[k]);
+      else
+	dE_kT = dE / (KBOLTZMANN * atmos.T[k]);
+      
+      atom->nstar[i][k] = gi0 * exp(-dE_kT);
+      for (m = 1;  m <= dZ;  m++) atom->nstar[i][k] /= cNe_T;
+      sum += atom->nstar[i][k];
     }
-    for (k = 0;  k < Nspace;  k++) {
-      atom->nstar[i][k] = gi0 * exp(-dE_kT[k]);
-      for (m = 1;  m <= dZ;  m++) atom->nstar[i][k] /= cNe_T[k];
-      sum[k] += atom->nstar[i][k];
-    }
-  }
-  for (k = 0;  k < Nspace;  k++) {
-    atom->nstar[0][k] = atom->ntotal[k] / sum[k];
-  }
-  for (i = 1;  i < atom->Nlevel;  i++) {
-    for (k = 0;  k < Nspace;  k++)
-    atom->nstar[i][k] *= atom->nstar[0][k];
+    atom->nstar[0][k] = atom->ntotal[k] / sum;
+
+    for (i = 1;  i < atom->Nlevel;  i++)
+      atom->nstar[i][k] *= atom->nstar[0][k];
   }
 
-  if (Debeye) {
-    free(nDebeye);  free(dEion);
-  }
-  free(cNe_T);  free(sum);  free(dE_kT);
+  if (Debeye) free(nDebeye);
 
   sprintf(labelStr, "LTEpops %2s", atom->ID);
   getCPU(3, TIME_POLL, labelStr);
@@ -149,14 +129,16 @@ void LTEpops_elem(Element *element)
   }
 
   Linear(atmos.Npf, atmos.Tpf, element->pf[0],
-	 atmos.Nspace, atmos.T, Uk, hunt=TRUE);
+         atmos.Nspace, atmos.T, Uk, hunt=TRUE);
+
   for (i = 1;  i < element->Nstage;  i++) {
     Linear(atmos.Npf, atmos.Tpf, element->pf[i],
-	   atmos.Nspace, atmos.T, Ukp1, hunt=TRUE);
+           atmos.Nspace, atmos.T, Ukp1, hunt=TRUE);
 
     for (k = 0;  k < atmos.Nspace;  k++) {
       element->n[i][k] = element->n[i-1][k] * CT_ne[k] *
-	exp(Ukp1[k] - Uk[k] - element->ionpot[i-1]/(KBOLTZMANN*atmos.T[k]));
+        exp(Ukp1[k] - Uk[k] -
+	    element->ionpot[i-1]/(KBOLTZMANN*atmos.T[k]));
       sum[k] += element->n[i][k];
     }
     SWAPPOINTER(Uk, Ukp1);
@@ -190,7 +172,7 @@ void LTEmolecule(Molecule *molecule)
   register int k, v, J, kr;
 
   char    labelStr[MAX_LINE_SIZE];
-  double *kT, gJ, **E;
+  double  kT, gJ, **E;
   MolecularLine *mrt;
 
   if (!molecule->active) {
@@ -207,17 +189,15 @@ void LTEmolecule(Molecule *molecule)
     E[mrt->vj][(int) (mrt->gj - 1)/2] = mrt->Ej;
   }
 
-  kT = (double *) malloc(atmos.Nspace * sizeof(double));
-  for (k = 0;  k < atmos.Nspace;  k++) {
+  for (k = 0;  k < atmos.Nspace;  k++)
     molecule->pf[k] = 0.0;
-    kT[k] = 1.0 / (KBOLTZMANN * atmos.T[k]);
-  }
 
   for (v = 0;  v < molecule->Nv;  v++) {
     for (J = 0;  J < molecule->NJ;  J++) {
       gJ = 2*J + 1;
       for (k = 0;  k < atmos.Nspace;  k++)
-	molecule->pfv[v][k] += gJ * exp(-E[v][J] * kT[k]);
+	molecule->pfv[v][k] +=
+	  gJ * exp(-E[v][J] / (KBOLTZMANN * atmos.T[k]));
     }
     /*  --- Also store the total partition function here -- --------- */
 
@@ -225,7 +205,6 @@ void LTEmolecule(Molecule *molecule)
       molecule->pf[k] += molecule->pfv[v][k];
   }
 
-  free(kT);
   freeMatrix((void **) E);
 
   sprintf(labelStr, "LTEpops %3s", molecule->ID);
@@ -256,7 +235,6 @@ void SetLTEQuantities(void)
              atom. --                                  -------------- */
 
       CollisionRate(atom, atom->fp_input);
-      fclose(atom->fp_input);
 
       /* --- Compute the fixed rates and store in Cij -- ------------ */
 

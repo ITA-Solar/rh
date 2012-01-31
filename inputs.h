@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Fri Apr 17 13:40:21 2009 --
+       Last modified: Fri Jul  8 14:57:57 2011 --
 
        --------------------------                      ----------RH-- */
 
@@ -23,6 +23,7 @@
 
 enum keywordtype  {KEYWORD_REQUIRED, KEYWORD_DEFAULT, KEYWORD_OPTIONAL};
 enum order_3D     {LINEAR_3D, BICUBIC_3D};
+enum ne_solution  {NONE, ONCE, ITERATION};
 
 
 typedef struct {
@@ -70,11 +71,13 @@ typedef struct {
          dampingFile[MAX_VALUE_LENGTH],
          coolingFile[MAX_VALUE_LENGTH],
          Itop[MAX_VALUE_LENGTH];
-  bool_t magneto_optical, XRD, Eddington, solve_ne,
-         backgr_pol, limit_memory, allow_passive_bb, NonICE;
+  bool_t magneto_optical, XRD, Eddington,
+         backgr_pol, limit_memory, allow_passive_bb, NonICE,
+         rlkscatter;
   enum   solution startJ;
   enum   StokesMode StokesMode;
   enum   order_3D interpolate_3D;
+  enum   ne_solution solve_ne;
   enum   PRDangle PRD_angle_dep;
   int    isum, Ngdelay, Ngorder, Ngperiod, NmaxIter,
          PRD_NmaxIter, PRD_Ngdelay, PRD_Ngorder, PRD_Ngperiod,
@@ -111,6 +114,7 @@ void  setboolValue(char *value, void *pointer);
 void  setintValue(char *value, void *pointer);
 void  setdoubleValue(char *value, void *pointer);
 void  setstartValue(char *value, void *pointer);
+void  setnesolution(char *value, void *pointer);
 void  setStokesMode(char *value, void *pointer);
 void  setPRDangle(char *value, void *pointer);
 void  setThreadValue(char *value, void *pointer);

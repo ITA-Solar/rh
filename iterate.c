@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek  (huitenbroek@nso.edu)
-       Last modified: Wed Apr  1 14:08:31 2009 --
+       Last modified: Tue Nov 16 15:31:48 2010 --
 
        --------------------------                      ----------RH-- */
 
@@ -51,7 +51,7 @@ void Iterate(int NmaxIter, double iterLimit)
   register int niter, nact;
   double cswitch;
 
-  bool_t eval_operator;
+  bool_t eval_operator, write_analyze_output, equilibria_only;
   double dpopsmax, PRDiterlimit;
   Atom *atom;
   Molecule *molecule;
@@ -127,6 +127,9 @@ void Iterate(int NmaxIter, double iterLimit)
 
     if (dpopsmax < iterLimit && cswitch <= 1.0 && input.prdswitch == 1.0 ) break;
     niter++;
+    
+    if (input.solve_ne == ITERATION)
+      Background(write_analyze_output=TRUE, equilibria_only=FALSE);
     
     /* Update collisional multiplier factor */
     if (input.crsw > 0)

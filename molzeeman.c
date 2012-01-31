@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Wed Apr 23 09:41:32 2003 --
+       Last modified: Thu Jun 30 15:35:10 2011 --
 
        --------------------------                      ----------RH-- */
 
@@ -108,7 +108,7 @@ double MolLande_a(double Lambda, double Sigma, double Omega, double J)
 {
   /* --- Lande factor for level in Hund's case a
 
-    See: S.V. Berdyugina and S.K. Solanki 2002, A&A 385, 701-715, Eq. 10
+    See: S.V. Berdyugina and S.K. Solanki 2002, A&A 385, 701-715, Eq. 2
      --                                                -------------- */
 
   return (Lambda + 2.0*Sigma) * Omega / (J * (J + 1.0));
@@ -121,13 +121,18 @@ double MolLande_b(double Lambda, double S, double N, double J)
 {
   /* --- Lande factor for level in Hund's case b
 
-    See: S.V. Berdyugina and S.K. Solanki 2002, A&A 385, 701-715, Eq. 2
+    See: S.V. Berdyugina and S.K. Solanki 2002, A&A 385, 701-715, Eq. 10
      --                                                -------------- */
 
-  return 1.0 / (J*(J + 1.0)) *
-    (Lambda*Lambda / (2*N*(N + 1.0)) *
-     (J*(J + 1.0) + N*(N + 1.0) - S*(S + 1.0)) +
-     J*(J + 1.0) - N*(N + 1.0) + S*(S + 1.0));
+  if (Lambda == 0) {
+    return 1.0 / (J*(J + 1.0)) *
+      (J*(J + 1.0) - N*(N + 1.0) + S*(S + 1.0));
+  } else {
+    return 1.0 / (J*(J + 1.0)) *
+      (Lambda*Lambda / (2*N*(N + 1.0)) *
+       (J*(J + 1.0) + N*(N + 1.0) - S*(S + 1.0)) +
+       J*(J + 1.0) - N*(N + 1.0) + S*(S + 1.0));
+  }
 }
 /* ------- end ---------------------------- MolLande_b.c ------------ */
 

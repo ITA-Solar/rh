@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Tue Mar 31 09:15:25 2009 --
+       Last modified: Mon Apr 18 07:08:41 2011 --
 
        --------------------------                      ----------RH-- */
 
@@ -23,9 +23,6 @@
 
 #define COMMENT_CHAR  "#"
 
-/* --- Ionization energy Hmin in [J] --                -------------- */
-
-#define E_ION_HMIN  0.754 * EV
 
 /* --- Acceleration parameters --                      -------------- */
 
@@ -342,7 +339,7 @@ void ChemicalEquilibrium(int NmaxIter, double iterLimit)
     }
     /* --- Store Hmin density --                       -------------- */
 
-    atmos.nHmin[k] = atmos.ne[k] * n[0] * PhiHmin;
+    atmos.nHmin[k] = atmos.ne[k] * (n[0] * PhiHmin);
 
     /* --- Store molecular densities --                -------------- */
 
@@ -428,6 +425,15 @@ double partfunction(struct Molecule *molecule, double T)
     pf = POW10(pf);
     break;
 
+  case IRWIN_81:
+    t = log(T);
+    pf = molecule->pf_coef[0];
+    for (i = 1;  i < molecule->Npf;  i++)
+      pf = pf*t + molecule->pf_coef[i];
+
+    pf = exp(pf);
+    break;
+
   case TSUJI_73:
     break;
   default:
@@ -481,6 +487,10 @@ double equilconstant(struct Molecule *molecule, double T)
     cgs_to_SI = pow(CUBE(CM_TO_M), mk);
     break;
 
+  case IRWIN_81:
+
+    /* ---- Use SAUVAL_TATUM_84 for equilibrium constant -- ---------- */
+    ;
   case SAUVAL_TATUM_84:
     theta = THETA0 / T;
     t     = log10(theta);

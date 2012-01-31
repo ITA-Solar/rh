@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Wed Sep 14 22:13:01 2005 --
+       Last modified: Wed Nov 17 16:27:27 2010 --
 
        --------------------------                      ----------RH-- */
 
@@ -60,12 +60,17 @@
 #endif
 #define  SQRTPI      1.77245385090551
 
+
 /* --- 1/(2sqrt(2)), needed for anisotropy of radiation -- ---------- */
 
 #define  TWOSQRTTWO  0.35355339059327
 
 #define LARMOR (Q_ELECTRON / (4.0*PI*M_ELECTRON)) * NM_TO_M
 
+
+/* --- Ionization energy Hmin in [J] --                -------------- */
+
+#define E_ION_HMIN  0.754 * EV
 
 #endif /* !__CONSTANT_H__ */
 

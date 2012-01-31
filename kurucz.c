@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Wed Sep 30 16:04:28 2009 --
+       Last modified: Tue Jul 12 10:57:37 2011 --
 
        --------------------------                      ----------RH-- */
 
@@ -412,7 +412,7 @@ void rlk_locate(int N, RLK_Line *lines, double lambda, int *low)
 /* ------- begin -------------------------- rlk_opacity.c ----------- */
 
 flags rlk_opacity(double lambda, int nspect, int mu, bool_t to_obs,
-                  double *chi, double *eta, double *chip)
+                  double *chi, double *eta, double *scatt, double *chip)
 {
   register int k, n, kr;
 
@@ -422,7 +422,8 @@ flags rlk_opacity(double lambda, int nspect, int mu, bool_t to_obs,
          Bijhc_4PI, twohnu3_c2, hc, fourPI, hc_4PI,
         *eta_Q, *eta_U, *eta_V, eta_l,
         *chi_Q, *chi_U, *chi_V, chi_l, *chip_Q, *chip_U, *chip_V,
-         phi, phi_Q, phi_U, phi_V, psi_Q, psi_U, psi_V;
+         phi, phi_Q, phi_U, phi_V, psi_Q, psi_U, psi_V,
+         epsilon, C, C2_atom, C2_ion, C3, dE, x;
   Atom *metal;
   AtomicLine *line;
   Element *element;
@@ -446,6 +447,13 @@ flags rlk_opacity(double lambda, int nspect, int mu, bool_t to_obs,
   hc     = HPLANCK * CLIGHT;
   fourPI = 4.0 * PI;
   hc_4PI = hc / fourPI;
+
+  if (input.rlkscatter) {
+    C       = 2 * PI * (Q_ELECTRON/EPSILON_0) *
+                (Q_ELECTRON/M_ELECTRON) / CLIGHT;
+    C2_atom = 2.15E-6;
+    C2_ion  = 3.96E-6;
+  }
 
   pf = (double *) malloc(atmos.Nspace * sizeof(double));
 
@@ -490,6 +498,9 @@ flags rlk_opacity(double lambda, int nspect, int mu, bool_t to_obs,
       chi[k] = 0.0;
       eta[k] = 0.0;
     }
+    if (input.rlkscatter) {
+      for (k = 0;  k < atmos.Nspace;  k++) scatt[k] = 0.0;
+    }
   }
   /* --- Add opacities from lines at this wavelength -- ------------- */
 
@@ -530,6 +541,17 @@ flags rlk_opacity(double lambda, int nspect, int mu, bool_t to_obs,
 	  rlk->hyperfine_frac * rlk->gi;
 	twohnu3_c2 = rlk->Aji / rlk->Bji;
 
+	if (input.rlkscatter) {
+	  if (rlk->stage == 0) {
+	    x  = 0.68;
+	    C3 = C / (C2_atom * SQ(rlk->lambda0 * NM_TO_M));
+	  } else {
+	    x  = 0.0;
+	    C3 = C / (C2_ion * SQ(rlk->lambda0 * NM_TO_M));
+	  }
+
+	  dE = rlk->Ej - rlk->Ei;
+	}
         /* --- Set flag that line is present at this wavelength -- -- */
 
 	backgrflags.hasline = TRUE;
@@ -558,6 +580,16 @@ flags rlk_opacity(double lambda, int nspect, int mu, bool_t to_obs,
 	    chi_l = Bijhc_4PI * (ni_gi - nj_gj);
 	    eta_l = Bijhc_4PI * twohnu3_c2 * nj_gj;
 
+	    if (input.rlkscatter) {
+	      epsilon = 1.0 / (1.0 + C3 * pow(atmos.T[k], 1.5) /
+			       (atmos.ne[k] * 
+				pow(KBOLTZMANN * atmos.T[k] / dE, 1 + x)));
+
+              scatt[k] += (1.0 - epsilon) * chi_l * phi;
+	      chi_l    *= epsilon;
+              eta_l    *= epsilon;
+	    }
+
 	    chi[k] += chi_l * phi;
 	    eta[k] += eta_l * phi;
 
@@ -578,10 +610,6 @@ flags rlk_opacity(double lambda, int nspect, int mu, bool_t to_obs,
 	    }
 	  }
 	}
-	/*
-	printf(" Line %f contributes at wavelength index %d\n",
-	       rlk->lambda0, nspect);
-	*/
       }
     }
   }
@@ -600,9 +628,9 @@ double RLKProfile(RLK_Line *rlk, int k, int mu, bool_t to_obs,
 {
   register int nz;
 
-  double    v, phi_sm, phi_sp, phi_pi, psi_sm, psi_sp, psi_pi, adamp,
-            vB, H, F, sv, phi_sigma, phi_delta, sign, sin2_gamma, phi,
-    psi_sigma, psi_delta, vbroad, vtherm, GvdW, *np;
+  double v, phi_sm, phi_sp, phi_pi, psi_sm, psi_sp, psi_pi, adamp,
+         vB, H, F, sv, phi_sigma, phi_delta, sign, sin2_gamma, phi,
+         psi_sigma, psi_delta, vbroad, vtherm, GvdW, *np;
   Element *element;
 
   /* --- Returns the normalized profile for a Kurucz line

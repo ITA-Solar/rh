@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Fri Sep 25 14:07:18 2009 --
+       Last modified: Tue Nov 16 12:42:01 2010 --
 
        --------------------------                      ----------RH-- */
 
@@ -91,6 +91,7 @@ void distribute_nH()
      --                                                -------------- */
 
   if (atmos.H_LTE) {
+    atmos.H->NLTEpops = FALSE;
     Error(MESSAGE, routineName,
 	  "\nUsing LTE hydrogen populations for background opacities\n\n");
 
@@ -106,6 +107,7 @@ void distribute_nH()
       }
     }
   } else {
+    atmos.H->NLTEpops = TRUE;
     if (!atmos.H->active)
       atmos.H->n = matrix_double(atmos.H->Nlevel, atmos.Nspace);
 

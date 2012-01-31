@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Thu Feb  4 22:10:59 1999 --
+       Last modified: Thu Nov 11 15:12:13 2010 --
 
        --------------------------                      ----------RH-- */
 
@@ -20,7 +20,10 @@
 #include <math.h>
 
 #include "rh.h"
+#include "atom.h"
+#include "spectrum.h"
 #include "constant.h"
+
 
 #define MAX_EXPONENT  150.0
 

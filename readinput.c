@@ -2,7 +2,7 @@
 
        Version:       rh2.0, 1-D plane-parallel
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Fri Apr 17 13:29:42 2009 --
+       Last modified: Mon Jul 11 09:12:48 2011 --
 
        --------------------------                      ----------RH-- */
 
@@ -108,10 +108,12 @@ void readInput()
      setboolValue},
     {"KURUCZ_DATA", "none", FALSE, KEYWORD_OPTIONAL, &input.KuruczData,
      setcharValue},
+    {"RLK_SCATTER", "FALSE", FALSE, KEYWORD_DEFAULT, &input.rlkscatter,
+     setboolValue},
     {"KURUCZ_PF_DATA", "../../Atoms/pf_Kurucz.input", FALSE,
      KEYWORD_REQUIRED, &input.pfData, setcharValue},
-    {"SOLVE_NE", "FALSE", FALSE, KEYWORD_DEFAULT, &input.solve_ne,
-     setboolValue},
+    {"SOLVE_NE", "NONE", FALSE, KEYWORD_DEFAULT, &input.solve_ne,
+     setnesolution},
     {"OPACITY_FUDGE", "none", FALSE, KEYWORD_OPTIONAL, &input.fudgeData,
      setcharValue},
     {"METALLICITY", "0.0", FALSE, KEYWORD_DEFAULT, &input.metallicity,

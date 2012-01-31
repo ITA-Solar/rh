@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Wed Mar  3 10:56:48 2010 --
+       Last modified: Fri Jul  8 15:36:04 2011 --
 
        --------------------------                      ----------RH-- */
 
@@ -74,7 +74,7 @@ flags passive_bb(double lambda, int nspect, int mu, bool_t to_obs,
 		 double *chi, double *eta, double *chip);
 
 flags rlk_opacity(double lambda, int nspect, int mu, bool_t to_obs,
-                  double *chi, double *eta, double *chip);
+                  double *chi, double *eta, double *scatt, double *chip);
 
 flags MolecularOpacity(double lambda, int nspect, int mu, bool_t to_obs,
 		       double *chi, double *eta, double *chip);

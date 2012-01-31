@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Fri Jun 29 10:43:25 2001 --
+       Last modified: Thu Jul  1 05:11:13 2010 --
 
        --------------------------                      ----------RH-- */
 
@@ -115,7 +115,7 @@ double GII(double adamp, double waveratio, double q_emit, double q_abs)
   
     if (q_emit >= PRD_QCORE) {
       phicore = exp(-SQ(q_emit));
-      phiwing = adamp / (SQRTPI*(SQ(adamp) + SQ(q_emit)));
+      phiwing = adamp / (SQRTPI * (SQ(adamp) + SQ(q_emit)));
       pcore   = phicore / (phicore + phiwing);
     }
   }

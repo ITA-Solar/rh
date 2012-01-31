@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Thu Jul 23 14:01:54 2009 --
+       Last modified: Wed Nov 17 10:17:49 2010 --
 
        --------------------------                      ----------RH-- */
 
@@ -354,7 +354,6 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
     Nread = sscanf(inputLine, "%d %d %lf %d %s %lf",
 		   &j, &i, &continuum->alpha0, &continuum->Nlambda,
 		   nuDepStr, &lambdamin);
-    
     checkNread(Nread, Nrequired=6, routineName, checkPoint=5);
 
     continuum->j = MAX(i, j);  continuum->i = MIN(i, j);
@@ -539,6 +538,13 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
     /* --- Allocate space for thread dependent quantities -- -------- */
 
     atom->rhth = (rhthread *) malloc(input.Nthreads * sizeof(rhthread));
+
+    /* --- Store the offset to allow pointing back to the start of the
+           collisional data in the atomic input file, and allocate
+           space for rate coefficients --               ------------- */
+
+    atom->offset_coll = ftell(atom->fp_input);
+    atom->C = matrix_double(SQ(Nlevel), atmos.Nspace);
 
   } else {
 

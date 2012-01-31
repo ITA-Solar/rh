@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Thu Jul 23 15:52:59 2009 --
+       Last modified: Mon Jan 16 18:31:58 2012 --
 
        --------------------------                      ----------RH-- */
 
@@ -145,7 +145,7 @@ void readImu(int nspect, int mu, bool_t to_obs, double *I)
 
   index  = spectrum.PRDindex[nspect];
   offset = 2*(index*atmos.Nrays + mu) * recordsize;
-  if (to_obs)  offset =+ recordsize;
+  if (to_obs)  offset += recordsize;
 
   result &= (pread(spectrum.fd_Imu, I, 
 		    recordsize, offset) == recordsize);
@@ -174,7 +174,7 @@ void writeImu(int nspect, int mu, bool_t to_obs, double *I)
 
   index  = spectrum.PRDindex[nspect];
   offset = 2*(index*atmos.Nrays + mu) * recordsize;
-  if (to_obs)  offset =+ recordsize;
+  if (to_obs)  offset += recordsize;
 
   result &= (pwrite(spectrum.fd_Imu, I, 
 		    recordsize, offset) == recordsize);

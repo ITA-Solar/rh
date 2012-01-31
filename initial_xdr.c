@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Tue Jul 21 12:31:49 2009 --
+       Last modified: Mon Jan 16 17:29:31 2012 --
 
        --------------------------                      ----------RH-- */
 
@@ -260,7 +260,8 @@ void initSolution(Atom *atom, Molecule *molecule)
     index = 0;
     for (nspect = 0;  nspect < spectrum.Nspect;  nspect++) {
       if (containsPRDline(&spectrum.as[nspect])) {
-	spectrum.PRDindex[nspect] = index++;
+	spectrum.PRDindex[nspect] = index;
+	index++;
       }
     }
   }

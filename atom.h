@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Tue Aug  4 16:26:49 2009 --
+       Last modified: Mon Apr 18 06:31:57 2011 --
 
        --------------------------                      ----------RH-- */
 
@@ -30,7 +30,7 @@ enum type        {ATOMIC_LINE, ATOMIC_CONTINUUM,
 enum ftype       {FIXED_LINE, FIXED_CONTINUUM};
 enum Trad_option {TRAD_ATMOSPHERIC, TRAD_PHOTOSPHERIC, TRAD_CHROMOSPHERIC};
 enum vdWaals     {UNSOLD, RIDDER_RENSBERGEN, BARKLEM, KURUCZ};
-enum fit_type    {KURUCZ_70, KURUCZ_85, SAUVAL_TATUM_84, TSUJI_73};
+enum fit_type    {KURUCZ_70, KURUCZ_85, SAUVAL_TATUM_84, IRWIN_81, TSUJI_73};
 enum Hund        {CASE_A, CASE_B};
 enum Barklemtype {SP, PD, DF};
 enum orbit_am    {S_ORBIT=0, P_ORBIT, D_ORBIT, F_ORBIT};
@@ -119,6 +119,7 @@ struct Atom {
   enum solution initial_solution;
   int     Nlevel, Nline, Ncont, Nfixed, Nprd, *stage, periodic_table,
           activeindex;
+  long    offset_coll;
   double  abundance, weight, *g, *E, **C, *vbroad, **n, **nstar,
          *ntotal, **Gamma;  
   AtomicLine *line;
