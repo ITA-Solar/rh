@@ -48,6 +48,7 @@ void initSolution_p(void);
 
 void distribute_jobs(void);
 void finish_jobs(void);
+void readConvergence(void);
 
 void init_ncdf_spec(void);
 void close_ncdf_spec(void);
@@ -59,7 +60,7 @@ void init_ncdf_indata_old(void);
 void close_ncdf_indata(void);
 void writeAtmos_all(void);
 void writeMPI_all(void);
-void writeMPI_p(void);
+void writeMPI_p(int task);
 
 void init_ncdf_aux(void);
 void init_aux_new(void);

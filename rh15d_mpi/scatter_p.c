@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Fri Apr  4 22:32:56 2003 --
+       Last modified: Mon Jan 16 17:45:32 2012 --
 
        --------------------------                      ----------RH-- */
 
@@ -365,6 +365,7 @@ void PRDAngleScatter(AtomicLine *PRDline,
   adamp   = (double *) malloc(atmos.Nspace * sizeof(double));
   v_los   = matrix_double(atmos.Nrays, atmos.Nspace);
   gamma   = (double *) malloc(atmos.Nspace * sizeof(double));
+  Pj      = (double *) malloc(atmos.Nspace * sizeof(double));
   Jbar    = (double *) malloc(atmos.Nspace * sizeof(double));
   RIInorm = (double *) malloc(atmos.Nspace * sizeof(double));
   sv      = (double *) malloc(atmos.Nspace * sizeof(double));
@@ -372,11 +373,12 @@ void PRDAngleScatter(AtomicLine *PRDline,
   /* --- Evaluate first the total rate Pj out of the line's upper level
          and then the coherency fraction gamma --      -------------- */
 
-  Pj = gamma;
+  for (k = 0;  k < atmos.Nspace;  k++)
+    Pj[k] =  PRDline->Qelast[k];
   for (ip = 0;  ip < atom->Nlevel;  ip++) {
     ij = ip * atom->Nlevel + PRDline->j;
     for (k = 0;  k < atmos.Nspace;  k++)
-      Pj[k] =  PRDline->Qelast[k] + atom->C[ij][k];
+      Pj[k] += atom->C[ij][k];
   }
   for (kr = 0;  kr < atom->Nline;  kr++) {
     line = &atom->line[kr];
@@ -591,7 +593,8 @@ void PRDAngleScatter(AtomicLine *PRDline,
   freeMatrix((void **) v_los);
 
   free(Ik);     free(v_abs);  free(v_emit);  free(adamp);
-  free(gamma);  free(wv);     free(I);       free(rii);
+  free(gamma);  free(Pj);
+  free(wv);     free(I);       free(rii);
   free(vp);     free(Jbar);   free(RIInorm); free(sv);
 
   sprintf(messageStr, "Scatter Int %5.1f", PRDline->lambda0);

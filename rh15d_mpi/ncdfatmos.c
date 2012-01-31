@@ -65,16 +65,6 @@ void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *inf
   readAbundance(atmos);
 
   /* --- Open input file for model atmosphere --       -------------- */
-  
-  if ((atmos->fp_atmos = fopen(input.atmos_input, "r")) == NULL) {
-    sprintf(messageStr, "Unable to open inputfile %s", input.atmos_input);
-    Error(ERROR_LEVEL_2, routineName, messageStr);
-  } else {
-    fclose(atmos->fp_atmos);
-  }
-  
-
-  /* Open the file. */
   if ((ierror = nc_open_par(input.atmos_input ,NC_NOWRITE | NC_MPIIO, mpi.comm, 
 			    mpi.info, &infile->ncid))) ERR(ierror,routineName);
 
@@ -221,7 +211,8 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   size_t     count[]    = {1, 1, 1, 1};
   size_t     start_nh[] = {0, 0, 0, 0, 0};
   size_t     count_nh[] = {1, 1, 1, 1, 1};
-  int        ncid, ierror, i, j, z_varid;
+  int        ncid, ierror, i, j, z_varid, imin, i50k;
+  double     Tmin, diff;
   double    *Bx, *By, *Bz;
 
   ncid = infile->ncid;
@@ -275,6 +266,32 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   if (infile->vturb_varid != -1) {
     if ((ierror = nc_get_vara_double(ncid, infile->vturb_varid, &start[3], &count[3],
 				     atmos->vturb))) ERR(ierror,routineName);
+  } else {
+    /* Tiago's microturbulence fudge */ 
+    /* Find temperature minimum 
+    imin = 0;
+    i50k = 0;
+    Tmin = 1000000.;
+    diff = 1000000.;
+    
+    for (j = 0; j < atmos->Nspace; j++) {
+      if (atmos->T[j] < Tmin) {
+	Tmin = atmos->T[j];
+	imin = j;
+      }
+      
+      if (fabs(atmos->T[j] - 50000.) < diff) {
+	diff = fabs(atmos->T[j] - 50000.);
+	i50k = j;
+      }
+    }
+    //printf("imin, i50k = %i, %i  T=%e, %e\n", imin, i50k, atmos->T[imin], atmos->T[i50k]);
+    /* Scale vturb 
+    for (j = 0; j < imin+1; j++) {
+       atmos->vturb[j] = 1.e3 + 1.e4*pow(atmos->T[j] - Tmin, 0.333)/pow(50000. - Tmin, 0.333);
+       //printf("z, Temp, vturb = %.3e  %.3e  %.3e\n", geometry->height[j]/1.e6, atmos->T[j], atmos->vturb[j]/1.e3);
+    }
+    */
   }
 
 

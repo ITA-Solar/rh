@@ -61,7 +61,7 @@ void init_ncdf_ray_new(void)
   const char routineName[] = "init_ncdf_ray_new";
   int     ierror, ncid, nx_id, ny_id, nspect_id, wave_var, wave_sel_id, 
           nspace_id, intensity_var, stokes_u_var, stokes_q_var, stokes_v_var,
-          //chi_l_var, eta_l_var, chi_c_var, eta_c_var, sca_c_var, 
+          j_var, chi_l_var, eta_l_var, chi_c_var, eta_c_var, sca_c_var, 
           chi_var, S_var, wave_idx_var, dimids[4];
   bool_t  write_xtra;
   FILE   *test;
@@ -129,14 +129,17 @@ void init_ncdf_ray_new(void)
     dimids[1] = ny_id;
     dimids[2] = nspace_id;
     dimids[3] = wave_sel_id;
-    /* Source function, opacity and emissivity, line and continuum */
+    /* Source function, opacity and emissivity, line and continuum 
     if ((ierror = nc_def_var( ncid, CHI_NAME,  NC_FLOAT, 4, dimids, &chi_var)))
       ERR(ierror,routineName); 
     if ((ierror = nc_def_var( ncid, S_NAME,    NC_FLOAT, 4, dimids, &S_var  )))
       ERR(ierror,routineName); 
+    */
 
 
-    /* Tiago: these take too much space, so not writing them at the moment
+    /* Tiago: these take too much space, so not writing them at the moment */
+    if ((ierror = nc_def_var( ncid, "Jlambda",  NC_FLOAT, 4, dimids, &j_var)))
+      ERR(ierror,routineName); 
     if ((ierror = nc_def_var( ncid, CHI_L_NAME, NC_FLOAT, 4, dimids, &chi_l_var)))
       ERR(ierror,routineName); 
     if ((ierror = nc_def_var( ncid, ETA_L_NAME, NC_FLOAT, 4, dimids, &eta_l_var)))
@@ -147,7 +150,7 @@ void init_ncdf_ray_new(void)
       ERR(ierror,routineName);
     if ((ierror = nc_def_var( ncid, SCA_C_NAME, NC_FLOAT, 4, dimids, &sca_c_var)))
       ERR(ierror,routineName); 
-    */
+
   }
 
 
@@ -187,6 +190,7 @@ void init_ncdf_ray_new(void)
                          "J s^-1 m^-2 Hz^-1 sr^-1" ))) ERR(ierror,routineName);
   }
   if (write_xtra) {
+    /*
     if ((ierror = nc_put_att_text( ncid, S_var,         "units",  23,
 			 "J s^-1 m^-2 Hz^-1 sr^-1" ))) ERR(ierror,routineName);
     if ((ierror = nc_put_att_text( ncid, S_var,       "description",    40,
@@ -195,6 +199,7 @@ void init_ncdf_ray_new(void)
 			 "m^-1" ))) ERR(ierror,routineName);
     if ((ierror = nc_put_att_text( ncid, chi_var,       "description",  35,
              "Total absorption (line + continuum)" ))) ERR(ierror,routineName);
+    */
   }
 
   /* End define mode */
@@ -211,12 +216,14 @@ void init_ncdf_ray_new(void)
   io.ray_stokes_v_var = stokes_v_var;
   io.ray_chi_var      = chi_var;
   io.ray_S_var        = S_var;
-  /*
+  
+  io.ray_j_var        = j_var;
   io.ray_chi_l_var    = chi_l_var;
   io.ray_eta_l_var    = eta_l_var;
   io.ray_chi_c_var    = chi_c_var;
+  io.ray_eta_c_var    = eta_c_var;
   io.ray_sca_c_var    = sca_c_var;
-  */
+  
 
 
   /* --- Write wavelength and wavelength indices --- */
@@ -269,7 +276,7 @@ void init_ncdf_ray_old(void)
 
   atmosID = (char *) malloc(len_id+1);
 
-  if ((ierror = nc_get_att_text(io.aux_ncid, NC_GLOBAL, "atmosID", atmosID ))) 
+  if ((ierror = nc_get_att_text(ncid, NC_GLOBAL, "atmosID", atmosID ))) 
     ERR(ierror,routineName);
 
   if (!strstr(atmosID, atmos.ID)) {
@@ -281,11 +288,27 @@ void init_ncdf_ray_old(void)
   free(atmosID);
 
   /* --- Get variable IDs ---*/
+  
   if ((ierror = nc_inq_varid(ncid, INT_NAME,  &io.ray_int_var ))) 
       ERR(ierror,routineName);
   if ((ierror = nc_inq_varid(ncid, WAVE_NAME, &io.ray_wave_var))) 
       ERR(ierror,routineName);
-      
+  
+
+  if ((ierror = nc_inq_varid(ncid, "Jlambda",  &io.ray_j_var     )))
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(ncid, CHI_L_NAME, &io.ray_chi_l_var )))
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(ncid, ETA_L_NAME, &io.ray_eta_l_var )))
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(ncid, CHI_C_NAME, &io.ray_chi_c_var )))
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(ncid, ETA_C_NAME, &io.ray_eta_c_var )))
+      ERR(ierror,routineName);
+  if ((ierror = nc_inq_varid(ncid, SCA_C_NAME, &io.ray_sca_c_var )))
+      ERR(ierror,routineName);
+
+  
   if (atmos.Stokes || input.backgr_pol) {
     if ((ierror = nc_inq_varid(ncid, STOKES_Q, &io.ray_stokes_q_var))) 
         ERR(ierror,routineName);
@@ -296,11 +319,25 @@ void init_ncdf_ray_old(void)
   }
   
   if (write_xtra) {
+    /*
     if ((ierror = nc_inq_varid(ncid, CHI_NAME,     &io.ray_chi_var     ))) 
         ERR(ierror,routineName);
     if ((ierror = nc_inq_varid(ncid, S_NAME,       &io.ray_S_var       ))) 
         ERR(ierror,routineName);
+    */
     if ((ierror = nc_inq_varid(ncid, WAVE_SEL_IDX, &io.ray_wave_idx_var))) 
+        ERR(ierror,routineName);
+    if ((ierror = nc_inq_varid(ncid, "Jlambda",  &io.ray_j_var     )))
+        ERR(ierror,routineName);
+    if ((ierror = nc_inq_varid(ncid, CHI_L_NAME, &io.ray_chi_l_var )))
+        ERR(ierror,routineName);
+    if ((ierror = nc_inq_varid(ncid, ETA_L_NAME, &io.ray_eta_l_var )))
+        ERR(ierror,routineName);
+    if ((ierror = nc_inq_varid(ncid, CHI_C_NAME, &io.ray_chi_c_var )))
+        ERR(ierror,routineName);
+    if ((ierror = nc_inq_varid(ncid, ETA_C_NAME, &io.ray_eta_c_var )))
+        ERR(ierror,routineName);
+    if ((ierror = nc_inq_varid(ncid, SCA_C_NAME, &io.ray_sca_c_var )))
         ERR(ierror,routineName);
   }
   
@@ -330,6 +367,7 @@ void writeRay(void)
   int        ierror, idx, ncid, k, l, nspect;
   double    *sca, *J;
   float    **chi, **S;
+  float    **Jnu, **chi_l, **eta_l, **chi_c, **eta_c, **sca_c;
   size_t     start[] = {0, 0, 0, 0};
   size_t     count[] = {1, 1, 1, 1};
   bool_t     write_xtra, crosscoupling, to_obs, initialize;
@@ -366,6 +404,13 @@ void writeRay(void)
     sca = (double *) malloc(atmos.Nspace * sizeof(double));
     chi = matrix_float(infile.nz, io.ray_nwave_sel);
     S   = matrix_float(infile.nz, io.ray_nwave_sel);
+    
+    Jnu = matrix_float(infile.nz, io.ray_nwave_sel);
+    chi_l = matrix_float(infile.nz, io.ray_nwave_sel);
+    eta_l = matrix_float(infile.nz, io.ray_nwave_sel);
+    chi_c = matrix_float(infile.nz, io.ray_nwave_sel);
+    eta_c = matrix_float(infile.nz, io.ray_nwave_sel);
+    sca_c = matrix_float(infile.nz, io.ray_nwave_sel);
 
     if (input.limit_memory) J = (double *) malloc(atmos.Nspace * sizeof(double));
 
@@ -386,6 +431,14 @@ void writeRay(void)
       for (k = 0; k < infile.nz; k++) {
 	S[k][nspect]   = 0.0;
 	chi[k][nspect] = 0.0;
+	
+	Jnu[k][nspect] = 0.0;
+	chi_l[k][nspect] = 0.0;
+	eta_l[k][nspect] = 0.0;
+	chi_c[k][nspect] = 0.0;
+	eta_c[k][nspect] = 0.0;
+	sca_c[k][nspect] = 0.0;
+	
       }
 
       for (k = 0;  k < atmos.Nspace;  k++) {
@@ -394,6 +447,14 @@ void writeRay(void)
 	chi[l][nspect] = (float) (as->chi[k] + as->chi_c[k]);
 	S[l][nspect]   = (float) ((as->eta[k] + as->eta_c[k] + sca[k]) /
 				  (as->chi[k] + as->chi_c[k]));
+	
+	Jnu[l][nspect] = (float) J[k];
+	chi_l[l][nspect] = (float) as->chi[k];
+	eta_l[l][nspect] = (float) as->eta[k];
+	chi_c[l][nspect] = (float) as->eta_c[k];
+	eta_c[l][nspect] = (float) as->chi_c[k];
+	sca_c[l][nspect] = (float) sca[k];
+	
       }
 
       /* Write variables 
@@ -422,14 +483,33 @@ void writeRay(void)
     start[2] = 0;       count[2] = infile.nz;
     start[3] = 0;       count[3] = io.ray_nwave_sel;
 
-
+    /*
     if ((ierror=nc_put_vara_float(ncid, io.ray_chi_var, start, count,
 				  chi[0] ))) ERR(ierror,routineName);
     if ((ierror=nc_put_vara_float(ncid, io.ray_S_var,   start, count,
 				  S[0] )))   ERR(ierror,routineName);
+    */    
+    
+    if ((ierror=nc_put_vara_float(ncid, io.ray_j_var,   start, count,
+				  Jnu[0] )))     ERR(ierror,routineName);
+    if ((ierror=nc_put_vara_float(ncid, io.ray_chi_l_var,   start, count,
+				  chi_l[0] )))   ERR(ierror,routineName);
+    if ((ierror=nc_put_vara_float(ncid, io.ray_eta_l_var,   start, count,
+				  eta_l[0] )))   ERR(ierror,routineName);
+    if ((ierror=nc_put_vara_float(ncid, io.ray_chi_c_var,   start, count,
+				  chi_c[0] )))   ERR(ierror,routineName);
+    if ((ierror=nc_put_vara_float(ncid, io.ray_eta_c_var,   start, count,
+				  eta_c[0] )))   ERR(ierror,routineName);
+    if ((ierror=nc_put_vara_float(ncid, io.ray_sca_c_var,   start, count,
+				  sca_c[0] )))   ERR(ierror,routineName);
+    
     
     
     free(sca); freeMatrix((void **) chi); freeMatrix((void **) S);
+    
+    freeMatrix((void **) Jnu);   freeMatrix((void **) chi_l); freeMatrix((void **) eta_l);
+    freeMatrix((void **) chi_c); freeMatrix((void **) eta_c); freeMatrix((void **) sca_c);
+    
     if (input.limit_memory) free(J);
   }
 

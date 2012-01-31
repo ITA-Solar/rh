@@ -48,7 +48,7 @@ IO_buffer iobuf;
 
 int main(int argc, char *argv[])
 {
-  bool_t analyze_output, equilibria_only, run_ray, writej, exit_on_EOF;
+  bool_t write_analyze_output, equilibria_only, run_ray, writej, exit_on_EOF;
   int    niter, nact, i, Nspect, Ntest, k, Nread, Nrequired, ierror,
          checkPoint, save_Nrays, *wave_index = NULL, conv_iter;
   double muz, save_muz, save_mux, save_muy, save_wmu;
@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
          mpi.rank, mpi.task+1, mpi.Ntasks, mpi.xnum[mpi.ix], mpi.ynum[mpi.iy]);
       fprintf(mpi.main_logfile, messageStr);
       Error(MESSAGE, "main", messageStr);
-	
+      
             
       /* Read atmosphere column */
       readAtmos_ncdf(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
       
       
       /* --- Calculate background opacities --             ------------- */
-      Background_p(analyze_output=TRUE, equilibria_only=FALSE);
+      Background_p(write_analyze_output=TRUE, equilibria_only=FALSE);
       
       getProfiles();
       initSolution_p();

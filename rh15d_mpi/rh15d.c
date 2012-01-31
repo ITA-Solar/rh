@@ -40,7 +40,7 @@ IO_buffer iobuf;
 
 int main(int argc, char *argv[])
 {
-  bool_t analyze_output, equilibria_only, run_ray, writej;
+  bool_t write_analyze_output, equilibria_only, run_ray, writej;
   int    niter, nact, i, Ntest, k;
 
   Atom *atom;
@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
     }
 
     /* --- Calculate background opacities --             ------------- */
-    Background_p(analyze_output=TRUE, equilibria_only=FALSE);
+    Background_p(write_analyze_output=TRUE, equilibria_only=FALSE);
 
     getProfiles();
     initSolution_p();

@@ -2,7 +2,7 @@
 
        Version:       rh1.0, 1-D plane-parallel
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Thu Jan 14 16:14:23 2010 --
+       Last modified: Mon Jan 16 17:41:50 2012 --
 
        --------------------------                      ----------RH-- */
 
@@ -123,7 +123,8 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
     for (k = 0;  k < atmos.Nspace;  k++) Jdag[k] = J[k];
   }
 
-  if (spectrum.updateJ) for (k = 0;  k < atmos.Nspace;  k++) J[k] = 0.0;  
+  if (spectrum.updateJ)
+    for (k = 0;  k < atmos.Nspace;  k++) J[k] = 0.0;  
 
   /* --- Store current anisotropy, initialize new one to zero ---- -- */
 
@@ -137,7 +138,8 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
       for (k = 0;  k < atmos.Nspace;  k++)
 	J20dag[k] = J20[k];
     }
-    for (k = 0;  k < atmos.Nspace;  k++) J20[k] = 0.0;
+    if (spectrum.updateJ)
+      for (k = 0;  k < atmos.Nspace;  k++) J20[k] = 0.0;
   }
   /* --- Case of angle-dependent opacity and source function -- ----- */
 
@@ -203,13 +205,15 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
           for (k = 0;  k < atmos.Nspace;  k++) Psi[k] /= chi[k];
 	  addtoGamma(nspect, wmu, I, Psi);
 	}
-	addtoRates(nspect, mu, to_obs, wmu, I, redistribute);
+
 
         if (spectrum.updateJ) {
 
-	  /* --- Accumulate mean intensity --        -------------- */
+	  /* --- Accumulate mean intensity and rates -- ---------- */
 
-	  for (k = 0;  k < atmos.Nspace;  k++) J[k] += wmu * I[k];
+	  for (k = 0;  k < atmos.Nspace;  k++)
+	    J[k] += wmu * I[k];
+	  addtoRates(nspect, mu, to_obs, wmu, I, redistribute);
 
 	  /* --- Accumulate anisotropy --            -------------- */
 
@@ -251,8 +255,10 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
 	for (k = 0;  k < atmos.Nspace;  k++) Psi[k] /= chi[k];
 	addtoGamma(nspect, geometry.wmu[mu], I, Psi);
       }
-      addtoRates(nspect, mu, 0, geometry.wmu[mu], I, redistribute);
-      for (k = 0;  k < atmos.Nspace;  k++) J[k] += I[k] * geometry.wmu[mu];
+      if (spectrum.updateJ) {
+	for (k = 0;  k < atmos.Nspace;  k++) J[k] += I[k] * geometry.wmu[mu];
+	addtoRates(nspect, mu, 0, geometry.wmu[mu], I, redistribute);
+      }
     }
   }
   /* --- Write new J for current position in the spectrum -- -------- */

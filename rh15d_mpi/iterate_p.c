@@ -1,8 +1,8 @@
 /* ------- file: -------------------------- iterate.c ---------------
 
        Version:       rh2.0
-       Author:        Han Uitenbroek  (huitenbroek@nso.edu)
-       Last modified: Wed Apr  1 14:08:31 2009 --
+       Author:        Tiago Pereira (tiago.pereira@nasa.gov)
+       Last modified: Tue Jan 24 18:26:00 2012 --
 
        --------------------------                      ----------RH-- */
 
@@ -53,7 +53,7 @@ void Iterate_p(int NmaxIter, double iterLimit)
   register int niter, nact;
   double cswitch;
 
-  bool_t eval_operator;
+  bool_t eval_operator, write_analyze_output, equilibria_only;
   double dpopsmax, PRDiterlimit;
   Atom *atom;
   Molecule *molecule;
@@ -139,6 +139,9 @@ void Iterate_p(int NmaxIter, double iterLimit)
 
     if ((dpopsmax < iterLimit) && (cswitch <= 1.0) && (input.prdswitch >= 1.0)) break;
     niter++;
+    
+    if (input.solve_ne == ITERATION)
+      Background(write_analyze_output=TRUE, equilibria_only=FALSE);
     
     /* Update collisional radiative switching */
     if (input.crsw > 0)

@@ -2,7 +2,7 @@
 
        Version:       rh2.0, 1.5-D plane-parallel
        Author:        Tiago Pereira (tiago.pereira@nasa.gov)
-       Last modified: Fri Jan 14 16:00:00 2011 --
+       Last modified: Tue Jan 24 18:14:00 2012 --
 
        --------------------------                      ----------RH-- */
 
@@ -84,7 +84,7 @@
        In static atmospheres these quantities are just mapped to
        atmos.chi_c and atmos.eta_c to save memory space.
 
- Note: If analyzeoutput == FALSE the auxiliary output files for
+ Note: If write_analyzeoutput == FALSE the auxiliary output files for
        the Background Record Structure (BRS), metals, and molecules
        are NOT written. This option is used when Background is called
        from programs like solveray (formal solution along one specific
@@ -242,15 +242,15 @@ void close_Background(void)
 
 /* ------- begin -------------------------- Background.c ------------ */
 
-void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
+void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
 {
   const char routineName[] = "Background_p";
   register int k, nspect, n, mu, to_obs;
 
+  static int ne_iter = 0;
   bool_t  do_fudge, fromscratch;
   int     index, Nfudge, NrecStokes;
-  double *chi, *chi_Q, *chi_U, *chi_V, *eta, *eta_Q, *eta_U, *eta_V,
-         *scatt, wavelength, *thomson, *chi_ai, *eta_ai,
+  double *chi, *eta, *scatt, wavelength, *thomson, *chi_ai, *eta_ai, *sca_ai,
           Hmin_fudge, scatt_fudge, metal_fudge, *lambda_fudge, **fudge,
          *Bnu, *chi_c, *eta_c, *sca_c, *chip, *chip_c;
   Atom   *He;
@@ -259,7 +259,13 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
 
   getCPU(2, TIME_START, NULL);
 
-  if (input.solve_ne) Solve_ne(atmos.ne, fromscratch=TRUE);
+  if (input.solve_ne == ONCE  || input.solve_ne == ITERATION ) {
+    fromscratch = (input.solve_ne == ONCE  ||
+		   (input.solve_ne == ITERATION  &&  ne_iter == 0)) ?
+      TRUE : FALSE;
+    Solve_ne(atmos.ne, fromscratch);
+    ne_iter++;
+  }
   SetLTEQuantities_p();
 
   if (input.NonICE)
@@ -348,9 +354,11 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
   if (atmos.moving || atmos.Stokes) {
     chi_ai = (double *) malloc(atmos.Nspace * sizeof(double));
     eta_ai = (double *) malloc(atmos.Nspace * sizeof(double));
+    sca_ai = (double *) malloc(atmos.Nspace * sizeof(double));
   } else {
     chi_ai = chi_c;
     eta_ai = eta_c;
+    sca_ai = sca_c;
   }
   Bnu = (double *) malloc(atmos.Nspace * sizeof(double));
 
@@ -385,7 +393,7 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
     for (k = 0;  k < atmos.Nspace;  k++) {
       chi_ai[k] = 0.0;
       eta_ai[k] = 0.0;
-      sca_c[k]  = thomson[k];
+      sca_ai[k] = thomson[k];
     }
     /* --- Negative hydrogen ion, bound-free and free-free -- ------- */
 
@@ -442,14 +450,14 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
 
     if (Rayleigh(wavelength, atmos.H, scatt)) {
       for (k = 0;  k < atmos.Nspace;  k++) {
-	sca_c[k]  += scatt[k];
+	sca_ai[k]  += scatt[k];
       }
     }
     /* --- Rayleigh scattering by neutral helium --    -------------- */
 
     if (He && Rayleigh(wavelength, He, scatt)) {
       for (k = 0;  k < atmos.Nspace;  k++) {
-	sca_c[k]  += scatt[k];
+	sca_ai[k]  += scatt[k];
       }
     }
     /* --- Absorption by H + H^+ (referred to as H2plus free-free) -- */
@@ -465,7 +473,7 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
 
     if (Rayleigh_H2(wavelength, scatt)) {
       for (k = 0;  k < atmos.Nspace;  k++) {
-	sca_c[k]  += scatt[k];
+	sca_ai[k]  += scatt[k];
       }
     }
     if (H2minus_ff(wavelength, chi)) {
@@ -499,10 +507,10 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
     } else {
       scatt_fudge = 1.0;
     }
-    for (k = 0;  k < atmos.Nspace;  k++)
-      chi_ai[k] += sca_c[k] * scatt_fudge;
-
-
+    for (k = 0;  k < atmos.Nspace;  k++) {
+      sca_ai[k] *= scatt_fudge;
+      chi_ai[k] += sca_ai[k];
+    }
     /* --- Now the contributions that may be angle-dependent due to the
            presence of atomic or molecular lines --    -------------- */
 
@@ -516,6 +524,7 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
 	  for (k = 0;  k < atmos.Nspace;  k++) {
 	    chi_c[k] = chi_ai[k];
 	    eta_c[k] = eta_ai[k];
+	    sca_c[k] = sca_ai[k];
 	  }
           /* --- Zero the polarized quantities, if necessary -- ----- */
 
@@ -556,7 +565,7 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
 
           if (atmos.Nrlk > 0) {
 	    backgrflags = rlk_opacity(wavelength, nspect, mu, to_obs,
-				      chi, eta, chip);
+				      chi, eta, scatt, chip);
 	    if (backgrflags.hasline) {
 	      atmos.backgrflags[nspect].hasline = TRUE;
               if (backgrflags.ispolarized) {
@@ -568,11 +577,17 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
                 }
               } else
                 NrecStokes = 1;
-
+	      
               for (k = 0;  k < NrecStokes*atmos.Nspace;  k++) {
                 chi_c[k] += chi[k];
                 eta_c[k] += eta[k];
               }
+	      if (input.rlkscatter) {
+		for (k = 0;  k < atmos.Nspace;  k++) {
+		  sca_c[k] += scatt[k];
+		  chi_c[k] += scatt[k];
+		}
+	      }
 	    }
 	  }
 	  /* --- Add opacity from molecular lines --   -------------- */
@@ -627,12 +642,18 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
 
       if (atmos.Nrlk > 0) {
 	backgrflags = rlk_opacity(wavelength, nspect, 0, TRUE,
-				  chi, eta, NULL);
+				  chi, eta, scatt, NULL);
 	if (backgrflags.hasline) {
 	  atmos.backgrflags[nspect].hasline = TRUE;
 	  for (k = 0;  k < atmos.Nspace;  k++) {
 	    chi_c[k] += chi[k];
 	    eta_c[k] += eta[k];
+	  }
+      	  if (input.rlkscatter) {
+	    for (k = 0;  k < atmos.Nspace;  k++) {
+	      sca_c[k] += scatt[k];
+	      chi_c[k] += scatt[k];
+	    }
 	  }
 	}
       }
@@ -655,7 +676,7 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
     }
   }
 
-  if (analyzeoutput) {
+  if (write_analyze_output) {
     /* --- Write background record structure --          ------------ */
     
     if (bgdat.write_BRS) writeBRS_ncdf();
@@ -675,12 +696,15 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
   if (mpi.task == mpi.Ntasks - 1) {
     if (atmos.Natom > 1) {
       for (n = 1;  n < atmos.Natom;  n++)
-	if (!atmos.atoms[n].active  &&  !atmos.hydrostatic)
+	if (!atmos.atoms[n].active  &&  !atmos.hydrostatic &&
+	  input.solve_ne < ITERATION)
 	  freeAtom(&atmos.atoms[n]);
     }
     if (atmos.Nmolecule > 1) {
       for (n = 1;  n < atmos.Nmolecule;  n++)
-	if (!atmos.molecules[n].active) freeMolecule(&atmos.molecules[n]);
+	if (!atmos.molecules[n].active  &&  
+          !atmos.hydrostatic  &&
+	  input.solve_ne < ITERATION)) freeMolecule(&atmos.molecules[n]);
     }
 
     if (strcmp(input.KuruczData, "none")) {
@@ -714,6 +738,7 @@ void Background_p(bool_t analyzeoutput, bool_t equilibria_only)
   if (atmos.moving || atmos.Stokes) {
     free(chi_ai);
     free(eta_ai);
+    free(sca_ai);
   }
   if (atmos.Stokes && input.magneto_optical) {
     free(chip);
