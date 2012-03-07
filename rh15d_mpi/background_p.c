@@ -254,6 +254,7 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
           Hmin_fudge, scatt_fudge, metal_fudge, *lambda_fudge, **fudge,
          *Bnu, *chi_c, *eta_c, *sca_c, *chip, *chip_c;
   Atom   *He;
+  Element *element;
   flags   backgrflags;
   char    file_background[MAX_MESSAGE_LENGTH], *fext = FILE_EXT;
 
@@ -744,6 +745,17 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
     free(chip);
     free(chip_c);
   }
+
+  /* --- Free the element populations for species used in rlk_opacity --- */
+  for (k = 0;  k < atmos.Nelem;  k++) {
+    element = &atmos.elements[k];
+    if (element->n != NULL) {
+      freeMatrix((void **) element->n);
+      element->n = NULL;
+    }
+    
+  }
+
 
   getCPU(2, TIME_POLL, "Total Background");
 }

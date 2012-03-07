@@ -59,6 +59,7 @@ void init_ncdf_indata_new(void);
 void init_ncdf_indata_old(void);
 void close_ncdf_indata(void);
 void writeAtmos_all(void);
+void writeAtmos_p(void);
 void writeMPI_all(void);
 void writeMPI_p(int task);
 

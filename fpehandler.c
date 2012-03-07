@@ -105,7 +105,9 @@ void SetFPEtraps(void)
   /* --- Enable some exceptions.
          At startup all exceptions are masked. --      -------------- */
 
-  feenableexcept(FE_INVALID|FE_DIVBYZERO|FE_OVERFLOW);
+  /* Tiago: commented this out for the 1.5D version (where it should
+            not stop execution!)
+     feenableexcept(FE_INVALID|FE_DIVBYZERO|FE_OVERFLOW); */
 }
 
 /* --- end Linux --                                    -------------- */
