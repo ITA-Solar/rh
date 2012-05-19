@@ -294,21 +294,7 @@ void init_ncdf_ray_old(void)
   if ((ierror = nc_inq_varid(ncid, WAVE_NAME, &io.ray_wave_var))) 
       ERR(ierror,routineName);
   
-
-  if ((ierror = nc_inq_varid(ncid, "Jlambda",  &io.ray_j_var     )))
-      ERR(ierror,routineName);
-  if ((ierror = nc_inq_varid(ncid, CHI_L_NAME, &io.ray_chi_l_var )))
-      ERR(ierror,routineName);
-  if ((ierror = nc_inq_varid(ncid, ETA_L_NAME, &io.ray_eta_l_var )))
-      ERR(ierror,routineName);
-  if ((ierror = nc_inq_varid(ncid, CHI_C_NAME, &io.ray_chi_c_var )))
-      ERR(ierror,routineName);
-  if ((ierror = nc_inq_varid(ncid, ETA_C_NAME, &io.ray_eta_c_var )))
-      ERR(ierror,routineName);
-  if ((ierror = nc_inq_varid(ncid, SCA_C_NAME, &io.ray_sca_c_var )))
-      ERR(ierror,routineName);
-
-  
+ 
   if (atmos.Stokes || input.backgr_pol) {
     if ((ierror = nc_inq_varid(ncid, STOKES_Q, &io.ray_stokes_q_var))) 
         ERR(ierror,routineName);

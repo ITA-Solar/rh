@@ -10,10 +10,11 @@ GEOMETRY = ONE_D_PLANE
 
 include ../makefiles/makefile.$(CPU).$(OS)
 
-CC = mpicc
-LD = mpicc
+CC = openmpicc
+LD = openmpicc
 AR = ar
-NCDF_DIR = /opt/local
+#NCDF_DIR = /opt/local
+NCDF_DIR = /Users/tiago/local
 
 CFLAGS  = -O2 -I../ -I$(NCDF_DIR)/include/
 LDFLAGS = -L../ -L$(NCDF_DIR)/lib/
@@ -28,7 +29,7 @@ LDFLAGS = -L../ -L$(NCDF_DIR)/lib/
 
 
 ONE_D_OBJS = anglequad.o      feautrier.o     formal.o           hydrostat.o   \
-             rh15d.o          piecestokes.o   piecewise.o        project.o     \
+             piecestokes.o    piecewise.o     project.o                        \
              riiplane.o       ncdfatmos.o     background_p.o     brs_p.o       \
              readj_p.o        scatter_p.o     writespect_p.o     initial_p.o   \
              writeindata_p.o  writeAux_p.o    parallel.o         iterate_p.o   \
@@ -51,11 +52,17 @@ BACKGROPAC = anglequad.o      backgrcontr.o   multiatmos.o      project.o
 
 ## --- Rules for the executables --                    -------------- ##
 
-all:   rh15d  solveray  #  solve15d  backgrcontr
+all:   rh15d  rh15d_ray rh15d_lteray solveray  #  solve15d  backgrcontr
 
-rh15d:  $(ONE_D_OBJS)  librh
+rh15d:  $(ONE_D_OBJS)  librh rh15d.o
 	cd ..; $(AR) dsv librh.a $(SUBSTITUTE)
-	$(LD) -o $@  $(LDFLAGS) $(ONE_D_OBJS) $(LIBS)
+	$(LD) -o $@  $(LDFLAGS) $(ONE_D_OBJS) rh15d.o $(LIBS)
+	
+rh15d_lteray:  $(ONE_D_OBJS)  librh rh15d_lteray.o writeRay.o
+	$(LD) -o $@  $(LDFLAGS) $(ONE_D_OBJS) rh15d_lteray.o writeRay.o $(LIBS)
+	
+rh15d_ray:  $(ONE_D_OBJS)  librh rh15d_ray.o writeRay.o
+	$(LD) -o $@  $(LDFLAGS) $(ONE_D_OBJS) rh15d_ray.o writeRay.o $(LIBS)
 
 solveray:  $(RAY_OBJS)  librh
 #	cd ..; $(AR) dsv librh.a $(SUBSTITUTE)
@@ -74,7 +81,7 @@ librh:
 ## --- Clean up --                                     -------------- ##
 
 clean:
-	rm -f *.o  rh15d  solve15d  solveray  backgrcontr
+	rm -f *.o  rh15d  solve15d  solveray  backgrcontr rh15d_ray rh15d_lteray
 
 
 ## --- Explicit dependencies on include files --       -------------- ##
@@ -182,7 +189,19 @@ rh15d.o:                ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../spectrum.h    ../background.h  \
                         ../statistics.h  ../error.h       ../inputs.h      \
                         parallel.h       io.h             rh15d.c
-	$(CC) $(CFLAGS) -Wall -c -o $@   rh15d.c 
+	$(CC) $(CFLAGS) -Wall -c -o $@   rh15d.c
+	
+rh15d_lteray.o:         ../rh.h          ../atom.h        ../atmos.h       \
+                        geometry.h       ../spectrum.h    ../background.h  \
+                        ../statistics.h  ../error.h       ../inputs.h      \
+                        parallel.h       io.h             rh15d_lteray.c
+	$(CC) $(CFLAGS) -Wall -c -o $@   rh15d_lteray.c
+	
+rh15d_ray.o:            ../rh.h          ../atom.h        ../atmos.h       \
+                        geometry.h       ../spectrum.h    ../background.h  \
+                        ../statistics.h  ../error.h       ../inputs.h      \
+                        parallel.h       io.h             rh15d_ray.c
+	$(CC) $(CFLAGS) -Wall -c -o $@   rh15d_ray.c 
 
 riiplane.o:             ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../constant.h    ../error.h
