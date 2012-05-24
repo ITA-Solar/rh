@@ -73,6 +73,8 @@ void Opacity(int nspect, int mu, bool_t to_obs, bool_t initialize)
     *phi_Q, *phi_U, *phi_V, *psi_Q, *psi_U, *psi_V;
   bool_t  solveStokes;
 
+  double lag, rho_int,rho_tmp[1000], sign;
+
   Atom *atom;
   Molecule *molecule;
   AtomicLine *line;
@@ -208,19 +210,60 @@ void Opacity(int nspect, int mu, bool_t to_obs, bool_t initialize)
 	/* --- PRD correction to emission profile --   -------------- */
 
 	if (line->PRD) {
-	  if (input.PRD_angle_dep != PRD_ANGLE_INDEP) {
+	  switch (input.PRD_angle_dep) {
+	  case PRD_ANGLE_DEP:
 	    lamu = 2*(atmos.Nrays*la + mu) + to_obs;
 	    for (k = 0;  k < atmos.Nspace;  k++)
-	      //atom->rhth[nt].gij[n][k] *= line->rho_prd[lamu][k];
-	      // Tiago: adding PRD switching
 	      atom->rhth[nt].gij[n][k] *= line->rho_prd[lamu][k] * input.prdswitch +
 					    (1 - input.prdswitch);
-	  } else {
-	    for (k = 0;  k < atmos.Nspace;  k++)
+	    break;
+
+	  case PRD_ANGLE_APPROX:
+	    
+	    if (input.prdh_limit_mem) {
+	      
+	      sign = (to_obs) ? 1.0 : -1.0;
+	      
+	      for (k = 0;  k < atmos.Nspace;  k++) {
+		// wavelength in local rest frame frame
+		lag=line->lambda[la]* (1.+spectrum.v_los[mu][k]*sign/CLIGHT);
+		//  prd factor at constant k, with wavelength contiguous in memory
+		for (lamu=0 ; lamu<line->Nlambda ; lamu++) 
+		  rho_tmp[lamu]=line->rho_prd[lamu][k] ;
+		// Interpolate to account for Doppler shift
+		Linear(line->Nlambda, line->lambda, &(rho_tmp[0]),
+		       1, &lag, &rho_int, TRUE);
+		atom->rhth[nt].gij[n][k] *= rho_int * input.prdswitch +
+					    (1 - input.prdswitch);
+	      }
+	      
+	    } else {
+	      
+	      for (k = 0;  k < atmos.Nspace;  k++) {
+		
+		lamu = 2*(atmos.Nrays*la + mu) + to_obs;
+		
+		rho_int=  (1.0-line->frac[lamu][k]) * line->rho_prd[ line->id0[lamu][k] ][k]
+		  +            line->frac[lamu][k]  * line->rho_prd[ line->id1[lamu][k] ][k];
+		
+		atom->rhth[nt].gij[n][k] *= rho_int * input.prdswitch +
+					    (1 - input.prdswitch);
+		
+	      }
+	      
+	    }  
+	    
+	    break;
+
+	  case PRD_ANGLE_INDEP:
+	    for (k = 0;  k < atmos.Nspace;  k++) {
 	      atom->rhth[nt].gij[n][k] *= line->rho_prd[la][k] * input.prdswitch +
 					    (1 - input.prdswitch);
+	    }
+	    break;
 	  }
 	}
+
 	/* --- Store wavelength integration weights -- -------------- */
 
 	if (initialize) {

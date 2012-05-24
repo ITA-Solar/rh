@@ -57,7 +57,7 @@ void Redistribute(int NmaxIter, double iterLimit)
     for (kr = 0;  kr < atom->Nline;  kr++) {
       line = &atom->line[kr];
       if (line->PRD && line->Ng_prd == NULL) {
-	if (input.PRD_angle_dep)
+	if (input.PRD_angle_dep == PRD_ANGLE_DEP)
 	  Nlamu = 2*atmos.Nrays * line->Nlambda * atmos.Nspace;
 	else
 	  Nlamu = line->Nlambda*atmos.Nspace;
@@ -82,10 +82,19 @@ void Redistribute(int NmaxIter, double iterLimit)
       for (kr = 0;  kr < atom->Nline;  kr++) {
 	line = &atom->line[kr];
 	if (line->PRD) {
-	  if (input.PRD_angle_dep)
-	    PRDAngleScatter(line, representation=LINEAR);
-	  else
+	   switch (input.PRD_angle_dep) {
+	  case PRD_ANGLE_INDEP:
 	    PRDScatter(line, representation=LINEAR);
+	    break;
+
+	  case PRD_ANGLE_APPROX:
+	    PRDAngleApproxScatter(line, representation=LINEAR); 
+	    break;
+	    
+	  case PRD_ANGLE_DEP:
+	    PRDAngleScatter(line, representation=LINEAR);
+	    break;
+	  }
 
 	  accel = Accelerate(line->Ng_prd, line->rho_prd[0]);
 	  sprintf(messageStr, "  PRD: iter #%d, atom %s, line %d,",

@@ -10,6 +10,7 @@
 #ifndef __IO_H__
 #define __IO_H__
 
+#include <netcdf_par.h>
 #include <netcdf.h>
 
 
@@ -112,7 +113,7 @@ typedef struct {
   /* for the BRS file */
   int  brs_ncid,          brs_hl_var,        brs_ip_var,         brs_nrec_var;
   /* for the J file */
-  int  j_ncid,            j_jlambda_var,     j_j20_var; 
+  int  j_ncid,            j_jlambda_var,     j_j20_var,          j_jgas_var; 
   /* for the spectrum file*/ 
   int  spec_ncid,         spec_int_var,      spec_flux_var,     spec_wave_var, 
        spec_stokes_u_var, spec_stokes_q_var, spec_stokes_v_var; 
@@ -140,8 +141,8 @@ typedef struct {
   int  ray_ncid,          ray_nwave_sel,     ray_wave_var,      ray_int_var,
        ray_stokes_q_var,  ray_stokes_u_var,  ray_stokes_v_var,  ray_wave_idx_var,
        ray_chi_l_var,     ray_eta_l_var,     ray_chi_c_var,     ray_eta_c_var,
-       ray_sca_c_var,     ray_chi_var,       ray_S_var,         ray_j_var,
-      *ray_wave_idx;
+       ray_sca_c_var,     ray_chi_var,       ray_S_var,        *ray_wave_idx,
+       ray_j_var;
 } IO_data;
 
 typedef struct {

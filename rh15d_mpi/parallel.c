@@ -84,6 +84,7 @@ void initParallelIO(bool_t run_ray, bool_t writej) {
   Atom  *atom;
 
   init_ncdf_aux();
+
   if (writej) init_ncdf_J();
   init_Background();
   if (!run_ray) {
@@ -313,12 +314,11 @@ void UpdateAtmosDep(void) {
 	  line->fp_GII = NULL;
 	}
 
-	if (input.PRD_angle_dep)
+	if (input.PRD_angle_dep == PRD_ANGLE_DEP)
 	  Nlamu = 2*atmos.Nrays * line->Nlambda;
 	else
 	  Nlamu = line->Nlambda;
 	
-
 	// Idea: instead of doing this, why not free and just set line->rho_prd = NULL,
 	// (and also line->Qelast?), because profile.c will act on that and reallocate
 	if (line->rho_prd != NULL) freeMatrix((void **) line->rho_prd);
@@ -335,6 +335,24 @@ void UpdateAtmosDep(void) {
 	  for (k = 0;  k < atmos.Nspace;  k++)
 	    line->rho_prd[la][k] = 1.0;
 	}
+
+	// reset interpolation weights 
+	if (input.PRD_angle_dep == PRD_ANGLE_APPROX) {
+	  Nlamu = 2*atmos.Nrays * line->Nlambda;	  
+	  if (line->frac != NULL) {
+	    freeMatrix((void **) line->frac);
+	    line->frac = NULL;
+	  }
+	  if (line->id0 != NULL){
+	    freeMatrix((void **) line->id0);
+	    line->id0 = NULL;
+	  }
+	  if (line->id1 != NULL) {
+	    freeMatrix((void **) line->id1);
+	    line->id1 = NULL;
+	  }
+	}
+
       }
     }
   }

@@ -180,20 +180,11 @@ void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *inf
   atmos->wmu = geometry->wmu;
 
 
-  /* 
-     TODO: 
-        - Put some attribute on NCDF file to say if atmos->moving = True --NOPE
-	- atmos->Stokes = readB(atmos); (placeholder, not for now...) --DONE
-	- geometry->Nrays stuff --DONE
-	- more flags needed on netcdf file:
-	  * H_LTE? --NOPE
- 	  * B available?
-     	  * ?
-	- nHtot --DONE
-	- nHtot must be allocated on readAtmos_ncdf and not here,
-          because distribute_nH will deallocate it!
-   */
+  /* --- set up pointers for background opacities --- */
 
+  atmos->chi_b = NULL;
+  atmos->eta_b = NULL;
+  atmos->sca_b = NULL;
 
   return;
 

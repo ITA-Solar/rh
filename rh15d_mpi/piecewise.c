@@ -115,7 +115,7 @@ void Piecewise_1D(int nspect, int mu, bool_t to_obs,
       c2 = (dS_uw - dS_dw);
       I[k] = (1.0 - w[0])*I_upw + w[0]*S[k] +
 	(w[1]*c1 + w[2]*c2) / (dtau_uw + dtau_dw);
-      /*
+      */
 
       /* --- Try piecewise linear if quadratic gives negative
              monochromatic intensity --                -------------- */ 

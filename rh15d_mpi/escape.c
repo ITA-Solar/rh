@@ -24,8 +24,9 @@
 #include "constant.h"
 #include "parallel.h"
 
+/* --- Function prototypes --                          -------------- */
 
-
+void loadBackground(int la, int mu, bool_t to_obs);
 
 /* --- Global variables --                             -------------- */
 
@@ -130,8 +131,12 @@ void Escape(Atom *atom) {
 
         /* Get line and background opacity */
         Opacity(nspect, 0, to_obs=TRUE, initialize=TRUE); 
-        readBackground(nspect, 0, to_obs=TRUE);
-        
+
+	if (input.backgr_in_mem) {
+	  loadBackground(nspect, 0, to_obs=TRUE);
+	} else {
+	  readBackground(nspect, 0, to_obs=TRUE);
+	}
         
         /* --- For bound-bound: store opacity in array, per transition -- */
         for (kr = 0; kr < atom->Nline; kr++) {

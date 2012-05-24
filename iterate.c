@@ -202,7 +202,7 @@ void Iterate(int NmaxIter, double iterLimit)
 
 double solveSpectrum(bool_t eval_operator, bool_t redistribute)
 {
-  register int nspect, n, nt;
+  register int nspect, n, nt, k;
 
   int         Nthreads, lambda_max;
   double      dJ, dJmax;
@@ -233,6 +233,16 @@ double solveSpectrum(bool_t eval_operator, bool_t redistribute)
   zeroRates(redistribute);
   lambda_max = 0;
   dJmax = 0.0;
+
+  /* zero out J in gas parcel's frame */
+  if (spectrum.updateJ && input.PRD_angle_dep == PRD_ANGLE_APPROX 
+      && atmos.Nrays > 1 && atmos.NPRDactive > 0){
+    for (k = 0;  k < atmos.Nspace;  k++) {
+      for (nspect = 0;  nspect < spectrum.Nspect;  nspect++) {
+	spectrum.Jgas[nspect][k] = 0.0;
+      }
+    }
+  }
 
   if (input.Nthreads > 1) {
 

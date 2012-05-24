@@ -26,6 +26,7 @@ void init_ncdf_ray_old(void);
 void writeRay(void);
 void close_ncdf_ray(void);
 void calculate_ray(void);
+void writeAtmos_p(void);
 
 /* --- Global variables --                             -------------- */
 
@@ -179,12 +180,6 @@ int main(int argc, char *argv[])
         /* Update quantities that depend on atmosphere and initialise others */
         UpdateAtmosDep();
       }
-      
-      // TIAGO, DELETE!!!
-      //writeAtmos_p();
-      //mpi.stop = TRUE;
-      //continue;
-      
       
       /* --- Calculate background opacities --             ------------- */
       Background_p(write_analyze_output=TRUE, equilibria_only=FALSE);

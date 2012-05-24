@@ -2,7 +2,7 @@
 
        Version:       rh1.0, 1-D plane-parallel
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Mon Jan 16 17:41:50 2012 --
+       Last modified: Thu Jan 14 16:14:23 2010 --
 
        --------------------------                      ----------RH-- */
 
@@ -24,10 +24,11 @@
 #include "inputs.h"
 #include "error.h"
 #include "parallel.h"
-
+#include "xdr.h"
 
 /* --- Function prototypes --                          -------------- */
 
+void loadBackground(int la, int mu, bool_t to_obs);
 
 /* --- Global variables --                             -------------- */
 
@@ -48,9 +49,11 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
   bool_t   initialize, boundbound, polarized_as, polarized_c,
            PRD_angle_dep, to_obs, solveStokes, angle_dep;
   enum     FeautrierOrder F_order;     
-  int      Nrays = atmos.Nrays;
+  int      Nspace = atmos.Nspace, Nrays = atmos.Nrays,lamuk;
+  long int idx,idx0;
   double  *I, *chi, *S, **Ipol, **Spol, *Psi, *Jdag, wmu, dJmax, dJ,
-          *J20dag, musq, threemu1, threemu2, *J, *J20;
+          *J20dag, musq, threemu1, threemu2, *J, *J20, *lambda, sign,
+          lambda_gas,lambda_prv,lambda_nxt,fac,dl,frac;
   ActiveSet *as;
 
   /* --- Retrieve active set as of transitions at wavelength nspect - */
@@ -70,7 +73,8 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
 
   /* --- Check for line with angle-dependent PRD in set -- ---------- */
 
-  PRD_angle_dep = (containsPRDline(as) && input.PRD_angle_dep);
+  PRD_angle_dep = (containsPRDline(as) &&
+		   input.PRD_angle_dep != PRD_ANGLE_INDEP);
 
   /* --- Check for polarized bound-bound transition in active set - - */
 
@@ -88,7 +92,7 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
   /* --- Determine if we have to do angle-dependent opacity and
          emissivity --                                 -------------- */
 
-  angle_dep     = (polarized_as || polarized_c || PRD_angle_dep ||
+  angle_dep     = (polarized_as || polarized_c || PRD_angle_dep != PRD_ANGLE_INDEP ||
 		   (input.backgr_pol && input.StokesMode == FULL_STOKES) ||
 		   (atmos.moving &&
 		    (boundbound || atmos.backgrflags[nspect].hasline)));
@@ -96,50 +100,47 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
   /* --- Allocate temporary space --                   -------------- */
 
   if (eval_operator)
-    Psi = (double *) malloc(atmos.Nspace * sizeof(double));
+    Psi = (double *) malloc(Nspace * sizeof(double));
   else
     Psi = NULL;
 
   if (solveStokes) {
-    Ipol = matrix_double(4, atmos.Nspace);
+    Ipol = matrix_double(4, Nspace);
     I    = Ipol[0];
-    Spol = matrix_double(4, atmos.Nspace);
+    Spol = matrix_double(4, Nspace);
     S    = Spol[0];
   } else {
-    I = (double *) malloc(atmos.Nspace * sizeof(double));
-    S = (double *) malloc(atmos.Nspace * sizeof(double));
+    I = (double *) malloc(Nspace * sizeof(double));
+    S = (double *) malloc(Nspace * sizeof(double));
   }
-  chi = (double *) malloc(atmos.Nspace * sizeof(double));
+  chi = (double *) malloc(Nspace * sizeof(double));
 
   /* --- Store current mean intensity, initialize new one to zero - - */
-  
 
-  Jdag = (double *) malloc(atmos.Nspace * sizeof(double));
+  Jdag = (double *) malloc(Nspace * sizeof(double));
   if (input.limit_memory) {
-    J = (double *) malloc(atmos.Nspace *sizeof(double));
+    J = (double *) malloc(Nspace *sizeof(double));
     readJlambda_single(nspect, Jdag);
   } else {
     J = spectrum.J[nspect];
-    for (k = 0;  k < atmos.Nspace;  k++) Jdag[k] = J[k];
+    for (k = 0;  k < Nspace;  k++) Jdag[k] = J[k];
   }
 
-  if (spectrum.updateJ)
-    for (k = 0;  k < atmos.Nspace;  k++) J[k] = 0.0;  
+  if (spectrum.updateJ) for (k = 0;  k < Nspace;  k++) J[k] = 0.0;
 
   /* --- Store current anisotropy, initialize new one to zero ---- -- */
 
   if (input.backgr_pol) {
-    J20dag = (double *) malloc(atmos.Nspace * sizeof(double));
+    J20dag = (double *) malloc(Nspace * sizeof(double));
     if (input.limit_memory) {
-      J20 = (double *) malloc(atmos.Nspace * sizeof(double));
+      J20 = (double *) malloc(Nspace * sizeof(double));
       readJ20_single(nspect, J20dag);
     } else {
       J20 = spectrum.J20[nspect];
-      for (k = 0;  k < atmos.Nspace;  k++)
+      for (k = 0;  k < Nspace;  k++)
 	J20dag[k] = J20[k];
     }
-    if (spectrum.updateJ)
-      for (k = 0;  k < atmos.Nspace;  k++) J20[k] = 0.0;
+    if (spectrum.updateJ) for (k = 0;  k < Nspace;  k++) J20[k] = 0.0;
   }
   /* --- Case of angle-dependent opacity and source function -- ----- */
 
@@ -154,79 +155,162 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
       for (to_obs = 0;  to_obs <= 1;  to_obs++) {
 	initialize = (mu == 0 && to_obs == 0);
 
-	if (initialize || atmos.backgrflags[nspect].hasline)
-	  readBackground(nspect, mu, to_obs);
+	if (initialize || atmos.backgrflags[nspect].hasline){
+	  if (input.backgr_in_mem) {
+	    loadBackground(nspect, mu, to_obs);
+	  } else {
+	    readBackground(nspect, mu, to_obs);
+	  }
+	}
 
 	if (initialize || boundbound)
 	  Opacity(nspect, mu, to_obs, initialize);
 
 	if (eval_operator) addtoCoupling(nspect);
-	for (k = 0;  k < atmos.Nspace;  k++) {
+	for (k = 0;  k < Nspace;  k++) {
 	  chi[k] = as->chi[k] + as->chi_c[k];
 	  S[k]   = as->eta[k] + as->eta_c[k] + as->sca_c[k]*Jdag[k];
 	}
 
 	if (solveStokes) {
-	  for (k = atmos.Nspace;  k < 4*atmos.Nspace;  k++) Spol[0][k] = 0.0;
+	  for (k = Nspace;  k < 4*Nspace;  k++) Spol[0][k] = 0.0;
 
           /* --- Add emissivity due to active set for Q, U, V -- ---- */
 
-          if (polarized_as) {
-            for (k = atmos.Nspace;  k < 4*atmos.Nspace;  k++)
+	  if (polarized_as) {
+            for (k = Nspace;  k < 4*Nspace;  k++)
 	      Spol[0][k] += as->eta[k];
 	  }
           /* --- Add emissivity due to background lines -- ---------- */
 
-          if (polarized_c) {
-            for (k = atmos.Nspace;  k < 4*atmos.Nspace;  k++)
+	  if (polarized_c) {
+            for (k = Nspace;  k < 4*Nspace;  k++)
 	      Spol[0][k] += as->eta_c[k];
 	  }
 	  /* --- Add emissivity due to background scattering -- ----- */
 
-          if (input.backgr_pol && input.StokesMode == FULL_STOKES) {
-            for (k = 0;  k < atmos.Nspace;  k++) {
+	  if (input.backgr_pol && input.StokesMode == FULL_STOKES) {
+            for (k = 0;  k < Nspace;  k++) {
 	      Spol[0][k] += threemu1 * as->sca_c[k]*J20dag[k];
               Spol[1][k] += threemu2 * as->sca_c[k]*J20dag[k];
 	    }
 	  }
 	  for (n = 0;  n < 4;  n++) {
-	    for (k = 0;  k < atmos.Nspace;  k++)
+	    for (k = 0;  k < Nspace;  k++)
 	      Spol[n][k] /= chi[k];
 	  }
 	  PiecewiseStokes(nspect, mu, to_obs, chi, Spol, Ipol, Psi);
 
 	} else {
-	  for (k = 0;  k < atmos.Nspace;  k++)
+	  for (k = 0;  k < Nspace;  k++)
 	    S[k] /= chi[k];
 	  Piecewise_1D(nspect, mu, to_obs, chi, S, I, Psi);
 	}
 
 	if (eval_operator) {
-          for (k = 0;  k < atmos.Nspace;  k++) Psi[k] /= chi[k];
+          for (k = 0;  k < Nspace;  k++) Psi[k] /= chi[k];
 	  addtoGamma(nspect, wmu, I, Psi);
 	}
 
-
         if (spectrum.updateJ) {
 
-	  /* --- Accumulate mean intensity and rates -- ---------- */
+	  /* --- Accumulate mean intensity and rates -- ----------- */
 
-	  for (k = 0;  k < atmos.Nspace;  k++)
-	    J[k] += wmu * I[k];
+	  for (k = 0;  k < Nspace;  k++) J[k] += wmu * I[k];
 	  addtoRates(nspect, mu, to_obs, wmu, I, redistribute);
 
 	  /* --- Accumulate anisotropy --            -------------- */
 
 	  if (input.backgr_pol) {
-	    for (k = 0;  k < atmos.Nspace;  k++)
+	    for (k = 0;  k < Nspace;  k++)
 	      J20[k] +=
 		(threemu1 * Ipol[0][k] + threemu2 * Ipol[1][k]) * wmu;
 	  }
-	}
-	if (PRD_angle_dep) writeImu(nspect, mu, to_obs, I);
-      }
-      /* --- Save emergent intensity --              -------------- */
 
+	  /* --- Accumulate gas-frame mean intensity ------------- */
+
+	  if (atmos.NPRDactive >0 && input.PRD_angle_dep == PRD_ANGLE_APPROX
+	      && atmos.Nrays > 1) {
+	    if (input.prdh_limit_mem) {
+	      
+	      sign = (to_obs) ? 1.0 : -1.0;
+	      
+	      for (k = 0;  k < Nspace;  k++) {
+
+		// Observer's frame wavelenght grid
+		lambda = spectrum.lambda;
+		
+		// previous, current and next wavelength shifted to gas rest frame 
+		fac = (1.+spectrum.v_los[mu][k]*sign/CLIGHT);
+		lambda_prv = lambda[ MAX(nspect-1,0)                 ]*fac;
+		lambda_gas = lambda[ nspect                          ]*fac;
+		lambda_nxt = lambda[ MIN(nspect+1,spectrum.Nspect-1) ]*fac;
+	  
+		// do lambda_prv and lambda_gas bracket lambda points?
+		if (lambda_prv !=  lambda_gas) {
+		  
+		  dl= lambda_gas - lambda_prv;
+		  for (idx = 0; idx < spectrum.Nspect ; idx++) {     
+		    if (lambda[idx] > lambda_prv && lambda[idx] <= lambda_gas) {
+		      frac=(lambda[idx]-lambda_prv)/dl;
+		      spectrum.Jgas[idx][k] += frac * wmu * I[k];	   
+		    }
+		  }
+		  
+		} else {
+		  
+		  // edge case, use constant extrapolation for lambda[idx]<lambda gas
+		  for (idx = 0; idx < spectrum.Nspect ; idx++) {
+		    if (lambda[idx] <  lambda_gas)  spectrum.Jgas[idx][k] += wmu * I[k];
+		  }
+		  
+		} 
+		
+		// do lambda_gas and lambda_nxt bracket lambda points?
+		if (lambda_gas != lambda_nxt) {
+		  
+		  dl= lambda_nxt - lambda_gas;
+		  for (idx = 0; idx < spectrum.Nspect ; idx++) {     
+		    if (lambda[idx] > lambda_gas && lambda[idx] < lambda_nxt) {
+		      frac=(lambda[idx]-lambda_gas)/dl;
+		      spectrum.Jgas[idx][k] += (1.0-frac) * wmu * I[k];
+		    }
+		  }
+		  
+		} else {
+		  // edge case, use constant extrapolation for lambda[idx]>lambda gas
+		  for (idx = 0; idx < spectrum.Nspect ; idx++) {
+		    if (lambda[idx] >  lambda_gas)  spectrum.Jgas[idx][k] += wmu * I[k];
+		  }
+		} 
+
+	      } // spatial location
+
+	    } else {
+	      
+	      for (k = 0;  k < Nspace;  k++)  {
+			
+		lamuk = nspect * (atmos.Nrays*2*Nspace) 
+		  + mu * (2*Nspace) + to_obs * (Nspace) + k;
+		
+		idx0 = (lamuk==0) ? 0 : spectrum.nc[lamuk-1];
+		
+		for ( idx = idx0 ; idx <  spectrum.nc[lamuk] ; idx++ ) 
+		  spectrum.Jgas[ spectrum.iprdh[idx]][k] += wmu *  spectrum.cprdh[idx] * I[k];
+		
+	      } 
+	      
+	    } // prdh_limit_mem switch 
+	  } // Jgas accumulation endif 
+		
+	  if (containsPRDline(as) && input.PRD_angle_dep == PRD_ANGLE_DEP) 
+	    writeImu(nspect, mu, to_obs, I);
+
+	}
+      }
+
+      /* --- Save emergent intensity --              -------------- */
+      
       spectrum.I[nspect][mu] = I[0];
       if (solveStokes) {
 	spectrum.Stokes_Q[nspect][mu] = Ipol[1][0];
@@ -237,12 +321,17 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
   } else {
 
     /* --- The angle-independent case --               -------------- */
+    if (input.backgr_in_mem) {
+      loadBackground(nspect, 0, 0);
+    } else {
+      readBackground(nspect, 0, 0);
+    }
 
-    readBackground(nspect, 0, 0);
+
     Opacity(nspect, 0, 0, initialize=TRUE);
     if (eval_operator) addtoCoupling(nspect);
 
-    for (k = 0;  k < atmos.Nspace;  k++) {
+    for (k = 0;  k < Nspace;  k++) {
       chi[k] = as->chi[k] + as->chi_c[k];
       S[k]   = (as->eta[k] +
 		as->eta_c[k] + as->sca_c[k]*Jdag[k]) / chi[k];
@@ -252,28 +341,36 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
       spectrum.I[nspect][mu] = Feautrier(nspect, mu, chi, S,
 					 F_order=STANDARD, I, Psi);
       if (eval_operator) {
-	for (k = 0;  k < atmos.Nspace;  k++) Psi[k] /= chi[k];
+	for (k = 0;  k < Nspace;  k++) Psi[k] /= chi[k];
 	addtoGamma(nspect, geometry.wmu[mu], I, Psi);
       }
+
       if (spectrum.updateJ) {
-	for (k = 0;  k < atmos.Nspace;  k++) J[k] += I[k] * geometry.wmu[mu];
+	for (k = 0;  k < Nspace;  k++) J[k] += I[k] * geometry.wmu[mu];
 	addtoRates(nspect, mu, 0, geometry.wmu[mu], I, redistribute);
+	
+	/* --- Accumulate gas-frame mean intensity, which is the same
+	   as J in the angle-independent case ------------- */
+	if (atmos.NPRDactive >0 && input.PRD_angle_dep == PRD_ANGLE_APPROX) {
+	  for (k = 0;  k < Nspace;  k++) 
+	    spectrum.Jgas[nspect][k] += I[k] * geometry.wmu[mu];
+	}
+	
       }
     }
   }
+
   /* --- Write new J for current position in the spectrum -- -------- */
 
   dJmax = 0.0;
   if (spectrum.updateJ) {
-    for (k = 0;  k < atmos.Nspace;  k++) {
+    for (k = 0;  k < Nspace;  k++) {
       dJ = fabs(1.0 - Jdag[k]/J[k]);
       dJmax = MAX(dJmax, dJ);
     }
     if (input.limit_memory) {
       writeJlambda_single(nspect, J);
-      if (input.backgr_pol) {
-	writeJ20_single(nspect, J20);
-      }
+      if (input.backgr_pol) writeJ20_single(nspect, J20);
     }
   }
   /* --- Clean up --                                 ---------------- */

@@ -43,6 +43,8 @@ typedef struct {
   double  *lambda, **J, **I, **Stokes_Q, **Stokes_U, **Stokes_V, **J20,
          **Jgas, **Ilast, **v_los;
   ActiveSet *as;
+  int    *nc, *iprdh;
+  double *cprdh;
 } Spectrum;
 
 

@@ -126,6 +126,9 @@
 
 /* --- Function prototypes --                          -------------- */
 void SetLTEQuantities_p(void);
+void loadBackground(int la, int mu, bool_t to_obs);
+void storeBackground(int la, int mu, bool_t to_obs,
+		     double *chi_c, double *eta_c, double *sca_c);
 
 /* --- Global variables --                             -------------- */
 
@@ -292,20 +295,43 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
   fudge        = bgdat.fudge;
 
 
-  /* --- Open background file --                        ------------- */
+  // bcakground data in memory or on file?
+  if (input.backgr_in_mem) {
+    // in memory
 
-  /* get file name, with the MPI rank */
-  sprintf(file_background,"%s_p%d%s", input.background_File , mpi.rank, fext);
+    // sanity check
+    if (input.StokesMode != NO_STOKES) 
+	Error(ERROR_LEVEL_2,routineName,"Polarized transfer and in-memory backgr. op. is not implemented.");
 
-  if ((atmos.fd_background =
-       open(file_background, O_RDWR | O_CREAT | O_TRUNC, PERMISSIONS)) == -1) {
-    sprintf(messageStr, "Unable to open output file %s",
-	    file_background);
-    Error(ERROR_LEVEL_2, routineName, messageStr);
-  }
+	if (atmos.chi_b != NULL) freeMatrix((void **) atmos.chi_b);
+	atmos.chi_b = matrix_double(spectrum.Nspect * 2 * atmos.Nrays, atmos.Nspace);
+	
+	if (atmos.eta_b != NULL) freeMatrix((void **) atmos.eta_b);
+	atmos.eta_b = matrix_double(spectrum.Nspect * 2 * atmos.Nrays, atmos.Nspace);
+	
+	if (atmos.sca_b != NULL) freeMatrix((void **) atmos.sca_b);
+	atmos.sca_b = matrix_double(spectrum.Nspect * 2 * atmos.Nrays, atmos.Nspace);
+		
+  } else {
 
-  /* Zero record number, as background file is being overwritten */
-  mpi.backgrrecno = 0;
+	// on file
+	
+	/* --- Open background file --                        ------------- */
+	
+	/* get file name, with the MPI rank */
+	sprintf(file_background,"%s_p%d%s", input.background_File , mpi.rank, fext);
+	
+	if ((atmos.fd_background =
+	     open(file_background, O_RDWR | O_CREAT | O_TRUNC, PERMISSIONS)) == -1) {
+	  sprintf(messageStr, "Unable to open output file %s",
+		  file_background);
+	  Error(ERROR_LEVEL_2, routineName, messageStr);
+	}
+	
+	/* Zero record number, as background file is being overwritten */
+	mpi.backgrrecno = 0;
+	
+ }
 
 
   /* --- Allocate temporary storage space. The quantities are used
@@ -619,11 +645,24 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
 	  if ((mu == atmos.Nrays-1 && to_obs) ||
 	      (atmos.backgrflags[nspect].hasline && 
 	       (atmos.moving || atmos.backgrflags[nspect].ispolarized))) {
-	    mpi.backgrrecno += writeBackground(nspect, mu, to_obs,
-					       chi_c, eta_c, sca_c, chip_c);
+	    if (input.backgr_in_mem) {
+
+	      if ((mu == atmos.Nrays-1 && to_obs) && !(atmos.backgrflags[nspect].hasline && 
+						       (atmos.moving || atmos.backgrflags[nspect].ispolarized)) ){
+		storeBackground(nspect, 0, 0, chi_c, eta_c, sca_c);
+	      } else {
+		storeBackground(nspect, mu, to_obs, chi_c, eta_c, sca_c);
+	      }
+	      
+	    } else {
+	      
+	      mpi.backgrrecno += writeBackground(nspect, mu, to_obs,
+						 chi_c, eta_c, sca_c, chip_c);
+	    }
 	  }
 	}
-      }    
+      }
+
     } else {
       /* --- Angle-independent case. First, add opacity from passive
 	     atomic lines (including hydrogen) --      -------------- */
@@ -672,8 +711,13 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
       /* --- Store results --                          -------------- */
 
       atmos.backgrrecno[nspect] = mpi.backgrrecno;
-      mpi.backgrrecno += writeBackground(nspect, 0, 0,
-					 chi_c, eta_c, sca_c, NULL);
+
+      if (input.backgr_in_mem) {
+	storeBackground(nspect, 0, 0, chi_c, eta_c, sca_c);
+      } else {
+	mpi.backgrrecno += writeBackground(nspect, 0, 0,
+					   chi_c, eta_c, sca_c, NULL);
+      }
     }
   }
 

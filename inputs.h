@@ -73,7 +73,7 @@ typedef struct {
          Itop[MAX_VALUE_LENGTH];
   bool_t magneto_optical, XRD, Eddington,
          backgr_pol, limit_memory, allow_passive_bb, NonICE,
-         rlkscatter;
+         rlkscatter, prdh_limit_mem, backgr_in_mem;
   enum   solution startJ;
   enum   StokesMode StokesMode;
   enum   order_3D interpolate_3D;

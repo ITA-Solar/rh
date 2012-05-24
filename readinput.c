@@ -95,6 +95,10 @@ void readInput()
      setintValue},
     {"PRD_ANGLE_DEP", "PRD_ANGLE_INDEP", FALSE, KEYWORD_DEFAULT, &input.PRD_angle_dep,
      setPRDangle},
+    {"PRDH_LIMIT_MEM", "FALSE", FALSE, KEYWORD_OPTIONAL, &input.prdh_limit_mem,
+     setboolValue},
+    {"BACKGR_IN_MEM", "FALSE", FALSE, KEYWORD_OPTIONAL, &input.backgr_in_mem,
+     setboolValue},
     {"XRD", "FALSE", FALSE, KEYWORD_DEFAULT, &input.XRD, setboolValue}, 
 
     {"J_FILE",     "", FALSE, KEYWORD_REQUIRED, input.JFile, setcharValue},

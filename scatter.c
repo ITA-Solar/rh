@@ -299,6 +299,260 @@ void PRDScatter(AtomicLine *PRDline, enum Interpolation representation)
 }
 /* ------- end ---------------------------- PRDScatter.c ------------ */
 
+/* ------- begin -------------------------- PRDAngleApproxScatter.c - */
+
+void PRDAngleApproxScatter(AtomicLine *PRDline, enum Interpolation representation)
+{
+ const char routineName[] = "PRDAngleApproxScatter";
+  register int  la, k, lap, kr, ip, kxrd;
+
+  char    filename[MAX_LINE_SIZE];
+  bool_t  hunt, initialize;
+  int     Np, Nread, Nwrite, ij, Nsubordinate;
+  double  q_emit, q0, qN, *q_abs = NULL, *qp = NULL, *wq = NULL,
+         *qpp = NULL, *gii = NULL, *adamp, cDop, gnorm, *J = NULL,
+          Jbar, scatInt, *J_k = NULL, *Pj, gamma, waveratio;
+  Atom *atom;
+  AtomicLine *line, **XRD, *XRDline;
+  AtomicContinuum *continuum;
+
+  /* --- This the static case --                       -------------- */ 
+
+  atom = PRDline->atom;
+
+  if (!PRDline->PRD) {
+    sprintf(messageStr, "Line %d -> %d of %2s is not a PRD line",
+	    PRDline->j, PRDline->i, atom->ID);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
+
+  getCPU(3, TIME_START, NULL);
+
+  /* --- Open temporary file for storage of redistribution weights when
+         called for the first time  --                 -------------- */
+
+  initialize = FALSE;
+  if (PRDline->fp_GII == NULL) {
+    sprintf(filename,
+	    (atom->ID[1] == ' ') ? "PRD_%.1s_%d-%d.dat" : "PRD_%s_%d-%d.dat",
+	    atom->ID, PRDline->j, PRDline->i);
+
+    /* --- First try if file exists and can be opened for reading - - */
+
+    if ((PRDline->fp_GII = fopen(filename, "r")) != NULL) {
+      sprintf(messageStr,
+	      "Using file %s with existing redistribution weights", filename);
+      Error(WARNING, routineName, messageStr);
+    } else {
+      initialize = TRUE;
+      if ((PRDline->fp_GII = fopen(filename, "w+")) == NULL) {
+	sprintf(messageStr, "Unable to open temporary file %s", filename);
+	Error(ERROR_LEVEL_2, routineName, messageStr);
+      }
+    }
+  }
+  if (!initialize) rewind(PRDline->fp_GII);
+  
+  /* --- Set XRD line array --                         -------------- */
+
+  if (input.XRD)
+    Nsubordinate = 1 + PRDline->Nxrd;
+  else
+    Nsubordinate = 1;
+
+  XRD = (AtomicLine **) malloc(Nsubordinate * sizeof(AtomicLine*));
+  XRD[0] = PRDline;
+  if (input.XRD) {
+    for (kxrd = 0;  kxrd < PRDline->Nxrd;  kxrd++) 
+      XRD[kxrd + 1] = PRDline->xrd[kxrd];
+  }
+  /* --- Initialize the emission profile ratio rho --  -------------- */
+
+  for (la = 0; la < PRDline->Nlambda; la++) {
+    for (k = 0; k < atmos.Nspace; k++) {   
+      PRDline->rho_prd[la][k] = 1.0;
+    }
+  }
+  Pj    = (double *) malloc (atmos.Nspace * sizeof(double));
+  adamp = (double *) malloc (atmos.Nspace * sizeof(double)); 
+  cDop  = (NM_TO_M * PRDline->lambda0) / (4.0 * PI);
+
+  for (k = 0; k < atmos.Nspace; k++) { 
+    adamp[k] = (PRDline->Grad + PRDline->Qelast[k]) * cDop / atom->vbroad[k];
+
+    /* --- Evaluate the total rate Pj out of the line's upper level - */
+
+    Pj[k] = PRDline->Qelast[k];
+    for (ip = 0;  ip < atom->Nlevel;  ip++) {
+      ij = ip * atom->Nlevel + PRDline->j;
+      Pj[k] += atom->C[ij][k];
+    }
+    for (kr = 0;  kr < atom->Nline;  kr++) {
+      line = &atom->line[kr];
+      if (line->j == PRDline->j) Pj[k] += line->Rji[k];
+      if (line->i == PRDline->j) Pj[k] += line->Rij[k];
+    }
+    for (kr = 0;  kr < atom->Ncont;  kr++) {
+      continuum = &atom->continuum[kr];
+      if (continuum->j == PRDline->j) Pj[k] += continuum->Rji[k];
+      if (continuum->i == PRDline->j) Pj[k] += continuum->Rij[k];
+    }
+  }
+  /* --- Loop over subordinate lines --                -------------- */
+
+  for (kxrd = 0;  kxrd < Nsubordinate;  kxrd++) {
+    XRDline = XRD[kxrd];
+    waveratio = XRDline->lambda0 / PRDline->lambda0;
+
+    J_k   = realloc(J_k, XRDline->Nlambda * sizeof(double));
+    q_abs = realloc(q_abs, XRDline->Nlambda * sizeof(double));
+
+    /* --- Loop over all spatial locations --          -------------- */
+
+    for (k = 0;  k < atmos.Nspace;  k++) {
+      gamma = atom->n[XRDline->i][k] / atom->n[PRDline->j][k] *
+	XRDline->Bij / Pj[k];
+      Jbar = XRDline->Rij[k] / XRDline->Bij;
+
+      /* --- Get local mean intensity and wavelength in Doppler units */
+
+      for (la = 0;  la < XRDline->Nlambda;  la++) {
+	J_k[la]   = spectrum.Jgas[XRDline->Nblue + la][k];
+	q_abs[la] = (XRDline->lambda[la] - XRDline->lambda0) * CLIGHT /
+	  (XRDline->lambda0 * atom->vbroad[k]);
+      }
+      switch (representation) {
+      case LINEAR:
+	break;
+      case SPLINE:
+	splineCoef(XRDline->Nlambda, q_abs, J_k);
+	break;
+      case EXP_SPLINE:
+	exp_splineCoef(XRDline->Nlambda, q_abs, J_k, TENSION);
+	break;
+      }
+      /* --- Outer wavelength loop over emission wavelengths -- ----- */
+
+      for (la = 0;  la < PRDline->Nlambda;  la++) {
+	q_emit = (PRDline->lambda[la] - PRDline->lambda0) * CLIGHT /
+	  (PRDline->lambda0 * atom->vbroad[k]);
+
+	/* --- Establish integration limits over absorption wavelength,
+	       using only regions where the redistribution function is
+	       non-zero. (See also function GII.) --   -------------- */
+ 
+	if (fabs(q_emit) < PRD_QCORE) {
+	  q0 = -PRD_QWING;
+	  qN =  PRD_QWING;
+	} else {
+	  if (fabs(q_emit) < PRD_QWING) {
+	    if (q_emit > 0.0) {
+	      q0 = -PRD_QWING;
+	      qN = waveratio * (q_emit + PRD_QSPREAD);
+	    } else {
+	      q0 = waveratio * (q_emit - PRD_QSPREAD);
+	      qN = PRD_QWING;
+	    }
+	  } else {
+	    q0 = waveratio * (q_emit - PRD_QSPREAD);
+	    qN = waveratio * (q_emit + PRD_QSPREAD);
+	  }
+	}
+	Np = (int) ((qN - q0) / PRD_DQ) + 1;
+	qp = (double *) realloc(qp,  Np * sizeof(double));
+	for (lap = 1, qp[0] = q0;  lap < Np;  lap++)
+	  qp[lap] = qp[lap - 1] + PRD_DQ;
+
+	/* --- Fold interpolation of J for symmetric lines. -- ------ */
+
+	if (XRDline->symmetric) {
+	  qpp = (double *) realloc(qpp,  Np * sizeof(double));
+	  for (lap = 0;  lap < Np;  lap++) qpp[lap] = fabs(qp[lap]);
+	}
+
+	/* --- Interpolate mean intensity onto fine grid. Choose linear,
+	       spline or exponential spline interpolation -- -------- */
+
+	J = (double *) realloc(J,  Np * sizeof(double));
+	switch (representation) {
+	case LINEAR:
+	  Linear(XRDline->Nlambda, q_abs, J_k, Np,
+		 (XRDline->symmetric) ? qpp : qp, J, hunt=TRUE);
+	  break;
+	case SPLINE:
+	  splineEval(Np, (XRDline->symmetric) ? qpp : qp, J, hunt=TRUE);
+	  break;
+	case EXP_SPLINE:
+	  exp_splineEval(Np, (XRDline->symmetric) ? qpp : qp, J, hunt=TRUE);
+	  break;
+	}
+	/* --- Compute the redistribution weights --   -------------- */
+
+	gii = (double *) realloc(gii, Np * sizeof(double));
+	if (initialize) {
+
+	  /* --- Integration weights (See: Press et al. Numerical Recipes,
+	         p. 107, eq. 4.1.12) --                -------------- */
+
+	  wq = (double *) realloc(wq,  Np * sizeof(double));
+	  wq[0] = 5.0/12.0  * PRD_DQ;
+	  wq[1] = 13.0/12.0 * PRD_DQ;
+	  for (lap = 2;  lap < Np-2;  lap++) wq[lap] = PRD_DQ;
+	  wq[Np-1] = 5.0/12.0  * PRD_DQ;
+	  wq[Np-2] = 13.0/12.0 * PRD_DQ;
+
+	  for (lap = 0;  lap < Np;  lap++)
+	    gii[lap] = GII(adamp[k], waveratio, q_emit, qp[lap]) * wq[lap];
+
+	  if ((Nwrite =
+	       fwrite(gii, sizeof(double), Np, PRDline->fp_GII)) != Np) {
+	    sprintf(messageStr,
+		  "Unable to write proper number of redistribution weights\n"
+		  " Wrote %d instead of %d.\n Line %d -> %d, la = %d, k = %d",
+		    Nwrite, Np, XRDline->j, XRDline->i, la, k);
+	    Error(ERROR_LEVEL_2, routineName, messageStr);
+	  }
+	} else {
+	  if ((Nread =
+	       fread(gii, sizeof(double), Np, PRDline->fp_GII)) != Np) {
+	    sprintf(messageStr,
+		  "Unable to read proper number of redistribution weights\n"
+		  " Read %d instead of %d.\n Line %d -> %d, la = %d, k = %d",
+		  Nread, Np, XRDline->j, XRDline->i, la, k);
+	    Error(ERROR_LEVEL_2, routineName, messageStr);
+	  }
+	}
+	/* --- Inner wavelength loop doing actual wavelength integration
+               over absorption wavelengths --          -------------- */
+
+	gnorm   = 0.0;
+	scatInt = 0.0;
+	for (lap = 0;  lap < Np;  lap++) {
+	  gnorm   += gii[lap];
+	  scatInt += J[lap] * gii[lap];
+	}
+	PRDline->rho_prd[la][k] += gamma*(scatInt/gnorm - Jbar);
+      }
+    }
+  }
+  /* --- Clean temporary variable space --             -------------- */
+
+  for (kxrd = 0;  kxrd < Nsubordinate;  kxrd++) {
+    if (XRD[kxrd]->symmetric) {
+      free(qpp);
+      break;
+    }
+  }
+  free(J_k);    free(q_abs);  free(gii);
+  free(qp);     free(wq);     free(J);
+  free(XRD);    free(Pj);     free(adamp);
+
+  sprintf(messageStr, "Scatter Int %5.1f", PRDline->lambda0);
+  getCPU(3, TIME_POLL, messageStr);
+}
+/* ------- end ---------------------------- PRDAngleApproxScatter.c - */
+
+
 /* ------- begin -------------------------- PRDAngleScatter.c ------- */
 
 void PRDAngleScatter(AtomicLine *PRDline,
@@ -601,342 +855,3 @@ void PRDAngleScatter(AtomicLine *PRDline,
   getCPU(3, TIME_POLL, messageStr);
 }
 /* ------- end ---------------------------- PRDAngleScatter.c ------- */
-
-
-/* ------- begin -------------------------- PRDAngleApproxScatter.c - */
-
-void PRDAngleApproxScatter(AtomicLine *PRDline, enum Interpolation representation)
-{
-  const char routineName[] = "scatterIntegral";
-  register int  la, k, lap, kr, ip, kxrd, mu, to_obs;
-
-  char    filename[MAX_LINE_SIZE];
-  bool_t  hunt, initialize;
-  int     Np, Nread, Nwrite, ij, Nsubordinate, Nrays = atmos.Nrays;
-  long    idx, lamu;
-  double  q_emit, q0, qN, *q_abs = NULL, *qp = NULL, *wq = NULL,
-         *qpp = NULL, *gii = NULL, *adamp, cDop, gnorm, *J = NULL,
-          Jbar, scatInt, *J_k = NULL, *Pj, gamma, waveratio, vlos, sign,
-         *rho_intp, *rho_stor, *lambda_s, **rho_new;
-  Atom *atom;
-  AtomicLine *line, **XRD, *XRDline;
-  AtomicContinuum *continuum;
-
-  /* --- This the static case, with Jorrit Leenaart's approximation   */
-  
-  atom = PRDline->atom;
-
-  if (!PRDline->PRD) {
-    sprintf(messageStr, "Line %d -> %d of %2s is not a PRD line",
-	    PRDline->j, PRDline->i, atom->ID);
-    Error(ERROR_LEVEL_2, routineName, messageStr);
-  }
-
-  getCPU(3, TIME_START, NULL);
-
-  /* --- Open temporary file for storage of redistribution weights when
-         called for the first time  --                 -------------- */
-
-  initialize = FALSE;
-  if (PRDline->fp_GII == NULL) {
-    sprintf(filename,
-	    (atom->ID[1] == ' ') ? "PRD_%.1s_%d-%d.dat" : "PRD_%s_%d-%d.dat",
-	    atom->ID, PRDline->j, PRDline->i);
-
-    /* --- First try if file exists and can be opened for reading - - */
-
-    if ((PRDline->fp_GII = fopen(filename, "r")) != NULL) {
-      sprintf(messageStr,
-	      "Using file %s with existing redistribution weights", filename);
-      Error(WARNING, routineName, messageStr);
-    } else {
-      initialize = TRUE;
-      if ((PRDline->fp_GII = fopen(filename, "w+")) == NULL) {
-	sprintf(messageStr, "Unable to open temporary file %s", filename);
-	Error(ERROR_LEVEL_2, routineName, messageStr);
-      }
-    }
-  }
-  if (!initialize) rewind(PRDline->fp_GII);
-  
-  /* --- Set XRD line array --                         -------------- */
-
-  if (input.XRD)
-    Nsubordinate = 1 + PRDline->Nxrd;
-  else
-    Nsubordinate = 1;
-
-  XRD = (AtomicLine **) malloc(Nsubordinate * sizeof(AtomicLine*));
-  XRD[0] = PRDline;
-  if (input.XRD) {
-    for (kxrd = 0;  kxrd < PRDline->Nxrd;  kxrd++) 
-      XRD[kxrd + 1] = PRDline->xrd[kxrd];
-  }
-  /* --- Initialize the emission profile ratio rho --  -------------- */
-
-  for (la = 0; la < PRDline->Nlambda; la++) {
-    for (mu = 0;  mu < Nrays;  mu++) {
-      for (to_obs = 0;  to_obs <= 1;  to_obs++) {	    
-	lamu = 2*(Nrays*la + mu) + to_obs;
-	for (k = 0; k < atmos.Nspace; k++) {   
-	  PRDline->rho_prd[lamu][k] = 1.0;
-	}
-      }
-    }
-  }
-  Pj    = (double *) malloc (atmos.Nspace * sizeof(double));
-  adamp = (double *) malloc (atmos.Nspace * sizeof(double)); 
-  cDop  = (NM_TO_M * PRDline->lambda0) / (4.0 * PI);
-
-  for (k = 0; k < atmos.Nspace; k++) { 
-    adamp[k] = (PRDline->Grad + PRDline->Qelast[k]) * cDop / atom->vbroad[k];
-
-    /* --- Evaluate the total rate Pj out of the line's upper level - */
-
-    Pj[k] = PRDline->Qelast[k];
-    for (ip = 0;  ip < atom->Nlevel;  ip++) {
-      ij = ip * atom->Nlevel + PRDline->j;
-      Pj[k] += atom->C[ij][k];
-    }
-    for (kr = 0;  kr < atom->Nline;  kr++) {
-      line = &atom->line[kr];
-      if (line->j == PRDline->j) Pj[k] += line->Rji[k];
-      if (line->i == PRDline->j) Pj[k] += line->Rij[k];
-    }
-    for (kr = 0;  kr < atom->Ncont;  kr++) {
-      continuum = &atom->continuum[kr];
-      if (continuum->j == PRDline->j) Pj[k] += continuum->Rji[k];
-      if (continuum->i == PRDline->j) Pj[k] += continuum->Rij[k];
-    }
-  }
-  /* --- Loop over subordinate lines --                -------------- */
-
-  for (kxrd = 0;  kxrd < Nsubordinate;  kxrd++) {
-    XRDline = XRD[kxrd];
-    waveratio = XRDline->lambda0 / PRDline->lambda0;
-
-    J_k   = realloc(J_k, XRDline->Nlambda * sizeof(double));
-    q_abs = realloc(q_abs, XRDline->Nlambda * sizeof(double));
-
-    /* --- Loop over all spatial locations --          -------------- */
-
-    for (k = 0;  k < atmos.Nspace;  k++) {
-      gamma = atom->n[XRDline->i][k] / atom->n[PRDline->j][k] *
-	XRDline->Bij / Pj[k];
-      Jbar = XRDline->Rij[k] / XRDline->Bij;
-
-      /* --- Get local mean intensity and wavelength in Doppler units */
-
-      for (la = 0;  la < XRDline->Nlambda;  la++) {
-	// Tiago: this is the line where we need to replace spectrum.J by spectrum.Jgas
-
-	J_k[la]   = spectrum.Jgas[XRDline->Nblue + la][k];
-	//J_k[la]   = spectrum.J[XRDline->Nblue + la][k];
-	q_abs[la] = (XRDline->lambda[la] - XRDline->lambda0) * CLIGHT /
-	  (XRDline->lambda0 * atom->vbroad[k]);
-      }
-      switch (representation) {
-      case LINEAR:
-	break;
-      case SPLINE:
-	splineCoef(XRDline->Nlambda, q_abs, J_k);
-	break;
-      case EXP_SPLINE:
-	exp_splineCoef(XRDline->Nlambda, q_abs, J_k, TENSION);
-	break;
-      }
-      /* --- Outer wavelength loop over emission wavelengths -- ----- */
-
-      for (la = 0;  la < PRDline->Nlambda;  la++) {
-	q_emit = (PRDline->lambda[la] - PRDline->lambda0) * CLIGHT /
-	  (PRDline->lambda0 * atom->vbroad[k]);
-
-	/* --- Establish integration limits over absorption wavelength,
-	       using only regions where the redistribution function is
-	       non-zero. (See also function GII.) --   -------------- */
- 
-	if (fabs(q_emit) < PRD_QCORE) {
-	  q0 = -PRD_QWING;
-	  qN =  PRD_QWING;
-	} else {
-	  if (fabs(q_emit) < PRD_QWING) {
-	    if (q_emit > 0.0) {
-	      q0 = -PRD_QWING;
-	      qN = waveratio * (q_emit + PRD_QSPREAD);
-	    } else {
-	      q0 = waveratio * (q_emit - PRD_QSPREAD);
-	      qN = PRD_QWING;
-	    }
-	  } else {
-	    q0 = waveratio * (q_emit - PRD_QSPREAD);
-	    qN = waveratio * (q_emit + PRD_QSPREAD);
-	  }
-	}
-	Np = (int) ((qN - q0) / PRD_DQ) + 1;
-	qp = (double *) realloc(qp,  Np * sizeof(double));
-	for (lap = 1, qp[0] = q0;  lap < Np;  lap++)
-	  qp[lap] = qp[lap - 1] + PRD_DQ;
-
-	/* --- Fold interpolation of J for symmetric lines. -- ------ */
-
-	if (XRDline->symmetric) {
-	  qpp = (double *) realloc(qpp,  Np * sizeof(double));
-	  for (lap = 0;  lap < Np;  lap++) qpp[lap] = fabs(qp[lap]);
-	}
-
-	/* --- Interpolate mean intensity onto fine grid. Choose linear,
-	       spline or exponential spline interpolation -- -------- */
-
-	J = (double *) realloc(J,  Np * sizeof(double));
-	switch (representation) {
-	case LINEAR:
-	  Linear(XRDline->Nlambda, q_abs, J_k, Np,
-		 (XRDline->symmetric) ? qpp : qp, J, hunt=TRUE);
-	  break;
-	case SPLINE:
-	  splineEval(Np, (XRDline->symmetric) ? qpp : qp, J, hunt=TRUE);
-	  break;
-	case EXP_SPLINE:
-	  exp_splineEval(Np, (XRDline->symmetric) ? qpp : qp, J, hunt=TRUE);
-	  break;
-	}
-	/* --- Compute the redistribution weights --   -------------- */
-
-	gii = (double *) realloc(gii, 2*Nrays*Np * sizeof(double));
-	//gii = (double *) realloc(gii, Np * sizeof(double));	
-	
-        if (initialize) {
-
-          /* --- Integration weights (See: Press et al. Numerical Recipes,
-	             p. 107, eq. 4.1.12) --                -------------- */
-
-          wq = (double *) realloc(wq,  Np * sizeof(double));
-          wq[0] = 5.0/12.0  * PRD_DQ;
-          wq[1] = 13.0/12.0 * PRD_DQ;
-          for (lap = 2;  lap < Np-2;  lap++) wq[lap] = PRD_DQ;
-          wq[Np-1] = 5.0/12.0  * PRD_DQ;
-          wq[Np-2] = 13.0/12.0 * PRD_DQ;
-
-	  // Tiago: adding angle loops here
-	  for (mu = 0;  mu < Nrays;  mu++) {
-	    for (to_obs = 0;  to_obs <= 1;  to_obs++) {
-	      
-	      sign = (to_obs) ? 1.0 : -1.0;
-	      	
-	      //vlos = sign*spectrum.v_los[mu][k] / atom->vbroad[k];
-	      vlos = 0.;
-	      
-	      for (lap = 0;  lap < Np;  lap++) {
-		 
-		idx = mu*2*Np + to_obs*Np + lap; /* index of gii */
-
-	        gii[idx] = GII(adamp[k], waveratio, q_emit-vlos, qp[lap]) * wq[lap];
-	      }
-	    }
-	  }
-
-          if ((Nwrite =
-	       //fwrite(gii, sizeof(double), Np, PRDline->fp_GII)) != Np) {
-               fwrite(gii, sizeof(double), 2*Nrays*Np, PRDline->fp_GII)) != 2*Nrays*Np) {
-            sprintf(messageStr,
-		"Unable to write proper number of redistribution weights\n"
-		" Wrote %d instead of %d.\n Line %d -> %d, la = %d, k = %d",
-		  Nwrite, Np, XRDline->j, XRDline->i, la, k);
-	      Error(ERROR_LEVEL_2, routineName, messageStr);
-	  }
-	} else {
-          if ((Nread =
-	       //fread(gii, sizeof(double), Np, PRDline->fp_GII)) != Np) {
-               fread(gii, sizeof(double), 2*Nrays*Np, PRDline->fp_GII)) != 2*Nrays*Np) {
-            sprintf(messageStr,
-         	  "Unable to read proper number of redistribution weights\n"
-	    	  " Read %d instead of %d.\n Line %d -> %d, la = %d, k = %d",
-	  	  Nread, Np, XRDline->j, XRDline->i, la, k);
-            Error(ERROR_LEVEL_2, routineName, messageStr);
-          }
-	}
-	    /* --- Inner wavelength loop doing actual wavelength integration
-	           over absorption wavelengths --          -------------- */
-
-        for (mu = 0;  mu < Nrays;  mu++) {
-          for (to_obs = 0;  to_obs <= 1;  to_obs++) {
-	    
-	    lamu = 2*(Nrays*la + mu) + to_obs;
-	    //lamu = la;
-	    
-	    gnorm   = 0.0;
-	    scatInt = 0.0;
-	    
-	    // Integral in absorption wavelength:
-	    for (lap = 0;  lap < Np;  lap++) {
-	      idx = mu*2*Np + to_obs*Np + lap; /* index of gii */
-	      //idx = lap;
-	      gnorm   += gii[idx];
-	      scatInt += J[lap] * gii[idx];
-            }
-	    
-	    // Tiago: put condition to prevent negative scatInt?
-	    PRDline->rho_prd[lamu][k] += gamma*(scatInt/gnorm - Jbar);  /* Integral over XRD lines*/ 
-	  } /* end of to_obs loop */
-	}   /* end of mu loop     */
-	
-	// Tiago: must interpolate rho_prd back into the lab frame. use Linear()
-      }     /* End of emission wavelength loop */
-    }       /* End of depth loop */
-  }         /* End of subordinate line loop */
-  
-  /* --- Tiago: shift rho back to lab rest frame --    -------------- */
-  
-  rho_stor = (double *) calloc(PRDline->Nlambda, sizeof(double));
-  rho_intp = (double *) calloc(PRDline->Nlambda, sizeof(double));
-  lambda_s = (double *) calloc(PRDline->Nlambda, sizeof(double));
-  rho_new  = matrix_double(2*atmos.Nrays * PRDline->Nlambda, atmos.Nspace);
-  
-  /*
-  for (k = 0; k < atmos.Nspace; k++) {
-    for (mu = 0; mu < Nrays; mu++ ) {
-      for (to_obs = 0; to_obs <= 1; to_obs++) {
-	
-	// Grab rho[lambda] and shifted wavelengths 
-	for (la = 0;  la < PRDline->Nlambda;  la++) {
-	  lamu = 2*(Nrays*la + mu) + to_obs;
-	  sign = (to_obs) ? 1.0 : -1.0;
-	  rho_stor[la] = PRDline->rho_prd[lamu][k];
-	  lambda_s[la] = PRDline->lambda[la]*(1.-spectrum.v_los[mu][k]*sign/CLIGHT);
-	} 
-      
-	// Linearly interpolate, equivalent to wavelength shift 
-	Linear(PRDline->Nlambda, lambda_s,        rho_stor, PRDline->Nlambda,
-	                         PRDline->lambda, rho_intp, hunt=TRUE);
-	
-	// Save back into rho 
-	for (la = 0;  la < PRDline->Nlambda;  la++) {
-	  lamu = 2*(Nrays*la + mu) + to_obs;
-	  rho_new[lamu][k] = rho_intp[la];
-	  PRDline->rho_prd[lamu][k] = rho_intp[la];	  
-	}
-      }   // direction loop     
-    }     // mu loop
-    
-  }       // depth loop
-  */
-	
-  
-  free(rho_stor); free(rho_intp); free(lambda_s); freeMatrix((void **) rho_new);
-  
-  /* --- Clean temporary variable space --             -------------- */
-
-  for (kxrd = 0;  kxrd < Nsubordinate;  kxrd++) {
-    if (XRD[kxrd]->symmetric) {
-      free(qpp);
-      break;
-    }
-  }
-  free(J_k);    free(q_abs);  free(gii);
-  free(qp);     free(wq);     free(J);
-  free(XRD);    free(Pj);     free(adamp);
-
-  sprintf(messageStr, "Scatter Int %5.1f", PRDline->lambda0);
-  getCPU(3, TIME_POLL, messageStr);
-}
-/* ------- end ---------------------------- PRDAngleApproxScatter.c - */

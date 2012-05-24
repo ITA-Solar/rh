@@ -38,15 +38,15 @@ extern char messageStr[];
 void Redistribute(int NmaxIter, double iterLimit)
 {
   const char routineName[] = "Redistribute";
-  register int kr, nact, i, mu, to_obs;
+  register int kr, nact;
 
   bool_t  quiet, accel, eval_operator, redistribute;
   enum    Interpolation representation;
-  int     niter, Nlamu, lamu;
+  int     niter, Nlamu;
   double  drho, drhomax, drhomaxa;
   Atom *atom;
   AtomicLine *line;
-  
+
   for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
     atom = atmos.activeatoms[nact];
     
@@ -55,7 +55,7 @@ void Redistribute(int NmaxIter, double iterLimit)
     for (kr = 0;  kr < atom->Nline;  kr++) {
       line = &atom->line[kr];
       if (line->PRD && line->Ng_prd == NULL) {
-	if (input.PRD_angle_dep != PRD_ANGLE_INDEP)
+	if (input.PRD_angle_dep == PRD_ANGLE_DEP)
 	  Nlamu = 2*atmos.Nrays * line->Nlambda * atmos.Nspace;
 	else
 	  Nlamu = line->Nlambda*atmos.Nspace;
@@ -83,17 +83,7 @@ void Redistribute(int NmaxIter, double iterLimit)
 	  switch (input.PRD_angle_dep) {
 	    case PRD_ANGLE_INDEP:
 	      PRDScatter(line, representation=LINEAR);
-	      
-	      // printout for rho angle-independent
-	      /*
-	      printf("rho_prd = \n");
-	      for (i = 0; i < line->Nlambda; i++) {
-	      printf("%8.4f  %e\n", line->lambda[i], line->rho_prd[i][80]);
-	      }
-	      exit(1);
-	      */
 	      break;
-
 	    
 	    case PRD_ANGLE_APPROX:
 	      PRDAngleApproxScatter(line, representation=LINEAR); 
@@ -103,21 +93,6 @@ void Redistribute(int NmaxIter, double iterLimit)
 	      PRDAngleScatter(line, representation=LINEAR);
 	      break;
 	  }
-
-	  // printout for rho angle-dependent
-	  /*
-	    for (mu = 0; mu < atmos.Nrays; mu++) {
-	      for (to_obs = 0; to_obs <= 1; to_obs++) {
-	       for (i = 0; i < line->Nlambda; i++) {
-		lamu = 2*(atmos.Nrays*i + mu) + to_obs;
-		if ((to_obs == 1))// && (mu == 2))
-		printf("%d  %8.4f  %e\n", mu, line->lambda[i], line->rho_prd[lamu][150]);
-	      }
-	    }
-	  }
-	  exit(1);
-	  */
-	  
 	      
 	  accel = Accelerate(line->Ng_prd, line->rho_prd[0]);
 	  sprintf(messageStr, "  PRD: iter #%d, atom %s, line %d,",

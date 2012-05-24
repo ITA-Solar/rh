@@ -75,6 +75,7 @@ void init_aux_new(void) {
   Atom   *atom;
   Molecule *molecule;
   ActiveSet *as;
+  
 
   /* Create the file  */
   if ((ierror = nc_create_par(AUX_FILE, NC_NETCDF4 | NC_CLOBBER | NC_MPIPOSIX, 
@@ -277,7 +278,7 @@ void init_aux_new(void) {
     for (i=0; i < spectrum.Nspect; i++) {
       as = &spectrum.as[i];
       if (containsActive(as)) {
-	if ( containsPolarized(as) || (containsPRDline(as) && input.PRD_angle_dep) 
+	if ( containsPolarized(as) || (containsPRDline(as) && input.PRD_angle_dep != PRD_ANGLE_INDEP) 
 	     || (atmos.moving && containsBoundBound(as))) {
 	  ad_idx[nad++] = nwave;
 	} else {
@@ -909,7 +910,7 @@ void writeOpacity_p(void) {
              source functions are needed --            -------------- */ 
 
 	boundbound    = containsBoundBound(as);
-	PRD_angle_dep = (containsPRDline(as) && input.PRD_angle_dep);
+	PRD_angle_dep = (containsPRDline(as) && input.PRD_angle_dep != PRD_ANGLE_INDEP);
 	polarized     = containsPolarized(as);
 
 	/* --- Case of angle-dependent opacity and source function -- - */

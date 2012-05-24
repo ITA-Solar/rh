@@ -29,6 +29,7 @@
 
 void init_ncdf_ray_new(void);
 void init_ncdf_ray_old(void);
+void loadBackground(int la, int mu, bool_t to_obs);
 
 /* --- Global variables --                             -------------- */
 
@@ -406,8 +407,13 @@ void writeRay(void)
       
       alloc_as(idx, crosscoupling=FALSE);
       Opacity(idx, 0, to_obs=TRUE, initialize=TRUE);
-      readBackground(idx, 0, to_obs=TRUE);
       
+      if (input.backgr_in_mem) {
+	loadBackground(idx, 0, to_obs=TRUE);
+      } else {
+	readBackground(idx, 0, to_obs=TRUE);
+      }      
+
       if (input.limit_memory) {
 	readJlambda_single(idx, J);
       } else
@@ -508,8 +514,8 @@ void writeRay(void)
 void calculate_ray(void) {
   /* performs necessary reallocations and inits, and solves for ray */
   
-      int i, nact, ierror;
-      bool_t analyze_output, equilibria_only;
+  int i, nact, ierror, mu,k;
+      bool_t analyze_output, equilibria_only,prdh_limit_mem_save;
       Atom *atom;
       AtomicLine *line;
       
@@ -594,30 +600,35 @@ void calculate_ray(void) {
 	if (spectrum.Stokes_V != NULL) freeMatrix((void **) spectrum.Stokes_V);
 	spectrum.Stokes_V = matrix_double(spectrum.Nspect, atmos.Nrays);
       }
-      
+
+      if (input.PRD_angle_dep == PRD_ANGLE_APPROX &&  atmos.NPRDactive > 0) {
+
+	// recalculate line-of-sight velocity
+	if (spectrum.v_los != NULL) freeMatrix((void **) spectrum.v_los);
+	spectrum.v_los = matrix_double( atmos.Nrays, atmos.Nspace);
+	for (mu = 0;  mu < atmos.Nrays;  mu++) {
+	  for (k = 0;  k < atmos.Nspace;  k++) {
+	    spectrum.v_los[mu][k] = vproject(k, mu); 
+	  }
+	}
+
+	/* set switch so that shift of rho_prd is done with a fresh
+	   interpolation */
+	prdh_limit_mem_save = FALSE;
+	if (input.prdh_limit_mem) prdh_limit_mem_save = TRUE;
+	input.prdh_limit_mem = TRUE;
+
+      }
       
       Background_p(analyze_output=FALSE, equilibria_only=FALSE);
-        
-      /*
-      as = &spectrum.as[176];
-      alloc_as(176, FALSE);
-      readBackground(176, 0, 0);
-      Opacity(176, 0, 0, TRUE);
-      
-      for (i=0; i < atmos.Nspace; i++) {
-        printf("%e   %e   %e   %e   %e   %e\n", as->chi_c[i], as->eta_c[i],
-       as->chi[i], as->eta[i], as->sca_c[i], spectrum.J[176][i]);	     
-      } */
 
       /* --- Solve radiative transfer for ray --           -------------- */
       solveSpectrum(FALSE, FALSE);
 
-      /*
-      for (i=0; i < spectrum.Nspect; i++) {
-	printf("%i   %e\n", i, spectrum.I[i][0]);
-      } */
-    
-  
+      // set back PRD input option
+      if (input.PRD_angle_dep == PRD_ANGLE_APPROX && atmos.NPRDactive > 0)  
+	input.prdh_limit_mem = prdh_limit_mem_save ;
+        
 }
 
 /* ------- end   -------------------------- calculate_ray.c --------- */

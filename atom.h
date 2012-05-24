@@ -55,7 +55,9 @@ struct AtomicLine {
   double   lambda0, *lambda, isotope_frac, g_Lande_eff,
            Aji, Bji, Bij, *Rij, *Rji, **phi, **phi_Q, **phi_U, **phi_V,
          **psi_Q, **psi_U, **psi_V, *wphi, *Qelast, Grad, cvdWaals[4],
-           cStark, qcore, qwing, **rho_prd, *c_shift, *c_fraction;
+           cStark, qcore, qwing, **rho_prd, *c_shift, *c_fraction, **gII;
+  int    **id0, **id1;
+  double **frac;
   FILE    *fp_GII;
   struct Ng *Ng_prd;
   Atom *atom;
@@ -193,6 +195,7 @@ void   statEquil(Atom *atom, int isum);
 double updatePopulations(int niter);
 
 void CollisionRate(Atom *atom, FILE *atomFile);
+double summers(int i, int j, double nne, Atom *atom);
 void Damping(AtomicLine *line, double *adamp);
 void FixedRate(Atom *atom);
 void freeAtom(Atom *atom);

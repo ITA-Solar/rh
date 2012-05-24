@@ -45,6 +45,7 @@
 
 /* --- Function prototypes --                          -------------- */
 
+void readJgas(double **J);
 
 /* --- Global variables --                             -------------- */
 
@@ -72,35 +73,253 @@ void initSolution(Atom *atom, Molecule *molecule)
   AtomicLine *line;
   AtomicContinuum *continuum;
   XDR xdrs;
+  double cswitch;
+  int to_obs,lamuk,sign,ncoef,ilow,Nlamu,lamu;
+  long int idx, lc;
+  double *lambda,fac,lambda_prv,lambda_gas,lambda_nxt,dl,frac,lag;
+  FILE *fp;
 
   getCPU(2, TIME_START, NULL);
 
-  /* --- Allocate space for angle-averaged mean intensity -- -------- */
+  /* Collisional-radiative switching ? */
+  if (input.crsw != 0.0)
+    cswitch = input.crsw_ini;
+  else
+    cswitch = 1.0;
 
-  if (!input.limit_memory) {
+  /* --- Allocate space for angle-averaged mean intensity -- -------- */
+  if (!input.limit_memory) 
     spectrum.J = matrix_double(spectrum.Nspect, atmos.Nspace);
 
-    /* --- If we do background polarization we need space for the
-           anisotropy --                               -------------- */
+  /* --- If we do background polarization we need space for the
+     anisotropy --                               -------------- */
+  
+  if (input.backgr_pol)
+    spectrum.J20 = matrix_double(spectrum.Nspect, atmos.Nspace);
+  
+ /* --- For the PRD angle approximation  we need to store J in
+     the gas frame,                                   -------- */
+  if (input.PRD_angle_dep == PRD_ANGLE_APPROX &&  atmos.NPRDactive > 0) {
+    
+    spectrum.Jgas  = matrix_double(spectrum.Nspect, atmos.Nspace);
+    spectrum.v_los = matrix_double(    atmos.Nrays, atmos.Nspace);     
+    
+    /* Calculate line of sight velocity */
+    for (mu = 0;  mu < atmos.Nrays;  mu++) {
+      for (k = 0;  k < atmos.Nspace;  k++) {
+	spectrum.v_los[mu][k] = vproject(k, mu); // / vbroad[k];
+      }
+    }
+ 
 
-    if (input.backgr_pol)
-      spectrum.J20 = matrix_double(spectrum.Nspect, atmos.Nspace);
-      
-    /* --- Tiago: for the PRD angle approximation, we need to store J in
-           the gas frame, and intensity of last freq point --------- */
-    if (input.PRD_angle_dep == PRD_ANGLE_APPROX) {
-      spectrum.Jgas  = matrix_double(spectrum.Nspect, atmos.Nspace);
-      spectrum.Ilast = matrix_double(  2*atmos.Nrays, atmos.Nspace);
-      spectrum.v_los = matrix_double(    atmos.Nrays, atmos.Nspace);     
-      
-      /* Calculate line of sight velocity */
-      for (mu = 0;  mu < atmos.Nrays;  mu++) {
-	for (k = 0;  k < atmos.Nspace;  k++) {
-	  spectrum.v_los[mu][k] = vproject(k, mu); // / vbroad[k];
+    /* precompute prd_rho interpolation coefficients if requested */
+    if (!input.prdh_limit_mem) {
+
+      for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
+
+	atom = atmos.activeatoms[nact];
+
+	for (kr = 0;  kr < atom->Nline;  kr++) {
+
+	  line = &atom->line[kr];
+	  
+	  if (line->PRD) {
+	      
+	    Nlamu = 2*atmos.Nrays * line->Nlambda;
+	    line->frac = matrix_double(Nlamu, atmos.Nspace);
+	    line->id0  = matrix_int(Nlamu, atmos.Nspace);
+	    line->id1  = matrix_int(Nlamu, atmos.Nspace);
+	      
+	    for (la = 0;  la < line->Nlambda;  la++) {
+	      for (mu = 0;  mu < atmos.Nrays;  mu++) {
+		for (to_obs = 0;  to_obs <= 1;  to_obs++) {
+		  sign = (to_obs) ? 1.0 : -1.0;
+		  lamu = 2*(atmos.Nrays*la + mu) + to_obs;
+		  
+		  for (k = 0;  k < atmos.Nspace;  k++) {
+		    
+		    // wavelength in local rest frame 
+		    lag=line->lambda[la] * (1.+spectrum.v_los[mu][k]*sign/CLIGHT);
+		    		    
+		    if (lag <= line->lambda[0]) {
+		      // out of the lambda table, constant extrapolation
+		      line->frac[lamu][k]=0.0;
+		      line->id0[lamu][k]=0;
+		      line->id1[lamu][k]=1;
+		    } else if (lag >= line->lambda[line->Nlambda-1] ) {
+		      // out of the lambda table, constant extrapolation
+		      line->frac[lamu][k]=1.0;
+		      line->id0[lamu][k]=line->Nlambda-2;
+		      line->id1[lamu][k]=line->Nlambda-1;
+		    } else {
+		      // Locate index of line->lambda of point directly to the left of lag
+		      Locate(line->Nlambda,line->lambda,lag,&ilow);
+		      line->frac[lamu][k] = (lag-line->lambda[ilow])/ (line->lambda[ilow+1]-line->lambda[ilow]);
+		      line->id0[lamu][k]=ilow;
+		      line->id1[lamu][k]=ilow+1;
+		    }
+		  }
+		}
+	      }
+	    }
+	  }
 	}
       }
     }
-  }
+   
+    /* precompute Jgas interpolation coefficients if requested */
+    if (!input.prdh_limit_mem) {
+
+      lambda = spectrum.lambda;
+
+      /* --- keeps track of where to get indices and interpolation
+             coefficients in spectrum.iprhh and spectrum.cprdh --- */
+      spectrum.nc=  (int *) malloc( 2*atmos.Nrays*spectrum.Nspect*atmos.Nspace * sizeof(int));
+
+      for (la = 0;  la < spectrum.Nspect;  la++) {
+	for (mu = 0;  mu < atmos.Nrays;  mu++) {
+	  for (to_obs = 0;  to_obs <= 1;  to_obs++) {
+	    
+	    sign = (to_obs) ? 1.0 : -1.0;
+	    
+	    for (k = 0;  k < atmos.Nspace;  k++) {
+	      
+	      lamuk = la * (atmos.Nrays*2*atmos.Nspace) 
+		+ mu     * (2*atmos.Nspace)
+		+ to_obs * (atmos.Nspace)
+		+ k ;
+	      
+	      ncoef=0;
+	      
+	      // previous, current and next wavelength shifted to gas rest frame 
+	      fac = (1.+spectrum.v_los[mu][k]*sign/CLIGHT);
+	      lambda_prv = lambda[ MAX(la-1,0)                 ]*fac;
+	      lambda_gas = lambda[ la                          ]*fac;
+	      lambda_nxt = lambda[ MIN(la+1,spectrum.Nspect-1) ]*fac;
+	      
+	      // do lambda_prv and lambda_gas bracket lambda points?
+	      if (lambda_prv !=  lambda_gas) {
+		dl= lambda_gas - lambda_prv;
+		for (idx = 0; idx < spectrum.Nspect ; idx++) {     
+		  if (lambda[idx] > lambda_prv && lambda[idx] <= lambda_gas) ncoef=ncoef+1;
+		}
+	      } else {
+		// edge case, use constant extrapolation for lambda[idx]<lambda gas
+		for (idx = 0; idx < spectrum.Nspect ; idx++) {
+		  if (lambda[idx] <=  lambda_gas) ncoef=ncoef+1;
+		}
+	      } 
+	      
+	      // do lambda_gas and lambda_nxt bracket lambda points?
+	      if (lambda_gas != lambda_nxt) {
+		dl= lambda_nxt - lambda_gas;
+		for (idx = 0; idx < spectrum.Nspect ; idx++) {     
+		  if (lambda[idx] > lambda_gas && lambda[idx] < lambda_nxt) ncoef=ncoef+1;
+		}
+	      } else {
+		// edge case, use constant extrapolation for lambda[idx]>lambda gas
+		for (idx = 0; idx < spectrum.Nspect ; idx++) {
+		  if (lambda[idx] >=  lambda_gas) ncoef=ncoef+1;
+		}
+	      } 
+
+	      /* --- number of point this lambda contributes to is
+	 	 computed as a difference --- */
+	      if (lamuk == 0) {
+		spectrum.nc[lamuk] = ncoef;
+	      } else {
+		spectrum.nc[lamuk]=spectrum.nc[lamuk-1]+ncoef;
+	      } 
+				
+	    } // k
+	  } // to_obs
+	} // mu
+      } // la
+    
+      /* --- now we know the number of interpolation coefficients,
+             it's stored in the last element of spectrum.nc,
+	     so allocate space                                     --- */
+      idx=spectrum.nc[2*atmos.Nrays*spectrum.Nspect*atmos.Nspace-1];
+      spectrum.iprdh= (int *)    malloc( idx * sizeof(int   )); 
+      spectrum.cprdh= (double *) malloc( idx * sizeof(double));
+ 
+     /* --- Run through all lamuk points again, and now store indices
+            to lambda array and the corresponding interpolation
+            coefficients                                          --- */
+      for (la = 0;  la < spectrum.Nspect;  la++) {
+	for (mu = 0;  mu < atmos.Nrays;  mu++) {
+	  for (to_obs = 0;  to_obs <= 1;  to_obs++) {
+
+	    sign = (to_obs) ? 1.0 : -1.0;
+
+	    for (k = 0;  k < atmos.Nspace;  k++) {
+
+	      lamuk = la * (atmos.Nrays*2*atmos.Nspace) 
+		+ mu     * (2*atmos.Nspace)
+		+ to_obs * (atmos.Nspace)
+		+ k ;
+
+	      // starting index for storage for this lamuk point
+	      lc = (lamuk==0) ? 0 : spectrum.nc[lamuk-1];
+	 	      
+	      // previous, current and next wavelength shifted to gas rest frame 
+	      fac = (1.+spectrum.v_los[mu][k]*sign/CLIGHT);
+	      lambda_prv = lambda[ MAX(la-1,0)                 ]*fac;
+	      lambda_gas = lambda[ la                          ]*fac;
+	      lambda_nxt = lambda[ MIN(la+1,spectrum.Nspect-1) ]*fac;
+	      
+	      // do lambda_prv and lambda_gas bracket lambda points?
+	      if (lambda_prv !=  lambda_gas) {
+		dl= lambda_gas - lambda_prv;
+		for (idx = 0; idx < spectrum.Nspect ; idx++) {     
+		  if (lambda[idx] > lambda_prv && lambda[idx] <= lambda_gas) {
+		    // bracketed point found
+		    spectrum.iprdh[lc]=idx;
+		    spectrum.cprdh[lc]=(lambda[idx]-lambda_prv)/dl;
+		    lc++;
+		  }
+		}
+	      } else {
+		// edge case, use constant extrapolation for lambda[idx]<lambda gas
+		for (idx = 0; idx < spectrum.Nspect ; idx++) {
+		  if (lambda[idx] <=  lambda_gas)  {  
+		    spectrum.iprdh[lc]=idx;
+		    spectrum.cprdh[lc]=1.0;
+		    lc++;
+		  }
+		}
+	      } 
+		
+	      // do lambda_gas and lambda_nxt bracket lambda points?
+	      if (lambda_gas != lambda_nxt) {
+		dl= lambda_nxt - lambda_gas;
+		for (idx = 0; idx < spectrum.Nspect ; idx++) {     
+		  if (lambda[idx] > lambda_gas && lambda[idx] < lambda_nxt) {
+		    // bracketed point found
+		    spectrum.iprdh[lc]=idx;
+		    spectrum.cprdh[lc]=1.0 - (lambda[idx]-lambda_gas)/dl;
+		    lc++;
+		  }
+		}
+	      } else {
+		// edge case, use constant extrapolation for lambda[idx]>lambda gas
+		for (idx = 0; idx < spectrum.Nspect ; idx++) {
+		  if (lambda[idx] >=  lambda_gas)  {
+		    spectrum.iprdh[lc]=idx;
+		    spectrum.cprdh[lc]=1.0;
+		    lc++;
+		  }
+		}
+	      } 
+	   
+	    } // k
+	  } // to_obs
+	} // mu
+      } // la
+
+    }  //input.prdh_limit_mem if switch      
+  } // PRD_ANGLE_APPROX if switch
+
   /* --- Allocate space for the emergent intensity --  -------------- */
 
   switch (topology) {
@@ -228,6 +447,29 @@ void initSolution(Atom *atom, Molecule *molecule)
 	spectrum.fd_J20 = -1;
       }
     }
+
+    /* --- Look for Jgas and read, otherwise use spectrum.J ----- -- */
+    if (atmos.NPRDactive > 0 && input.PRD_angle_dep == PRD_ANGLE_APPROX) {
+      fp=fopen("Jgas.dat","r");
+      if (fp) {
+	// file exists
+	fclose(fp);
+	readJgas(spectrum.Jgas);
+	sprintf(messageStr, "Read spectrum.Jgas from file.");
+	Error(MESSAGE, routineName, messageStr);
+
+      } else {
+	//file does not exist
+	sprintf(messageStr, "Jgas.dat does not exist,setting spectrum.Jgas spectrum.J.");
+	Error(WARNING, routineName, messageStr);
+	for (k = 0;  k < atmos.Nspace;  k++){
+	  for (nspect = 0;  nspect < spectrum.Nspect;  nspect++){
+	    spectrum.Jgas[nspect][k]=spectrum.J[nspect][k];
+	  }
+	}
+      }
+    }
+
   }
   /* --- Need storage for angle-dependent specific intensities for
          angle-dependent PRD --                        -------------- */
@@ -256,12 +498,12 @@ void initSolution(Atom *atom, Molecule *molecule)
            of intensity Imu in file spectrum.fd_Imu at wavelength
            corresponding to nspect. --                 -------------- */
 
-    spectrum.PRDindex = (int *) calloc(spectrum.Nspect , sizeof(int));
+    spectrum.PRDindex = (int *) malloc(spectrum.Nspect * sizeof(int));
     index = 0;
     for (nspect = 0;  nspect < spectrum.Nspect;  nspect++) {
       if (containsPRDline(&spectrum.as[nspect])) {
 	spectrum.PRDindex[nspect] = index;
-	index++;
+        index++;
       }
     }
   }
@@ -296,7 +538,7 @@ void initSolution(Atom *atom, Molecule *molecule)
       twoc   = 2.0*CLIGHT / CUBE(NM_TO_M);
       fourPI = 4.0 * PI;
 
-      initGammaAtom(atom, 1.0);
+      initGammaAtom(atom,cswitch);
 
       /* --- Then add radiative contributions of active transitions --  */
 

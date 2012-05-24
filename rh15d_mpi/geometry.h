@@ -45,6 +45,7 @@ typedef struct {
   // for now here, in the future perhaps write things in io.h:
   int       j_ncid, jlambda_var, j20_var; 
   double   *lambda_fudge, **fudge;
+  double **chi_c,**eta_c,*sca_c,**chip_c;
 } BackgroundData;
 
 

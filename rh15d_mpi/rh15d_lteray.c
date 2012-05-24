@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
    
     sprintf(messageStr,
       "Process %3d: *** END   task %3ld\n",
-	    mpi.rank, mpi.task+1, mpi.Ntasks);
+	    mpi.rank, mpi.task+1);
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);	
 

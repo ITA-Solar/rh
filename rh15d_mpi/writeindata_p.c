@@ -60,13 +60,14 @@ void init_ncdf_indata_new(void)
           /* B_var, gB_var, chiB_var, */
           ew_var, ab_var, eid_var, mu_var, wmu_var, height_var,x_var, y_var,
           xnum_var, ynum_var, tm_var, tn_var, it_var, conv_var, dm_var, dmh_var, 
-          zch_var, ntsk_var, host_var, st_var, ft_var, z_varid, dimids[4];
+          zch_var, ntsk_var, host_var, st_var, ft_var, z_varid, dimids[4],
+          PRD_angle_dep;
   /* This value is harcoded for efficiency. Maximum number of iterations ever needed */
-  int     NMaxIter = 500; 
+  int     NMaxIter = 500;
   long    task;
   size_t  start[] = {0, 0, 0};
   size_t  count[] = {1, 1, 1};
-  bool_t  PRD_angle_dep, XRD;
+  bool_t   XRD;
   double *height;
   char    startJ[MAX_LINE_SIZE], StokesMode[MAX_LINE_SIZE], angleSet[MAX_LINE_SIZE],
           hostname[ARR_STRLEN], timestr[ARR_STRLEN];
@@ -103,12 +104,16 @@ void init_ncdf_indata_new(void)
 
   /* --- Definitions for the INPUT group --- */
   /* attributes */
-  PRD_angle_dep = (input.PRD_angle_dep  &&  atmos.NPRDactive > 0);
+  if ( atmos.NPRDactive > 0)
+    PRD_angle_dep = input.PRD_angle_dep;
+  else
+    PRD_angle_dep=0;
+
   XRD           = (input.XRD  &&  atmos.NPRDactive > 0);
 
   if ((ierror=nc_put_att_ubyte(ncid_input,NC_GLOBAL,"Magneto_optical",NC_UBYTE, 1,
                (unsigned char *) &input.magneto_optical ))) ERR(ierror,routineName);
-  if ((ierror=nc_put_att_ubyte(ncid_input,NC_GLOBAL, "PRD_angle_dep", NC_UBYTE, 1,
+  if ((ierror=nc_put_att_ubyte(ncid_input,NC_GLOBAL, "PRD_angle_dep", NC_INT, 1,
                (unsigned char *) &PRD_angle_dep )))    ERR(ierror,routineName);
   if ((ierror=nc_put_att_ubyte(ncid_input,NC_GLOBAL, "XRD",           NC_UBYTE, 1,
                (unsigned char *) &XRD )))              ERR(ierror,routineName);
@@ -528,10 +533,10 @@ void init_ncdf_indata_new(void)
     start[0] = mpi.taskmap[task + mpi.my_start][0];  count[0] = 1;
     start[1] = mpi.taskmap[task + mpi.my_start][1];  count[1] = 1;
     
-    /* Task map 
+    // Task map 
     if ((ierror = nc_put_var1_int(ncid_mpi,  tm_var, start, &mpi.rank )))
       ERR(ierror,routineName);
-    /* Task number 
+    // Task number 
     if ((ierror = nc_put_var1_long(ncid_mpi, tn_var, start, &task )))
       ERR(ierror,routineName);
   }
@@ -598,11 +603,12 @@ void init_ncdf_indata_old(void)
           ew_var, ab_var, eid_var, mu_var, wmu_var, height_var,x_var, y_var,
           xnum_var, ynum_var, tm_var, tn_var, it_var, conv_var, dm_var, dmh_var, 
           zch_var, ntsk_var, host_var, st_var, ft_var, z_varid, dimids[4];
+  int     PRD_angle_dep;
   long    task;
   size_t  start[] = {0, 0, 0};
   size_t  count[] = {1, 1, 1};
   size_t  len_id;
-  bool_t  PRD_angle_dep, XRD;
+  bool_t  XRD;
   double *height;
   char    startJ[MAX_LINE_SIZE], StokesMode[MAX_LINE_SIZE], angleSet[MAX_LINE_SIZE],
           hostname[ARR_STRLEN], timestr[ARR_STRLEN], *atmosID;
