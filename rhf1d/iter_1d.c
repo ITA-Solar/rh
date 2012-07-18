@@ -5,7 +5,7 @@
  * photon destruction probability epsilon and Planck function Bp.
  *
  * Han Uitenbroek
- * Last modified: Wed Mar 25 14:06:19 2009 --
+ * Last modified: Wed Jun 16 14:30:55 2010 --
  */
  
 #include <stdlib.h>
@@ -43,6 +43,8 @@ void Iterate(int NmaxIter, double iterLimit)
   enum   FeautrierOrder F_order;
   double wqmu, *dJny, *chila, *diagonal, *P, *Psi;
 
+  FILE *fp_iter;
+
   dJny     = (double *) malloc(Ndep * sizeof(double));
   chila    = (double *) malloc(Ndep * sizeof(double));
   diagonal = (double *) malloc(Ndep * sizeof(double));
@@ -50,6 +52,10 @@ void Iterate(int NmaxIter, double iterLimit)
   Psi      = (double *) malloc(Ndep * sizeof(double));
 
   Iemerge  = matrix_double(Nrays, Nlambda);
+
+  /* --- Write iterations  to file --                 --------------- */
+
+  fp_iter = fopen("iter_1d_Snu", "w");
 
   /* --- Start main iteration loop --                 --------------- */
 
@@ -63,7 +69,7 @@ void Iterate(int NmaxIter, double iterLimit)
     for (mu = 0;  mu < Nrays;  mu++) {
       for (la = 0;  la < Nlambda;  la++) {
 	for (l = 0;  l < Ndep;  l++) {
-          chila[l] = phi[la] * chi[l];
+	  chila[l] = phi[la] * chi[l];
 	}
 
         /* --- Formal solution and diagonal operator -- ------------- */
@@ -95,6 +101,8 @@ void Iterate(int NmaxIter, double iterLimit)
     if (MaxChange(NgS, messageStr, quiet=FALSE) <= iterLimit)  break;
     Error(MESSAGE, NULL, (accel == TRUE) ? " (accelerated)\n" : "\n");
 
+    fwrite(Sny, sizeof(double), Ndep, fp_iter);
+
     getCPU(2, TIME_POLL, "Iterate");
     nIter++;
   }
@@ -102,5 +110,7 @@ void Iterate(int NmaxIter, double iterLimit)
   free(dJny);  free(chila);  free(diagonal);
   free(P);     free(Psi);
   NgFree(NgS);
+
+  fclose(fp_iter);
 }
 /* ------- end ---------------------------- Iterate.c --------------- */

@@ -49,7 +49,8 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
   bool_t   initialize, boundbound, polarized_as, polarized_c,
            PRD_angle_dep, to_obs, solveStokes, angle_dep;
   enum     FeautrierOrder F_order;     
-  int      Nspace = atmos.Nspace, Nrays = atmos.Nrays,lamuk;
+  int      Nrays = atmos.Nrays,lamuk;
+  long     Nspace = atmos.Nspace;
   long int idx,idx0;
   double  *I, *chi, *S, **Ipol, **Spol, *Psi, *Jdag, wmu, dJmax, dJ,
           *J20dag, musq, threemu1, threemu2, *J, *J20, *lambda, sign,

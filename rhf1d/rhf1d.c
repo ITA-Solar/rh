@@ -2,7 +2,7 @@
 
        Version:       rh2.0, 1-D plane-parallel
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Wed Apr 22 09:45:58 2009 --
+       Last modified: Thu Feb 24 16:40:14 2011 --
 
        --------------------------                      ----------RH-- */
 
@@ -52,7 +52,7 @@ char messageStr[MAX_MESSAGE_LENGTH];
 
 int main(int argc, char *argv[])
 {
-  bool_t analyze_output, equilibria_only;
+  bool_t write_analyze_output, equilibria_only;
   int    niter, nact;
 
   Atom *atom;
@@ -71,30 +71,13 @@ int main(int argc, char *argv[])
   MULTIatmos(&atmos, &geometry);
   if (atmos.Stokes) Bproject();
 
-  // TIAGO temp
-  /*
-  printf("    height      temp        ne           vz         vturb\n");
-  //printf("    nh(0)       nh(1)       nh(2)        nh(3)      nh(4)        nh(5)       nhtot\n");
-  for(i=0; i<175; i++){
-    //printf(" %10.4e  %10.4e  %10.4e  %10.4e %10.4e  %10.4e  %10.4e\n",
-    //   atmos.nH[0][i],atmos.nH[1][i],atmos.nH[2][i],atmos.nH[3][i],atmos.nH[4][i],
-    //   atmos.nH[5][i],atmos.nHtot[i]);
-
-    printf(" %10.4e  %10.4e  %10.4e  %10.4e %10.4e\n",
-    	   geometry.height[i],atmos.T[i],atmos.ne[i],geometry.vel[i],atmos.vturb[i]);
-  }
-  exit(0);
-  */
-  // TIAGO
-  
-
   readAtomicModels();
   readMolecularModels();
   SortLambda();
   
   getBoundary(&geometry);
   
-  Background(analyze_output=TRUE, equilibria_only=FALSE);
+  Background(write_analyze_output=TRUE, equilibria_only=FALSE);
   convertScales(&atmos, &geometry);
 
   getProfiles();
@@ -104,14 +87,6 @@ int main(int argc, char *argv[])
   getCPU(1, TIME_POLL, "Total Initialize");
 
   /* --- Solve radiative transfer for active ingredients -- --------- */
-  /*
-  for (i=0; i < spectrum.Nspect; i++) {
-    //printf("%8.4f  %e  %e\n", spectrum.lambda[i], spectrum.isave1[i],spectrum.isave2[i]);
-    printf("%d  %8.4f  %e  %e  %e  %e  %e  %e\n", i, spectrum.lambda[i], spectrum.Jgas[i][30], spectrum.Jgas[i][80], spectrum.Jgas[i][170], spectrum.J[i][30], spectrum.J[i][80], spectrum.J[i][170]);
-  }
-  exit(1);
-  */
-  
 
   Iterate(input.NmaxIter, input.iterLimit);
 
@@ -123,6 +98,10 @@ int main(int argc, char *argv[])
   }
   /* --- Write output files --                         -------------- */
 
+  if (atmos.hydrostatic) {
+    geometry.scale = COLUMN_MASS;
+    convertScales(&atmos, &geometry);
+  }
   getCPU(1, TIME_START, NULL);
 
   writeInput();

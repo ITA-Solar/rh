@@ -130,12 +130,11 @@ void init_ncdf_ray_new(void)
     dimids[1] = ny_id;
     dimids[2] = nspace_id;
     dimids[3] = wave_sel_id;
-    /* Source function, opacity and emissivity, line and continuum 
+    /* Source function, opacity and emissivity, line and continuum  */
     if ((ierror = nc_def_var( ncid, CHI_NAME,  NC_FLOAT, 4, dimids, &chi_var)))
       ERR(ierror,routineName); 
     if ((ierror = nc_def_var( ncid, S_NAME,    NC_FLOAT, 4, dimids, &S_var  )))
       ERR(ierror,routineName); 
-    */
 
 
     /* Tiago: these take too much space, so not writing them at the moment */
@@ -475,12 +474,11 @@ void writeRay(void)
     start[2] = 0;       count[2] = infile.nz;
     start[3] = 0;       count[3] = io.ray_nwave_sel;
 
-    /*
+    
     if ((ierror=nc_put_vara_float(ncid, io.ray_chi_var, start, count,
 				  chi[0] ))) ERR(ierror,routineName);
     if ((ierror=nc_put_vara_float(ncid, io.ray_S_var,   start, count,
-				  S[0] )))   ERR(ierror,routineName);
-    */    
+				  S[0] )))   ERR(ierror,routineName);  
     
     if ((ierror=nc_put_vara_float(ncid, io.ray_j_var,   start, count,
 				  Jnu[0] )))     ERR(ierror,routineName);

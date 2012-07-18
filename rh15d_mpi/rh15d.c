@@ -77,8 +77,18 @@ int main(int argc, char *argv[])
   // Temporary
   //mpi.Ntasks = 10;
 
+  if (mpi.rank == 0) {
+    printf("(WWW) !!!\n");
+    printf("(WWW) !!!\n");
+    printf("(WWW) WARNING: using rh15d (non-ray) binary. Many new features may not work!!!\n");
+    printf("(WWW) !!!\n");
+    printf("(WWW) !!!\n");
+  }
+
   /* Main loop over tasks */
   for (mpi.task = 0; mpi.task < mpi.Ntasks; mpi.task++) {
+    
+    mpi.isfirst = (mpi.task == 0);
 
     /* Indices of x and y */
     mpi.ix = mpi.taskmap[mpi.task + mpi.my_start][0];

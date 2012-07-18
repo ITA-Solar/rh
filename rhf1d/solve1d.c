@@ -43,7 +43,7 @@ CommandLine  commandline;
 
 /* ------- begin -------------------------- solve1d.c --------------- */
 
-int main(int argc, void *argv[])
+int main(int argc, char *argv[])
 {
   register int l, la;
 
