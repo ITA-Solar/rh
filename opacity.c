@@ -73,7 +73,7 @@ void Opacity(int nspect, int mu, bool_t to_obs, bool_t initialize)
     *phi_Q, *phi_U, *phi_V, *psi_Q, *psi_U, *psi_V;
   bool_t  solveStokes;
 
-  double lag, rho_int,rho_tmp[1000], sign;
+  double lag, rho_int, *rho_tmp, sign;
 
   Atom *atom;
   Molecule *molecule;
@@ -81,6 +81,8 @@ void Opacity(int nspect, int mu, bool_t to_obs, bool_t initialize)
   AtomicContinuum *continuum;
   MolecularLine *mrt;
   ActiveSet *as;
+
+  rho_tmp = (double *) calloc(spectrum.Nspect, sizeof(double));
 
   /* --- Some useful constants --                          ---------- */
  
@@ -433,6 +435,8 @@ void Opacity(int nspect, int mu, bool_t to_obs, bool_t initialize)
         as->eta[k] += molecule->rhth[nt].eta[k];
     }
   }
+  
+  free(rho_tmp);
 }
 /* ------- end ---------------------------- Opacity.c --------------- */
 
