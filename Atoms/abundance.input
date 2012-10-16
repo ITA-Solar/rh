@@ -1,16 +1,16 @@
 # Solar abundances from N. Grevesse and E. Anders (1991), 
 # in "Solar Interior and Atmosphere", Univ. Ariz. Press.,
 # eds. Cox, Livingston, and Matthews, p. 1227
-
+#
 # Abundances for elements heavier than NI are taken from the Atlas 9
 # code of R. L. Kurucz
-
+#
 ## With the Asplund et al C and O abundances CH (G band) and
 ## CN (388.3 nm) fit better in (radiation-) hydrodynamic models.
-
+#
 # Han Uitenbroek
 # Last modified: Mon Oct 12 11:19:05 2009 --
-  
+#  
   H   12.00
   HE  10.99
   LI   1.16
