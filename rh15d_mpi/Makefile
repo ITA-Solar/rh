@@ -13,10 +13,18 @@ include ../makefiles/makefile.$(CPU).$(OS)
 CC = openmpicc
 LD = openmpicc
 AR = ar
-#NCDF_DIR = /opt/local
-NCDF_DIR = /Users/tiago/local
+NCDF_DIR = /opt/local
+#NCDF_DIR = /Users/tiago/local
 
-CFLAGS  = -O2 -I../ -I$(NCDF_DIR)/include/
+# Try to get SVN revision from svn info, set preprocessor macros if successful 
+REV=$(shell svn info | grep Revision)
+ifeq ($(REV), )
+    CFLAGS  = -O2 -I../ -I$(NCDF_DIR)/include/ 
+else
+    SVN = $(shell svn info | grep Revision)  $(shell svn info |grep Author)
+    CFLAGS  = -O2 -I../ -I$(NCDF_DIR)/include/ -D'SVN_ID="$(SVN)"'
+endif
+
 LDFLAGS = -L../ -L$(NCDF_DIR)/lib/
 
 
@@ -52,7 +60,7 @@ BACKGROPAC = anglequad.o      backgrcontr.o   multiatmos.o      project.o
 
 ## --- Rules for the executables --                    -------------- ##
 
-all:   rh15d  rh15d_ray rh15d_lteray solveray  #  solve15d  backgrcontr
+all:   rh15d  rh15d_ray rh15d_ray_pool rh15d_lteray solveray  #  solve15d  backgrcontr
 
 rh15d:  $(ONE_D_OBJS)  librh rh15d.o
 	cd ..; $(AR) dsv librh.a $(SUBSTITUTE)
@@ -63,6 +71,9 @@ rh15d_lteray:  $(ONE_D_OBJS)  librh rh15d_lteray.o writeRay.o
 	
 rh15d_ray:  $(ONE_D_OBJS)  librh rh15d_ray.o writeRay.o
 	$(LD) -o $@  $(LDFLAGS) $(ONE_D_OBJS) rh15d_ray.o writeRay.o $(LIBS)
+        
+rh15d_ray_pool:  $(ONE_D_OBJS)  librh rh15d_ray_pool.o writeRay.o
+	$(LD) -o $@  $(LDFLAGS) $(ONE_D_OBJS) rh15d_ray_pool.o writeRay.o $(LIBS)
 
 solveray:  $(RAY_OBJS)  librh
 #	cd ..; $(AR) dsv librh.a $(SUBSTITUTE)
@@ -201,7 +212,13 @@ rh15d_ray.o:            ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../spectrum.h    ../background.h  \
                         ../statistics.h  ../error.h       ../inputs.h      \
                         parallel.h       io.h             rh15d_ray.c
-	$(CC) $(CFLAGS) -Wall -c -o $@   rh15d_ray.c 
+	$(CC) $(CFLAGS) -Wall -c -o $@   rh15d_ray.c
+        
+rh15d_ray_pool.o:            ../rh.h          ../atom.h        ../atmos.h       \
+                        geometry.h       ../spectrum.h    ../background.h  \
+                        ../statistics.h  ../error.h       ../inputs.h      \
+                        parallel.h       io.h             rh15d_ray.c
+	$(CC) $(CFLAGS) -Wall -c -o $@   rh15d_ray_pool.c 
 
 riiplane.o:             ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../constant.h    ../error.h

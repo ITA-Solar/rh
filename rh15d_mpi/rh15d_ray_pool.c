@@ -17,9 +17,12 @@
 
 #define COMMENT_CHAR    "#"
 #define RAY_INPUT_FILE  "ray.input"
-#define SVN_ID "$Id: rh15d_ray.c 42 2011-12-02 02:13:29Z tiago $"
 #define WORKTAG 1
 #define DIETAG 2
+
+#ifndef SVN_ID
+#define SVN_ID "$Id: rh15d_ray.c 53 2012-05-24 23:25:44Z tiago $"
+#endif
 
 /* --- Function prototypes --                          -------------- */
 void init_ncdf_ray(void);
