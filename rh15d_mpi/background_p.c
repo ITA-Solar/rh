@@ -645,19 +645,20 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
 	  if ((mu == atmos.Nrays-1 && to_obs) ||
 	      (atmos.backgrflags[nspect].hasline && 
 	       (atmos.moving || atmos.backgrflags[nspect].ispolarized))) {
-	    if (input.backgr_in_mem) {
-
-	      if ((mu == atmos.Nrays-1 && to_obs) && !(atmos.backgrflags[nspect].hasline && 
-						       (atmos.moving || atmos.backgrflags[nspect].ispolarized)) ){
-		storeBackground(nspect, 0, 0, chi_c, eta_c, sca_c);
+	    
+	      if (input.backgr_in_mem) {
+		  
+		if ((mu == atmos.Nrays-1 && to_obs) && !(atmos.backgrflags[nspect].hasline && 
+							 (atmos.moving || atmos.backgrflags[nspect].ispolarized)) ){
+		    storeBackground(nspect, 0, 0, chi_c, eta_c, sca_c);
+		} else {
+		    storeBackground(nspect, mu, to_obs, chi_c, eta_c, sca_c);
+		}
+		
 	      } else {
-		storeBackground(nspect, mu, to_obs, chi_c, eta_c, sca_c);
-	      }
-	      
-	    } else {
-	      
-	      mpi.backgrrecno += writeBackground(nspect, mu, to_obs,
-						 chi_c, eta_c, sca_c, chip_c);
+		
+		mpi.backgrrecno += writeBackground(nspect, mu, to_obs,
+						   chi_c, eta_c, sca_c, chip_c);
 	    }
 	  }
 	}

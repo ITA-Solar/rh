@@ -55,7 +55,7 @@ double muz, save_muz, save_mux, save_muy, save_wmu;
 
 int main(int argc, char *argv[])
 {
-  bool_t analyze_output, equilibria_only, run_ray, writej, exit_on_EOF;
+  bool_t write_analyze_output, equilibria_only, run_ray, writej, exit_on_EOF;
   int    nact, i, Ntest, k, Nread, Nrequired, ierror, checkPoint, conv_iter;
   Atom *atom;
   Molecule *molecule;
@@ -72,6 +72,10 @@ int main(int argc, char *argv[])
 
   /* --- Set up MPI ----------------------             -------------- */
   initParallel(&argc, &argv, run_ray=FALSE);
+  if (mpi.size == 1) {
+    sprintf(messageStr, "Must run rh15d_ray_pool with more than one process. Aborting.");
+    Error(ERROR_LEVEL_2, argv[0], messageStr);
+  }
   mpi.size -= 1; /* Remove overlord from count, as it is not doing work */
 
   setOptions(argc, argv);
@@ -261,7 +265,7 @@ void overlord(void) {
 /* ------- start ---------------------------- drone.c --------------- */
 void drone(void) {
   MPI_Status status;
-  bool_t analyze_output, equilibria_only, run_ray, writej, exit_on_EOF;
+  bool_t write_analyze_output, equilibria_only, run_ray, writej, exit_on_EOF;
   int i, niter, result=1;
   long task=1;
   
@@ -306,7 +310,7 @@ void drone(void) {
       UpdateAtmosDep();
       
       /* --- Calculate background opacities --             ------------- */
-      Background_p(analyze_output=TRUE, equilibria_only=FALSE);
+      Background_p(write_analyze_output=TRUE, equilibria_only=FALSE);
       
       getProfiles();
       initSolution_p();

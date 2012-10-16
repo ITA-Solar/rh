@@ -56,6 +56,7 @@
 #define WAVE_SEL_IDX "wavelength_indices"
 #define CHI_NAME     "chi"
 #define S_NAME       "source_function"
+#define TAU1_NAME    "tau_one_depth"
 #define CHI_L_NAME   "chi_line"
 #define ETA_L_NAME   "eta_line"
 #define CHI_C_NAME   "chi_continuum"
@@ -142,7 +143,7 @@ typedef struct {
        ray_stokes_q_var,  ray_stokes_u_var,  ray_stokes_v_var,  ray_wave_idx_var,
        ray_chi_l_var,     ray_eta_l_var,     ray_chi_c_var,     ray_eta_c_var,
        ray_sca_c_var,     ray_chi_var,       ray_S_var,        *ray_wave_idx,
-       ray_j_var;
+       ray_tau1_var,      ray_j_var;
 } IO_data;
 
 typedef struct {
