@@ -397,9 +397,10 @@ void writeRay(void)
     // and not for each wavelength!!!
       /* Calculate tau=1 depth for all wavelengths */
     tau_one = (float *) calloc(io.ray_nwave_sel, sizeof(float));
-    sca = (double *) malloc(atmos.Nspace * sizeof(double));
     chi = matrix_float(infile.nz, io.ray_nwave_sel);
+    /*
     S   = matrix_float(infile.nz, io.ray_nwave_sel);
+    sca = (double *) malloc(atmos.Nspace * sizeof(double));
     
     Jnu = matrix_float(infile.nz, io.ray_nwave_sel);
     chi_l = matrix_float(infile.nz, io.ray_nwave_sel);
@@ -407,7 +408,8 @@ void writeRay(void)
     chi_c = matrix_float(infile.nz, io.ray_nwave_sel);
     eta_c = matrix_float(infile.nz, io.ray_nwave_sel);
     sca_c = matrix_float(infile.nz, io.ray_nwave_sel);
-
+    */
+    
     if (input.limit_memory) J = (double *) malloc(atmos.Nspace * sizeof(double));
 
     /* set switch so that shift of rho_prd is done with a fresh
@@ -436,15 +438,17 @@ void writeRay(void)
 	
       /* Zero S and chi  */
       for (k = 0; k < infile.nz; k++) {
-	S[k][nspect]   = 0.0;
 	chi[k][nspect] = 0.0;
-	
+	/*
+	S[k][nspect]   = 0.0;
 	Jnu[k][nspect] = 0.0;
+	
 	chi_l[k][nspect] = 0.0;
 	eta_l[k][nspect] = 0.0;
 	chi_c[k][nspect] = 0.0;
 	eta_c[k][nspect] = 0.0;
 	sca_c[k][nspect] = 0.0;
+	*/
 	
       }
         
@@ -453,17 +457,19 @@ void writeRay(void)
       
       for (k = 0;  k < atmos.Nspace;  k++) {
 	l = k + mpi.zcut;
-	sca[k] = as->sca_c[k]*J[k];
 	chi[l][nspect] = (float) (as->chi[k] + as->chi_c[k]);
+	/*
+	sca[k] = as->sca_c[k]*J[k];
 	S[l][nspect]   = (float) ((as->eta[k] + as->eta_c[k] + sca[k]) /
 				  (as->chi[k] + as->chi_c[k]));
-	
 	Jnu[l][nspect] = (float) J[k];
+	
 	chi_l[l][nspect] = (float) as->chi[k];
 	eta_l[l][nspect] = (float) as->eta[k];
 	chi_c[l][nspect] = (float) as->eta_c[k];
 	eta_c[l][nspect] = (float) as->chi_c[k];
 	sca_c[l][nspect] = (float) sca[k];
+	*/
 	
 	/* Calculate tau=1 depth, manual linear interpolation */	
 	if (k > 0) {
@@ -519,11 +525,13 @@ void writeRay(void)
     if ((ierror=nc_put_vara_float(ncid, io.ray_tau1_var, start, count,
 				  tau_one ))) ERR(ierror,routineName);
     
-    
-    free(sca); free(tau_one); freeMatrix((void **) chi); freeMatrix((void **) S);
-    
+  
+    free(tau_one); freeMatrix((void **) chi);
+    /*
+    free(sca);     freeMatrix((void **) S);
     freeMatrix((void **) Jnu);   freeMatrix((void **) chi_l); freeMatrix((void **) eta_l);
     freeMatrix((void **) chi_c); freeMatrix((void **) eta_c); freeMatrix((void **) sca_c);
+    */
     
     if (input.limit_memory) free(J);
   }
