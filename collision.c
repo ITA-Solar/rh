@@ -619,7 +619,12 @@ void CollisionRate(struct Atom *atom, FILE *fp_atom)
     /* --- Spline interpolation in temperature T for all spatial
            locations. Linear if only 2 interpolation points given - - */
 
-    if (strcmp(keyword, "TEMP") != 0) {
+    //    if (strcmp(keyword, "TEMP") != 0) {
+    if (!strcmp(keyword, "OMEGA") || !strcmp(keyword, "CE") ||
+	!strcmp(keyword, "CI")    || !strcmp(keyword, "CP") ||
+	!strcmp(keyword, "CH0")   || !strcmp(keyword, "CH+")||
+	!strcmp(keyword, "CH") ) {
+
       if (Nitem > 2) {
 	splineCoef(Nitem, T, coeff);
 	splineEval(Nspace, atmos.T, C, hunt=TRUE);
@@ -754,6 +759,8 @@ void CollisionRate(struct Atom *atom, FILE *fp_atom)
 	  
 	}
 	
+	if (cup<0) cup=0;
+
 	cup=cup*atmos.ne[k];
 	cdn=cup*atom->nstar[i][k]/atom->nstar[j][k];	  
 	
