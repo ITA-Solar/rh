@@ -205,7 +205,13 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
 	} else {
 	  for (k = 0;  k < Nspace;  k++)
 	    S[k] /= chi[k];
-	  Piecewise_1D(nspect, mu, to_obs, chi, S, I, Psi);
+
+	  if (input.Sinterpolation == S_LINEAR) {
+	    Piecewise_1D(nspect, mu, to_obs, chi, S, I, Psi);
+	  } else {
+	    Piecewise_Hermite_1D(nspect, mu, to_obs, chi, S, I, Psi);
+	  }
+
 	}
 
 	if (eval_operator) {
