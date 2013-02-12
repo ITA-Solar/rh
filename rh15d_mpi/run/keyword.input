@@ -99,6 +99,12 @@
   NG_ORDER  = 2 
   NG_PERIOD = 18
 
+# Regulate the approximation for the formal solution in the rhf1d and 
+# rh15d versions of the code (KEYWORD_DEFAULT). Set to either LINEAR or 
+# CUBIC_HERMITE. Default value is LINEAR
+
+# SINTERPOLATION = CUBIC_HERMITE
+
 # PRD specific parameters. PRD_N_MAX_ITER is the maximum number of
 # PRD iterations per main iteration. PRD_ITER_LIMIT is the convergence
 # limit of PRD iterations in each main iteration. If PRD_ITER_LIMIT is
