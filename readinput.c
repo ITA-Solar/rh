@@ -148,6 +148,8 @@ void readInput()
      setdoubleValue},
     {"VACUUM_TO_AIR", "0", FALSE, KEYWORD_OPTIONAL, &spectrum.vacuum_to_air,
      setboolValue},
+ {"SINTERPOLATION", "LINEAR", FALSE, KEYWORD_DEFAULT, &input.Sinterpolation,
+     setSinterpolation},
 
     /* --- Magnetic field related inputs go here --     ------------- */
 
