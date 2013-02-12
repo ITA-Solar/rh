@@ -79,6 +79,8 @@ typedef struct {
   enum   order_3D interpolate_3D;
   enum   ne_solution solve_ne;
   enum   PRDangle PRD_angle_dep;
+  /* jorritl: choice of source function interpolation for rhf1d and rh15d */
+  enum   Sinterpolation Sinterpolation;
   int    isum, Ngdelay, Ngorder, Ngperiod, NmaxIter,
          PRD_NmaxIter, PRD_Ngdelay, PRD_Ngorder, PRD_Ngperiod,
          NmaxScatter, Nthreads;
@@ -119,6 +121,7 @@ void  setStokesMode(char *value, void *pointer);
 void  setPRDangle(char *value, void *pointer);
 void  setThreadValue(char *value, void *pointer);
 void  setInterpolate_3D(char *value, void *pointer);
+void  setSinterpolation(char *value, void *pointer);
 void  showValues(int Nkeyword, Keyword *theKeywords);
 char *substring(const char *string, int N0, int Nchar);
 void  UpperCase(char *string);
