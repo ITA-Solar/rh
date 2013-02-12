@@ -280,6 +280,28 @@ void setStokesMode(char *value, void *pointer)
 /* ------- end ---------------------------- setStokesMode.c --------- */
 
 
+/* ------- begin ---------------------- setSinterpolation.c --------- */
+
+void setSinterpolation(char *value, void *pointer)
+{
+  const char routineName[] = "setSinterpolation";
+
+  enum Sinterpolation Sinterpolation;
+
+  if (!strcmp(value, "LINEAR"))
+    Sinterpolation = S_LINEAR;
+  else if (!strcmp(value, "CUBIC_HERMITE"))
+    Sinterpolation = S_CUBIC_HERMITE;
+  else {
+    sprintf(messageStr,
+	     "Invalid value for keyword SINTERPOLATION: %s", value);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
+  memcpy(pointer, &Sinterpolation, sizeof(enum_t));
+}
+/* ------- end -----------------------setSinterpolation.c --------- */
+
+
 /* ------- begin -------------------------- setPRDangle.c --------- */
 
 void setPRDangle(char *value, void *pointer)
