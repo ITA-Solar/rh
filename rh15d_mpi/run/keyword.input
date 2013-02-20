@@ -7,7 +7,6 @@
 # First specify input files for atmosphere and abundances
 # (both KEYWORD_REQUIRED).
 
-#  ATMOS_FILE = /Users/tiago/data/bifrost/bifrost_s20_slice_new.ncdf
   ATMOS_FILE = /Users/tiago/data/bifrost/bifrost_hr_s40-44.ncdf  
   ABUND_FILE = ../../Atoms/abundance.input
 
@@ -21,11 +20,21 @@
   Y_START = 150
   Y_END   = 151
   Y_STEP  = 1 
+  
+# Runs only for non-converged columns (assumes output files already exist)
+  15D_RERUN = FALSE
 
+# These two are no longer used, only here for historical purposes
   15D_WRITE_EXTRA    = FALSE 
   15D_WRITE_SPECTRUM = FALSE 
 
   15D_TMAX_CUT = 22000.
+
+# Perform the temperature cut above?
+  15D_DEPTH_ZCUT = TRUE
+
+# Value to add to supplied VTURB (in m/s)
+  VTURB_ADD = 0.0
 
 # N_PESC_ITER sets the number of escape probility iterations
 # It only works if ESCAPE_PROBABILITY is chosen as initial solution method
@@ -43,10 +52,13 @@
   COLLRAD_SWITCH = 0.
   COLLRAD_SWITCH_INI = 300.
 
+# PRD Switching. At the moment this number (if > 0), is used so that
+# it converges to full PRD in 1/sqrt(PRD_SWITCH) iterations.
+  PRD_SWITCH = 0.0
 
 # Set choice of number of rays (KEYWORD_OPTIONAL).
 
-  NRAYS = 3
+  NRAYS = 5
 
 # Set choice of angular grid (KEYWORD_OPTIONAL).
 # Options: SET_VERTICAL, SET_A2, SET_A4, SET_A6, SET_A8, SET_B4, SET_B6,
@@ -76,7 +88,7 @@
 # Maximum number of iterations to initialize scattering radiation
 # field in the background (KEYWORD_OPTIONAL).
 
-  N_MAX_SCATTER = 15
+  N_MAX_SCATTER = 5
 
 # Row of statistical equilibrium equation that is to be eliminated
 # to enforce particle conservation (KEYWORD_REQUIRED). If set to -1
@@ -122,10 +134,12 @@
 #  PRD_NG_ORDER   = 2
 #  PRD_NG_PERIOD  = 5
 
-# If PRD_ANGLE_DEP is set to TRUE angle-dependent PRD is used
-# (KEYWORD_DEFAULT). The default is FALSE.
+# The option PRD_ANGLE_DEP can take the values of :
+# - PRD_ANGLE_INDEP (angle-independent PRD, default)
+# - PRD_ANGLE_APPROX (Jorrit's hybrid scheme)
+# - PRD_ANGLE_DEP (full angle-dependent PRD) 
+  PRD_ANGLE_DEP = PRD_ANGLE_APPROX
 
-  PRD_ANGLE_DEP = FALSE
   XRD = FALSE
 
 # Temporary files for mean intensities and background opacities
@@ -153,6 +167,10 @@
   KURUCZ_PF_DATA = ../../Atoms/pf_Kurucz.input
 ##  KURUCZ_DATA = kurucz.input
 ##  SOLVE_NE = TRUE
+
+## Include scattering in the background Kurucz lines:
+#  RLK_SCATTER = TRUE
+
 
 # Set HYDROGEN_LTE = TRUE if hydrogen in the background has to be
 # treated with LTE populations (KEYWORD_DEFAULT). Default is FALSE
