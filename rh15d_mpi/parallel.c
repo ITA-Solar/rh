@@ -102,14 +102,15 @@ void initParallelIO(bool_t run_ray, bool_t writej) {
 
   /* Save StokesMode (before adjustStokesMode changes it...) */
   mpi.StokesMode_save = input.StokesMode;
-  mpi.single_log       = FALSE;  
+  mpi.single_log      = FALSE;
 
   /* Allocate some mpi. arrays */
   mpi.niter       = (int *)    calloc(mpi.Ntasks , sizeof(int));
   mpi.convergence = (int *)    calloc(mpi.Ntasks , sizeof(int));
   mpi.zcut_hist   = (int *)    calloc(mpi.Ntasks , sizeof(int));
   mpi.dpopsmax    = (double *) calloc(mpi.Ntasks , sizeof(double));
-  mpi.dpopsmax_hist = matrix_double(mpi.Ntasks, input.NmaxIter);
+  /* max with 1 is used to make sure array is allocated even with Ntasks = 0 */
+  mpi.dpopsmax_hist = matrix_double(MAX(mpi.Ntasks, 1), input.NmaxIter);
 
   mpi.zcut_hist[mpi.task] = mpi.zcut;
   
@@ -730,19 +731,24 @@ void writeOutput(bool_t writej) {
     MPI_Recv(&msg, 0, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, mpi.comm, &status);
   */
 
-  sprintf(messageStr, "Process %3d: --- START output\n", mpi.rank);
-  fprintf(mpi.main_logfile, messageStr);
-  Error(MESSAGE, "main", messageStr);
-  
-  writeMPI_all();
-  if (writej) writeJ_all();
-  writeAux_all();
-  //writeAtmos_all(); 
-  
-  sprintf(messageStr, "Process %3d: *** END output\n", mpi.rank);
-  fprintf(mpi.main_logfile, messageStr);
-  Error(MESSAGE, "main", messageStr);
-  
+  if (mpi.Ntasks == 0) {
+    sprintf(messageStr, "Process %3d: *** NO WORK (more processes than tasks!)\n", mpi.rank);
+    fprintf(mpi.main_logfile, messageStr);
+    Error(MESSAGE, "main", messageStr);
+  } else {
+    sprintf(messageStr, "Process %3d: --- START output\n", mpi.rank);
+    fprintf(mpi.main_logfile, messageStr);
+    Error(MESSAGE, "main", messageStr);
+    
+    writeMPI_all();
+    if (writej) writeJ_all();
+    writeAux_all();
+    //writeAtmos_all(); 
+    
+    sprintf(messageStr, "Process %3d: *** END output\n", mpi.rank);
+    fprintf(mpi.main_logfile, messageStr);
+    Error(MESSAGE, "main", messageStr);
+  }
   /*
   if (mpi.rank < mpi.size - 1) {
     MPI_Send(0, 0, MPI_INT, mpi.rank + 1, 111, mpi.comm);

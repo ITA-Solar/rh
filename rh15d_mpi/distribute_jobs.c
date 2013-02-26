@@ -97,7 +97,7 @@ void distribute_jobs(void)
   
   mpi.total_tasks = remain_tasks;
   
-  /* Abort if more processes than tasks (avoid idle processes waiting forever) */
+  /* Abort if more processes than tasks (avoid idle processes waiting forever) 
   if (mpi.size > remain_tasks) {
     sprintf(messageStr,
             "\n*** More MPI processes (%d) than tasks (%ld), aborting.\n",
@@ -153,13 +153,18 @@ long *get_tasks(long ntotal, int size)
 {
   long i, *tasks;
 
-  tasks = (long *) malloc(size * sizeof(long));
+  tasks = (long *) calloc(size, sizeof(long));
   
-  for (i=0; i < size; i++) tasks[i] = ntotal/size;
-
-  /* Distribute remaining */
-  if ((ntotal % size) > 0) {
-    for (i=0; i < ntotal % size; i++) ++tasks[i];
+  if (size > ntotal) {   /* More processes thank tasks, use ntotal processes */
+    for (i = 0; i < ntotal; i++)
+      tasks[i] = 1;
+  } else {
+    for (i=0; i < size; i++)
+      tasks[i] = ntotal/size;
+    /* Distribute remaining */
+    if ((ntotal % size) > 0) {
+      for (i=0; i < ntotal % size; i++) ++tasks[i];
+    }
   }
   
   return tasks;

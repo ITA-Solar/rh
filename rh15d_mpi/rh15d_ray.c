@@ -67,8 +67,6 @@ int main(int argc, char *argv[])
   char timestr[ARR_STRLEN];
   char  inputLine[MAX_LINE_SIZE];
 
-
-
   /* --- Set up MPI ----------------------             -------------- */
   initParallel(&argc, &argv, run_ray=FALSE);
 
@@ -131,78 +129,71 @@ int main(int argc, char *argv[])
   save_Nrays = atmos.Nrays;   save_wmu = geometry.wmu[0];
   save_muz = geometry.muz[0]; save_mux = geometry.mux[0]; save_muy = geometry.muy[0];
 
+   /* Read first atmosphere column just to get dimensions */
+  readAtmos_ncdf(0, 0, &atmos, &geometry, &infile);
+      
+  if (atmos.Stokes) Bproject();
+  
+  readAtomicModels();   
+  readMolecularModels();
+
+  SortLambda();
+  
+  /* Check if wavelength indices make sense */
+  for (i = 0;  i < Nspect;  i++) {
+    if (wave_index[i] < 0  ||  wave_index[i] >= spectrum.Nspect) {
+	sprintf(messageStr, "Illegal value of wave_index[n]: %4d\n"
+	"Value has to be between 0 and %4d\n", 
+	wave_index[i], spectrum.Nspect);
+	Error(ERROR_LEVEL_2, "main", messageStr);
+    }
+  }
+
+  initParallelIO(run_ray=FALSE, writej=FALSE);
+  init_ncdf_ray();
 
   /* Main loop over tasks */
   for (mpi.task = 0; mpi.task < mpi.Ntasks; mpi.task++) {
     
-      mpi.isfirst = (mpi.task == 0); 
-      
-      if (mpi.stop) mpi.stop = FALSE;
-      
+    mpi.isfirst = (mpi.task == 0); 
+    if (mpi.stop) mpi.stop = FALSE;
 
-      /* Indices of x and y */
-      mpi.ix = mpi.taskmap[mpi.task + mpi.my_start][0];
-      mpi.iy = mpi.taskmap[mpi.task + mpi.my_start][1];
+    /* Indices of x and y */
+    mpi.ix = mpi.taskmap[mpi.task + mpi.my_start][0];
+    mpi.iy = mpi.taskmap[mpi.task + mpi.my_start][1];
+  
+    /* Printout some info */
+    sprintf(messageStr,
+      "Process %3d: --- START task %3ld [of %ld], (xi,yi) = (%3d,%3d)\n",
+       mpi.rank, mpi.task+1, mpi.Ntasks, mpi.xnum[mpi.ix], mpi.ynum[mpi.iy]);
+    fprintf(mpi.main_logfile, messageStr);
+    Error(MESSAGE, "main", messageStr);
     
-      /* Printout some info */
-      sprintf(messageStr,
-        "Process %3d: --- START task %3ld [of %ld], (xi,yi) = (%3d,%3d)\n",
-         mpi.rank, mpi.task+1, mpi.Ntasks, mpi.xnum[mpi.ix], mpi.ynum[mpi.iy]);
-      fprintf(mpi.main_logfile, messageStr);
-      Error(MESSAGE, "main", messageStr);
-      
-            
-      /* Read atmosphere column */
-      readAtmos_ncdf(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
-      
-      if (atmos.Stokes) Bproject();
-      
-      
-      /* --- Run only once --                                  --------- */
-      if (mpi.isfirst) {
-        readAtomicModels();   
-        readMolecularModels();
-	
-        SortLambda();
-	
-	/* Check if wavelength indices make sense */
-	for (i = 0;  i < Nspect;  i++) {
-	  if (wave_index[i] < 0  ||  wave_index[i] >= spectrum.Nspect) {
-  	      sprintf(messageStr, "Illegal value of wave_index[n]: %4d\n"
-  	      "Value has to be between 0 and %4d\n", 
-  	      wave_index[i], spectrum.Nspect);
-	      Error(ERROR_LEVEL_2, argv[0], messageStr);
-	      continue;
-	  }
-	}
-	
-        initParallelIO(run_ray=FALSE, writej=FALSE);
-        init_ncdf_ray();
-      
-      } else {
-        /* Update quantities that depend on atmosphere and initialise others */
-        UpdateAtmosDep();
-      }
-      
-      /* --- Calculate background opacities --             ------------- */
-      Background_p(write_analyze_output=TRUE, equilibria_only=FALSE);
-      
-      getProfiles();
-      initSolution_p();
-      initScatter();
-      
-      getCPU(1, TIME_POLL, "Total Initialize");
-      
-      /* --- Solve radiative transfer for active ingredients -- --------- */
-      Iterate_p(input.NmaxIter, input.iterLimit);
-      
-      
-      /* Treat odd cases as a crash */
-      if (isnan(mpi.dpopsmax[mpi.task]) || isinf(mpi.dpopsmax[mpi.task]) || 
-	  (mpi.dpopsmax[mpi.task] < 0) || ((mpi.dpopsmax[mpi.task] == 0) && (input.NmaxIter > 0)))
-        mpi.stop = TRUE;
-      
+    /* Read atmosphere column */
+    readAtmos_ncdf(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
+    
+    if (atmos.Stokes) Bproject();
+    
+    /* Update quantities that depend on atmosphere and initialise others */
+    UpdateAtmosDep();
 
+    /* --- Calculate background opacities --             ------------- */
+    Background_p(write_analyze_output=TRUE, equilibria_only=FALSE);
+    
+    getProfiles();
+    initSolution_p();
+    initScatter();
+    
+    getCPU(1, TIME_POLL, "Total Initialize");
+    
+    /* --- Solve radiative transfer for active ingredients -- --------- */
+    Iterate_p(input.NmaxIter, input.iterLimit);
+    
+    /* Treat odd cases as a crash */
+    if (isnan(mpi.dpopsmax[mpi.task]) || isinf(mpi.dpopsmax[mpi.task]) || 
+	(mpi.dpopsmax[mpi.task] < 0) || ((mpi.dpopsmax[mpi.task] == 0) && (input.NmaxIter > 0)))
+      mpi.stop = TRUE;
+    
     /* In case of crash, write dummy data and proceed to next task */
     if (mpi.stop) {
       sprintf(messageStr,
@@ -218,8 +209,6 @@ int main(int argc, char *argv[])
 
       continue;
     }
-
-
 
     /* Printout some info, finished iter */
     if (mpi.convergence[mpi.task]) {
@@ -246,8 +235,6 @@ int main(int argc, char *argv[])
     }
       
     copyBufVars(writej=FALSE);
-      
- 
     
     if (mpi.convergence[mpi.task]) {
       /* Redefine geometry just for this ray */
@@ -270,7 +257,6 @@ int main(int argc, char *argv[])
       geometry.muy[0] = save_muy;
       geometry.wmu[0] = save_wmu;
       spectrum.updateJ = TRUE;
-      
     }
 
     /* --- Write output files --                         -------------- */
@@ -285,12 +271,9 @@ int main(int argc, char *argv[])
 
   } /* End of main task loop */
 
-
   writeOutput(writej=FALSE);
-
   closeParallelIO(run_ray=FALSE, writej=FALSE);
   close_ncdf_ray();
-
   /* Frees from memory stuff used for job control */
   finish_jobs();
 

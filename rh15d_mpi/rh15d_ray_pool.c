@@ -71,14 +71,9 @@ int main(int argc, char *argv[])
   char timestr[ARR_STRLEN];
   char  inputLine[MAX_LINE_SIZE];
 
-
-
   /* --- Set up MPI ----------------------             -------------- */
   initParallel(&argc, &argv, run_ray=FALSE);
-  if (mpi.size == 1) {
-    sprintf(messageStr, "Must run rh15d_ray_pool with more than one process. Aborting.");
-    Error(ERROR_LEVEL_2, argv[0], messageStr);
-  }
+
   mpi.size -= 1; /* Remove overlord from count, as it is not doing work */
 
   setOptions(argc, argv);
@@ -88,6 +83,12 @@ int main(int argc, char *argv[])
   /* Direct log stream into MPI log files */
   mpi.main_logfile     = commandline.logfile;
   commandline.logfile  = mpi.logfile;
+  
+  if (mpi.size == 0) {
+    sprintf(messageStr, "Must run rh15d_ray_pool with more than one process. Aborting.");
+    Error(ERROR_LEVEL_2, argv[0], messageStr);
+  }
+  
   strcpy(mpi.svn_id, SVN_ID); /* save SVN version */
 
   /* --- Read input data and initialize --             -------------- */
@@ -148,6 +149,7 @@ int main(int argc, char *argv[])
   
   readAtomicModels();   
   readMolecularModels();
+
 	
   SortLambda();
 	
@@ -164,6 +166,7 @@ int main(int argc, char *argv[])
   initParallelIO(run_ray=FALSE, writej=FALSE);
   init_ncdf_ray();
 
+  
   ////////////////////////
   ////////////////////////
   ////////////////////////
@@ -208,59 +211,74 @@ void overlord(void) {
   MPI_Status status;
   int result;
   long rank, proc_tasks, current_task=0;
-  
-  proc_tasks = MIN(mpi.total_tasks, mpi.size+1);
 
+  if (mpi.total_tasks == 1) {
+      /* Send task to first process */
+      MPI_Sendrecv(&current_task, 1, MPI_LONG, 1, WORKTAG,
+		   &result, 1, MPI_INT, 1, MPI_ANY_TAG,
+		   MPI_COMM_WORLD, &status);
+      /* Tell all the drones to exit by sending an empty message with the DIETAG. */
+     for (rank = 1; rank <= mpi.size; ++rank) {
+       MPI_Send(0, 0, MPI_INT, rank, DIETAG, MPI_COMM_WORLD);
+     }
+  } else {
+    /* Seed the drones; send one unit of work to each drone. */
+    for (rank = 1; rank <= mpi.size; ++rank) {
+      if (rank > mpi.total_tasks)
+	break;
+     
+     /* 
+      sprintf(messageStr,
+      "Process %3d: Overlord sending task %d to process %3d...\n",
+       mpi.rank, current_task, rank);
+      fprintf(mpi.main_logfile, messageStr);
+      Error(MESSAGE, "main", messageStr);
+      */
+     
+      /* Send it to each rank */
+      MPI_Send(&current_task,     /* message buffer */
+	       1,                 /* one data item */
+	       MPI_LONG,          /* data item is an integer */
+	       rank,              /* destination process rank */
+	       WORKTAG,           /* user chosen message tag */
+	       MPI_COMM_WORLD);   /* default communicator */
+      ++current_task;
+    }
   
-  /* Seed the drones; send one unit of work to each drone. */
-  for (rank = 1; rank < proc_tasks; ++rank) {
-
-    /* Send it to each rank */
-    MPI_Send(&current_task,     /* message buffer */
-             1,                 /* one data item */
-             MPI_LONG,          /* data item is an integer */
-             rank,              /* destination process rank */
-             WORKTAG,           /* user chosen message tag */
-             MPI_COMM_WORLD);   /* default communicator */
+    /* Loop over getting new work requests until there is no more work to be done */
+    while (current_task < mpi.total_tasks) {
+      /* Receive results from a drone */
+      MPI_Recv(&result,           /* message buffer */
+	       1,                 /* one data item */
+	       MPI_INT,           /* of type double real */
+	       MPI_ANY_SOURCE,    /* receive from any sender */
+	       MPI_ANY_TAG,       /* any type of message */
+	       MPI_COMM_WORLD,    /* default communicator */
+	       &status);          /* info about the received message */
+      /* Send the drone a new work unit */
+      MPI_Send(&current_task,     /* message buffer */
+	       1,                 /* one data item */
+	       MPI_LONG,          /* data item is an integer */
+	       status.MPI_SOURCE, /* to who we just received from */
+	       WORKTAG,           /* user chosen message tag */
+	       MPI_COMM_WORLD);   /* default communicator */
+      /* Get the next unit of work to be done */
+      ++current_task;
+    }
     
-    ++current_task;
-  }
-
-  /* Loop over getting new work requests until there is no more work to be done */
-  while (current_task < mpi.total_tasks) {
-
-    
-    /* Receive results from a drone */
-    MPI_Recv(&result,           /* message buffer */
-             1,                 /* one data item */
-             MPI_INT,           /* of type double real */
-             MPI_ANY_SOURCE,    /* receive from any sender */
-             MPI_ANY_TAG,       /* any type of message */
-             MPI_COMM_WORLD,    /* default communicator */
-             &status);          /* info about the received message */
-
-    /* Send the drone a new work unit */
-    MPI_Send(&current_task,     /* message buffer */
-             1,                 /* one data item */
-             MPI_LONG,          /* data item is an integer */
-             status.MPI_SOURCE, /* to who we just received from */
-             WORKTAG,           /* user chosen message tag */
-             MPI_COMM_WORLD);   /* default communicator */
-
-    /* Get the next unit of work to be done */
-    ++current_task;
-  }
+    /* There's no more work to be done, so receive all the outstanding results
+       from the drones. */
+    for (rank = 1; rank <= mpi.size; ++rank) {
+      if (rank > mpi.total_tasks)
+	break;
+      MPI_Recv(&result, 1, MPI_INT, MPI_ANY_SOURCE,
+	       MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    }
   
-  /* There's no more work to be done, so receive all the outstanding results
-     from the drones. */
-  for (rank = 1; rank < proc_tasks; ++rank) {
-    MPI_Recv(&result, 1, MPI_INT, MPI_ANY_SOURCE,
-             MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-  }
-
-  /* Tell all the drones to exit by sending an empty message with the DIETAG. */
-  for (rank = 1; rank < proc_tasks; ++rank) {
-    MPI_Send(0, 0, MPI_INT, rank, DIETAG, MPI_COMM_WORLD);
+    /* Tell all the drones to exit by sending an empty message with the DIETAG. */
+    for (rank = 1; rank <= mpi.size; ++rank) {
+      MPI_Send(0, 0, MPI_INT, rank, DIETAG, MPI_COMM_WORLD);
+    }
   }
 }
 /* ------- end   ---------------------------- overlord.c ------------ */
@@ -403,6 +421,7 @@ void drone(void) {
     /* --- Write output files, send result to overlord ---------- */
     writeMPI_p(task);
     writeAtmos_p();
+    // writeAux_p();  /* should this be default also? */
     MPI_Send(&result, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 
   } /* End of main task loop */

@@ -22,7 +22,7 @@ ifeq ($(REV), )
     CFLAGS  = -O2 -I../ -I$(NCDF_DIR)/include/ 
 else
     SVN = $(shell svn info | grep Revision)  $(shell svn info |grep Author)
-    CFLAGS  = -O2 -I../ -I$(NCDF_DIR)/include/ -D'SVN_ID="$(SVN)"'
+    CFLAGS  = -O0 -g -I../ -I$(NCDF_DIR)/include/ -D'SVN_ID="$(SVN)"'
 endif
 
 LDFLAGS = -L../ -L$(NCDF_DIR)/lib/
@@ -217,7 +217,7 @@ rh15d_ray.o:            ../rh.h          ../atom.h        ../atmos.h       \
 rh15d_ray_pool.o:            ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../spectrum.h    ../background.h  \
                         ../statistics.h  ../error.h       ../inputs.h      \
-                        parallel.h       io.h             rh15d_ray.c
+                        parallel.h       io.h             rh15d_ray_pool.c
 	$(CC) $(CFLAGS) -Wall -c -o $@   rh15d_ray_pool.c 
 
 riiplane.o:             ../rh.h          ../atom.h        ../atmos.h       \
