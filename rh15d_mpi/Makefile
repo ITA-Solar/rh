@@ -22,7 +22,7 @@ ifeq ($(REV), )
     CFLAGS  = -O2 -I../ -I$(NCDF_DIR)/include/ 
 else
     SVN = $(shell svn info | grep Revision)  $(shell svn info |grep Author)
-    CFLAGS  = -O0 -g -I../ -I$(NCDF_DIR)/include/ -D'SVN_ID="$(SVN)"'
+    CFLAGS  = -O2 -I../ -I$(NCDF_DIR)/include/ -D'SVN_ID="$(SVN)"'
 endif
 
 LDFLAGS = -L../ -L$(NCDF_DIR)/lib/

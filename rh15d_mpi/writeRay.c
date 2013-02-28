@@ -489,6 +489,7 @@ void writeRay(void)
 	  }
 	}
       }
+      free_as(idx, crosscoupling=FALSE);
     }
     
     /* set back PRD input option */
