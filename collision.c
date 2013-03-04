@@ -722,6 +722,10 @@ void CollisionRate(struct Atom *atom, FILE *fp_atom)
 	
 	cup=acolsh * sqrt(tg) * exp( -tcolsh / tg) / (1.0 + 0.1 * tg / tcolsh);
 	
+	/* convert coefficient from cm^3 s^-1 t m^3 s^-1 */
+	cdn=cdn*pow(CM_TO_M,3);
+	cup=cup*pow(CM_TO_M,3);
+
 	cdn=cdn*atmos.ne[k];
 	cup=cup*atmos.ne[k];
 
