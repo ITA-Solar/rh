@@ -76,7 +76,7 @@ FORMAT(F11.4,F7.3,F6.2,F12.3,F5.2,1X,A10,F12.3,F5.2,1X,A10,
 
 #define COMMENT_CHAR        "#"
 #define RLK_RECORD_LENGTH   160
-#define Q_WING              20.0
+#define Q_WING              40.0
 #define MILLI               1.0E-03
 #define ANGSTROM_TO_NM      0.1
 #define MAX_GAUSS_DOPPLER   7.0
