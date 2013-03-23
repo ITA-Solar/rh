@@ -63,7 +63,7 @@ void init_ncdf_indata_new(void)
           zch_var, ntsk_var, host_var, st_var, ft_var, z_varid, dimids[4],
           PRD_angle_dep;
   /* This value is harcoded for efficiency. Maximum number of iterations ever needed */
-  int     NMaxIter = 500;
+  int     NMaxIter = 1500;
   long    task;
   size_t  start[] = {0, 0, 0};
   size_t  count[] = {1, 1, 1};
