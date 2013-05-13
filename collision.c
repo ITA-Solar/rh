@@ -173,7 +173,7 @@ double ftwo(double x){
     count=0.0;
     fact=1.0;
     xfact=1.0;
-    while (abs(term/f0x) > 1.e-8){
+    while (fabs(term/f0x) > 1.e-8){
       count=count+1.0;
       fact = fact*count;
       xfact=xfact*(-x);
