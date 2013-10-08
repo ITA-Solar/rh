@@ -18,6 +18,8 @@ pro rh_make_fits,quantity,rayfile,input_dir,bifrost_dir,bifrost_snapname,runname
 ; INPUTS:
 ;       quantity    - either 'intensity' or 'zt1'
 ;       rayfile     - rh 15d ray output ncdf file
+;       input_dir   - directory where the auxiliary input files used
+;                     in the run are located
 ;	bifrost_dir - directory where bifrost atmosphere file is
 ;                     located
 ;  bifrost_snapname - name of the bifrost snapshots, e.g. 'cb24bih'
@@ -162,7 +164,7 @@ pro rh_make_fits,quantity,rayfile,input_dir,bifrost_dir,bifrost_snapname,runname
   dl=wave[1]-wave[0]
 
 
-; hard coded for now, might be read form file later
+; hard coded for now, might be read from file later
   muz=1.0
 
 ; construct filename
