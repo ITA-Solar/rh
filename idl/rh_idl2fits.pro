@@ -72,7 +72,7 @@ endif
 ; set translation of variables with long names
 rh_idl2fits_varrep,varrep
 
-sxaddpar,hdr,'COMMENT',"Variables from multi3d.input file:",before='DATE'
+sxaddpar,hdr,'COMMENT',"Variables from keyword.input file:",before='DATE'
 openr,lur,inputfile,/get_lun
 text=''
 nid=0
