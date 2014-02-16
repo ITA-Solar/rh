@@ -129,6 +129,7 @@ int main(int argc, char *argv[])
   save_Nrays = atmos.Nrays;   save_wmu = geometry.wmu[0];
   save_muz = geometry.muz[0]; save_mux = geometry.mux[0]; save_muy = geometry.muy[0];
 
+  atmos.moving = TRUE;  /* To prevent moving change from column [0, 0] */
    /* Read first atmosphere column just to get dimensions */
   readAtmos_ncdf(0, 0, &atmos, &geometry, &infile);
       

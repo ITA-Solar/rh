@@ -104,7 +104,7 @@ void readInput()
     {"J_FILE",     "", FALSE, KEYWORD_REQUIRED, input.JFile, setcharValue},
     {"BACKGROUND_FILE", "", FALSE, KEYWORD_REQUIRED, input.background_File,
      setcharValue},
-   {"STARTING_J", "", FALSE, KEYWORD_REQUIRED, &input.startJ,
+    {"STARTING_J", "", FALSE, KEYWORD_REQUIRED, &input.startJ,
      setstartValue},
     {"HYDROGEN_LTE", "FALSE", FALSE, KEYWORD_DEFAULT, &atmos.H_LTE,
      setboolValue},
@@ -148,7 +148,7 @@ void readInput()
      setdoubleValue},
     {"VACUUM_TO_AIR", "0", FALSE, KEYWORD_OPTIONAL, &spectrum.vacuum_to_air,
      setboolValue},
- {"SINTERPOLATION", "LINEAR", FALSE, KEYWORD_DEFAULT, &input.Sinterpolation,
+    {"SINTERPOLATION", "LINEAR", FALSE, KEYWORD_DEFAULT, &input.Sinterpolation,
      setSinterpolation},
 
     /* --- Magnetic field related inputs go here --     ------------- */

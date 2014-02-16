@@ -203,6 +203,7 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   size_t     start_nh[] = {0, 0, 0, 0, 0};
   size_t     count_nh[] = {1, 1, 1, 1, 1};
   int        ncid, ierror, i, j, z_varid, imin, i50k;
+  bool_t     old_moving;
   double     Tmin, diff;
   double    *Bx, *By, *Bz;
 
@@ -346,12 +347,22 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
     for (j = 0; j < atmos->Nspace; j++) atmos->nHtot[j] += atmos->nH[i][j];
   }
   
-
   /* Some other housekeeping */
+  old_moving = atmos->moving;
   atmos->moving = FALSE;
   for (i = 0;  i < atmos->Nspace;  i++) {
     if (fabs(geometry->vel[i]) >= atmos->vmacro_tresh) {
       atmos->moving = TRUE;
+      /* old_moving should only be false*/
+      if ((old_moving == FALSE) & (atmos->moving == TRUE)) {
+	sprintf(messageStr,
+		"Moving atmosphere detected when the previous column\n"
+		" (or column [0,0] in file) was not. This will cause problems\n"
+		" and the code will abort.\n"
+		" To prevent this situation one can force all columns\n"
+		" to be moving by setting VMACRO_TRESH = 0 in keyword.input\n");
+	Error(ERROR_LEVEL_2, routineName, messageStr);
+      }
       break;
     }
   }

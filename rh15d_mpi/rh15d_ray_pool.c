@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
   distribute_jobs();
   mpi.Ntasks = 1; 
   
-         
+  atmos.moving = TRUE;  /* To prevent moving change from column [0, 0] */
   /* Read first atmosphere column just to get dimensions */
   readAtmos_ncdf(0, 0, &atmos, &geometry, &infile);
       
