@@ -60,12 +60,8 @@ BACKGROPAC = anglequad.o      backgrcontr.o   multiatmos.o      project.o
 
 ## --- Rules for the executables --                    -------------- ##
 
-all:   rh15d  rh15d_ray rh15d_ray_pool rh15d_lteray solveray  #  solve15d  backgrcontr
+all:    rh15d_ray rh15d_ray_pool rh15d_lteray 
 
-rh15d:  $(ONE_D_OBJS)  librh rh15d.o
-	cd ..; $(AR) dsv librh.a $(SUBSTITUTE)
-	$(LD) -o $@  $(LDFLAGS) $(ONE_D_OBJS) rh15d.o $(LIBS)
-	
 rh15d_lteray:  $(ONE_D_OBJS)  librh rh15d_lteray.o writeRay.o
 	$(LD) -o $@  $(LDFLAGS) $(ONE_D_OBJS) rh15d_lteray.o writeRay.o $(LIBS)
 	
@@ -92,7 +88,7 @@ librh:
 ## --- Clean up --                                     -------------- ##
 
 clean:
-	rm -f *.o  rh15d  solve15d  solveray  backgrcontr rh15d_ray rh15d_lteray
+	rm -f *.o rh15d_ray rh15d_ray_pool rh15d_lteray
 
 
 ## --- Explicit dependencies on include files --       -------------- ##
@@ -196,12 +192,6 @@ redistribute_p.o:       ../rh.h          ../atmos.h       ../atom.h        \
                         ../spectrum.h    ../accelerate.h  ../error.h       \
                         ../inputs.h      parallel.h  
 
-rh15d.o:                ../rh.h          ../atom.h        ../atmos.h       \
-                        geometry.h       ../spectrum.h    ../background.h  \
-                        ../statistics.h  ../error.h       ../inputs.h      \
-                        parallel.h       io.h             rh15d.c
-	$(CC) $(CFLAGS) -Wall -c -o $@   rh15d.c
-	
 rh15d_lteray.o:         ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../spectrum.h    ../background.h  \
                         ../statistics.h  ../error.h       ../inputs.h      \

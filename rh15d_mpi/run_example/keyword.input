@@ -7,18 +7,18 @@
 # First specify input files for atmosphere and abundances
 # (both KEYWORD_REQUIRED).
 
-  ATMOS_FILE = /Users/tiago/data/bifrost/bifrost_hr_s40-44.ncdf  
+  ATMOS_FILE = ../../Atmos/FALC_82_5x5.ncdf  
   ABUND_FILE = ../../Atoms/abundance.input
 
 # Stuff for 1.5D version:
   SNAPSHOT = 0
 
-  X_START = 278 
-  X_END   = 279 
+  X_START = 0
+  X_END   = 1 
   X_STEP  = 1 
 
-  Y_START = 150
-  Y_END   = 151
+  Y_START = 0
+  Y_END   = 1
   Y_STEP  = 1 
   
 # Runs only for non-converged columns (assumes output files already exist)
@@ -28,7 +28,7 @@
   15D_WRITE_EXTRA    = FALSE 
   15D_WRITE_SPECTRUM = FALSE 
 
-  15D_TMAX_CUT = 22000.
+  15D_TMAX_CUT = 30000.
 
 # Perform the temperature cut above?
   15D_DEPTH_ZCUT = TRUE
@@ -101,7 +101,7 @@
 # (both KEYWORD_REQUIRED).
 
   N_MAX_ITER = 150 
-  ITER_LIMIT = 1.0E-02
+  ITER_LIMIT = 1.0E-04
 
 # Parameters for Ng convergence acceleration (all are KEYWORD_OPTIONAL)
 # (default for NG_ORDER = 0 --> no acceleration)
@@ -109,7 +109,7 @@
 
   NG_DELAY  = 20 
   NG_ORDER  = 2 
-  NG_PERIOD = 18
+  NG_PERIOD = 20
 
 # Regulate the approximation for the formal solution in the rhf1d and 
 # rh15d versions of the code (KEYWORD_DEFAULT). Set to either LINEAR or 
@@ -171,19 +171,20 @@
 ## Include scattering in the background Kurucz lines:
 #  RLK_SCATTER = TRUE
 
-
 # Set HYDROGEN_LTE = TRUE if hydrogen in the background has to be
 # treated with LTE populations (KEYWORD_DEFAULT). Default is FALSE
 
-HYDROGEN_LTE = TRUE
+  HYDROGEN_LTE = TRUE
+
 ##  HYDROSTATIC = TRUE
+
 ##  NON_ICE = TRUE
 
 # Data file for background opacity fudge to compensate for missing
 # UV line haze. Type is KEYWORD_OPTIONAL. When set to ``none'' (the
 # default value) no data is read.
 
-  OPACITY_FUDGE = ../../Atmos/opacity_fudge.input
+  OPACITY_FUDGE = ../../Atoms/opacity_fudge.input
 
 # Output files for atomic data, spectrum, populations, and geometry
 # (all KEYWORD_DEFAULT).
@@ -232,7 +233,7 @@ HYDROGEN_LTE = TRUE
 
 # Input file for the magnetic field (KEYWORD_OPTIONAL). Default is "none".
 
-  STOKES_INPUT = ../../Atmos/MACKKL_M_100_3500G_ver.B
+  STOKES_INPUT = foo.bar
 
 
 # Input Stokes mode (KEYWORD_OPTIONAL). 
@@ -259,7 +260,7 @@ HYDROGEN_LTE = TRUE
 #  ALLOW_PASSIVE_BB = FALSE
 
 # Set this value to TRUE to get printout on CPU usage (may take some
-# extra CPU usage though!).
+# extra CPU usage though!). This should ALWAYS be FALSE in RH 1.5D.
 
   PRINT_CPU = FALSE 
 
@@ -268,6 +269,7 @@ HYDROGEN_LTE = TRUE
 # by the value of N_THREAD_LIMIT in routine setThreadValue in file
 # readvalue.c. Typically, N_THREADS should be equal to the number of
 # processors in a multi-processor machine, or zero (the default) otherwise.
+# This should ALWAYS be 1 in RH 1.5D.
 
   N_THREADS = 1
 

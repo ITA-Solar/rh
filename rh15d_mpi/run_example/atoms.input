@@ -5,4 +5,4 @@
 #  model file             ACTIVE/PASSIVE  INITIAL_SOLUTION   population file
 
   ../../Atoms/H_6.atom        PASSIVE     ZERO_RADIATION    pops.H.out
-  ../../Atoms/MgII_hk_PRD.atom ACTIVE     ZERO_RADIATION    pops.MG.out
+  ../../Atoms/CaII.atom        ACTIVE     ZERO_RADIATION    pops.CA.out
