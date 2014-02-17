@@ -1,0 +1,685 @@
+******************
+Analysis of output
+******************
+
+.. _output-label:
+
+Output file structure
+=====================
+
+The output is written to three files: ``output_aux.ncdf``, ``output_indata.ncdf``, and ``output_ray.ncdf``. This is a big departure from RH, which contained several more output files. In particular, RH 1.5D will not write all the information that was written by RH, due to the sheer size it would take for large 3D simulations. The files are written in the machine-independent, self-describing NetCDF 4 format. The contents of the files are organised in groups, variables, and attributes. Groups and variables can be imagined as directories and files in a filesystem. Inside groups, different variables and dimensions can be organised. The content of the output files can vary: some runs will have more detailed information and therefore more variables written to the files. 
+
+The structure of the three files is given below.
+
+.. note::
+   When a column fails to converge, output for that column is not written. This means that the variables that depend on ``(nx, ny)`` will have some values missing. NetCDF marks these values as `missing data <http://www.unidata.ucar.edu/software/netcdf/docs/BestPractices.html#Missing%20Data%20Values>`_ and uses a fill value (``NC_FILL_FLOAT``, whose default value is 9.9692e+36). When the ``15D_DEPTH_ZCUT`` option is used, not all heights will be used in the calculation. The code does not read the skipped parts of the atmosphere. When writing such variables of ``nz``, only the points that were used are written to the file, and the rest will be marked as missing data (typically the z cut height varies with the column).
+
+
+
+output_aux.ncdf
+---------------
+
+This file contains the level populations and radiative rates. For each active atom or molecule, it contains different groups called ``atom_XX`` or ``molecule_XX``, where ``XX`` is the identifier for the species (e.g. ``MG``, ``CO``). 
+
+The dimensions of the root group are ``nx``, ``ny``, and ``nz``. 
+
+.. note::
+   The atmosphere dimensions on many of the output files are not necessarily the same as in the atmosphere file. They depend on the number of columns calculated, which are a function of ``X/Y_START/END/STEP``.
+
+There are two global attributes:
+
+=========== ===================================
+``atmosID`` Identifier for the atmosphere file.
+``svn_id``  svn revision number
+=========== ===================================
+
+Inside each of the atom/molecule groups, the following dimensions can exist:
+
+================== ====================================
+Name               Description
+================== ====================================
+``nlevel``         Number of atomic levels.
+``nline``          Number of atomic transitions
+``ncontinuum``     Number of bound-free transitions.
+``nlevel_vibr``    Number of molecule vibration levels.
+``nline_molecule`` Number of molecular lines.
+``nJ``             Number of rotational states.
+================== ====================================
+
+The atom groups contain the following variables:
+
+.. tabularcolumns:: |l|l|L|
+
++---------------------+------------------------------+------------------------------------+
+| Name                | Dimensions                   | Description                        |
++=====================+==============================+====================================+
+| ``populations``     | ``(nlevel, nx, ny, nz)``     | Atomic LTE populations.            |
++---------------------+------------------------------+------------------------------------+
+| ``populations_LTE`` | ``(nlevel, nx, ny, nz)``     | Atomic populations.                |
++---------------------+------------------------------+------------------------------------+
+| ``Rij_line``        | ``(nline, nx, ny, nz)``      | Radiative rates out of the line.   |
++---------------------+------------------------------+------------------------------------+
+| ``Rji_line``        | ``(nline, nx, ny, nz)``      | Radiative rates into the line.     |
++---------------------+------------------------------+------------------------------------+
+| ``Rij_continuum``   | ``(ncontinuum, nx, ny, nz)`` | Radiative rates out of the         |
+|                     |                              | bf transition.                     |
++---------------------+------------------------------+------------------------------------+
+| ``Rji_continuum``   | ``(ncontinuum, nx, ny, nz)`` | Radiative rates into the bf        |
+|                     |                              | transition.                        |
++---------------------+------------------------------+------------------------------------+
+
+The molecule groups contain the following variables:
+
+.. tabularcolumns:: |l|l|L|
+
++---------------------+-------------------------------+------------------------------------+
+| Name                | Dimensions                    | Description                        |
++=====================+===============================+====================================+
+| ``populations``     | ``(nlevel_vibr, nx, ny, nz)`` | Atomic LTE populations.            |
++---------------------+-------------------------------+------------------------------------+
+| ``populations_LTE`` | ``(nlevel_vibr, nx, ny, nz)`` | Atomic populations.                |
++---------------------+-------------------------------+------------------------------------+
+
+All units are SI.
+
+.. note::
+   In older versions it was possible to specify the keyword ``15D_WRITE_EXTRA`` and get additional output written to ``output_aux.ncdf`` (e.g. a new ``opacity`` group and more rates). While the procedures are still in ``writeAux_p.c``, the functionality is deprecated because other changes in the code were not compatible with this way of writing the output. It is possible that this functionality will return at a later version.
+
+Here is a sample output of ``ncdump -h`` from an ``output_aux.ncdf`` file::
+
+    netcdf output_aux {
+    dimensions:
+            nx = 256 ;
+            ny = 256 ;
+            nz = 400 ;
+
+    // global attributes:
+                    :atmosID = "my_atmos.ncdf (Mon Jun 24 09:52:48 2011)" ;
+                    :svn_id = "Revision: 78  Last Changed Author: tiago" ;
+    
+    group: atom_CA {
+      dimensions:
+            nlevel = 6 ;
+            nline = 5 ;
+            ncontinuum = 5 ;
+      variables:
+            float populations(nlevel, nx, ny, nz) ;
+            float populations_LTE(nlevel, nx, ny, nz) ;
+            float Rij_line(nline, nx, ny, nz) ;
+            float Rji_line(nline, nx, ny, nz) ;
+            float Rij_continuum(ncontinuum, nx, ny, nz) ;
+  	    float Rji_continuum(ncontinuum, nx, ny, nz) ;
+     } // group atom_CA
+
+    group: molecule_CO {
+      dimensions:
+            nlevel_vibr = 294 ;
+            nline_molecule = 296 ;
+            nJ = 5 ;
+      variables:
+            float populations(nlevel_vibr, nx, ny, nz) ;
+            float populations_LTE(nlevel_vibr, nx, ny, nz) ;
+      } // group molecule_CO
+    }
+
+
+output_indata.ncdf
+------------------
+
+This file contains data and metadata related to the run. It contains three groups: ``input`` (mostly settings from ``keyword.input``), ``atmos`` (atmospheric variables), and ``mpi`` (several variables relating to the run). 
+
+The dimensions of the root group are ``nx``, ``ny``, ``nz``, and ``strlen`` (used as maximum length for string type variables). 
+
+There are two global attributes:
+
+=========== ===================================
+``atmosID`` Identifier for the atmosphere file.
+``svn_id``  svn revision number
+=========== ===================================
+
+The ``input`` group contains only attributes, all options from ``keyword.input``. 
+
+The ``atmos`` groups contains the dimensions ``nhydr``, ``elements`` and ``nrays``. It also contains the following variables: 
+
+.. tabularcolumns:: |l|l|l|p{5.6cm}|
+
++-----------------------+------------------------------+-----------------+--------------------------------------+
+| Name                  | Dimensions                   | Units           | Description                          |
++=======================+==============================+=================+======================================+
+| ``temperature``       | ``(nx, ny, nz)``             | K               | Temperatures                         |
++-----------------------+------------------------------+-----------------+--------------------------------------+
+| ``velocity_z``        | ``(nx, ny, nz)``             | m s\ :sup:`-1`\ | Vertical velocities                  |
++-----------------------+------------------------------+-----------------+--------------------------------------+
+| ``height``            | ``(nx, ny, nz)``             | m               | Height scale used. Can be different  |
+|                       |                              |                 | for every column when depth refine   |
+|                       |                              |                 | is used.                             |
++-----------------------+------------------------------+-----------------+--------------------------------------+
+| ``element_weight``    | ``(nelements)``              | a.m.u.          | Atomic weights                       |
++-----------------------+------------------------------+-----------------+--------------------------------------+
+| ``element_abundance`` | ``(nelements)``              |                 | Log of element abundances relative   |
+|                       |                              |                 | to hydrogen (A(H) = 12).             |
++-----------------------+------------------------------+-----------------+--------------------------------------+
+| ``element_id``        | ``(nelements, strlen)``      |                 | Element identifiers.                 |
++-----------------------+------------------------------+-----------------+--------------------------------------+
+| ``muz``               | ``(nrays)``                  |                 | mu values for each ray.              |
++-----------------------+------------------------------+-----------------+--------------------------------------+
+| ``muz``               | ``(nrays)``                  |                 | mu weights for each ray.             |
++-----------------------+------------------------------+-----------------+--------------------------------------+
+| ``x``                 | ``(nx)``                     | m               | Spatial coordinates along x axis.    |
++-----------------------+------------------------------+-----------------+--------------------------------------+
+| ``y``                 | ``(ny)``                     | m               | Spatial coordinates along y axis.    |
++-----------------------+------------------------------+-----------------+--------------------------------------+
+
+.. note::
+   When ``15D_DEPTH_REFINE`` is used, each column will have a different (optimised) height scale, but they all have the same number of depth points (``nz``). In these cases, it is very important to save the ``height`` variable because otherwise one does not know how to relate the height relations of quantities from different columns.
+
+The ``atmos`` group also contains the following attributes:
+
+========== ===========================================
+``moving`` Unsigned int, 1 if velocity fields present.
+``stokes`` Unsigned int, 1 if stokes output present.
+========== ===========================================
+
+The ``mpi`` group contains the dimensions ``nprocesses`` (number of processes) and ``niterations`` (maximum value of iterations).
+
+.. warning::
+   ``niterations`` is currently hardcoded in the code to a maximum of 1500. If you try to run more than 1500 iterations, there will be an error writing to the output.
+
+The ``mpi`` group also contains several variables:
+
+.. tabularcolumns:: |l|l|p{6.6cm}|
+
++-----------------------+------------------------------+--------------------------------------------------------+
+| Name                  | Dimensions                   | Description                                            |
++=======================+==============================+========================================================+
+| ``xnum``              | ``(nx)``                     | Indices of x positions calculated.                     |
++-----------------------+------------------------------+--------------------------------------------------------+
+| ``xnum``              | ``(nx)``                     | Indices of x positions calculated.                     |
++-----------------------+------------------------------+--------------------------------------------------------+
+| ``task_map``          | ``(nx, ny)``                 | Maps which process ran which column.                   |
++-----------------------+------------------------------+--------------------------------------------------------+
+| ``task_map_number``   | ``(nx, ny)``                 | Maps which task number each column was.                |
++-----------------------+------------------------------+--------------------------------------------------------+
+| ``iterations``        | ``(nx, ny)``                 | Number of iterations used for each column.             |
++-----------------------+------------------------------+--------------------------------------------------------+
+| ``convergence``       | ``(nx, ny)``                 | Indicates if each column converged or not. Possible    |
+|                       |                              | values are ``1`` (converged), ``0`` (non converged),   |
+|                       |                              | or ``-1`` (crashed).                                   |
++-----------------------+------------------------------+--------------------------------------------------------+
+| ``delta_max``         | ``(nx, ny)``                 | Final value for ``delta_max`` when iteration finished. |
++-----------------------+------------------------------+--------------------------------------------------------+
+| ``delta_max_history`` | ``(nx, ny, niterations)``    | Evolution of ``delta_max``                             |
++-----------------------+------------------------------+--------------------------------------------------------+
+| ``ntasks``            | ``(nprocesses)``             | Number of tasks assigned to each process. Does **not** |
+|                       |                              | work in `pool` mode.                                   |
++-----------------------+------------------------------+--------------------------------------------------------+
+| ``hostname``          | ``(nprocesses, strlen)``     | Hostname of each process.                              |
++-----------------------+------------------------------+--------------------------------------------------------+
+| ``starting_time``     | ``(nprocesses, strlen)``     | Time when each process started the calculations.       |
++-----------------------+------------------------------+--------------------------------------------------------+
+| ``finish_time``       | ``(nprocesses, strlen)``     | Time when each process finished the calculations.      |
++-----------------------+------------------------------+--------------------------------------------------------+
+| ``z_cut``             | ``(nx, ny)``                 | Height index of the temperature cut.                   |
++-----------------------+------------------------------+--------------------------------------------------------+
+
+The ``mpi`` group also contains the following attributes: ``x_start``, ``x_end``,  ``x_step``, ``y_start``, ``y_end``,  and ``y_step``, all of which are options from ``keyword.input``.
+
+Here is a sample output of ``ncdump -h`` from an ``output_indata.ncdf`` file::
+
+      netcdf output_indata {
+      dimensions:
+              nx = 256 ;
+              ny = 256 ;
+              nz = 400 ;
+              strlen = 30 ;
+      
+      // global attributes:
+                      :atmosID = "my_atmos.ncdf (Mon Jun 24 09:52:48 2011)" ;
+                      :svn_id = "Revision: 78  Last Changed Author: tiago" ;
+      
+      group: input {
+      
+        // group attributes:
+                      :Magneto_optical = 1UB ;
+                      :PRD_angle_dep = 1 ;
+                      :XRD = 0UB ;
+                      :Background_polarization = 0UB ;
+                      :Start_J = "NEW_J" ;
+                      :Stokes_mode = "NO_STOKES" ;
+                      :Angle_set = "NO_SET" ;
+                      :Atmos_file = "/my_data/example.ncdf" ;
+                      :Abundances_file = "../../Atoms/abundance.input" ;
+                      :Kurucz_PF_data = "../../Atoms/pf_Kurucz.input" ;
+                      :Iteration_limit = 0.001 ;
+                      :PRD_Iteration_limit = 0.01 ;
+                      :N_max_iter = 150 ;
+                      :Ng_delay = 8 ;
+                      :Ng_order = 2 ;
+                      :Ng_period = 8 ;
+                      :PRD_N_max_iter = 3 ;
+                      :PRD_Ng_delay = 0 ;
+                      :PRD_Ng_order = 0 ;
+                      :PRD_Ng_period = 0 ;
+                      :Metallicity = 0. ;
+                      :Lambda_reference = 500. ;
+        } // group input
+      
+      group: atmos {
+        dimensions:
+              nhydr = 6 ;
+              nelements = 99 ;
+              nrays = 5 ;
+        variables:
+              float temperature(nx, ny, nz) ;
+                      temperature:units = "K" ;
+              float velocity_z(nx, ny, nz) ;
+                      velocity_z:units = "m s^-1" ;
+              float height(nx, ny, nz) ;
+                      height:units = "m" ;
+              double element_weight(nelements) ;
+                      element_weight:units = "atomic_mass_units" ;
+              double element_abundance(nelements) ;
+              char element_id(nelements, strlen) ;
+              double muz(nrays) ;
+              double wmu(nrays) ;
+              float x(nx) ;
+                      x:units = "m" ;
+              float y(ny) ;
+                      y:units = "m" ;
+      
+        // group attributes:
+                      :moving = 1UB ;
+                      :stokes = 0UB ;
+        } // group atmos
+      
+      group: mpi {
+        dimensions:
+              nprocesses = 1919 ;
+              niterations = 1500 ;
+        variables:
+              ushort xnum(nx) ;
+              ushort ynum(ny) ;
+              int task_map(nx, ny) ;
+              int task_number(nx, ny) ;
+              int iterations(nx, ny) ;
+              int convergence(nx, ny) ;
+              float delta_max(nx, ny) ;
+              int z_cut(nx, ny) ;
+              int ntasks(nprocesses) ;
+              char hostname(nprocesses, strlen) ;
+              char starting_time(nprocesses, strlen) ;
+              char finish_time(nprocesses, strlen) ;
+              float delta_max_history(nx, ny, niterations) ;
+      
+        // group attributes:
+                      :x_start = 0 ;
+                      :x_end = 512 ;
+                      :x_step = 2 ;
+                      :y_start = 0 ;
+                      :y_end = 512 ;
+                      :y_step = 2 ;
+        } // group mpi
+      }
+
+
+output_ray.ncdf
+---------------
+
+This file contains the synthetic spectra and can also contain extra information such as opacities and the source function. It contains only the root group. Its dimensions are ``nx``, ``ny``, ``nwave``, and eventually ``wavelength_selected``. The latter is only present when ``ray.input`` specifies more than ``0`` wavelengths for detailed output, and it matches ``Nsource``, the number of those wavelengths entered in ``ray.input``. 
+
+It can contain the following variables:
+
+.. tabularcolumns:: |l|l|p{4cm}|
+
++------------------------+---------------------------------------+----------------------------------------------------+
+| Name                   | Dimensions                            | Description                                        |
++========================+=======================================+====================================================+
+| ``wavelength``         | ``(nwave)``                           | Wavelength scale.                                  |
++------------------------+---------------------------------------+----------------------------------------------------+
+| ``intensity``          | ``(nx, ny, nwave)``                   | Synthetic disk-centre intensity (Stokes I).        |
++------------------------+---------------------------------------+----------------------------------------------------+
+| ``stokes_Q``           | ``(nx, ny, nwave)``                   | Stokes Q. **Optional.**                            |
++------------------------+---------------------------------------+----------------------------------------------------+
+| ``stokes_U``           | ``(nx, ny, nwave)``                   | Stokes U. **Optional.**                            |
++------------------------+---------------------------------------+----------------------------------------------------+
+| ``stokes_V``           | ``(nx, ny, nwave)``                   | Stokes V. **Optional.**                            |
++------------------------+---------------------------------------+----------------------------------------------------+
+| ``tau_one_height``     | ``(nx, ny, nwave)``                   | Height where optical depth reaches unity, for each |
+|                        |                                       | column. **Optional.**                              |
++------------------------+---------------------------------------+----------------------------------------------------+
+| ``wavelength_indices`` | ``(wavelength_selected)``             | Indices of wavelengths selected for variables      |
+|                        |                                       | below. **Optional.**                               |
++------------------------+---------------------------------------+----------------------------------------------------+
+| ``chi``                | ``(nx, ny, nz, wavelength_selected)`` | Total opacity (line and continuum). **Optional.**  |
++------------------------+---------------------------------------+----------------------------------------------------+
+| ``source_function``    | ``(nx, ny, nz, wavelength_selected)`` | Total opacity (line and continuum). **Optional.**  |
++------------------------+---------------------------------------+----------------------------------------------------+
+| ``Jlambda``            | ``(nx, ny, nz, wavelength_selected)`` | Angle-averaged radiation field. **Optional.**      |
++------------------------+---------------------------------------+----------------------------------------------------+
+
+All units are in SI. The ``intensity``, Stokes vector, ``source_function``, ``Jlambda`` are all in J s\ :sup:`-1`\ m\ :sup:`-2`\ Hz\ :sup:`-1`\ sr\ :sup:`-1`\. The ``wavelength`` is in nm, air or vacuum units, depending if ``VACUUM_TO_AIR`` is ``TRUE`` or ``FALSE`` (in ``keyword.input``). ``chi`` is in m\ :sup:`-1`\ and ``tau_one_height`` in m.
+
+Despite internally being calculated in double precision, all the output (except the wavelength scale) is written in single precision to save disk space.
+
+The full Stokes vector is only written when in ``keyword.input`` ``STOKES_MODE`` is not ``NO_STOKES`` and the ``STOKES_INPUT`` is set.
+
+The ``chi``, ``source_function``, and ``Jlambda`` variables depend on the 3D grid and on wavelength. Therefore, for even moderate grid sizes they can take huge amounts of space. If ``nx = ny = nz = 512`` and ``wavelength_selected = 200``, each of these variables will need 100Gb of disk space. For a simulation with a cubic grid of 1024\ :sup:`3`\  points and saving the full output for 1000 wavelength points, ``output_ray.ncdf`` will occupy a whopping 12Tb per snapshot of disk space. To avoid such problems, these large arrays are only written when ``ray.input`` contains ``Nsource > 0``, and for the wavelengths selected.
+
+.. note::
+   As noted above, arrays of ``nz`` will have the first values missing if ``15D_DEPTH_ZCUT`` is used. The variables ``chi``, ``source_function``, and ``Jlambda`` are an exception to this rule. For performance reasons these missing values are not marked with a fill value, but instead they are filled with zeros.
+
+The ``output_ray.ncdf`` file contains the following global attributes:
+
+=================== ====================================================
+``atmosID``         Identifier for the atmosphere file
+``snapshot_number`` Number of simulation snapshot (from atmosphere file)
+``svn_id``          svn revision number
+``creation_time``   Local time when file was created
+=================== ====================================================
+
+Here is a sample output of ``ncdump -h`` from an ``output_ray.ncdf`` file::
+
+      netcdf output_ray {
+      dimensions:
+              nx = 256 ;
+              ny = 256 ;
+              nz = 400 ;
+              nwave = 1626 ;
+              wavelength_selected = 694 ;
+      variables:
+              float intensity(nx, ny, nwave) ;
+                      intensity:units = "J s^-1 m^-2 Hz^-1 sr^-1" ;
+              float stokes_Q(nx, ny, nwave) ;
+                      stokes_Q:units = "J s^-1 m^-2 Hz^-1 sr^-1" ;
+              float stokes_U(nx, ny, nwave) ;
+                      stokes_U:units = "J s^-1 m^-2 Hz^-1 sr^-1" ;
+              float stokes_V(nx, ny, nwave) ;
+                      stokes_V:units = "J s^-1 m^-2 Hz^-1 sr^-1" ;
+              float chi(nx, ny, nz, wavelength_selected) ;
+                      chi:units = "m^-1" ;
+                      chi:description = "Total absorption (line + continuum)" ;
+              float source_function(nx, ny, nz, wavelength_selected) ;
+                      source_function:units = "J s^-1 m^-2 Hz^-1 sr^-1" ;
+                      source_function:description = "Total source function (line + continuum)" ;
+              float Jlambda(nx, ny, nz, wavelength_selected) ;
+              float tau_one_height(nx, ny, wavelength_selected) ;
+                      tau_one_height:description = "Height of optical depth unity" ;
+                      tau_one_height:units = "m" ;
+              double wavelength(nwave) ;
+                      wavelength:units = "nm" ;
+              int wavelength_indices(wavelength_selected) ;
+      
+      // global attributes:
+                      :atmosID = "my_atmos.ncdf (Mon Jun 24 09:52:48 2011)" ;
+                      :snapshot_number = 50US ;
+                      :svn_id = "Revision: 78  Last Changed Author: tiago" ;
+                      :creation_time = "2013-06-27T17:16:32+0200" ;
+      }
+
+
+Reading the output files
+========================
+
+NetCDF is an open, platform-independent format, and therefore interfaces to many programming languages are available. The `main interface libraries <http://www.unidata.ucar.edu/software/netcdf/>`_ are available in C, Java, and Fortran. But there are also interfaces for C++, IDL (from version 8.0), MATLAB (from release 2010b), Octave (via `octcdf <http://octave.sourceforge.net/octcdf/>`_), Perl (via `PDL-NetCDF <http://search.cpan.org/~dhunt/PDL-NetCDF/>`_), Python (via `netcdf4-python <http://code.google.com/p/netcdf4-python/>`_), and R (via `ncdf4 <http://cran.r-project.org/web/packages/ncdf4/index.html>`_).
+
+The RH 1.5D output files can be read with standard NetCDF 4 or HDF5 readers: in most cases one needs to specify only the variable or group name. The NetCDF library provides useful command line tools, which can be used to gather information about the RH 1.5D files or extract data. Additionally, there is a more complete set of tools written in Python to read and analyse these files. Interfaces in other languages are also planned.
+
+.. warning::
+   Because of the limitations of different languages, not all interfaces support all NetCDF features. IDL in particular does not support masked arrays. This means that when reading variables with missing data (see :ref:`output-label`), IDL will happily read all the data with no warning or indication of those that have special fill values.
+
+
+Command line tools
+------------------
+
+Two useful command line tools that come with NetCDF are `ncdump <http://www.unidata.ucar.edu/software/netcdf/docs/guide_ncdump.html>`_ and `nccopy <http://www.unidata.ucar.edu/software/netcdf/docs/guide_nccopy.html>`_. 
+
+As shown above, ``ncdump`` can be used with the ``-h`` option to look at the header of a file: see the dimensions, variables, groups. It can also be used to print a text version of any variable in a NetCDF file (e.g. this can be redirected to a text file). When printing a variable one uses the option ``-v variable``, and the resulting output is the same as in the ``-h`` mode, with the variable printed at the end.
+
+The ``nccopy`` program can be used to copy and modify the parameters of NetCDF files. It can convert the files between different format versions, compress variables, etc. Of particular importance is the option for rechunking a file. Chunking in NetCDF or HDF5 files can be used to improve performance by changing the disk structures to improve different read patterns. It is analogous to fully or partially transposing the variables along certain dimensions.
+
+.. seealso::
+   
+   `nccopy guide <http://www.unidata.ucar.edu/software/netcdf/docs/guide_nccopy.html>`_
+       Detailed information about ``nccopy``.
+
+   `ncdump guide <http://www.unidata.ucar.edu/software/netcdf/docs/guide_ncdump.html>`_
+       Detailed information about ``ncdump``.
+
+   `Chunking in NetCDF <http://www.unidata.ucar.edu/software/netcdf/docs/netcdf/Chunking.html>`_
+       How to improve performance with chunking.
+
+   `Chunking in HDF5 <http://www.hdfgroup.org/HDF5/doc/Advanced/Chunking/>`_
+       As NetCDF 4 files have the HDF5 format, the following also applies for RH 1.5D output. 
+    
+
+Python interface
+----------------
+
+Python routines to read the input, output, and more are available at ``rh/python/rh15d.py``. They require the `numpy <http://www.numpy.org/>`_ and `netCDF4 <http://code.google.com/p/netcdf4-python/>`_ modules. 
+
+Reading output files
+^^^^^^^^^^^^^^^^^^^^
+
+The main class to read the output is called ``Rh15dout``. It can be initiated in the following way:
+
+.. code-block:: python
+
+    >>> from rh15d import *
+    >>> rr = rh15d.Rh15dout()
+    --- Read ./output_aux.ncdf file.
+    --- Read ./output_indata.ncdf file.
+    --- Read ./output_ray.ncdf file.
+
+By default, it will look for the three files in the directory specified as main argument (defaults to current directory). Additionally, the methods ``read_aux(infile)``,  ``read_indata(infile)``, and ``read_ray(infile)`` can be used to manually load a file. The variables themselves are not read into memory, but are rather a `memmap object <http://docs.scipy.org/doc/numpy/reference/generated/numpy.memmap.html>`_ (file pointer; only read when needed). 
+
+After loading the files, the ``Rh15dout`` instance maps them into different classes. The ``ray`` class contains all the variables that were saved in the ``output_ray.ncdf`` as attributes:
+
+.. code-block:: python
+
+    >>> dir(rr.ray)
+    ['__doc__',
+     '__init__',
+     '__module__',
+     'intensity',
+     'params',
+     'stokes_Q',
+     'stokes_U',
+     'stokes_V',
+     'chi',
+     'source_function',
+     'Jlambda',
+     'tau_one_height',
+     'wavelength',
+      wavelength_indices']
+    >>> rr.ray.intensity
+    <netCDF4.Variable at 0x1154a21d0>
+    >>> rr.ray.intensity.shape
+    (256, 256, 1626)
+
+Several of the options from ``output_indata.ncdf``, along with many of the dimensions used, are gathered into a method called ``params``, saved as a dictionary. The ``mpi`` and ``atmos`` groups of ``output_indata.ncdf``, with all their variables are like ``ray``, added into classes with the same name that are methods of the ``Rh15dout`` instance. For example:
+
+.. code-block:: python
+
+    >>> rr.mpi.convergence.shape
+    (256, 256)
+    >>> rr.atmos.temperature.shape
+    (256, 256, 400)
+
+Likewise, the groups of ``output_aux.ncdf`` are also added as classes that are methods of the main instance:
+
+.. code-block:: python
+   
+    >>> dir(rr.atom_CA)
+    ['Rij_continuum',
+     'Rij_line',
+     'Rji_continuum',
+     'Rji_line',
+     '__doc__',
+     '__init__',
+     '__module__',
+     'populations',
+     'populations_LTE']
+
+All the groups and variables are therefore automatically added, so they will adapt to any changes in the output files.
+
+Reading input files
+^^^^^^^^^^^^^^^^^^^
+
+The ``NcdfAtmos`` class can be used to read the input atmosphere files.  It can be initiated in the following way:
+
+.. code-block:: python
+
+      >>> from rh15d import *
+      >>> atm = rh15d.NcdfAtmos('my_atmos.ncdf')
+
+Inspection of the result reveals the variables, a dictionary called ``param`` with basic data and the properties of the variables:
+
+.. code-block:: python
+
+      >>> dir(atm)
+      ['B_x',
+       'B_y',
+       'B_z',
+       '__doc__',
+       '__init__',
+       '__module__',
+       'close',
+       'closed',
+       'electron_density',
+       'file',
+       'hydrogen_populations',
+       'params',
+       'read',
+       'snapshot_number',
+       'temperature',
+       'velocity_z',
+       'write_multi',
+       'write_multi_3d',
+       'x',
+       'y',
+       'z']
+      >>> atm.params     # Contains basic properties
+      {'__enter__': <function __enter__>,
+       '__exit__': <function __exit__>,
+       '__unicode__': <function __unicode__>,
+       u'description': u'Sample atmosphere netcdf file.',
+       u'has_B': 1,
+       u'nhydr': 6,
+       u'nt': 4,
+       u'nx': 512,
+       u'ny': 512,
+       u'nz': 400,
+       'setncatts': <function setncatts>}
+      >>> atm.velocity_z
+      <netCDF4.Variable at 0x10e609c50>
+      >>> atm.velocity_z.shape
+      (4, 512, 512, 400)
+
+This interface is read-only, no modifications to the atmosphere files are possible.
+
+
+Writing input files
+^^^^^^^^^^^^^^^^^^^
+
+In ``rh15d.py`` there is also a function to write the input atmosphere, assuming the user already has the required arrays at hand. Its function definition is:
+
+.. code-block:: python
+
+      def make_ncdf_atmos(outfile, T, vz, ne, nH, z, x=None, y=None, Bz=None,
+                          By=None, Bx=None, desc=None, comp=False, append=True,
+                          snap=None, complev=2):
+          """
+          Creates NetCDF input file for rh15d.
+      
+          Parameters
+          ----------
+          outfile :  string
+              Name of destination. If file exists it will be wiped.
+          T : nD array
+              Temperature. Its shape will determine the dimensionality written
+          vz : nD array
+              Vertical velocity. Same shape as T. In m/s.
+          ne : nD array
+              Electron density. Same shape as T. In m-3.
+          nH : nD array
+              Hydrogen populations. Shape [6, shape.T]. In m-3.
+          z : 1D array
+              Height scale. Same shape as last index of T. In m.
+          x : 1D array
+              Same shape as first index of T. In m.
+          y : 1D array
+              Same shape as second index of T. In m.
+          snap : array-like
+              Snapshot number(s)
+          Bx, By, Bz : nD arrays
+              Magnetic field components. Same shape as T. In T.
+          append : bool
+              If True, will append to existing file (if any).
+          comp : bool
+              If True, compress file.
+          complev : integer
+              Compression level.
+          """
+
+Only zlib compression is supported but again this is not recommended. 
+
+Writing wavelength files
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Another utility function in ``rh15d.py`` is ``make_wave_file``. It creates an RH wavelength file from a given array of wavelengths. It's usage is documented in its function call:
+
+.. code-block:: python
+
+      def make_wave_file(outfile, start=None, end=None, step=None, new_wave=None,
+                         ewave=None, air=True):
+         """
+         Writes RH wave file (in xdr format). All wavelengths should be in nm.
+     
+         Parameters
+         ----------
+         start: number
+             Starting wavelength.
+         end: number
+             Ending wavelength (non-inclusive)
+         step: number
+             Wavelength separation
+         outfile: string
+             Name of file to write.
+         ewave: 1-D array, optional
+             Array of existing wavelengths. Program will make discard points
+             to make sure no step is enforced using these points too.
+         air: boolean, optional
+             If true, will at the end convert the wavelengths into vacuum
+             wavelengths.
+         """
+
+
+Other languages
+---------------
+
+While many other languages have interfaces to read NetCDF 4 files, there are no specific routines for reading the output from RH 1.5D. Support for other languages may be added later as demand requires.
+
+The following IDL function can be used to read variables from the root group of a NetCDF file (e.g. the variables in ``output_ray.ncdf`` or the atmosphere files, but not in the other files):
+
+.. code-block:: fortran
+
+   FUNCTION read_ncdf_var, infile, varname
+     ; Ensure that a file is specified.
+     IF N_PARAMS() LT 2 THEN $
+       MESSAGE, 'Incorrect number of arguments.'
+     ; Open the NetCDF file for reading.
+     ncid = NCDF_OPEN(infile)
+     IF (ncid EQ -1) THEN $
+       MESSAGE, 'Error opening file: ' + infile
+     varid = ncdf_varid(ncid, varname)
+     ncdf_varget, ncid, varid, data
+     ncdf_close, ncid
+     return, data
+   END
+
+
+Analysis tools
+==============
+
+.. note::
+   There is no organised package of analysis tools for the output of RH 1.5D. This should be added in the future.

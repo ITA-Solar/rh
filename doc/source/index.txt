@@ -1,0 +1,18 @@
+.. RH 1.5D documentation master file
+
+Welcome to RH 1.5D's documentation!
+===================================
+
+Contents:
+
+.. toctree::
+   :maxdepth: 2
+
+   introduction
+   installation
+   input
+   running
+   output
+   bugs
+
+

@@ -1,0 +1,283 @@
+***********
+Input files
+***********
+
+Configuration files
+===================
+
+The configuration of an RH 1.5D is made primarily through several text files that reside in the run directory. The main file is ``keyword.input``. All the other files and their locations are specified in ``keyword.input``. The source tree contains a sample ``rh/rh15d/run/`` directory with the following typically used configuration files:
+
+================ =====================================================
+File             Description
+================ =====================================================
+atoms.input      Lists the atom files to be used
+keyword.input    Main configuration file
+kurucz.input     Contains list of line lists to be used
+molecules.input  Lists the molecule files to be used
+ray.input        Selects output mu and wavelengths for detailed output
+================ =====================================================
+
+The ``kurucz.input`` and the ``molecules.input`` files are identical under RH, so we refer to the RH manual for more information about them.  Most of the other files behave very similarly in RH and RH 1.5D, with a few differences.
+
+The ``atoms.input`` file is identical in RH, but it can also have a new starting solution, ``ESCAPE_PROBABILITY``.
+
+The ``keyword.input`` file functions in very much the same manner under RH and RH 1.5D. The main difference is that there are new options for the 1.5D version, and some options should not be used.
+
+The new ``keyword.input`` options for the 1.5D version are:
+
+.. tabularcolumns:: |l|l|L|
+
++-------------------------+---------------+--------------------------------------------------------------------------------+
+| Name                    | Default value | Description                                                                    |
++=========================+===============+================================================================================+
+| ``SNAPSHOT``            | ``0``         | Snapshot index from the atmosphere file.                                       |
++-------------------------+---------------+--------------------------------------------------------------------------------+
+| ``X_START``             | ``0``         | Starting column in the x direction. If < 0, will be set to 0.                  |
++-------------------------+---------------+--------------------------------------------------------------------------------+
+| ``X_END``               | ``-1``        | Ending column in the x direction. If <= 0, will be set to ``NX`` in the        |
+|                         |               | atmosphere file.                                                               |
++-------------------------+---------------+--------------------------------------------------------------------------------+
+| ``X_STEP``              | ``1``         | How many columns to sample in the y direction. If < 1, will be set to 1.       |
++-------------------------+---------------+--------------------------------------------------------------------------------+
+| ``Y_START``             | ``0``         | Starting column in the y direction. If < 0, will be set to 0.                  |
++-------------------------+---------------+--------------------------------------------------------------------------------+
+| ``Y_END``               | ``-1``        | Ending column in the y direction. If <= 0, will be set to ``NY`` in the        |
+|                         |               | atmosphere file.                                                               |
++-------------------------+---------------+--------------------------------------------------------------------------------+
+| ``Y_STEP``              | ``1``         | How many columns to sample in the y direction. If < 1, will be set to 1.       |
++-------------------------+---------------+--------------------------------------------------------------------------------+
+| ``15D_RERUN``           | ``FALSE``     | If ``TRUE``, will rerun for non-converged columns.                             |
++-------------------------+---------------+--------------------------------------------------------------------------------+
+| ``15D_DEPTH_ZCUT``      | ``TRUE``      | If ``TRUE``, will perform a cut in z for points above a threshold temperature  |
++-------------------------+---------------+--------------------------------------------------------------------------------+
+| ``15D_TMAX_CUT``        | ``-1``        | Threshold temperature (in K) over which the above depth cut ids made. If < 0,  |
+|                         |               | no temperature cut will be made.                                               |
++-------------------------+---------------+--------------------------------------------------------------------------------+
+| ``15D_DEPTH_REFINE``    | ``TRUE``      | If ``TRUE``, will perform an optimisation of the depth scale,                  |
+|                         |               | based on optical depth, density and temperature gradients.                     |
++-------------------------+---------------+--------------------------------------------------------------------------------+
+| ``BACKGR_IN_MEM``       | ``FALSE``     | If ``TRUE``, will keep background opacity coefficients in memory instead of    |
+|                         |               | scratch files on disk.                                                         | 
++-------------------------+---------------+--------------------------------------------------------------------------------+
+| ``COLLRAD_SWITCH``      | ``0.0``       | Defines if collisional radiative switching is on.                              |
+|                         |               | If < 0, switching parameter is constant (and equal to ``COLLRAD_SWITCH_INI``). |
+|                         |               | If = 0, no collisional radiative switching.                                    |
+|                         |               | If > 0, collisional radiative switching decreases by                           |
+|                         |               | ``COLLRAD_SWITCH`` per log decade, starting with ``COLLRAD_SWITCH_INI``.       |
++-------------------------+---------------+--------------------------------------------------------------------------------+
+| ``COLLRAD_SWITCH_INIT`` | ``1.0``       | Initial increment for collisional-radiative switching                          |
++-------------------------+---------------+--------------------------------------------------------------------------------+
+| ``LIMIT_MEMORY``        | ``FALSE``     | If ``TRUE``, will not keep several large arrays in memory but rather save them |
+|                         |               | to scratch files. Not recommended unless memory usage is critical.             |
++-------------------------+---------------+--------------------------------------------------------------------------------+
+| ``N_PESC_ITER``         | ``3``         | Number of escape probability iterations, if any atoms have                     |
+|                         |               | it as initial solution.                                                        |
++-------------------------+---------------+--------------------------------------------------------------------------------+
+| ``PRD_SWITCH``          | ``0.0``       | If > 0, the PRD effects will be added gradually, converging                    |
+|                         |               | to the full PRD solution in ``1/sqrt(PRD_SWITCH)`` iterations.                 |
++-------------------------+---------------+--------------------------------------------------------------------------------+
+| ``PRDH_LIMIT_MEM``      | ``FALSE``     | If ``TRUE`` and using ``PRD_ANGLE_APPROX``, will not keep in memory quantities |
+|                         |               | necessary to calculate the current PRD weights, but rather calculate them      |
+|                         |               | again. Will affect the performance, so should be used only when necessary.     |
++-------------------------+---------------+--------------------------------------------------------------------------------+
+| ``SINTERPOLATION``      | ``LINEAR``    | Type of source function interpolation to use in formal solver. Can be          |
+|                         |               | ``LINEAR`` or ``CUBIC_HERMITE``.                                               |
++-------------------------+---------------+--------------------------------------------------------------------------------+
+| ``VTURB_MULTIPLIER``    | ``1.0``       | Atmospheric ``vturb`` will be multiplied by this value                         |
++-------------------------+---------------+--------------------------------------------------------------------------------+
+| ``VTURB_ADD``           | ``0.0``       | Value to be added to atmospheric ``vturb``                                     |
++-------------------------+---------------+--------------------------------------------------------------------------------+
+
+The ``X_START``, ``X_END``, and ``X_STEP`` keywords (and the equivalent for the y direction) define which columns of the atmosphere file are going to be run. They can be used to calculate only a specific region. RH 1.5D chooses the columns to calculate using the ``(start, end, step)`` parameters as in the ``range()`` function in `Python <http://docs.python.org/2/library/functions.html#range>`_: the result is ``[start, start + step, start + 2 * step, ...]``. The last element is the largest ``start + i * step`` less than ``end``. This means that the numbers given by ``X_END`` and ``Y_END`` are **not inclusive** (e.g. if ``nx = 50`` and ``X_END = 49``, the column with the index 49 will not be calculated). One must set ``X_END = nx`` to calculate all the columns.
+
+
+
+The following options have a different meaning under RH 1.5D:
+
+.. tabularcolumns:: |l|l|L|
+
++-------------------------+---------------------+---------------------------------------------------------------------------------+
+| Name                    | Default value       | Description                                                                     |
++=========================+=====================+=================================================================================+
+| ``PRD_ANGLE_DEP``       | ``PRD_ANGLE_INDEP`` | This keyword is no longer boolean. To accommodate for new options, it           |
+|                         |                     | now takes the values ``PRD_ANGLE_INDEP`` for angle-independent PRD,             |
+|                         |                     | ``PRD_ANGLE_DEP`` for angle-dependent PRD, and ``PRD_ANGLE_APPROX`` for         |
+|                         |                     | the approximate angle-dependent scheme of Leenaarts et al. (2012) [#f1]_ .      |
++-------------------------+---------------------+---------------------------------------------------------------------------------+
+| ``BACKGROUND_FILE``     |                     | This keyword is no longer the name of the background file, but the prefix of    |
+|                         |                     | the background files. There will be one file per process, and the filenames are |
+|                         |                     | this prefix plus ``_i.dat``, where ``i`` is the process number.                 |
++-------------------------+---------------------+---------------------------------------------------------------------------------+
+| ``STOKES_INPUT``        |                     | This option is not used in RH 1.5D because the magnetic fields are now written  |
+|                         |                     | to the atmosphere file. However, it **must** be set to any string if one is     |
+|                         |                     | using any STOKES_MODE other than ``NO_STOKES`` (RH won't read B otherwise).     |
++-------------------------+---------------------+---------------------------------------------------------------------------------+
+
+.. [#f1] Leenaarts, J., Pereira, T. M. D., & Uitenbroek, H. 2012, A&A, 543, A109, `ADS link <http://adsabs.harvard.edu/abs/2012A%26A...543A.109L>`_.
+
+And the following options are valid for RH but may not work with RH 1.5D:
+
+.. tabularcolumns:: |l|l|p{10cm}|
+
++-------------------------+---------------+-----------------------------------------------------------------------------+
+| Name                    | Default value | Description                                                                 |
++=========================+===============+=============================================================================+
+| ``LIMIT_MEMORY``        | ``FALSE``     | This option has not been tested and may not work well with RH 1.5D.         |
++-------------------------+---------------+-----------------------------------------------------------------------------+
+| ``PRINT_CPU``           | ``FALSE``     | This option does not work with RH 1.5D and **should always be** ``FALSE``.  |
++-------------------------+---------------+-----------------------------------------------------------------------------+
+| ``N_THREADS``           | ``0``         | Thread parallelism will not work with RH 1.5D.                              |                                
+|                         |               | This option should always be ``0`` or ``1``.                                |  
++-------------------------+---------------+-----------------------------------------------------------------------------+
+
+
+The ``ray.input`` has the same structure in RH1D and RH 1.5D. In RH it is used as input for the ``solveray`` program, but in RH 1.5D it is used for the main program. It should contain the following::
+
+    1.00
+    Nsource
+
+The first line is the ``mu`` angle for the output ray, and it should always be 1.00. The second line is ``Nsource``, the number of wavelengths for which detailed output (typically source function, opacity, and emissivities) will be written. If ``Nsource > 0``, it should be followed in the same line by the indices of the wavelengths (e.g. ``0 2 10 20``).
+
+
+Atom and molecule files
+=======================
+
+The atom and molecule files have the same format as in RH. In the ``rh/Atoms`` and ``rh/Molecules`` directories there are a few sample files. They are read by the procedures in ``readatom.c`` and ``readmolecule.c``. The atom files have the following basic structure:
+
+.. tabularcolumns:: |l|p{9.7cm}|
+
++-------------------------------+------------------------------------------------+
+| Input                         | Format                                         |
++===============================+================================================+
+| ``ID``                        | **(A2)**. Two-character atom identifier.       |
++-------------------------------+------------------------------------------------+    
+| ``Nlevel Nline Ncont Nfixed`` | **(4I)**. Number of levels, lines, continua,   |
+|                               | and fixed radiation temperature transitions.   |
++-------------------------------+------------------------------------------------+
+| ``level_entries``             | Nlevel * **(2F, A20, I)**                      |
++-------------------------------+------------------------------------------------+
+| ``line entries``              | Nline * **(2I, F, A, I, A, 2F, A, 6F)**        |  
++-------------------------------+------------------------------------------------+
+| ``continuum_entries``         | Ncont * **(I, I, F, I, A, F)**                 |
++-------------------------------+------------------------------------------------+
+| ``fixed_entries``             | Ncont * **(2I, 2F, A)**                        |
++-------------------------------+------------------------------------------------+
+
+
+Atmosphere files
+================
+
+The atmosphere files for RH 1.5D are a significant departure from RH. They are written in the flexible and self-describing `NetCDF <http://www.unidata.ucar.edu/software/netcdf/>`_ format. They can be written in any version format or NetCDF (e.g. 3 or 4).
+
+The atmosphere files contain all the atmospheric variables necessary for RH 1.5D, and they may contain one or more simulation snapshots. The basic dimensions of the file are:
+
+========= ==========================
+``nt``    Number of snapshots.
+``nx``    Number of x points
+``ny``    Number of y points.
+``nz``    Number of depth points.
+``nhydr`` Number of hydrogen levels.
+========= ==========================
+
+While strictly 3D atmosphere files, 2D and 1D snapshots can also be used provided that one or both of ``nx`` and ``ny`` are equal to 1.
+
+The atmosphere file can contain the following variables:
+
+.. tabularcolumns:: |l|l|l|L|
+
++--------------------------+-----------------------------+-----------------+-------------------------------------------+
+| Name                     | Dimensions                  | Units           | Notes                                     |
++==========================+=============================+=================+===========================================+
+| ``B_x``                  | ``(nt, nx, ny, nz)``        | T               | Magnetic field x component. **Optional**  |
++--------------------------+-----------------------------+-----------------+-------------------------------------------+
+| ``B_y``                  | ``(nt, nx, ny, nz)``        | T               | Magnetic field x component. **Optional**  |
++--------------------------+-----------------------------+-----------------+-------------------------------------------+
+| ``B_z``                  | ``(nt, nx, ny, nz)``        | T               | Magnetic field z component. **Optional**  |
++--------------------------+-----------------------------+-----------------+-------------------------------------------+
+| ``electron_density``     | ``(nt, nx, ny, nz)``        | m\ :sup:`-3`\   |                                           |
++--------------------------+-----------------------------+-----------------+-------------------------------------------+
+| ``hydrogen_populations`` | ``(nt, nhydr, nx, ny, nz)`` | m\ :sup:`-3`\   | ``nhydr`` must correspond to the number   |
+|                          |                             |                 | of levels in the hydrogen atom used. If   |
+|                          |                             |                 | ``nhydr=1``, this variable should contain |
+|                          |                             |                 | the total number of hydrogen atoms        |
+|                          |                             |                 | (in all levels), and LTE populations will |
+|                          |                             |                 | be calculated.                            |
++--------------------------+-----------------------------+-----------------+-------------------------------------------+
+| ``snapshot_number``      | ``(nt)``                    | None            | The snapshot number is an array of        |
+|                          |                             |                 | integers to identify each snapshot in the |
+|                          |                             |                 | output files.                             |
++--------------------------+-----------------------------+-----------------+-------------------------------------------+
+| ``temperature``          | ``(nt, nx, ny, nz)``        | K               |                                           |
++--------------------------+-----------------------------+-----------------+-------------------------------------------+
+| ``velocity_z``           | ``(nt, nx, ny, nz)``        | m s\ :sup:`-1`\ | Vertical component of velocity.           |
++--------------------------+-----------------------------+-----------------+-------------------------------------------+
+| ``z``                    | ``(nt, nz)``                | m               | Height grid. Can be different for each    |
+|                          |                             |                 | snapshot, hence the `nt` dependence.      |
++--------------------------+-----------------------------+-----------------+-------------------------------------------+
+
+Any other variable in the file will not be used. In addition, the atmosphere file **must** have a global attribute called ``has_B``. This attribute should be 1 when the magnetic field variables are present, and 0 otherwise. Also recommended, but optional, is a global attribute called ``description`` with a brief description of the atmosphere file (e.g. how and from they were generated).
+
+.. note::
+   The atmosphere files can have RICE or zlib compression, but compression is not recommended for performance reasons.
+
+
+As NetCDF files, the contents of the atmosphere files can be examined with the ``ncdump`` utility. To see a summary of what's inside a given file, one can do::
+
+    ncdump -h atmosfile
+
+Here is the output of the above for a sample file::
+
+    netcdf example.ncdf {
+    dimensions:
+            nt = UNLIMITED ; // (4 currently)
+            nx = 512 ;
+            ny = 512 ;
+            nz = 425 ;
+            nhydr = 6 ;
+    variables:
+            float temperature(nt, nx, ny, nz) ;
+                    temperature:least_significant_digit = 1L ;
+                    temperature:units = "K" ;
+            float velocity_z(nt, nx, ny, nz) ;
+                    velocity_z:least_significant_digit = 1L ;
+                    velocity_z:units = "m/s" ;
+            double electron_density(nt, nx, ny, nz) ;
+                    electron_density:units = "m^-3" ;
+            float hydrogen_populations(nt, nhydr, nx, ny, nz) ;
+                    hydrogen_populations:units = "m^-3" ;
+            float x(nx) ;
+                    x:units = "m" ;
+            float y(ny) ;
+                    y:units = "m" ;
+            float z(nt, nz) ;
+                    z:units = "m" ;
+            int snapshot_number(nt) ;
+            float B_x(nt, nx, ny, nz) ;
+                    B_x:least_significant_digit = 5L ;
+                    B_x:units = "T" ;
+            float B_y(nt, nx, ny, nz) ;
+                    B_y:least_significant_digit = 5L ;
+                    B_y:units = "T" ;
+            float B_z(nt, nx, ny, nz) ;
+                    B_z:least_significant_digit = 5L ;
+                    B_y:units = "T" ;
+
+    // global attributes:
+                    :description = "Sample atmosphere netcdf file." ;
+                    :has_B = 1L ;
+    }
+
+
+All the floating point variables can be either double or single precision.
+
+
+
+Line lists and wavelength files
+===============================
+
+Other auxiliary files that can be used are line lists files and wavelength files. 
+
+The line list files are used to include additional lines not included in the different atoms. These lines will be treated in LTE. The line lists are  specified in the ``kurucz.input`` file (one per line), and have the Kurucz line list format (`link <http://kurucz.harvard.edu/linelists.html>`_).
+
+Just adding new transitions doesn't mean that they will be included in the synthetic spectra. The extra lines will only be included in the existing wavelength grid, which depends on the active atoms used. The calculation of additional wavelengths can be forced by using a wavelength file. This file is specified in ``keyword.input`` using the keyword ``WAVETABLE``. The format is a binary XDR file. Its contents are, in order: the number of new wavelengths (1 XDR int), vacuum wavelength values (XDR doubles).
+
