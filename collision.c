@@ -64,14 +64,17 @@
 #define COMMENT_CHAR "#"
 #define min( a, b ) ( ((a) < (b)) ? (a) : (b) )
 
+
 /* --- Function prototypes --                          -------------- */
+
 double E1(double x);
 double fone(double x);
 double ftwo(double x);
-void atomnm(int anr,char *cseq);
-int atomnr(char id[ATOM_ID_WIDTH+1]);
-void ar85cea(int i,int j,int k, double *cea,struct Atom *atom);
-void rowcol(int i, int *row, int *col);
+void   atomnm(int anr, char *cseq);
+int    atomnr(char *ID);
+double ar85cea(int i, int j, int k, struct Atom *atom);
+void   rowcol(int i, int *row, int *col);
+
 
 /* --- Global variables --                             -------------- */
 
@@ -79,297 +82,295 @@ extern Atmosphere atmos;
 extern char messageStr[];
 
 
-/* ------- begin --------------------------------- rowcol.c --------- */
-void rowcol(int anr, int *row, int *col){
-/*  */
-  int istart[7]={0,2,10,18,36,54,86};
-  int i;
+/* ------- begin ---------------------------rowcol.c ---------------- */
 
-  for (i=0; i<5; i++) {
-    if (anr > istart[i] && anr <= istart[i+1]) {
+void rowcol(int anr, int *row, int *col){
+
+  register int i;
+
+  int istart[7] = {0, 2, 10, 18, 36, 54, 86};
+
+  for (i = 0;  i < 5;  i++) {
+    if (anr > istart[i]  &&  anr <= istart[i + 1]) {
       *row=i;
       break;
     }
   }
-  *col=anr-istart[*row];
-  *row = *row + 1;
-  
+  *col = anr - istart[i];
+  *row += 1;
  }
-/* ------- end ----------------------------------- rowcol.c --------- */
+/* ------- end ---------------------------- rowcol.c ---------------- */
 
+/* ------- begin -------------------------- fone.c ------------------ */
 
+double fone(double x)
+{
 
-/* ------- begin ----------------------------------- fone.c --------- */
-double fone(double x){
-/* function f_1 from Arnoud & Rothenflug, 1985, A&ASS, 60,425  */
+  /* --- Function f_1
 
-  double y;
-
-  /*  if (x<=0.02) {
-    y=exp(x) * (-1*log(x) -0.5772 + x);
-  } else if (x<=1.5) {
-    y = log((x+1.0)/x) + (0.36+0.03*pow(x+0.01,-0.5)) / pow(x-1,2);
-  } else if  (x<=10.0) {
-    y = log((x+1.0)/x) + (0.36+0.03*pow(x+0.01,0.5)) / pow(x-1,2);
-  } else if  (x<=50.0) {
-    y= 1.0/x * (1.0+1.0/x +2.0/pow(x,2) +6.0/pow(x,3) +24.0/pow(x,4));
-  } else {
-      y = 1.0/x;
-      } */
-  if (x<=50.0) { 
-    y = exp(x)*E1(x);
-  } else{
-    y= 1.0/x;
-  }
-
-
- return y;
-
-}
-/* ------- end ------------------------------------- fone.c --------- */
-
-/* ------- begin ----------------------------------- ftwo.c --------- */
-double ftwo(double x){
-/* function f_2 from Arnoud & Rothenflug, 1985, A&ASS, 60,425, with
-   improved description when x<4 from Hummer, 1983, jqsrt, 30 281  */
+    Ref: Arnaud & Rothenflug, 1985, A&ASS, 60, 425
+         --                                            -------------- */
 
   double y;
-  double brk=4.0;
 
-  double p[15]={1.0000e+00,2.1658e+02,2.0336e+04,1.0911e+06,3.7114e+07,
-		8.3963e+08,1.2889e+10,1.3449e+11,9.4002e+11,4.2571e+12,
-		1.1743e+13,1.7549e+13,1.0806e+13,4.9776e+11,0.0000};
-  double q[15]={1.0000e+00,2.1958e+02,2.0984e+04,1.1517e+06,4.0349e+07,
-		9.4900e+08,1.5345e+10,1.7182e+11,1.3249e+12,6.9071e+12,
-		2.3531e+13,4.9432e+13,5.7760e+13,3.0225e+13, 3.3641e+12};
-
-  int i;
-
-  double px,xfact,qx,gamma,f0x,count,fact,term;
-
-  if (x>brk) {
-
-    px=p[0];
-    xfact=1.0;
-    for (i=1;  i<15;  i++) {
-      xfact = xfact/x;
-      px=px+p[i]*xfact;
-    }
-     
-    qx=q[0];
-    xfact=1.0;
-    for (i = 1;  i<15;  i++) {
-      xfact = xfact/x;
-      qx=qx+ q[i]*xfact;
-    }
-
-    y=px/qx/x/x;
-
+  if (x <= 50.0) { 
+    y = exp(x) * E1(x);
   } else {
-
-    gamma=0.5772156649;
-    f0x = PI*PI/12.;
-    term=1.0;
-    count=0.0;
-    fact=1.0;
-    xfact=1.0;
-    while (fabs(term/f0x) > 1.e-8){
-      count=count+1.0;
-      fact = fact*count;
-      xfact=xfact*(-x);
-      term = xfact/count/count/fact;
-      f0x=f0x+term;
-      if (count>100.) /*ERROR CODE HERE */ ;
-    }
-    y=exp(x)*((log(x)+gamma)*(log(x)+gamma)*0.5 + f0x);
+    y = 1.0 / x;
   }
 
  return y;
-
 }
-/* ------- end ------------------------------------- ftwo.c --------- */
+/* ------- end ---------------------------- fone.c ------------------ */
 
+/* ------- begin -------------------------- ftwo.c ------------------ */
 
+#define BRK 4.0
 
-/* ------- begin --------------------------------- atomnr.c --------- */
-void atomnm(int anr,char *cseq){
-  /*  atomnm 94-02-22  new routine: (philip judge)
-      gives atomic name of arelement if i is an integer containing
-      e.g. if input  is i it will return 'h ', 2, it will return 'he', etc. */  
-  
-  int i;
-  
-  char *arelem[29] =
-    {"H ","HE","LI","BE","B ","C ","N ","O ","F ","NE", 
-     "NA","MG","AL","SI","P ","S ","CL","AR", 
-     "K ","CA","SC","TI","V ","CR","MN","FE","CO","NI","  "};
-  
-  i=anr-1;
-  
-  if (i<=0 || i<28) {
-    strcpy(cseq,arelem[i]);
-  } else {
-    strcpy(cseq,arelem[28]);
-  }
+double ftwo(double x)
+{
+/* --- Function f_2
+
+  Ref: Arnaud & Rothenflug, 1985, A&ASS, 60, 425
    
-}
-/* ------- end ----------------------------------- atomnm.c --------- */
+       Improved description when x < 4 from:
+       Hummer, 1983, jqsrt, 30 281
+       --                                              -------------- */
 
+  register int i;
 
-/* ------- begin -------------------------------- ar85cea.c --------- */
-void ar85cea(int i,int j,int k, double *cea,struct Atom *atom) {
-  
-/*   new routine for computing collisional autoionization 
-     rates using formalism and formulae from arnaud and rothenflug 1985
-     ar85cea 94-02-22  new routine: (philip judge)
+  double y;
+
+  double p[15] = {1.0000e+00, 2.1658e+02, 2.0336e+04, 1.0911e+06, 3.7114e+07,
+		  8.3963e+08, 1.2889e+10, 1.3449e+11, 9.4002e+11, 4.2571e+12,
+		  1.1743e+13, 1.7549e+13, 1.0806e+13, 4.9776e+11, 0.0000};
+  double q[15] = {1.0000e+00, 2.1958e+02, 2.0984e+04, 1.1517e+06, 4.0349e+07,
+         	  9.4900e+08, 1.5345e+10, 1.7182e+11, 1.3249e+12, 6.9071e+12,
+	  	  2.3531e+13, 4.9432e+13, 5.7760e+13, 3.0225e+13, 3.3641e+12};
+
+  double px, xfact, qx, gamma, f0x, count, fact, term;
+
+  if (x > BRK) {
+
+    px = p[0];
+    xfact = 1.0;
+    for (i = 1;  i < 15;  i++) {
+      xfact /= x;
+      px    += p[i] * xfact;
+    }
      
-     96-03-07  modifications: (philip judge)
-     bug fixed: cup initialized to zero    */
+    qx = q[0];
+    xfact = 1.0;
+    for (i = 1;  i < 15;  i++) {
+      xfact /= x;
+      qx    += q[i] * xfact;
+    }
+    y = px / (qx * SQ(x));
+  } else {
+
+    gamma = 0.5772156649;
+    f0x   = SQ(PI) / 12.0;
+    term  = 1.0;
+    count = 0.0;
+    fact  = 1.0;
+    xfact = 1.0;
+
+    while (fabs(term / f0x) > 1.0E-8) {
+      count = count + 1.0;
+      fact  = fact * count;
+      xfact = xfact * (-x);
+      term  = xfact / (SQ(count) * fact);
+
+      f0x = f0x + term;
+      if (count > 100.0) {
+	/*ERROR CODE HERE */
+      }
+    }
+    y = exp(x) * ((log(x) + gamma) * (log(x) + gamma)*0.5 + f0x);
+  }
+
+  return y;
+}
+/* ------- end ----------------------------- ftwo.c ----------------- */
+
+/* ------- begin --------------------------- atomnr.c --------------- */
+
+void atomnm(int anr,char *cseq)
+{
+  /* --- Returns element ID --                         -------------- */
+
+  if (anr < 28) {
+    strcpy(cseq, atmos.elements[anr].ID);
+  } else {
+    strcpy(cseq, "  ");
+  }
+}
+/* ------- end ----------------------------- atomnm.c --------------- */
+
+/* ------- begin --------------------------- ar85cea.c -------------- */
+
+double ar85cea(int i, int j, int k, struct Atom *atom)
+{
+  
+/* --- Routine for computing collisional autoionization rates using
+       formalism from Arnaud and Rothenflug 1985, A&ASS, 60, 425
+ 
+       94-02-22  new routine: (Philip Judge)
+       96-03-07  modifications: (Philip Judge)
+                 Bug fixed: cup initialized to zero 
+       --                                              -------------- */
 
   char cseq[ATOM_ID_WIDTH+1];
-  int iz,ichrge,isoseq;
-  double zz,cup,bkt,b,zeff,iea,y,f1y,a,g;
+  int iz, ichrge, isoseq;
+  double zz, cup, bkt, b, zeff, iea, y, f1y, a, g, cea;
   
-  /*  initialize output to zero  */
-  *cea=0.0;
-  y=0.0;
-  f1y=0.0;
-  cup=0.0;
+  /* --- Initialize output to zero --                  -------------- */
 
-  /*  find element*/
-  iz=atomnr(atom->ID);
-  zz=iz;
+  cea = 0.0;
+  y   = 0.0;
+  f1y = 0.0;
+  cup = 0.0;
+
+  /* --- Find element --                               -------------- */
+
+  iz = atomnr(atom->ID) + 1;
+  zz = iz;
      
-  if (iz<1 || iz>92) {
+  if (iz < 1  ||  iz > 92) {
     /* ERROR CODE HERE */
   }
 
-  /*  find iso-electronic sequence */
-  isoseq=iz-atom->stage[i];
-  atomnm(isoseq,&cseq[0]);
-  ichrge=atom->stage[i];
+  /* --- Find iso-electronic sequence --               -------------- */
+
+  ichrge = atom->stage[i];
+  isoseq = iz - ichrge;
+  atomnm(isoseq - 1, &cseq[0]);
   
-  /* temperature in eV */
-  bkt=KBOLTZMANN*atmos.T[k]/EV;
+  /* --- Temperature in eV --                          -------------- */
 
+  bkt = KBOLTZMANN * atmos.T[k] / EV;
  
-  /*printf("%i %i %i %i %i %e %s\n",i,j,k,iz,isoseq,zz,cseq);*/
+  /* --- Lithium sequence --                           -------------- */
 
-  /* lithium sequence */
-  if ( !strcmp(cseq,"LI") ) { 
+  if (!strcmp(cseq, "LI")) { 
     
-    iea=13.6*(pow(zz-0.835,2) - 0.25*pow(zz-1.62,2));
-    b=1. / (1. + 2.e-4*pow(zz,3));
-    zeff=zz-0.43;
-    y=iea/bkt;
-    f1y=fone(y);
-    g= 2.22*f1y + 0.67*(1.-y*f1y) + 0.49*y*f1y +1.2*y*(1.-y*f1y);
+    iea = 13.6 * (pow(zz - 0.835, 2) - 0.25*pow(zz - 1.62, 2));
+    b = 1.0 / (1.0 + 2.0E-4*pow(zz, 3));
+    zeff = zz - 0.43;
+    y = iea / bkt;
+    f1y = fone(y);
+    g = 2.22*f1y + 0.67*(1.0 - y*f1y) + 0.49*y*f1y + 1.2*y*(1.0 - y*f1y);
     
-    cup=1.60e-07*1.2*b/pow(zeff,2)/sqrt(bkt)*exp(-y)*g * pow(CM_TO_M,3);
+    cup = (1.60E-07 * 1.2 * b) / (pow(zeff, 2) * sqrt(bkt)) * exp(-y)*g;
     
-    /* special cases */
+    /* --- Special cases --                            -------------- */
     
-    /* c iv - app a ar85 */
-    if (!strcmp(atom->ID,"C")) cup = cup*0.6;
-    /* n v  - app a ar85 */
-    if (!strcmp(atom->ID,"C")) cup = cup*0.8;
-    /* o vi - app a ar85 */
-    if (!strcmp(atom->ID,"C")) cup = cup*1.25;  
-    
-    /* sodium sequence */
+    if (!strcmp(atom->ID, "C")) {
+
+      /* --- C IV - app a ar85 --                      -------------- */
+
+      cup *= 0.6;
+    } else if (!strcmp(atom->ID, "N")) {
+
+      /* --- N V  - app a ar85 --                      -------------- */
+
+      cup *= 0.8;
+    } else if (!strcmp(atom->ID, "O")) {
+
+      /* --- O VI - app a ar85 --                      -------------- */
+
+      cup *= 1.25;
+    }
   } else if (!strcmp(cseq,"NA") ) {
+
+    /* --- Sodium sequence --                          -------------- */
     
     if (iz <= 16) {
       
-      iea=26.*(zz-10.);
-      a=2.8e-17*pow(zz-11.,-0.7);
-      y=iea/bkt;
-      
-      f1y=fone(y);
-      cup= 6.69e+7 * a * iea / sqrt(bkt) * exp(-y)* (1. - y*f1y) * pow(CM_TO_M,3);
-      
-     
+      iea = 26.0 * (zz - 10.);
+      a   = 2.8E-17 * pow(zz - 11.0, -0.7);
+      y   = iea / bkt;
 
-    } else if  ( iz>=18 && iz<=28 ) {
+      f1y = fone(y);
+      cup = 6.69E+7 * a * iea / sqrt(bkt) * exp(-y) * (1.0 - y*f1y);
+
+    } else if (iz >= 18  &&  iz <= 28) {
       
-      iea=11.*(zz-10.)*sqrt(zz-10.);	 
-      a=1.3e-14*pow(zz-10.,-3.73);
-      y=iea/bkt;
-      f1y=fone(y);
-      cup= 6.69e+7 * a * iea / sqrt(bkt) * exp(-y)  
-	*(1. - 0.5*(y - SQ(y) + SQ(y)*y*f1y));
+      iea = 11.0* (zz - 10.0) * sqrt(zz - 10.0);	 
+      a   = 1.3E-14 * pow(zz - 10.0, -3.73);
+      y   = iea/bkt;
+      f1y = fone(y);
+      cup = 6.69E+7 * a * iea / sqrt(bkt) * exp(-y) *
+	(1.0 - 0.5*(y - SQ(y) + SQ(y)*y*f1y));
       
     } else { 
 
-      cup=0.0;
-      
+      cup = 0.0;
     }
-    
   }
   
-  /* magnesium-sulfur sequences */
+  /* --- Magnesium-sulfur sequences --                 --------------- */
 
-  if (!strcmp(cseq,"MG") || !strcmp(cseq,"AL") || !strcmp(cseq,"SI") ||
-      !strcmp(cseq,"P") || !strcmp(cseq,"S") ) {
+  if (!strcmp(cseq, "MG") || !strcmp(cseq, "AL") || !strcmp(cseq, "SI") ||
+      !strcmp(cseq, "P") || !strcmp(cseq, "S") ) {
     
-    if (!strcmp(cseq,"MG")) iea=10.3*pow(zz-10.,1.52);
-    if (!strcmp(cseq,"AL")) iea=18.0*pow(zz-11.,1.33);
-    if (!strcmp(cseq,"SI")) iea=18.4*pow(zz-12.,1.36);
-    if (!strcmp(cseq,"P" )) iea=23.7*pow(zz-13.,1.29);
-    if (!strcmp(cseq,"S" )) iea=40.1*pow(zz-14.,1.1 );
+    if (!strcmp(cseq, "MG")) iea = 10.3 * pow(zz - 10.0, 1.52);
+    if (!strcmp(cseq, "AL")) iea = 18.0 * pow(zz - 11.0, 1.33);
+    if (!strcmp(cseq, "SI")) iea = 18.4 * pow(zz - 12.0, 1.36);
+    if (!strcmp(cseq, "P" )) iea = 23.7 * pow(zz - 13.0, 1.29);
+    if (!strcmp(cseq, "S" )) iea = 40.1 * pow(zz - 14.0, 1.1 );
     
-    a=4.0e-13/SQ(zz)/iea;
-    y=iea/bkt;
-    f1y=fone(y);
-    cup = 6.69e+7 * a * iea / sqrt(bkt) * exp(-y)   
-      *( 1.0 - 0.5*(y -SQ(y) + SQ(y)*y*f1y) ) * pow(CM_TO_M,3) ;
+    a = 4.0E-13 / (SQ(zz) * iea);
+    y = iea / bkt;
+    f1y = fone(y);
+    cup = 6.69E+7 * a * iea / sqrt(bkt) * exp(-y) *
+      ( 1.0 - 0.5*(y - SQ(y) + SQ(y)*y*f1y) );
   }
 
-  /*  special cases */
+  /* --- Special cases --                              -------------- */
   
-  if( !strcmp(atom->ID,"CA") && ichrge==0 ) {
-    iea= 25.;
-    a = 9.8e-17;
-    b=1.12;
-    cup=6.69e+7 * a * iea / sqrt(bkt) * exp(-y)*(1. + b*f1y)*pow(CM_TO_M,3);
-  } else if ( !strcmp(atom->ID,"CA") && ichrge==1 ) {
-    a = 6.0e-17;
-    iea= 25.;
-    b=1.12;
-    cup=6.69e+7 * a * iea / sqrt(bkt) * exp(-y)*(1. + b*f1y)*pow(CM_TO_M,3);
-  } else if ( !strcmp(atom->ID,"FE") && ichrge==3) {
-    a = 1.8e-17;
-    iea= 60.;
-    b=1.0;
-    cup=6.69e+7 * a * iea / sqrt(bkt) * exp(-y)*(1. + b*f1y)*pow(CM_TO_M,3);
-  } else if ( !strcmp(atom->ID,"FE") && ichrge==4 ) {
-    a = 5.0e-17;
-    iea= 73.;
-    b=1.0;
-    cup=6.69e+7 * a * iea / sqrt(bkt) * exp(-y)*(1. + b*f1y)*pow(CM_TO_M,3);
+  if(!strcmp(atom->ID, "CA")  &&  ichrge == 0) {
+    iea = 25.;
+    a   = 9.8e-17;
+    b   = 1.12;
+    cup = 6.69E+7 * a * iea / sqrt(bkt) * exp(-y)*(1.0 + b*f1y);
+  } else if (!strcmp(atom->ID, "CA")  &&  ichrge == 1) {
+    a   = 6.0e-17;
+    iea = 25.0;
+    b   = 1.12;
+    cup = 6.69E+7 * a * iea / sqrt(bkt) * exp(-y)*(1.0 + b*f1y);
+  } else if (!strcmp(atom->ID, "FE")  &&  ichrge == 3) {
+    a   = 1.8E-17;
+    iea = 60.0;
+    b   = 1.0;
+    cup = 6.69e+7 * a * iea / sqrt(bkt) * exp(-y)*(1.0 + b*f1y);
+  } else if (!strcmp(atom->ID, "FE")  &&  ichrge == 4) {
+    a   = 5.0E-17;
+    iea = 73.0;
+    b   = 1.0;
+    cup = 6.69E+7 * a * iea / sqrt(bkt) * exp(-y)*(1.0 + b*f1y);
   }
 
-  *cea=cup;  
-
+  return cup * CUBE(CM_TO_M);
 }
-/* --------- end -------------------------------- ar85cea.c --------- */
+/* --------- end --------------------------- ar85cea.c -------------- */
 
+/* ------- begin --------------------------- summers.c -------------- */
 
-/* ------- begin ---------------------------------summers.c --------- */
 double summers(int i, int j, double nne, struct Atom *atom){
-  /*   
-  
-  22-Jun-1994 changes begin P.G.Judge ***************************************
 
-  DENSITY SENSITIVE DIELECTRONIC RECOMBINATION
+  /* --- Density sensitive dielectronic recombination
+         22-Jun-1994 changes begin P.G.Judge
 
-  the term adi may be multiplied by a density-sensitive factor
+  The term adi may be multiplied by a density-sensitive factor
   if needed- this is crucial for Li and B-like ions colliding with
   impacting electrons.
+
   This simple formulation was derived from a study of the dependence of
   the dielectronic "bump" in the figures of Summers 1974 
   (Appleton Laboratory internal memo), and fitting according to the
   parameter Ne / z^7
+
   This should be accurate to typically +/- 0.1 in log in regions
   where it matters.  Worse case is e.g. C like Neon where it underestimates
   density factor by maybe 0.25 in log.
@@ -383,93 +384,86 @@ double summers(int i, int j, double nne, struct Atom *atom){
          ne_factor = 1./(1. + rho/rho0)^0.14
          print,'ne_factor',ne_factor
 
- June 24, 2006, more accurate version. 
- get the row and column of the recombined ion's isoelectronic 
- sequence  in the periodic table
- the following parameters mimic the tables 1-19 of
- H. Summers' Appleton Lab Report 367, 1974
+  June 24, 2006, more accurate version. 
+  get the row and column of the recombined ion's isoelectronic 
+  sequence  in the periodic table
+  the following parameters mimic the tables 1-19 of
+  H. Summers' Appleton Lab Report 367, 1974
 
-Mar 9 2012 Jorrit Leenaarts: stole routine from Phil Judge's DIPER IDL
-package
+  Mar 9 2012 Jorrit Leenaarts: stole routine from Phil Judge's
+  DIPER IDL package
+  --                                                   -------------- */
 
-  */
-
-
-  double y,zz,rho0,rhoq,x,beta;
-  int iz,isoseq,row,col;
-  char cseq[ATOM_ID_WIDTH+1];
+  char    cseq[ATOM_ID_WIDTH+1];
+  int     iz,isoseq,row,col;
+  double  y, zz, rho0, rhoq, x, beta;
   
-  /* find atomic number of element */
-  iz= atomnr(atom->ID);
-  if (iz<1 || iz>92) {/*ERROR CODE HERE*/}
+  /* --- Find atomic number of element --              -------------- */
 
-  /* Charge of recombining ion */
-  zz=atom->stage[j];
-
-  /* find iso-electronic sequence of recombined ion */
-  isoseq=iz-atom->stage[i];
-  atomnm(isoseq,&cseq[0]);
-
-  /* row and column in periodic table */
-  rowcol(isoseq,&row,&col);
-
-  rhoq= nne*pow(CM_TO_M,3)/pow(zz,7);
-  x= (0.5*zz + (col-1.0)) * row / 3.0;
-  beta = -0.2/log(x+2.71828);
-  rho0 = 30.0+50.0*x;
-  y=pow(1. + rhoq/rho0,beta);
-
-  /*   printf("summers %e %e %e %e \n",nne*pow(CM_TO_M,3), rho0,rhoq,y); */
-
-  return y;
-
-}
-/* ------- end ---------------------------------- summers.c --------- */
-
-
-/* ------- begin --------------------------------- atomnr.c --------- */
-int atomnr(char id[ATOM_ID_WIDTH+1]){
-  /* Returns atomic number of element with name id. */  
-  
-  int i,y;
-  int n=28;
-  char arelem[28][ATOM_ID_WIDTH+1] =
-    {"H ","HE","LI","BE","B ","C ","N ","O ","F ","NE", 
-     "NA","MG","AL","SI","P ","S ","CL","AR", 
-     "K ","CA","SC","TI","V ","CR","MN","FE","CO","NI"};
-  
-  y=0;
-  for (i=0; i<n; i++) {
-    if (!strcmp(id,arelem[i])) {
-      y=i+1;
-      break;
-    }
+  iz = atomnr(atom->ID) + 1;
+  if (iz < 1  ||  iz > 92) {
+    /*ERROR CODE HERE*/
   }
+
+  /* --- Charge of recombining ion --                  ------------- */
+
+  zz = atom->stage[j];
+
+  /* --- Find iso-electronic sequence of recombined ion -- --------- */
+
+  isoseq = iz - atom->stage[i];
+  atomnm(isoseq - 1, &cseq[0]);
+
+  /* --- Row and column in periodic table --           ------------- */
+
+  rowcol(isoseq, &row, &col);
+
+  rhoq = nne * CUBE(CM_TO_M) / pow(zz, 7);
+  x = (0.5 * zz + (col - 1.0)) * row / 3.0;
+  beta = -0.2 / log(x + 2.71828);
+  rho0 = 30.0 + 50.0*x;
+  y = pow(1.0 + rhoq/rho0, beta);
+
   return y;
 }
-/* ------- end ----------------------------------- atomnr.c --------- */
+/* ------- end ----------------------------- summers.c -------------- */
+
+/* ------- begin --------------------------- atomnr.c --------------- */
+
+int atomnr(char ID[ATOM_ID_WIDTH+1])
+{
+  /* --- Returns atomic number of element with name id -- ----------- */  
+
+  int i = 0;
+
+  while (strcmp(atmos.elements[i].ID, ID)) i++;
+
+  return i;
+}
+/* ------- end ---------------------------- atomnr.c ---------------- */
 
 /* ------- begin -------------------------- CollisionRate.c --------- */
+
+#define MSHELL 5
 
 void CollisionRate(struct Atom *atom, FILE *fp_atom)
 {
   const char routineName[] = "CollisionRate";
-  register int k, n,m;
+  register int k, n, m, ii;
 
-  char    inputLine[MAX_LINE_SIZE], *keyword, *pointer,
+  char    inputLine[MAX_LINE_SIZE], keyword[MAX_LINE_SIZE], *pointer,
           labelStr[MAX_LINE_SIZE];
   bool_t  hunt, exit_on_EOF;
   int     nitem, i1, i2, i, j, ij, ji, Nlevel = atom->Nlevel, Nitem,
-    status;
+          status;
   long    Nspace = atmos.Nspace;
-  double  dE, C0, *T, *coeff, *C, Cdown, Cup, gij, *np,xj,fac,fxj;
-  /* JL additions start */
-  double **cdi;
-  int    Ncoef,mshell=5;
-  double  acolsh,tcolsh,aradsh,xradsh,adish,bdish,t0sh,t1sh,summrs,tg,cdn,cup;
-  double  ar85t1,ar85t2,ar85a,ar85b,ar85c,ar85d,t4;
-  double de,zz,betab,cbar,dekt,dekti,wlog,wb;
-  /* JL additions end */
+  double  dE, C0, *T, *coeff, *C, Cdown, Cup, gij, *np, xj, fac, fxj;
+
+  int      Ncoef, Nrow;
+  double **cdi, **badi;
+  double   acolsh,tcolsh,aradsh,xradsh,adish,bdish,t0sh,t1sh,summrs,tg,cdn,cup;
+  double   ar85t1,ar85t2,ar85a,ar85b,ar85c,ar85d,t4;
+  double   de,zz,betab,cbar,dekt,dekti,wlog,wb, sumscl;
 
   getCPU(3, TIME_START, NULL);
 
@@ -487,7 +481,7 @@ void CollisionRate(struct Atom *atom, FILE *fp_atom)
   T = coeff = NULL;
   while ((status = getLine(fp_atom, COMMENT_CHAR,
 		  inputLine, exit_on_EOF=FALSE)) != EOF) {
-    keyword = strtok(inputLine, " ");
+    strcpy(keyword, strtok(inputLine, " "));
 
     if (!strcmp(keyword, "TEMP")) {
 
@@ -509,6 +503,7 @@ void CollisionRate(struct Atom *atom, FILE *fp_atom)
       i1 = atoi(strtok(NULL, " "));
       i2 = atoi(strtok(NULL, " "));
       coeff = (double *) realloc(coeff, Nitem*sizeof(double));
+
       for (n = 0, nitem = 0;  n < Nitem;  n++) {
         if ((pointer = strtok(NULL, " ")) == NULL) break;
 	nitem += sscanf(pointer, "%lf", coeff+n);
@@ -526,7 +521,7 @@ void CollisionRate(struct Atom *atom, FILE *fp_atom)
       i1 = atoi(strtok(NULL, " "));
       i2 = atoi(strtok(NULL, " "));
       
-      Nitem=6;
+      Nitem = 6;
       coeff = (double *) realloc(coeff, Nitem*sizeof(double));
       
       for (n = 0, nitem = 0;  n < Nitem;  n++) {
@@ -539,16 +534,16 @@ void CollisionRate(struct Atom *atom, FILE *fp_atom)
       ij = i*Nlevel + j;
       ji = j*Nlevel + i;
 
-   } else if (!strcmp(keyword,"AR85-CEA") || !strcmp(keyword, "BURGESS")) {
+   } else if (!strcmp(keyword, "AR85-CEA")  ||  !strcmp(keyword, "BURGESS")) {
 
       i1 = atoi(strtok(NULL, " "));
       i2 = atoi(strtok(NULL, " "));      
-      
-      nitem=1;
-      Nitem=1;
+
+      Nitem = 1;
       coeff = (double *) realloc(coeff, Nitem*sizeof(double));
-      coeff[0] =   atof(strtok(NULL, " "));    
-      
+      coeff[0] = atof(strtok(NULL, " "));    
+      nitem = 1;      
+
       i  = MIN(i1, i2);
       j  = MAX(i1, i2);
       ij = i*Nlevel + j;
@@ -559,7 +554,7 @@ void CollisionRate(struct Atom *atom, FILE *fp_atom)
       i1 = atoi(strtok(NULL, " "));
       i2 = atoi(strtok(NULL, " "));
       
-      Nitem=8;
+      Nitem = 8;
       coeff = (double *) realloc(coeff, Nitem*sizeof(double));
       
       for (n = 0, nitem = 0;  n < Nitem;  n++) {
@@ -571,27 +566,30 @@ void CollisionRate(struct Atom *atom, FILE *fp_atom)
       j  = MAX(i1, i2);
       ij = i*Nlevel + j;
       ji = j*Nlevel + i;
-      
-    } else if (!strcmp(keyword, "AR85-CDI")) {
-      
+
+    } else if (!strcmp(keyword,"BADNELL")) {
+
+      /* --- BADNELL recipe for dielectronic recombination:
+             Bhavna Rathore: 20 Jan 2014
+             --                                        -------------- */
+
       i1 = atoi(strtok(NULL, " "));
       i2 = atoi(strtok(NULL, " "));
       Ncoef = atoi(strtok(NULL, " "));
-      
-      if (Ncoef > mshell) {
-	sprintf(messageStr, "Ncoef: %i greater than mshell %i",Ncoef, mshell );
-	Error(ERROR_LEVEL_2, routineName, messageStr);
-      }
 
-      Nitem=5;
-      cdi=matrix_double(Ncoef, Nitem);
-      
-      for (m = 0; m < Ncoef;  m++) {
-	
-	status=getLine(fp_atom, COMMENT_CHAR,inputLine, exit_on_EOF=FALSE);
-	cdi[m][0]  = atof(strtok(inputLine, " "));
-	for (n = 1;  n < Nitem;  n++) {
-	  cdi[m][n]  = atof(strtok(NULL, " "));
+      Nrow  = 2;
+      Nitem = Nrow * Ncoef;
+      badi  = matrix_double(Nrow, Ncoef);
+
+      for (m = 0, nitem = 0;  m < Nrow;  m++) {
+	status = getLine(fp_atom, COMMENT_CHAR, inputLine,
+			 exit_on_EOF=FALSE);
+
+        badi[m][0] = atof(strtok(inputLine, " "));
+        nitem++;
+	for (n = 1;  n < Ncoef;  n++) {
+	  if ((pointer = strtok(NULL, " ")) == NULL) break;
+	  nitem += sscanf(pointer, "%lf", badi[m]+n);
 	}
       }
 
@@ -600,14 +598,55 @@ void CollisionRate(struct Atom *atom, FILE *fp_atom)
       ij = i*Nlevel + j;
       ji = j*Nlevel + i;
 
-      nitem=5;
-      Nitem=5;
-      keyword="AR85-CDI"; 
+    } else if (!strcmp(keyword, "SUMMERS")) {
 
-    } else if (!strcmp(keyword, "END")) {
+      /* --- Switch for density dependent DR coefficent
+
+             Give default multiplication factor of summers density
+             dependence of dielectronic recombination:
+
+	     sumscl = 0.0 means there is no density dependence
+	     sumscl = 1.0 means full summers density dependence
+             --                                        -------------- */
+      Nitem = 1;
+      sumscl = atof(strtok(NULL, " "));
+      nitem = 1;
+
+    } else if (!strcmp(keyword, "AR85-CDI")) {
+	
+      i1 = atoi(strtok(NULL, " "));
+      i2 = atoi(strtok(NULL, " "));
+      Nrow = atoi(strtok(NULL, " "));
+      
+      if (Nrow > MSHELL) {
+	sprintf(messageStr, "Nrow: %i greater than mshell %i",
+		Nrow, MSHELL);
+	Error(ERROR_LEVEL_2, routineName, messageStr);
+      }
+
+      Nitem = Nrow * MSHELL;
+      cdi = matrix_double(Nrow, MSHELL);
+      
+      for (m = 0, nitem = 0;  m < Nrow;  m++) {
+	status = getLine(fp_atom, COMMENT_CHAR, inputLine, exit_on_EOF=FALSE);
+	
+        cdi[m][0] = atof(strtok(inputLine, " "));
+        nitem++;
+	for (n = 1;  n < MSHELL;  n++) {
+	  if ((pointer = strtok(NULL, " ")) == NULL) break;
+	  nitem += sscanf(pointer, "%lf", cdi[m]+n);
+	}
+      }
+
+      i  = MIN(i1, i2);
+      j  = MAX(i1, i2);
+      ij = i*Nlevel + j;
+      ji = j*Nlevel + i;
+
+    } else if (strstr(keyword, "END")) {
       break;
     } else {
-      sprintf(messageStr, "Unknown keyword: %s", keyword);
+      sprintf(messageStr, "Unknown keyword: !%s!", keyword);
       Error(ERROR_LEVEL_1, routineName, messageStr);
     }
 
@@ -619,7 +658,6 @@ void CollisionRate(struct Atom *atom, FILE *fp_atom)
     /* --- Spline interpolation in temperature T for all spatial
            locations. Linear if only 2 interpolation points given - - */
 
-    //    if (strcmp(keyword, "TEMP") != 0) {
     if (!strcmp(keyword, "OMEGA") || !strcmp(keyword, "CE") ||
 	!strcmp(keyword, "CI")    || !strcmp(keyword, "CP") ||
 	!strcmp(keyword, "CH0")   || !strcmp(keyword, "CH+")||
@@ -699,165 +737,184 @@ void CollisionRate(struct Atom *atom, FILE *fp_atom)
 
     } else if (!strcmp(keyword, "SHULL82")) {
       
-      /*      printf("shull82\n");*/
-      
-      acolsh=coeff[0];
-      tcolsh=coeff[1];
-      aradsh=coeff[2];
-      xradsh=coeff[3];
-      adish =coeff[4];
-      bdish =coeff[5];
-      t0sh  =coeff[6];
-      t1sh  =coeff[7];
+      acolsh = coeff[0];
+      tcolsh = coeff[1];
+      aradsh = coeff[2];
+      xradsh = coeff[3];
+      adish  = coeff[4];
+      bdish  = coeff[5];
+      t0sh   = coeff[6];
+      t1sh   = coeff[7];
       
       for (k = 0;  k < Nspace;  k++) {
-	
-	summrs=1.0;
-	summrs=summers(i,j,atmos.ne[k],atom);
-	tg=atmos.T[k];
-	
-	cdn= aradsh*pow(tg/1.e4,-xradsh)  
-	  + summrs * adish /tg/sqrt(tg) * exp(-t0sh/tg) * 
-	  (1.0+bdish * (exp(- t1sh/tg)));
-	
-	cup=acolsh * sqrt(tg) * exp( -tcolsh / tg) / (1.0 + 0.1 * tg / tcolsh);
-	
-	/* convert coefficient from cm^3 s^-1 t m^3 s^-1 */
-	cdn=cdn*pow(CM_TO_M,3);
-	cup=cup*pow(CM_TO_M,3);
 
-	cdn=cdn*atmos.ne[k];
-	cup=cup*atmos.ne[k];
+	summrs = sumscl * summers(i, j, atmos.ne[k], atom) +
+	  (1.0 - sumscl);
+	tg = atmos.T[k];
+	
+	cdn = aradsh * pow(tg/1.E4, -xradsh) +
+	  summrs * adish /tg/sqrt(tg) * exp(-t0sh/tg) * 
+	  (1.0 + bdish * (exp(-t1sh/tg)));
+	
+	cup = acolsh * sqrt(tg) * exp( -tcolsh / tg) / 
+	  (1.0 + 0.1 * tg / tcolsh);
+	
+	/* --- Convert coefficient from cm^3 s^-1 to m^3 s^-1 -- ---- */
 
-	/* 3-body recombination (high density limit) */
-	cdn = cdn + cup * atom->nstar[i][k] / atom->nstar[j][k];
+	cdn *= atmos.ne[k] * CUBE(CM_TO_M);
+	cup *= atmos.ne[k] * CUBE(CM_TO_M);
+
+	/* --- 3-body recombination (high density limit) -- -------- */
+
+	cdn += cup * atom->nstar[i][k] / atom->nstar[j][k];
 	
 	atom->C[ij][k] += cdn;
 	atom->C[ji][k] += cup;
-	
       }
-      
+    } else if (!strcmp(keyword, "BADNELL")) {
+
+      /* --- Fit for dielectronic recombination from Badnell
+
+	     Bhavna Rathore Jan-14
+
+	     First line coefficients are the energies in K (ener in Chianti)
+	     Second line coefficients are the coefficients (coef in Chianti)
+             --                                        -------------- */
+
+      for (k = 0;  k < Nspace;  k++) {
+	summrs = sumscl*summers(i, j, atmos.ne[k], atom) + (1.0-sumscl);
+	tg = atmos.T[k];
+
+      	cdn = 0.0;
+	for (ii=0;  ii < Ncoef;  ii++) {
+	  cdn += badi[1][ii] * exp(-badi[0][ii] / tg);
+	}
+	cdn *= pow(tg, -1.5) ;
+
+	/* --- Convert coefficient from cm^3 s^-1 to m^3 s^-1 -- ---- */
+
+	cdn *= atmos.ne[k] * summrs * CUBE(CM_TO_M);
+	cup  = cdn * atom->nstar[j][k]/atom->nstar[i][k];
+
+	/* --- 3-body recombination (high density limit) -- --------- */
+
+	cdn += cup * atom->nstar[i][k] / atom->nstar[j][k];
+	
+	atom->C[ij][k] += cdn;
+	atom->C[ji][k] += cup;
+      }
+      freeMatrix((void **) badi);
+
     } else if (!strcmp(keyword, "AR85-CDI")) {
       
-      /*      printf("ar85-cdi\n");*/
-      
-      /* Direct collionisional ionization */
-      for (k = 0;  k < Nspace;  k++) {
+      /* --- Direct collionisional ionization --       -------------- */
+
+      for (k = 0;  k < Nspace;  k++) {	
+	cup = 0.0;
+	tg  = atmos.T[k];
 	
-	tg=atmos.T[k];
-	cup=0.0;
-	
-	for (m = 0; m < Ncoef;  m++) {
+	for (m = 0;  m < Nrow;  m++) {
 	  
-	  xj=cdi[m][0] * EV/KBOLTZMANN/tg;
-	  fac=exp(-xj)*sqrt(xj);
+	  xj  = cdi[m][0] * EV / (KBOLTZMANN * tg);
+	  fac = exp(-xj) * sqrt(xj);
 	  
-	  fxj= cdi[m][1]+cdi[m][2]*(1.0+xj) 
-	    +(cdi[m][3]-xj*(cdi[m][1]+cdi[m][2] 
-			    *(2.0+xj)))*fone(xj)+ 
+	  fxj = cdi[m][1] + cdi[m][2] * (1.0+xj) + 
+	    (cdi[m][3] -xj*(cdi[m][1]+cdi[m][2]*(2.0+xj)))*fone(xj) + 
 	    cdi[m][4]*xj*ftwo(xj);
 	  
-	  fxj=fxj*fac;
-	  fac = 6.69e-7 / pow(cdi[m][0],1.5);
-	  cup = cup + fac*fxj * pow(CM_TO_M,3);
-	  
+	  fxj = fxj * fac;
+	  fac = 6.69E-7 / pow(cdi[m][0], 1.5);
+	  cup += fac * fxj * CUBE(CM_TO_M);
 	}
-	
-	if (cup<0) cup=0;
+	if (cup < 0) cup = 0.0;
 
-	cup=cup*atmos.ne[k];
-	cdn=cup*atom->nstar[i][k]/atom->nstar[j][k];	  
+	cup *= atmos.ne[k];
+	cdn = cup * atom->nstar[i][k]/atom->nstar[j][k];	  
 	
 	atom->C[ij][k] += cdn;
 	atom->C[ji][k] += cup;
-	
       }
-      
+      freeMatrix((void **) cdi);
+
     } else if (!strcmp(keyword,"AR85-CEA") ) {
           
-      /* Autoionization */
+      /* --- Autoionization --                         -------------- */
+
       for (k = 0;  k < Nspace;  k++) {
-	ar85cea(i,j,k,&fac, atom);
-	cup=coeff[0]*fac*atmos.ne[k];
+	fac = ar85cea(i, j, k, atom);
+	cup = coeff[0]*fac*atmos.ne[k];
 	atom->C[ji][k] += cup;
       }	  
       
     } else if (!strcmp(keyword, "AR85-CHP")) {
       
-      /* charge transfer with ionized hydrogen */
-      ar85t1=coeff[0];
-      ar85t2=coeff[1];
-      ar85a=coeff[2];
-      ar85b=coeff[3];
-      ar85c=coeff[4];
-      ar85d=coeff[5];
+      /* --- Charge transfer with ionized hydrogen -- --------------- */
+
+      ar85t1 = coeff[0];
+      ar85t2 = coeff[1];
+      ar85a  = coeff[2];
+      ar85b  = coeff[3];
+      ar85c  = coeff[4];
+      ar85d  = coeff[5];
       
       for (k = 0;  k < Nspace;  k++) {
-	
-	if (atmos.T[k]>=ar85t1 &&  atmos.T[k]<=ar85t2) {
-	  
-	  t4=atmos.T[k]/1.e4;
-	  cup = ar85a * 1e-9 * pow(t4,ar85b) * exp(-ar85c*t4) 
-	    * exp(-ar85d*EV/KBOLTZMANN/atmos.T[k])*atmos.H->n[5][k]
-	    * pow(CM_TO_M,3);
+	if (atmos.T[k] >= ar85t1  &&  atmos.T[k] <= ar85t2) {
+
+	  t4 = atmos.T[k] / 1.0E4;
+	  cup = ar85a * 1e-9 * pow(t4,ar85b) * exp(-ar85c*t4) *
+	    exp(-ar85d*EV/KBOLTZMANN/atmos.T[k])*atmos.H->n[5][k] *
+	    CUBE(CM_TO_M);
 	  atom->C[ji][k] += cup;
-		  
 	}
       }
-
   } else if (!strcmp(keyword, "AR85-CHH")) {
       
-      /* charge transfer with neutral hydrogen */
+      /* --- Charge transfer with neutral hydrogen --  -------------- */
       
-      ar85t1=coeff[0];
-      ar85t2=coeff[1];
-      ar85a=coeff[2];
-      ar85b=coeff[3];
-      ar85c=coeff[4];
-      ar85d=coeff[5];
+      ar85t1 = coeff[0];
+      ar85t2 = coeff[1];
+      ar85a  = coeff[2];
+      ar85b  = coeff[3];
+      ar85c  = coeff[4];
+      ar85d  = coeff[5];
       
-      for (k = 0;  k < Nspace;  k++) {
-	
-	if (atmos.T[k]>=ar85t1 &&  atmos.T[k]<=ar85t2) {
-	  
-	  t4=atmos.T[k]/1.e4;
-	  cdn = ar85a * 1e-9 * pow(t4,ar85b) * (1+ar85c*exp(ar85d*t4)) 
-	    * atmos.H->n[0][k] * pow(CM_TO_M,3);
+      for (k = 0;  k < Nspace;  k++) {	
+	if (atmos.T[k] >= ar85t1  &&  atmos.T[k] <= ar85t2) {
+
+	  t4 = atmos.T[k] / 1.0E4;
+	  cdn = ar85a * 1E-9 * pow(t4, ar85b) * (1.0 + ar85c*exp(ar85d * t4)) * 
+	    atmos.H->n[0][k] * CUBE(CM_TO_M);
 	  atom->C[ij][k] += cdn;
-	  
 	}
       }
-      
     } else if (!strcmp(keyword, "BURGESS")) {
       
-      /* Electron impact ionzation following Burgess & Chidichimo,
-	 1982, MNRAS,203,1269-1280 */
+      /* --- Electron impact ionzation following Burgess & Chidichimo 1982,
+	     MNRAS, 203, 1269-1280 
+             --                                        -------------- */
       
-      de= (atom->E[j]-atom->E[i]) / EV;
-      zz=atom->stage[i];
+      de = (atom->E[j] - atom->E[i]) / EV;
+      zz = atom->stage[i];
       betab = 0.25 * ( sqrt( (100.0*zz +91.0) / (4.0*zz+3.0) ) -5.0 );
-      cbar=2.3;
+      cbar = 2.3;
       
       for (k = 0;  k < Nspace;  k++) {
+	dekt = de * EV / (KBOLTZMANN * atmos.T[k]);
+	dekt = MIN(500, dekt);
+	dekti = 1.0 / dekt;
+        wlog = log(1.0 + dekti);
+	wb = pow(wlog, betab / (1.0 + dekti));
+	cup = 2.1715E-8 * cbar * pow(13.6/de, 1.5) * sqrt(dekt) *
+          E1(dekt) * wb * atmos.ne[k] * CUBE(CM_TO_M);
 	
-	
-	dekt=de*EV/KBOLTZMANN/atmos.T[k];
-	dekt=min(500,dekt);
-	dekti=1.0/dekt;
-        wlog=log(1.0 + dekti);
-	wb= pow(wlog,betab/(1.0+dekti));
-	cup = 2.1715e-8 * cbar * pow(13.6/de ,1.5) * sqrt(dekt) * E1(dekt) * wb *
-	  atmos.ne[k] * pow(CM_TO_M,3);
-	
-	cup=cup*coeff[0]; //add fudge factor
-	
-	cdn = cup*atom->nstar[i][k]/atom->nstar[j][k];
+        /* --- Add fudge factor --                     -------------- */
+
+	cup *= coeff[0];
+	cdn = cup * atom->nstar[i][k]/atom->nstar[j][k];
 	
 	atom->C[ji][k] += cup;
 	atom->C[ij][k] += cdn;
-	
       }
-      
     }
   }
   
