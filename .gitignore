@@ -1,6 +1,7 @@
 # Object files
 *.o
 *.ko
+*.pyc
 
 # Libraries
 *.lib
@@ -18,8 +19,16 @@
 *.app
 *.x
 
-
 # Packages and other stuff
 *.tgz
 *.tar.gz
 *.tar.bz2
+
+# Directories
+Atoms
+rh15d_mpi/run/
+rhf1d/run/
+rhsc2d/run/
+rhsc3d/run/
+rhsphere/run/
+

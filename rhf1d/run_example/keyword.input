@@ -8,7 +8,7 @@
 # (both KEYWORD_REQUIRED).
 
   ATMOS_FILE = ../../Atmos/bifrost_20_x214_y220.atmos
-  ABUND_FILE = ../../Atoms/abundance.input
+  ABUND_FILE = ../../Atoms_example/abundance.input
 
 # Set choice of number of rays (KEYWORD_OPTIONAL).
 
@@ -31,7 +31,7 @@
 
 ##  Table of additional wavelengths  KEYWORD_OPTIONAL
 
-##  WAVETABLE = ../../Atoms/wave_files/cont.wave
+##  WAVETABLE = ../../Atoms_example/wave_files/cont.wave
 
 # Starting solution for populations (KEYWORD_REQUIRED).
 # Options: LTE_POPULATIONS, ZERO_RADIATION, OLD_POPULATIONS, OLD_J, and
@@ -109,7 +109,7 @@
 # It is needed when either KURUCZ_DATA or SOLVE_NE is set an is of
 # type KEYWORD_OPTIONAL
 
-  KURUCZ_PF_DATA = ../../Atoms/pf_Kurucz.input
+  KURUCZ_PF_DATA = ../../Atoms_example/pf_Kurucz.input
 ##  KURUCZ_DATA = kurucz.input
 ##  SOLVE_NE = TRUE
 
@@ -124,7 +124,7 @@
 # UV line haze. Type is KEYWORD_OPTIONAL. When set to ``none'' (the
 # default value) no data is read.
 
-  OPACITY_FUDGE = ../../Atmos/opacity_fudge.input
+  OPACITY_FUDGE = ../../Atmos_example/opacity_fudge.input
 
 # Output files for atomic data, spectrum, populations, and geometry
 # (all KEYWORD_DEFAULT).
@@ -173,7 +173,7 @@
 
 # Input file for the magnetic field (KEYWORD_OPTIONAL). Default is "none".
 
-#  STOKES_INPUT = ../../Atmos/MACKKL_M_100_3500G_ver.B
+#  STOKES_INPUT = ../../Atmos_example/MACKKL_M_100_3500G_ver.B
 
 # Input Stokes mode (KEYWORD_OPTIONAL). 
 # Options are: NO_STOKES, FIELD_FREE, POLARIZATION_FREE, and FULL_STOKES.
