@@ -18,6 +18,9 @@
 *.out
 *.app
 *.x
+*rh15d_lteray
+*rh15d_ray
+*rh15d_ray_pool
 
 # Packages and other stuff
 *.tgz
