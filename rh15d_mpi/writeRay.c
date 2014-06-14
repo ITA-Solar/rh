@@ -1,0 +1,1 @@
+writeRay.c.simple
