@@ -1,4 +1,4 @@
-## ------- file: ------------------------- keyword.input ------------ ##
+# ------- file: ------------------------- keyword.input ------------ ##
 #
 #      Version:       rh1.0, 1-D plane-parallel
 ##     --------------------                            ----------RH-- ##
@@ -8,7 +8,7 @@
 # (both KEYWORD_REQUIRED).
 
   ATMOS_FILE = ../../Atmos/FALC_82_5x5.ncdf  
-  ABUND_FILE = ../../Atoms/abundance.input
+  ABUND_FILE = ../../Atoms_example/abundance.input
 
 # Stuff for 1.5D version:
   SNAPSHOT = 0
@@ -77,7 +77,7 @@
 
 ##  Table of additional wavelengths  KEYWORD_OPTIONAL
 
-##  WAVETABLE = ../../Atoms/wave_files/cont.wave
+##  WAVETABLE = ../../Atoms_example/wave_files/cont.wave
 
 # Starting solution for populations (KEYWORD_REQUIRED).
 # Options: LTE_POPULATIONS, ZERO_RADIATION, OLD_POPULATIONS, OLD_J, and
@@ -164,9 +164,12 @@
 # It is needed when either KURUCZ_DATA or SOLVE_NE is set an is of
 # type KEYWORD_OPTIONAL
 
-  KURUCZ_PF_DATA = ../../Atoms/pf_Kurucz.input
+  KURUCZ_PF_DATA = ../../Atoms_example/pf_Kurucz.input
 ##  KURUCZ_DATA = kurucz.input
-##  SOLVE_NE = TRUE
+
+# Wether to solve for electron density or not. Possible values:
+# NONE (default), ONCE, ITERATION
+##  SOLVE_NE = ITERATION
 
 ## Include scattering in the background Kurucz lines:
 #  RLK_SCATTER = TRUE
@@ -184,7 +187,7 @@
 # UV line haze. Type is KEYWORD_OPTIONAL. When set to ``none'' (the
 # default value) no data is read.
 
-  OPACITY_FUDGE = ../../Atoms/opacity_fudge.input
+  OPACITY_FUDGE = ../../Atoms_example/opacity_fudge.input
 
 # Output files for atomic data, spectrum, populations, and geometry
 # (all KEYWORD_DEFAULT).
