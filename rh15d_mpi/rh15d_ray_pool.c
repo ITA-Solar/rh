@@ -20,8 +20,8 @@
 #define WORKTAG 1
 #define DIETAG 2
 
-#ifndef SVN_ID
-#define SVN_ID "$Id: rh15d_ray.c 53 2012-05-24 23:25:44Z tiago $"
+#ifndef REV_ID
+#define REV_ID "UNKNOWN"
 #endif
 
 /* --- Function prototypes --                          -------------- */
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
     Error(ERROR_LEVEL_2, argv[0], messageStr);
   }
   
-  strcpy(mpi.svn_id, SVN_ID); /* save SVN version */
+  strcpy(mpi.rev_id, REV_ID); /* save revision */
 
   /* --- Read input data and initialize --             -------------- */
   readInput();

@@ -85,8 +85,8 @@ void init_ncdf_ray_new(void)
   if ((ierror = nc_put_att_int(ncid, NC_GLOBAL, "snapshot_number", NC_USHORT, 1,
 			       &mpi.snap_number))) ERR(ierror,routineName);
   
-  if ((ierror = nc_put_att_text(ncid, NC_GLOBAL, "svn_id", strlen(mpi.svn_id),
-				mpi.svn_id ))) ERR(ierror,routineName);
+  if ((ierror = nc_put_att_text(ncid, NC_GLOBAL, "rev_id", strlen(mpi.rev_id),
+				mpi.rev_id ))) ERR(ierror,routineName);
 
   
 

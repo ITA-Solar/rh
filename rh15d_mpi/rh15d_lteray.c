@@ -19,8 +19,8 @@
 #define COMMENT_CHAR    "#"
 #define RAY_INPUT_FILE  "ray.input"
 
-#ifndef SVN_ID
-#define SVN_ID "$Id$"
+#ifndef REV_ID
+#define REV_ID "UNKNOWN"
 #endif
 
 /* --- Function prototypes --                          -------------- */
@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
   /* Direct log stream into MPI log files */
   mpi.main_logfile     = commandline.logfile;
   commandline.logfile  = mpi.logfile;
-  strcpy(mpi.svn_id, SVN_ID); /* save SVN version */
+  strcpy(mpi.rev_id, REV_ID); /* save revision */
 
   /* --- Read input data and initialize --             -------------- */
   readInput();
