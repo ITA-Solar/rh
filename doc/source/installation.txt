@@ -5,7 +5,7 @@ Installation
 Getting the code
 ================
 
-The code is available on a git repository, hosted on github: `https://github.com/tiagopereira/rh <https://github.com/tiagopereira/rh>_`. If you don't have `git <http://git-scm.com/>_` installed and just want to get started, the easiest way is to download a zip file with the latest revision: `https://github.com/tiagopereira/rh/archive/master.zip <https://github.com/tiagopereira/rh/archive/master.zip>_`. If you have git installed and would like to be up-to-date with the repository, you can do a git clone:
+The code is available on a git repository, hosted on github: `https://github.com/tiagopereira/rh <https://github.com/tiagopereira/rh>`_. If you don't have `git <http://git-scm.com/>`_ installed and just want to get started, the easiest way is to download a zip file with the latest revision: `https://github.com/tiagopereira/rh/archive/master.zip <https://github.com/tiagopereira/rh/archive/master.zip>`_. If you have git installed and would like to be up-to-date with the repository, you can do a git clone:
 
     git clone https://github.com/tiagopereira/rh.git
 
