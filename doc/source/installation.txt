@@ -5,34 +5,32 @@ Installation
 Getting the code
 ================
 
-The code is available via a tarball (get r79 `here <http://folk.uio.no/tiago/rh15d-r79.tar.bz2>`_), or through its ``svn`` repository for those affiliated with the `University of Oslo <http://www.mn.uio.no/astro/english/>`_. 
+The code is available on a git repository, hosted on github: `https://github.com/tiagopereira/rh <https://github.com/tiagopereira/rh>_`. If you don't have `git <http://git-scm.com/>_` installed and just want to get started, the easiest way is to download a zip file with the latest revision: `https://github.com/tiagopereira/rh/archive/master.zip <https://github.com/tiagopereira/rh/archive/master.zip>_`. If you have git installed and would like to be up-to-date with the repository, you can do a git clone:
 
-If using the download version, unpack the archive::
+    git clone https://github.com/tiagopereira/rh.git
 
-    tar jxvf rh15d-r79.tar.bz2
-     
-To get the latest revision from the repository, do::
+or using SSH (only for contributors):
 
-    svn co svn+ssh://username@phact.uio.no/mn/xsan/u1/tiago/svn_rep/rh rh
+    git clone git@github.com:tiagopereira/rh.git
 
-Either of the above will create a directory called ``rh`` in your current path. This directory will have the following subdirectories:
+Whether you unpack the zip file or do one of the above it will create a directory called ``rh`` in your current path. This directory will have the following subdirectories:
 
-============ ==================================================
-Directory    Contents
-============ ==================================================
-rh           Main RH source
-rh/Atmos     Used to keep atmosphere files
-rh/Atoms     Used to keep atom files, line and wavelength lists
-rh/idl       Old RH IDL routines, not used
-rh/Molecules Used to keep molecule files
-rh/python    Utility Python programs
-rh/rh15d_mpi Source files for RH 1.5D
-rh/rhf1d     Source files for 1D geometry
-rh/rhsc2d    Source files for 2D geometry, not used
-rh/rhsc3d    Source files for 3D geometry, not used
-rh/rhsphere  Source files for spherical geometry, not used
-rh/tools     Associate C programs for RH, not tested.
-============ ==================================================
+================ ============================================================
+Directory        Contents
+================ ============================================================
+rh               Main RH source
+rh/Atmos         Used to keep atmosphere files
+rh/Atoms_example Used to keep atom files, line and wavelength lists (example)
+rh/idl           Old RH IDL routines, not used
+rh/Molecules     Used to keep molecule files
+rh/python        Utility Python programs
+rh/rh15d_mpi     Source files for RH 1.5D
+rh/rhf1d         Source files for 1D geometry
+rh/rhsc2d        Source files for 2D geometry, not used
+rh/rhsc3d        Source files for 3D geometry, not used
+rh/rhsphere      Source files for spherical geometry, not used
+rh/tools         Associate C programs for RH, not tested.
+================ ============================================================
 
 Dependencies
 ============

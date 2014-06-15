@@ -30,7 +30,7 @@ There are two global attributes:
 
 =========== ===================================
 ``atmosID`` Identifier for the atmosphere file.
-``svn_id``  svn revision number
+``rev_id``  Revision identifier.
 =========== ===================================
 
 Inside each of the atom/molecule groups, the following dimensions can exist:
@@ -95,7 +95,7 @@ Here is a sample output of ``ncdump -h`` from an ``output_aux.ncdf`` file::
 
     // global attributes:
                     :atmosID = "my_atmos.ncdf (Mon Jun 24 09:52:48 2011)" ;
-                    :svn_id = "Revision: 78  Last Changed Author: tiago" ;
+                    :rev_id = "37c9dbd  Tiago Pereira  2014-06-15 18:14:54 +0100" ;
     
     group: atom_CA {
       dimensions:
@@ -134,7 +134,7 @@ There are two global attributes:
 
 =========== ===================================
 ``atmosID`` Identifier for the atmosphere file.
-``svn_id``  svn revision number
+``rev_id``  Revision identifier.
 =========== ===================================
 
 The ``input`` group contains only attributes, all options from ``keyword.input``. 
@@ -235,7 +235,7 @@ Here is a sample output of ``ncdump -h`` from an ``output_indata.ncdf`` file::
       
       // global attributes:
                       :atmosID = "my_atmos.ncdf (Mon Jun 24 09:52:48 2011)" ;
-                      :svn_id = "Revision: 78  Last Changed Author: tiago" ;
+                      :rev_id = "37c9dbd  Tiago Pereira  2014-06-15 18:14:54 +0100" ;
       
       group: input {
       
@@ -373,7 +373,7 @@ The ``output_ray.ncdf`` file contains the following global attributes:
 =================== ====================================================
 ``atmosID``         Identifier for the atmosphere file
 ``snapshot_number`` Number of simulation snapshot (from atmosphere file)
-``svn_id``          svn revision number
+``rev_id``          Revision identifier
 ``creation_time``   Local time when file was created
 =================== ====================================================
 
@@ -412,7 +412,7 @@ Here is a sample output of ``ncdump -h`` from an ``output_ray.ncdf`` file::
       // global attributes:
                       :atmosID = "my_atmos.ncdf (Mon Jun 24 09:52:48 2011)" ;
                       :snapshot_number = 50US ;
-                      :svn_id = "Revision: 78  Last Changed Author: tiago" ;
+                      :rev_id = "37c9dbd  Tiago Pereira  2014-06-15 18:14:54 +0100" ;
                       :creation_time = "2013-06-27T17:16:32+0200" ;
       }
 

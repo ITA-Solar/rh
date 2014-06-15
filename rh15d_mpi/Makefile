@@ -22,7 +22,7 @@ REV=$(shell git describe --always)
 ifeq ($(REV), )
     CFLAGS  = -O2 -I../ -I$(NCDF_DIR)/include/ 
 else
-    REV = $(shell git log -1 --pretty=format:"%h%x09%an%x09%ai")
+    REV = $(shell git log -1 --pretty=format:"%h  %an  %ai")
     CFLAGS  = -O2 -I../ -I$(NCDF_DIR)/include/ -D'REV_ID="$(REV)"'
 endif
 
