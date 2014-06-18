@@ -219,7 +219,7 @@ void overlord(void) {
 		   MPI_COMM_WORLD, &status);
       /* Tell all the drones to exit by sending an empty message with the DIETAG. */
      for (rank = 1; rank <= mpi.size; ++rank) {
-       MPI_Send(0, 0, MPI_INT, rank, DIETAG, MPI_COMM_WORLD);
+       MPI_Ssend(0, 0, MPI_INT, rank, DIETAG, MPI_COMM_WORLD);
      }
   } else {
     /* Seed the drones; send one unit of work to each drone. */
@@ -236,7 +236,7 @@ void overlord(void) {
       */
      
       /* Send it to each rank */
-      MPI_Send(&current_task,     /* message buffer */
+      MPI_Ssend(&current_task,    /* message buffer */
 	       1,                 /* one data item */
 	       MPI_LONG,          /* data item is an integer */
 	       rank,              /* destination process rank */
@@ -256,7 +256,7 @@ void overlord(void) {
 	       MPI_COMM_WORLD,    /* default communicator */
 	       &status);          /* info about the received message */
       /* Send the drone a new work unit */
-      MPI_Send(&current_task,     /* message buffer */
+      MPI_Ssend(&current_task,    /* message buffer */
 	       1,                 /* one data item */
 	       MPI_LONG,          /* data item is an integer */
 	       status.MPI_SOURCE, /* to who we just received from */
@@ -277,7 +277,7 @@ void overlord(void) {
   
     /* Tell all the drones to exit by sending an empty message with the DIETAG. */
     for (rank = 1; rank <= mpi.size; ++rank) {
-      MPI_Send(0, 0, MPI_INT, rank, DIETAG, MPI_COMM_WORLD);
+      MPI_Ssend(0, 0, MPI_INT, rank, DIETAG, MPI_COMM_WORLD);
     }
   }
 }
