@@ -1,4 +1,3 @@
-/* $Id$ */
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
@@ -53,18 +52,11 @@ IO_buffer iobuf;
 int main(int argc, char *argv[])
 {
   bool_t write_analyze_output, equilibria_only, run_ray, writej, exit_on_EOF;
-  int    niter, nact, i, Nspect, Ntest, k, Nread, Nrequired, ierror,
-         checkPoint, save_Nrays, *wave_index = NULL, conv_iter;
+  int    niter, i, Nspect, Nread, Nrequired,
+         checkPoint, save_Nrays, *wave_index = NULL;
   double muz, save_muz, save_mux, save_muy, save_wmu;
-  Atom *atom;
-  Molecule *molecule;
-  AtomicLine *line;
-  ActiveSet *as;
   FILE  *fp_ray;
 
-  time_t     curtime;
-  struct tm *loctime;
-  char timestr[ARR_STRLEN];
   char  inputLine[MAX_LINE_SIZE];
 
   /* --- Set up MPI ----------------------             -------------- */
@@ -249,7 +241,6 @@ int main(int argc, char *argv[])
       
       calculate_ray();
       writeRay();
-
       
       /* Put back previous values for geometry  */
       atmos.Nrays     = geometry.Nrays = save_Nrays;

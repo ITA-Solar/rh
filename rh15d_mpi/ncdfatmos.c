@@ -2,8 +2,6 @@
 
        Version:       rh2.0, 1.5-D plane-parallel
        Author:        Tiago Pereira (tiago.pereira@nasa.gov)
-       Last modified: Tue Nov 23 16:03:23 2010 --
-
        --------------------------                      ----------RH-- */
 
 /* --- Reads atmospheric model in NetCDF format. --     -------------- */
@@ -229,8 +227,6 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   } else {
     mpi.zcut = 0;
   }
-  
-  //printf("Process %d: zcut = %d\n", mpi.rank, mpi.zcut);
 
   /* Get z again */
   start[0] = input.p15d_nt; count[0] = 1;
@@ -258,34 +254,7 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   if (infile->vturb_varid != -1) {
     if ((ierror = nc_get_vara_double(ncid, infile->vturb_varid, &start[3], &count[3],
 				     atmos->vturb))) ERR(ierror,routineName);
-  } else {
-    /* Tiago's microturbulence fudge */ 
-    /* Find temperature minimum 
-    imin = 0;
-    i50k = 0;
-    Tmin = 1000000.;
-    diff = 1000000.;
-    
-    for (j = 0; j < atmos->Nspace; j++) {
-      if (atmos->T[j] < Tmin) {
-	Tmin = atmos->T[j];
-	imin = j;
-      }
-      
-      if (fabs(atmos->T[j] - 50000.) < diff) {
-	diff = fabs(atmos->T[j] - 50000.);
-	i50k = j;
-      }
-    }
-    //printf("imin, i50k = %i, %i  T=%e, %e\n", imin, i50k, atmos->T[imin], atmos->T[i50k]);
-    /* Scale vturb 
-    for (j = 0; j < imin+1; j++) {
-       atmos->vturb[j] = 1.e3 + 1.e4*pow(atmos->T[j] - Tmin, 0.333)/pow(50000. - Tmin, 0.333);
-       //printf("z, Temp, vturb = %.3e  %.3e  %.3e\n", geometry->height[j]/1.e6, atmos->T[j], atmos->vturb[j]/1.e3);
-    }
-    */
   }
-
 
   /* Read magnetic field */
   if (atmos->Stokes) {
@@ -542,13 +511,6 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
   for (k = 1; k <= k1; k++)  
     aind[k] *= (atmos->Nspace-1)/aind[k1];
     
-  /*
-  printf("Original quantities:\n---------------------\n");
-  for (k = 0; k < atmos->Nspace; k++) 
-    printf("%4li  %12.4e   %12.4e   %12.4e   %12.4e   %12.4e   %12.4e\n", k, geometry->height[k],atmos->T[k], atmos->ne[k], geometry->vel[k], atmos->B[k], atmos->gamma_B[k]);
-  */
-    
-    
   /* --- Create new height scale --- */
   splineCoef(k1-k0+1, &aind[k0], &geometry->height[k0]);
   splineEval(atmos->Nspace, xpt, new_height, hunt=FALSE);
@@ -561,10 +523,6 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
       atmos->nH[i][k] = log(atmos->nH[i][k]);    
   }
 
-  /*
-  Linear(atmos->Nspace, geometry->height, atmos->T, atmos->Nspace, new_height,
-         buf, FALSE);
-  */
   splineCoef(atmos->Nspace, geometry->height, atmos->T);
   splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
   memcpy((void *) atmos->T, (void *) buf, bufsize);
@@ -610,13 +568,6 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
   }
   
   memcpy((void *) geometry->height, (void *) new_height, bufsize);
-
-  /*
-  printf("Interpolated quantities:\n---------------------\n");
-  for (k = 0; k < atmos->Nspace; k++) 
-    printf("%4li  %12.4e   %12.4e   %12.4e   %12.4e   %12.4e   %12.4e\n", k, geometry->height[k],atmos->T[k], atmos->ne[k], geometry->vel[k],atmos->vturb[k] , 0.);//atmos->B[k], atmos->gamma_B[k]);
-  */
-    
     
   if (nhm_flag) {
     free(atmos->nHmin);

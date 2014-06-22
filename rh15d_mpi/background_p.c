@@ -2,8 +2,6 @@
 
        Version:       rh2.0, 1.5-D plane-parallel
        Author:        Tiago Pereira (tiago.pereira@nasa.gov)
-       Last modified: Tue Jan 24 18:14:00 2012 --
-
        --------------------------                      ----------RH-- */
 
 /* Driving subroutine for background opacity sources.
@@ -200,25 +198,8 @@ void init_Background(bool_t init_BRS)
   } else
     atmos.backgrrecno = (long *) malloc(spectrum.Nspect * sizeof(long));
 
-
-  /* --- Open background file --                        ------------- */
-
-  /* get file name, with the MPI rank */
-  /*
-  sprintf(file_background,"%s_p%d%s", input.background_File , mpi.rank, fext);
-
-  if ((atmos.fd_background =
-       open(file_background, O_RDWR | O_CREAT | O_TRUNC, PERMISSIONS)) == -1) {
-    sprintf(messageStr, "Unable to open output file %s",
-	    file_background);
-    Error(ERROR_LEVEL_2, routineName, messageStr);
-  }
-  */
-
-
   /* --- Initialise netCDF BRS file --                  ------------- */
   if (bgdat.write_BRS) init_ncdf_BRS();
-
 
   /* --- Read background files from Kurucz data file -- ------------- */
   atmos.Nrlk = 0;
@@ -724,51 +705,8 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
 
   if (write_analyze_output) {
     /* --- Write background record structure --          ------------ */
-    
     if (bgdat.write_BRS) writeBRS_ncdf();
-
-    /* --- Write out the metals and molecules --         ------------ */
-
-    /* Commented out, not a priority now
-    writeMetals("metals.out"); // Tiago: must be replaced by NetCDF version
-    writeMolecules(MOLECULAR_CONCENTRATION_FILE);
-    */
   }
-  /* --- Clean up but keep H, H2, and active atom and/or molecule
-         if appropriate, only for last task --           ------------ */
-  
-  /* Tiago: commenting this big block for now. Gives problems with rh15d_ray,
-            and not really necessary (only for tidying up) 
-  if (mpi.task == mpi.Ntasks - 1) {
-    if (atmos.Natom > 1) {
-      for (n = 1;  n < atmos.Natom;  n++)
-	if (!atmos.atoms[n].active  &&  !atmos.hydrostatic &&
-	  input.solve_ne < ITERATION)
-	  freeAtom(&atmos.atoms[n]);
-    }
-    if (atmos.Nmolecule > 1) {
-      for (n = 1;  n < atmos.Nmolecule;  n++)
-	if (!atmos.molecules[n].active  &&  
-          !atmos.hydrostatic  &&
-	  input.solve_ne < ITERATION)) freeMolecule(&atmos.molecules[n]);
-    }
-
-    if (strcmp(input.KuruczData, "none")) {
-      free(atmos.Tpf);  atmos.Tpf = NULL;
-      for (n = 0;  n < atmos.Nelem;  n++) {
-	free(atmos.elements[n].ionpot);
-	freeMatrix((void **) atmos.elements[n].pf);
-	if (atmos.elements[n].n)
-	  freeMatrix((void **) atmos.elements[n].n);
-      }
-    }
-
-    if (do_fudge) {
-      free(lambda_fudge);
-      freeMatrix((void **) fudge);
-    }
-  } */
-  
   
   getCPU(3, TIME_POLL, "Background Opacity");
 

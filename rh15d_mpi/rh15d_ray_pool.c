@@ -1,4 +1,3 @@
-/* $Id: rh15d_ray.c 42 2011-12-02 02:13:29Z tiago $ */
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
@@ -58,17 +57,10 @@ double muz, save_muz, save_mux, save_muy, save_wmu;
 
 int main(int argc, char *argv[])
 {
-  bool_t write_analyze_output, equilibria_only, run_ray, writej, exit_on_EOF;
-  int    nact, i, Ntest, k, Nread, Nrequired, ierror, checkPoint, conv_iter;
-  Atom *atom;
-  Molecule *molecule;
-  AtomicLine *line;
-  ActiveSet *as;
+  bool_t run_ray, writej, exit_on_EOF;
+  int    i, Nread, Nrequired, checkPoint;
   FILE  *fp_ray;
 
-  time_t     curtime;
-  struct tm *loctime;
-  char timestr[ARR_STRLEN];
   char  inputLine[MAX_LINE_SIZE];
 
   /* --- Set up MPI ----------------------             -------------- */
@@ -167,9 +159,9 @@ int main(int argc, char *argv[])
   init_ncdf_ray();
 
   
+  /*//////////////////////
   ////////////////////////
-  ////////////////////////
-  ////////////////////////
+  //////////////////////*/
   if (mpi.rank == 0) {
 
     overlord();
@@ -179,11 +171,11 @@ int main(int argc, char *argv[])
     drone();
     
   }
+  /*//////////////////////
   ////////////////////////
-  ////////////////////////
-  ////////////////////////
+  //////////////////////*/
 
-  //writeOutput(writej=FALSE);
+  /* writeOutput(writej=FALSE); */
 
   closeParallelIO(run_ray=FALSE, writej=FALSE);
   close_ncdf_ray();
@@ -210,7 +202,7 @@ int main(int argc, char *argv[])
 void overlord(void) {
   MPI_Status status;
   int result;
-  long rank, proc_tasks, current_task=0;
+  long rank, current_task=0;
 
   if (mpi.total_tasks == 1) {
       /* Send task to first process */
@@ -227,41 +219,19 @@ void overlord(void) {
       if (rank > mpi.total_tasks)
 	break;
      
-     /* 
-      sprintf(messageStr,
-      "Process %3d: Overlord sending task %d to process %3d...\n",
-       mpi.rank, current_task, rank);
-      fprintf(mpi.main_logfile, messageStr);
-      Error(MESSAGE, "main", messageStr);
-      */
-     
       /* Send it to each rank */
-      MPI_Ssend(&current_task,    /* message buffer */
-	       1,                 /* one data item */
-	       MPI_LONG,          /* data item is an integer */
-	       rank,              /* destination process rank */
-	       WORKTAG,           /* user chosen message tag */
-	       MPI_COMM_WORLD);   /* default communicator */
+      MPI_Ssend(&current_task, 1, MPI_LONG, rank, WORKTAG, MPI_COMM_WORLD);  
       ++current_task;
     }
   
     /* Loop over getting new work requests until there is no more work to be done */
     while (current_task < mpi.total_tasks) {
       /* Receive results from a drone */
-      MPI_Recv(&result,           /* message buffer */
-	       1,                 /* one data item */
-	       MPI_INT,           /* of type double real */
-	       MPI_ANY_SOURCE,    /* receive from any sender */
-	       MPI_ANY_TAG,       /* any type of message */
-	       MPI_COMM_WORLD,    /* default communicator */
-	       &status);          /* info about the received message */
+      MPI_Recv(&result, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG,
+	       MPI_COMM_WORLD, &status); 
       /* Send the drone a new work unit */
-      MPI_Ssend(&current_task,    /* message buffer */
-	       1,                 /* one data item */
-	       MPI_LONG,          /* data item is an integer */
-	       status.MPI_SOURCE, /* to who we just received from */
-	       WORKTAG,           /* user chosen message tag */
-	       MPI_COMM_WORLD);   /* default communicator */
+      MPI_Ssend(&current_task, 1, MPI_LONG, status.MPI_SOURCE, WORKTAG, 
+	        MPI_COMM_WORLD); 
       /* Get the next unit of work to be done */
       ++current_task;
     }
@@ -286,8 +256,8 @@ void overlord(void) {
 /* ------- start ---------------------------- drone.c --------------- */
 void drone(void) {
   MPI_Status status;
-  bool_t write_analyze_output, equilibria_only, run_ray, writej, exit_on_EOF;
-  int i, niter, result=1;
+  bool_t write_analyze_output, equilibria_only;
+  int niter, result=1;
   long task=1;
   
   mpi.isfirst = TRUE;
@@ -393,7 +363,7 @@ void drone(void) {
       niter++;
     }
       
-    //copyBufVars(writej=FALSE);
+    /* copyBufVars(writej=FALSE); */
     
     if (mpi.convergence[mpi.task]) {
       /* Redefine geometry just for this ray */
@@ -421,7 +391,7 @@ void drone(void) {
     /* --- Write output files, send result to overlord ---------- */
     writeMPI_p(task);
     writeAtmos_p();
-    // writeAux_p();  /* should this be default also? */
+    /* writeAux_p();   should this be default also? */
     MPI_Send(&result, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 
   } /* End of main task loop */

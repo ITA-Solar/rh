@@ -42,18 +42,10 @@ extern NCDF_Atmos_file infile;
 
 
 /* ------- begin --------------------------   distribute_jobs.c   --- */
-void distribute_jobs(void)
+void distribute_jobs(void) 
+/* Distributes the work between the available processes */
 {
-  /* The end product of this routine must be:
-
-     For each process:
-         * mpi.Ntasks --DONE
-	 * An array of rank (mpi.Ntasks,2) that gives (mpi.ix, mpi.iy) 
-           for each task index --DONE (mpi.my_tasks)
-	 * A map of (mpi.ix, mpi.iy) -> (xi, yi) --DONE (two 1D arrays: mpi.xnum, mpi.ynum)
-
- */
-
+  
   long *tasks, remain_tasks, i, j;
  
   mpi.backgrrecno = 0; 
@@ -97,50 +89,10 @@ void distribute_jobs(void)
   
   mpi.total_tasks = remain_tasks;
   
-  /* Abort if more processes than tasks (avoid idle processes waiting forever) 
-  if (mpi.size > remain_tasks) {
-    sprintf(messageStr,
-            "\n*** More MPI processes (%d) than tasks (%ld), aborting.\n",
-	    mpi.size, remain_tasks);
-    Error(ERROR_LEVEL_2, "distribute_jobs", messageStr);
-  }
-
-  
   /* Calculate tasks and distribute */
   tasks        = get_tasks(remain_tasks, mpi.size);
   mpi.Ntasks   = tasks[mpi.rank];
   mpi.taskmap  = get_taskmap(remain_tasks, tasks, &mpi.my_start);
- 
-  // TIAGO TEMPORARY for specific x, y points:
-  /*
-  mpi.ynum[0] = 39;
-  mpi.ynum[1] = 78;
-  mpi.ynum[2] = 184;
-  mpi.ynum[3] = 189;
-  mpi.ynum[4] = 228;
-  mpi.ynum[5] = 244;
-  mpi.ynum[6] = 280;
-  mpi.ynum[7] = 284;
-  mpi.ynum[8] = 342;
-  mpi.ynum[9] = 347;
-  mpi.ynum[10] = 452;
-  mpi.ynum[11] = 466;
-  mpi.xnum[0] = 36;
-  
-  mpi.xnum[1] = 70;
-  mpi.xnum[2] = 112;
-  mpi.xnum[3] = 162;
-  mpi.xnum[4] = 163;
-  mpi.xnum[5] = 210;
-  mpi.xnum[6] = 289;
-  mpi.xnum[7] = 246;
-  mpi.xnum[8] = 303;
-  mpi.xnum[9] = 370;
-  mpi.xnum[10] = 387;
-  mpi.xnum[11] = 388;
-  mpi.xnum[12] = 449;
-  */
- 
   free(tasks);
   
   return;

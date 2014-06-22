@@ -2,8 +2,6 @@
 
        Version:       rh2.0, 1.5-D plane-parallel
        Author:        Tiago Pereira (tiago.pereira@nasa.gov)
-       Last modified: Mon Jan 03 14:28:25 2011 --
-
        --------------------------                      -----------RH-- */
 
 /* --- Set of tools to deal with IO initialisation and closure ------- */
@@ -125,7 +123,6 @@ void initParallelIO(bool_t run_ray, bool_t writej) {
 /* ------- end   --------------------------   initParallelIO.c    --- */
 
 
-
 /* ------- begin --------------------------  closeParallelIO.c    --- */
 void closeParallelIO(bool_t run_ray, bool_t writej) {
 
@@ -223,8 +220,6 @@ void UpdateAtmosDep(void) {
     
     /* Reallocate some stuff (because of varying Nspace) */
 
-
-
     /* Free collision rate array, will be reallocated by calls in Background_p */
     if (atom->C != NULL) {
       freeMatrix((void **) atom->C);
@@ -261,7 +256,7 @@ void UpdateAtmosDep(void) {
 	line->wphi = NULL;
       }
       
-      if (atmos.moving && line->polarizable && (input.StokesMode>FIELD_FREE)) {
+      if (atmos.moving && line->polarizable && (input.StokesMode >= FIELD_FREE)) {
 	
 	if (line->phi_Q != NULL) {
 	  freeMatrix((void **) line->phi_Q);
@@ -320,8 +315,8 @@ void UpdateAtmosDep(void) {
 	else
 	  Nlamu = line->Nlambda;
 	
-	// Idea: instead of doing this, why not free and just set line->rho_prd = NULL,
-	// (and also line->Qelast?), because profile.c will act on that and reallocate
+	/* Idea: instead of doing this, why not free and just set line->rho_prd = NULL,
+	   (and also line->Qelast?), because profile.c will act on that and reallocate */
 	if (line->rho_prd != NULL) freeMatrix((void **) line->rho_prd);
 	line->rho_prd = matrix_double(Nlamu, atmos.Nspace);
 	
@@ -507,12 +502,6 @@ void copyBufVars(bool_t writej) {
   AtomicLine      *line;
   AtomicContinuum *continuum;
 
-
-  /* J, J20  
-  memcpy((void *) &iobuf.J[ind*spectrum.Nspect], (void *) spectrum.J[0],
-	 spectrum.Nspect * atmos.Nspace * sizeof(double));
-  */
-
   if (writej) {
     for (nspect=0; nspect < spectrum.Nspect; nspect++) {
       i = 0;
@@ -571,9 +560,7 @@ void copyBufVars(bool_t writej) {
 	   molecule->Nv * atmos.Nspace * sizeof(double));
 
   }
-  
   ind += atmos.Nspace;
-
 
   return;
 }
@@ -723,9 +710,9 @@ void writeOutput(bool_t writej) {
   MPI_Status status;
 
   /* Write output in order of rank. First 0, then send to next, until all
-     processes have written the output. */
+     processes have written the output. 
 
-  /* This can also be used with an integer, like if mpi.rank > ml,
+     This can also be used with an integer, like if mpi.rank > ml,
      and then adding ml to mpi.rank in the send. But for now not using 
   if (mpi.rank > 0)
     MPI_Recv(&msg, 0, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, mpi.comm, &status);
@@ -743,17 +730,12 @@ void writeOutput(bool_t writej) {
     writeMPI_all();
     if (writej) writeJ_all();
     writeAux_all();
-    //writeAtmos_all(); 
+    /* writeAtmos_all();  */ 
     
     sprintf(messageStr, "Process %3d: *** END output\n", mpi.rank);
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);
   }
-  /*
-  if (mpi.rank < mpi.size - 1) {
-    MPI_Send(0, 0, MPI_INT, mpi.rank + 1, 111, mpi.comm);
-  }
-  */
     
 
 
