@@ -137,6 +137,8 @@ void init_ncdf_ray_new(void)
       ERR(ierror,routineName);
     if ((ierror = nc_def_var( ncid, "Jlambda", NC_FLOAT, 4, dimids, &j_var)))
       ERR(ierror,routineName);
+    if ((ierror = nc_def_var( ncid, SCA_C_NAME, NC_FLOAT, 4, dimids, &sca_c_var)))
+      ERR(ierror,routineName);
 
     /* Tiago: these take too much space, so not writing them at the moment 
     if ((ierror = nc_def_var( ncid, CHI_L_NAME, NC_FLOAT, 4, dimids, &chi_l_var)))
@@ -147,8 +149,7 @@ void init_ncdf_ray_new(void)
       ERR(ierror,routineName); 
     if ((ierror = nc_def_var( ncid, ETA_C_NAME, NC_FLOAT, 4, dimids, &eta_c_var)))
       ERR(ierror,routineName);
-    if ((ierror = nc_def_var( ncid, SCA_C_NAME, NC_FLOAT, 4, dimids, &sca_c_var)))
-      ERR(ierror,routineName);
+
     */
     
     dimids[2] = wave_sel_id;
@@ -194,20 +195,24 @@ void init_ncdf_ray_new(void)
                          "J s^-1 m^-2 Hz^-1 sr^-1" ))) ERR(ierror,routineName);
   }
   if (write_xtra) {
+    if ((ierror = nc_put_att_text( ncid, tau1_var,      "units",  1,
+                                               "m" ))) ERR(ierror,routineName);
     if ((ierror = nc_put_att_text( ncid, tau1_var,      "description",  29,
                    "Height of optical depth unity" ))) ERR(ierror,routineName);
-    
-    if ((ierror = nc_put_att_text( ncid, S_var,         "units",  23,
+    if ((ierror = nc_put_att_text( ncid, S_var,         "units", 23,
 			 "J s^-1 m^-2 Hz^-1 sr^-1" ))) ERR(ierror,routineName);
-    if ((ierror = nc_put_att_text( ncid, S_var,         "description",    40,
+    if ((ierror = nc_put_att_text( ncid, S_var,         "description",  40,
         "Total source function (line + continuum)" ))) ERR(ierror,routineName);
     if ((ierror = nc_put_att_text( ncid, chi_var,       "units",  4,
-			 "m^-1" ))) ERR(ierror,routineName);
+			                    "m^-1" ))) ERR(ierror,routineName);
     if ((ierror = nc_put_att_text( ncid, chi_var,       "description",  35,
              "Total absorption (line + continuum)" ))) ERR(ierror,routineName);
-    if ((ierror = nc_put_att_text( ncid, tau1_var,      "units",  1,
-                         "m" ))) ERR(ierror,routineName);
-    
+    if ((ierror = nc_put_att_text( ncid, j_var,         "units",  23,
+                         "J s^-1 m^-2 Hz^-1 sr^-1" ))) ERR(ierror,routineName);
+    if ((ierror = nc_put_att_text( ncid, j_var,         "description",  20,
+                            "Mean radiation field" ))) ERR(ierror,routineName);
+    if ((ierror = nc_put_att_text( ncid, sca_c_var,     "description",  37,
+           "Scattering term multiplied by Jlambda" ))) ERR(ierror,routineName);
   }
 
   /* End define mode */
@@ -323,6 +328,8 @@ void init_ncdf_ray_old(void)
         ERR(ierror,routineName);
     if ((ierror = nc_inq_varid(ncid, "Jlambda",  &io.ray_j_var     )))
         ERR(ierror,routineName);
+    if ((ierror = nc_inq_varid(ncid, SCA_C_NAME, &io.ray_sca_c_var )))
+        ERR(ierror,routineName);
     /*
     if ((ierror = nc_inq_varid(ncid, CHI_L_NAME, &io.ray_chi_l_var )))
         ERR(ierror,routineName);
@@ -332,8 +339,7 @@ void init_ncdf_ray_old(void)
         ERR(ierror,routineName);
     if ((ierror = nc_inq_varid(ncid, ETA_C_NAME, &io.ray_eta_c_var )))
         ERR(ierror,routineName);
-    if ((ierror = nc_inq_varid(ncid, SCA_C_NAME, &io.ray_sca_c_var )))
-        ERR(ierror,routineName);
+
     */
   }
   
@@ -361,9 +367,9 @@ void writeRay(void)
 {
   const char routineName[] = "writeRay";
   int        ierror, idx, ncid, k, l, nspect;
-  double    *sca, *J;
-  float    **chi, **S, *tau_one, tau_cur, tau_prev, tmp;
-  float    **Jnu, **chi_l, **eta_l, **chi_c, **eta_c, **sca_c;
+  double    *J;
+  float    **chi, **S, **sca, *tau_one, tau_cur, tau_prev, tmp;
+  float    **Jnu, **chi_l, **eta_l, **chi_c, **eta_c;
   size_t     start[] = {0, 0, 0, 0};
   size_t     count[] = {1, 1, 1, 1};
   bool_t     write_xtra, crosscoupling, to_obs, initialize,prdh_limit_mem_save;
@@ -401,7 +407,8 @@ void writeRay(void)
     chi = matrix_float(infile.nz, io.ray_nwave_sel);
     
     S   = matrix_float(infile.nz, io.ray_nwave_sel);
-    sca = (double *) malloc(atmos.Nspace * sizeof(double));
+    sca = matrix_float(infile.nz, io.ray_nwave_sel);
+    //sca = (double *) malloc(atmos.Nspace * sizeof(double));
     
     Jnu = matrix_float(infile.nz, io.ray_nwave_sel);
     /*   
@@ -409,7 +416,6 @@ void writeRay(void)
     eta_l = matrix_float(infile.nz, io.ray_nwave_sel);
     chi_c = matrix_float(infile.nz, io.ray_nwave_sel);
     eta_c = matrix_float(infile.nz, io.ray_nwave_sel);
-    sca_c = matrix_float(infile.nz, io.ray_nwave_sel);
     */
     
     if (input.limit_memory) J = (double *) malloc(atmos.Nspace * sizeof(double));
@@ -441,15 +447,14 @@ void writeRay(void)
       /* Zero S and chi  */
       for (k = 0; k < infile.nz; k++) {
 	chi[k][nspect] = 0.0;
-	
 	S[k][nspect]   = 0.0;
+	sca[k][nspect] = 0.0;
 	Jnu[k][nspect] = 0.0;
 	/*
 	chi_l[k][nspect] = 0.0;
 	eta_l[k][nspect] = 0.0;
 	chi_c[k][nspect] = 0.0;
 	eta_c[k][nspect] = 0.0;
-	sca_c[k][nspect] = 0.0;
 	*/
 	
       }
@@ -461,8 +466,8 @@ void writeRay(void)
 	l = k + mpi.zcut;
 	chi[l][nspect] = (float) (as->chi[k] + as->chi_c[k]);
 	
-	sca[k] = as->sca_c[k]*J[k];
-	S[l][nspect]   = (float) ((as->eta[k] + as->eta_c[k] + sca[k]) /
+	sca[l][nspect] = (float) (as->sca_c[k] * J[k]);
+	S[l][nspect]   = (float) ((as->eta[k] + as->eta_c[k] + as->sca_c[k] * J[k]) /
 				  (as->chi[k] + as->chi_c[k]));
 	Jnu[l][nspect] = (float) J[k];
 	/*
@@ -470,7 +475,6 @@ void writeRay(void)
 	eta_l[l][nspect] = (float) as->eta[k];
 	chi_c[l][nspect] = (float) as->eta_c[k];
 	eta_c[l][nspect] = (float) as->chi_c[k];
-	sca_c[l][nspect] = (float) sca[k];
 	*/
 	
 	/* Calculate tau=1 depth, manual linear interpolation */	
@@ -512,6 +516,8 @@ void writeRay(void)
 				  S[0] )))   ERR(ierror,routineName);  
     if ((ierror=nc_put_vara_float(ncid, io.ray_j_var,   start, count,
 				  Jnu[0] )))     ERR(ierror,routineName);
+    if ((ierror=nc_put_vara_float(ncid, io.ray_sca_c_var,   start, count,
+				  sca[0] )))   ERR(ierror,routineName);
     /*
     if ((ierror=nc_put_vara_float(ncid, io.ray_chi_l_var,   start, count,
 				  chi_l[0] )))   ERR(ierror,routineName);
@@ -521,8 +527,6 @@ void writeRay(void)
 				  chi_c[0] )))   ERR(ierror,routineName);
     if ((ierror=nc_put_vara_float(ncid, io.ray_eta_c_var,   start, count,
 				  eta_c[0] )))   ERR(ierror,routineName);
-    if ((ierror=nc_put_vara_float(ncid, io.ray_sca_c_var,   start, count,
-				  sca_c[0] )))   ERR(ierror,routineName);
     */
     
     start[2] = 0; count[2] = io.ray_nwave_sel;
@@ -532,9 +536,12 @@ void writeRay(void)
   
     free(tau_one); freeMatrix((void **) chi);
     
-    free(sca);     freeMatrix((void **) S);
-    freeMatrix((void **) Jnu); /*  freeMatrix((void **) chi_l); freeMatrix((void **) eta_l);
-    freeMatrix((void **) chi_c); freeMatrix((void **) eta_c); freeMatrix((void **) sca_c);
+    freeMatrix((void **) S);
+    freeMatrix((void **) Jnu);
+    freeMatrix((void **) sca);
+    /*
+    freeMatrix((void **) chi_l); freeMatrix((void **) eta_l);
+    freeMatrix((void **) chi_c); freeMatrix((void **) eta_c);
     */
     
     if (input.limit_memory) free(J);

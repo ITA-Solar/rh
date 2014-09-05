@@ -61,7 +61,7 @@
 #define ETA_L_NAME   "eta_line"
 #define CHI_C_NAME   "chi_continuum"
 #define ETA_C_NAME   "eta_continuum"
-#define SCA_C_NAME   "scattering_eta_continuum" // This is actually sca*J
+#define SCA_C_NAME   "scattering" // This is actually sca*J
 
 /* Definitions for the input data file */
 #define INPUTDATA_FILE "output/output_indata.ncdf"
