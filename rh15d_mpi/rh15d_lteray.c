@@ -86,10 +86,8 @@ int main(int argc, char *argv[])
   /* Find out the work load for each process */
   distribute_jobs();
 
-
-
+  /* --- Read ray.input --                            --------------- */
   /* --- Read direction cosine for ray --              -------------- */
-
   if ((fp_ray = fopen(RAY_INPUT_FILE, "r")) == NULL) {
     sprintf(messageStr, "Unable to open inputfile %s", RAY_INPUT_FILE);
     Error(ERROR_LEVEL_2, argv[0], messageStr);
@@ -136,14 +134,37 @@ int main(int argc, char *argv[])
   geometry.muy[0] = 0.0;
   geometry.wmu[0] = 1.0;
 
-
-  /* --- Force LTE populations for all active atoms -- -------------- */
+  atmos.moving = TRUE;  /* To prevent moving change from column [0, 0] */
+   /* Read first atmosphere column just to get dimensions */
+  readAtmos_ncdf(0, 0, &atmos, &geometry, &infile);
+  readAtomicModels();   
+  readMolecularModels();
+  SortLambda();
+  
+  /* --- Force LTE populations for all active atoms -- ------------ */
   for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
     atom = atmos.activeatoms[nact];
     atom->initial_solution = LTE_POPULATIONS;
   }
+  bgdat.write_BRS = FALSE;
+  
+  /* --- START stuff from initParallelIO, just getting the needed parts --- */
+  init_Background();
+  mpi.StokesMode_save = input.StokesMode;
+  
+  /* Get file position of atom files (to re-read collisions) */
+  io.atom_file_pos = (long *) malloc(atmos.Nactiveatom * sizeof(long));
+  mpi.zcut_hist    = (int *)    calloc(mpi.Ntasks , sizeof(int));
 
-
+  for (nact = 0; nact < atmos.Nactiveatom; nact++) {
+    atom = atmos.activeatoms[nact];
+    io.atom_file_pos[nact] = ftell(atom->fp_input);
+  }
+  mpi.single_log       = FALSE;
+  
+  /* --- END of stuff from initParalleIO ---*/
+  init_ncdf_ray();  
+  
   /* Main loop over tasks */
   for (mpi.task = 0; mpi.task < mpi.Ntasks; mpi.task++) {
 
@@ -158,45 +179,14 @@ int main(int argc, char *argv[])
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);
 
+
     /* Read atmosphere column */
     readAtmos_ncdf(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
 
-
     if (atmos.Stokes) Bproject();
 
-    /* --- Run only once --                                  --------- */
-    if (mpi.task == 0) {
-      readAtomicModels();   
-      readMolecularModels();
-
-      SortLambda();
-      
-      bgdat.write_BRS = FALSE;
-      
-      /* --- START stuff from initParallelIO, just getting the needed parts --- */
-      init_Background();
-      
-      mpi.StokesMode_save = input.StokesMode;
-      
-      /* Get file position of atom files (to re-read collisions) */
-      io.atom_file_pos = (long *) malloc(atmos.Nactiveatom * sizeof(long));
-      mpi.zcut_hist    = (int *)    calloc(mpi.Ntasks , sizeof(int));
-
-      for (nact = 0; nact < atmos.Nactiveatom; nact++) {
-	atom = atmos.activeatoms[nact];
-	io.atom_file_pos[nact] = ftell(atom->fp_input);
-      }
-
-      mpi.single_log       = FALSE;  
-    
-      /* --- END of stuff from initParalleIO ---*/
-      
-      init_ncdf_ray();
-
-    } else {
-      /* Update quantities that depend on atmosphere and initialise others */
-      UpdateAtmosDep();
-    }
+    /* Update quantities that depend on atmosphere and initialise others */
+    UpdateAtmosDep();
 
     /* --- Calculate background opacities --             ------------- */
     Background_p(write_analyze_output=FALSE, equilibria_only=FALSE);
@@ -204,16 +194,14 @@ int main(int argc, char *argv[])
     getProfiles();
     initSolution_p();
     initScatter();
-
+    
     getCPU(1, TIME_POLL, "Total Initialize");
-
     
     /* --- Solve radiative transfer equations --         -------------- */
     solveSpectrum(FALSE, FALSE);
 
     /* --- Write emergent spectrum to output file --     -------------- */
     writeRay();
-
    
     sprintf(messageStr,
       "Process %3d: *** END   task %3ld\n",
@@ -225,13 +213,17 @@ int main(int argc, char *argv[])
 
   } /* End of main task loop */
 
+  if (mpi.Ntasks == 0) {
+    sprintf(messageStr, "Process %3d: *** NO WORK (more processes than tasks!)\n", mpi.rank);
+    fprintf(mpi.main_logfile, messageStr);
+    Error(MESSAGE, "main", messageStr);
+  }
 
   /* --- Stuff that was on closeParallelIO --- */
   close_ncdf_atmos(&atmos, &geometry, &infile);
   close_Background();
   free(io.atom_file_pos);
   /* --- END of stuff from closeParallelIO ---*/
-  
   
   close_ncdf_ray();
   

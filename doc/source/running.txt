@@ -24,6 +24,9 @@ As an MPI program, the binaries should be launched with the appropriate command.
 The run directory
 =================
 
+.. warning::
+   Before running, make sure you have the sub-directories ``scratch`` and ``output`` in the run directory **and** that two levels below there is an ``Atoms`` directory (``../../Atoms/``).
+
 The run directory contains the configuration files, the binaries, and the ``scratch`` and ``output`` directories. As the names imply, temporary files will be placed under ``scratch`` and the final output files in ``output``. No files under ``scratch`` will be used after the run is finished (they are not read for re-runs).
 
 The ``scratch`` directory contains different types of files. Most of them are binary files write by RH 1.5D to save memory. Example files are the ``background_p*.dat`` with the background opacities, files with PRD weights, and the ``rh_p*.log`` log files. Each process creates one of those files, and they will have the suffix ``_pN.*``, where ``N`` is the process number. The log files have the same format as in RH. The writing of each process's log file is buffered by line. Because these are updated often, when running with many processes this can be a drag on some systems. Therefore, it is possible to run full buffering (meaning log files are only written when the main program finishes). This option is not exposed in the configuration files, so one needs to change the file ``parallel.c`` in the following part:
