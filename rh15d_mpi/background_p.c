@@ -82,11 +82,9 @@
        In static atmospheres these quantities are just mapped to
        atmos.chi_c and atmos.eta_c to save memory space.
 
- Note: If write_analyzeoutput == FALSE the auxiliary output files for
-       the Background Record Structure (BRS), metals, and molecules
-       are NOT written. This option is used when Background is called
-       from programs like solveray (formal solution along one specific
-       ray) in cases with moving atmospheres (angle-dependent opacity).
+ Note: Auxiliary output files for the Background Record Structure (BRS),
+       are never written and not supported in RH 1.5D. The background
+       option write_analyze_output makes no difference in the output.
 
  Note: If equilibria_only is set to TRUE only the electron density,
        LTE populations and collisions, and chemical equilibria are
@@ -140,7 +138,7 @@ extern MPI_data mpi;
 
 /* ------- begin -------------------------- init_Background.c ------- */
 
-void init_Background(bool_t init_BRS)
+void init_Background(void)
 {
   const char routineName[] = "init_Background";
   char    inputLine[MAX_LINE_SIZE];
@@ -198,9 +196,6 @@ void init_Background(bool_t init_BRS)
   } else
     atmos.backgrrecno = (long *) malloc(spectrum.Nspect * sizeof(long));
 
-  /* --- Initialise netCDF BRS file --                  ------------- */
-  if (bgdat.write_BRS) init_ncdf_BRS();
-
   /* --- Read background files from Kurucz data file -- ------------- */
   atmos.Nrlk = 0;
   readKuruczLines(input.KuruczData);
@@ -218,8 +213,9 @@ void close_Background(void)
 {
   const char routineName[] = "close_Background";
 
-  if (bgdat.write_BRS) close_ncdf_BRS();
-
+  if (!input.backgr_in_mem){
+    close(atmos.fd_background);
+  }
   return;
 }
 /* ------- end   -------------------------- close_Background.c ------- */
@@ -703,11 +699,6 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
     }
   }
 
-  if (write_analyze_output) {
-    /* --- Write background record structure --          ------------ */
-    if (bgdat.write_BRS) writeBRS_ncdf();
-  }
-  
   getCPU(3, TIME_POLL, "Background Opacity");
 
   /* --- Free the temporary space allocated in the ff routines -- --- */
@@ -736,9 +727,7 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
       freeMatrix((void **) element->n);
       element->n = NULL;
     }
-    
   }
-
 
   getCPU(2, TIME_POLL, "Total Background");
 }

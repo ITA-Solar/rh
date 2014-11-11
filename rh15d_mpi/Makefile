@@ -16,8 +16,7 @@ AR = ar
 NCDF_DIR = /opt/local
 #NCDF_DIR = /Users/tiago/local
 
-# Try to get SVN revision from svn info, set preprocessor macros if successful 
-#REV=$(shell svn info | grep Revision)
+# Try to get git revision, set preprocessor macros if successful 
 REV=$(shell git describe --always)
 ifeq ($(REV), )
     CFLAGS  = -O2 -I../ -I$(NCDF_DIR)/include/ 
@@ -39,7 +38,7 @@ LDFLAGS = -L../ -L$(NCDF_DIR)/lib/
 
 ONE_D_OBJS = anglequad.o      feautrier.o     formal.o           hydrostat.o   \
              piecestokes.o    piecewise.o     project.o                        \
-             riiplane.o       ncdfatmos.o     background_p.o     brs_p.o       \
+             riiplane.o       ncdfatmos.o     background_p.o                   \
              readj_p.o        scatter_p.o     writespect_p.o     initial_p.o   \
              writeindata_p.o  writeAux_p.o    parallel.o         iterate_p.o   \
              ludcmp_p.o       accelerate_p.o  redistribute_p.o   statequil_p.o \

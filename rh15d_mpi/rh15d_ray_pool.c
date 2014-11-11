@@ -328,6 +328,8 @@ void drone(void) {
       fprintf(mpi.main_logfile, messageStr);
       Error(MESSAGE, "main", messageStr);
       
+      close_Background();  /* To avoid many open files */
+      
       mpi.ncrash++;
       mpi.stop = FALSE;
       mpi.dpopsmax[mpi.task] = 0.0;
@@ -362,7 +364,7 @@ void drone(void) {
       if (solveSpectrum(FALSE, FALSE) <= input.iterLimit) break;
       niter++;
     }
-      
+    
     /* copyBufVars(writej=FALSE); */
     
     if (mpi.convergence[mpi.task]) {
@@ -385,7 +387,6 @@ void drone(void) {
       geometry.muy[0] = save_muy;
       geometry.wmu[0] = save_wmu;
       spectrum.updateJ = TRUE;
-      
     }
 
     /* --- Write output files, send result to overlord ---------- */

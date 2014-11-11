@@ -133,7 +133,6 @@ void closeParallelIO(bool_t run_ray, bool_t writej) {
   close_ncdf_atmos(&atmos, &geometry, &infile);
   close_ncdf_aux();
   if (writej) close_ncdf_J();
-  close_Background();
 
   free(io.atom_file_pos);
   free(mpi.niter);

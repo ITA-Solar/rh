@@ -28,12 +28,6 @@ void init_Background();
 void Background_p(bool_t analyzeoutput, bool_t equilibria_only);
 void close_Background();
 
-void writeBRS_p(void);
-void readBRS_p(void);
-void init_ncdf_BRS(void);
-void close_ncdf_BRS(void);
-void writeBRS_ncdf(void);
-
 void init_ncdf_J(void);
 void close_ncdf_J(void);
 void writeJ_all(void);

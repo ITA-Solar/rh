@@ -13,16 +13,6 @@
 #include <netcdf_par.h>
 #include <netcdf.h>
 
-
-
-/* Definitions for brs_p */
-#define  BRS_DOT_OUT  "brs.out"
-#define  BRS_FILE     "scratch/brs_out_p"
-#define  BRS_EXT      ".ncdf"
-#define  HASLINE_VAR  "hasline"
-#define  ISPOL_VAR    "ispolarised"
-#define  BGREC_VAR    "backgrrecno"
-
 /* Definitions for readj_p */
 #define  J_FILE_TEMPLATE "%s.ncdf"
 
@@ -111,8 +101,6 @@
 
 /* For keeping the netCDF file and variable IDs */
 typedef struct {
-  /* for the BRS file */
-  int  brs_ncid,          brs_hl_var,        brs_ip_var,         brs_nrec_var;
   /* for the J file */
   int  j_ncid,            j_jlambda_var,     j_j20_var,          j_jgas_var; 
   /* for the spectrum file*/ 

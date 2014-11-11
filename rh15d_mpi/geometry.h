@@ -38,10 +38,8 @@ typedef struct {
 
 /* For the background stuff */
 typedef struct {
-  char     *brs_fname;
-  bool_t    do_fudge, write_BRS;
+  bool_t    do_fudge;
   int       Nfudge;
-  int       brs_ncid,    brs_hl_var,    brs_ip_var,  brs_nrec_var;
   // for now here, in the future perhaps write things in io.h:
   int       j_ncid, jlambda_var, j20_var; 
   double   *lambda_fudge, **fudge;

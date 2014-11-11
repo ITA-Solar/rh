@@ -146,7 +146,6 @@ int main(int argc, char *argv[])
     atom = atmos.activeatoms[nact];
     atom->initial_solution = LTE_POPULATIONS;
   }
-  bgdat.write_BRS = FALSE;
   
   /* --- START stuff from initParallelIO, just getting the needed parts --- */
   init_Background();
@@ -190,7 +189,7 @@ int main(int argc, char *argv[])
 
     /* --- Calculate background opacities --             ------------- */
     Background_p(write_analyze_output=FALSE, equilibria_only=FALSE);
-
+    
     getProfiles();
     initSolution_p();
     initScatter();
@@ -199,10 +198,9 @@ int main(int argc, char *argv[])
     
     /* --- Solve radiative transfer equations --         -------------- */
     solveSpectrum(FALSE, FALSE);
-
     /* --- Write emergent spectrum to output file --     -------------- */
     writeRay();
-   
+    
     sprintf(messageStr,
       "Process %3d: *** END   task %3ld\n",
 	    mpi.rank, mpi.task+1);
@@ -210,7 +208,6 @@ int main(int argc, char *argv[])
     Error(MESSAGE, "main", messageStr);	
 
     mpi.nconv++;
-
   } /* End of main task loop */
 
   if (mpi.Ntasks == 0) {
@@ -221,7 +218,6 @@ int main(int argc, char *argv[])
 
   /* --- Stuff that was on closeParallelIO --- */
   close_ncdf_atmos(&atmos, &geometry, &infile);
-  close_Background();
   free(io.atom_file_pos);
   /* --- END of stuff from closeParallelIO ---*/
   

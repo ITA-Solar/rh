@@ -194,7 +194,9 @@ int main(int argc, char *argv[])
 	      mpi.rank, mpi.task+1, mpi.niter[mpi.task]);
       fprintf(mpi.main_logfile, messageStr);
       Error(MESSAGE, "main", messageStr);
-
+      
+      close_Background();  /* To avoid many open files */
+      
       mpi.ncrash++;
       mpi.stop = FALSE;
       mpi.dpopsmax[mpi.task] = 0.0;
@@ -226,7 +228,7 @@ int main(int argc, char *argv[])
       if (solveSpectrum(FALSE, FALSE) <= input.iterLimit) break;
       niter++;
     }
-      
+
     copyBufVars(writej=FALSE);
     
     if (mpi.convergence[mpi.task]) {
@@ -254,7 +256,6 @@ int main(int argc, char *argv[])
     /* --- Write output files --                         -------------- */
     getCPU(1, TIME_START, NULL);
     writeAtmos_p();
-
 
     if (input.p15d_wspec) 
       writeSpectrum_p(); /* replaces writeSpectrum, writeFlux */

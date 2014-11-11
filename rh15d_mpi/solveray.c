@@ -180,8 +180,6 @@ int main(int argc, char *argv[])
 
       SortLambda();
 
-      bgdat.write_BRS = FALSE;
-
       /* writej=TRUE here is only for reading old J, not writing anything */
       initParallelIO(run_ray=TRUE, writej=TRUE);
       init_ncdf_ray();

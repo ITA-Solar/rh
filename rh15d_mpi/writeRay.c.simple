@@ -537,6 +537,7 @@ void writeRay(void)
     if (input.limit_memory) free(J);
   }
 
+  close_Background();  /* To avoid many open files */
 
   return;
 }
@@ -551,6 +552,7 @@ void calculate_ray(void) {
       Atom *atom;
       AtomicLine *line;
       
+  close_Background();  /* Was opened previously, will be opened here again */
       
           /*
     atom = atmos.activeatoms[0];
