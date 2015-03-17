@@ -46,6 +46,9 @@ The new ``keyword.input`` options for the 1.5D version are:
 +-------------------------+---------------+--------------------------------------------------------------------------------+
 | ``Y_STEP``              | ``1``         | How many columns to sample in the y direction. If < 1, will be set to 1.       |
 +-------------------------+---------------+--------------------------------------------------------------------------------+
+| ``15D_WRITE_TAU1``      | ``FALSE``     | If ``TRUE``, will write the height of tau=1 to ``output_ray.ncdf``, for all    |
+|                         |               | wavelengths (this takes up as much space as the intensity).                    |
++-------------------------+---------------+--------------------------------------------------------------------------------+
 | ``15D_RERUN``           | ``FALSE``     | If ``TRUE``, will rerun for non-converged columns.                             |
 +-------------------------+---------------+--------------------------------------------------------------------------------+
 | ``15D_DEPTH_ZCUT``      | ``TRUE``      | If ``TRUE``, will perform a cut in z for points above a threshold temperature  |
@@ -53,7 +56,7 @@ The new ``keyword.input`` options for the 1.5D version are:
 | ``15D_TMAX_CUT``        | ``-1``        | Threshold temperature (in K) over which the above depth cut ids made. If < 0,  |
 |                         |               | no temperature cut will be made.                                               |
 +-------------------------+---------------+--------------------------------------------------------------------------------+
-| ``15D_DEPTH_REFINE``    | ``TRUE``      | If ``TRUE``, will perform an optimisation of the depth scale,                  |
+| ``15D_DEPTH_REFINE``    | ``FALSE``     | If ``TRUE``, will perform an optimisation of the depth scale,                  |
 |                         |               | based on optical depth, density and temperature gradients.                     |
 +-------------------------+---------------+--------------------------------------------------------------------------------+
 | ``BACKGR_IN_MEM``       | ``FALSE``     | If ``TRUE``, will keep background opacity coefficients in memory instead of    |

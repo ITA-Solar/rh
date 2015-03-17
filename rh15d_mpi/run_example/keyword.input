@@ -24,14 +24,19 @@
 # Runs only for non-converged columns (assumes output files already exist)
   15D_RERUN = FALSE
 
-# These two are no longer used, only here for historical purposes
-  15D_WRITE_EXTRA    = FALSE 
-  15D_WRITE_SPECTRUM = FALSE 
+# Write tau=1 height for all wavelengths? (Takes as much space as intensity in output_ray.ncdf.) 
+  15D_WRITE_TAU1 = FALSE 
 
+# Cut the atmosphere above a certain TMAX?
+  15D_DEPTH_ZCUT = TRUE
   15D_TMAX_CUT = 30000.
 
-# Perform the temperature cut above?
-  15D_DEPTH_ZCUT = TRUE
+# Perform depth optimisation for each column (interpolates height scale)?
+  15D_DEPTH_REFINE = FALSE
+
+# These two are no longer used, only here for historical purposes
+  15D_WRITE_EXTRA    = FALSE
+  15D_WRITE_SPECTRUM = FALSE
 
 # Value to add to supplied VTURB (in m/s)
   VTURB_ADD = 0.0

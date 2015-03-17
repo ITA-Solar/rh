@@ -46,7 +46,7 @@
 #define WAVE_SEL_IDX "wavelength_indices"
 #define CHI_NAME     "chi"
 #define S_NAME       "source_function"
-#define TAU1_NAME    "tau_one_depth"
+#define TAU1_NAME    "tau_one_height"
 #define CHI_L_NAME   "chi_line"
 #define ETA_L_NAME   "eta_line"
 #define CHI_C_NAME   "chi_continuum"

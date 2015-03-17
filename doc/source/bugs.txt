@@ -11,7 +11,6 @@ Current issues
 * When `pool` mode is used, the data in ``output_aux.ncdf`` (populations, etc.) is not written. This occurs because ``writeAux_p.c`` has not been rewritten to allow an efficient write of the data for a single column. 
 * In ``keyword.input``, if one sets a ``SNAPSHOT`` value to be more than what is in the atmosphere file, the code will stop with an error message: ``Index exceeds dimension bound``. This error should be made more clear. 
 * The atom files must not end with a blank line, otherwise ``gencol`` will fail and the program stops.
-* To save the ``source_function`` and ``chi`` into the output one still needs to uncomment the relevant parts on the source code. 
 * Line buffered or full buffered log options still require the user to change the source code.
 * Depth refinement fails in some cases due to problems caused by cubic interpolation artefacts. 
 * Using more than 4000 cores and writing full output may cause I/O slowdowns and Lustre contention in some systems.
