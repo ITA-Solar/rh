@@ -65,13 +65,12 @@ void initSolution_alloc(void) {
   register int nspect, nact,k,kr,mu;
   char    permission[3], file_imu[MAX_MESSAGE_LENGTH];
   int     Nsr, Nplane, index, oflag,la;
-  int to_obs,lamuk,sign,ncoef,ilow,Nlamu,lamu,Np;
+  int to_obs,lamuk,sign,ncoef,ilow,Nlamu,lamu;
   Molecule   *molecule;
   Atom       *atom;
   AtomicLine *line;
-  long int idx, lc,lak;
-  double *lambda,fac,lambda_prv,lambda_gas,lambda_nxt,dl,frac,lag;
-  double q0,q_emit,qN;
+  long int idx, lc;
+  double *lambda,fac,lambda_prv,lambda_gas,lambda_nxt,dl,lag;
 
 
 

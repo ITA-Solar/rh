@@ -49,7 +49,6 @@ void init_ncdf_spec(void)
   int     ierror, ncid, nx_id, ny_id, nspect_id, nrays_id, wave_var,
           intensity_var, flux_var, stokes_u_var, stokes_q_var, 
           stokes_v_var, dimids[4];
-  FILE   *test;
 
   /* Create the file  */
   if ((ierror = nc_create_par(SPEC_FILE, NC_NETCDF4 | NC_CLOBBER | NC_MPIIO, 
@@ -161,7 +160,7 @@ void writeSpectrum_p(void)
   const char routineName[] = "writeSpectrum_p";
   register int mu, nspect;
   int     ierror;
-  double *lambda_air, *flux, *wmuz, vacuum_to_air_limit = VACUUM_TO_AIR_LIMIT;
+  double *lambda_air, *flux, *wmuz;
   size_t  start[] = {0, 0, 0, 0};
   size_t  count[] = {1, 1, 1, 1};
 

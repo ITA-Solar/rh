@@ -145,8 +145,6 @@ void init_Background(void)
   bool_t  exit_on_EOF;
   int     n, nspect;
   FILE   *fp_fudge;
-  char    file_background[MAX_MESSAGE_LENGTH], *fext = FILE_EXT;
-
 
   if (strcmp(input.fudgeData, "none")) {
     bgdat.do_fudge = TRUE;
@@ -211,8 +209,6 @@ void init_Background(void)
 /* ------- begin -------------------------- close_Background.c ------- */
 void close_Background(void)
 {
-  const char routineName[] = "close_Background";
-
   if (!input.backgr_in_mem){
     close(atmos.fd_background);
   }
@@ -225,7 +221,7 @@ void close_Background(void)
 void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
 {
   const char routineName[] = "Background_p";
-  register int k, nspect, n, mu, to_obs;
+  register int k, nspect, mu, to_obs;
 
   static int ne_iter = 0;
   bool_t  do_fudge, fromscratch;

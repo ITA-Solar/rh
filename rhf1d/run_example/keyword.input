@@ -7,7 +7,7 @@
 # First specify input files for atmosphere and abundances
 # (both KEYWORD_REQUIRED).
 
-  ATMOS_FILE = ../../Atmos/bifrost_20_x214_y220.atmos
+  ATMOS_FILE = ../../Atmos/FALC_82.atmos
   ABUND_FILE = ../../Atoms_example/abundance.input
 
 # Set choice of number of rays (KEYWORD_OPTIONAL).
@@ -84,7 +84,7 @@
 # If PRD_ANGLE_DEP is set to TRUE angle-dependent PRD is used
 # (KEYWORD_DEFAULT). The default is FALSE.
 
-  PRD_ANGLE_DEP = FALSE
+  PRD_ANGLE_DEP = PRD_ANGLE_INDEP
   XRD = FALSE
 
 # Temporary files for mean intensities and background opacities
@@ -124,7 +124,7 @@
 # UV line haze. Type is KEYWORD_OPTIONAL. When set to ``none'' (the
 # default value) no data is read.
 
-  OPACITY_FUDGE = ../../Atmos_example/opacity_fudge.input
+# OPACITY_FUDGE = ../../Atmos/opacity_fudge.input
 
 # Output files for atomic data, spectrum, populations, and geometry
 # (all KEYWORD_DEFAULT).

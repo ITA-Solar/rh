@@ -53,7 +53,6 @@ void init_ncdf_J(void)
   int     ierror, jncid, nx_id, ny_id, nspect_id, nspace_id,
           Jlambda_var, J20_var, dimids[4];
   size_t  len_id;
-  FILE   *test;
   char    file_J[MAX_MESSAGE_LENGTH],  *atmosID;
 
 

@@ -1,1 +1,1 @@
-writeRay.c.simple
+writeRay.c.full

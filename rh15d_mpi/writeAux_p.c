@@ -71,7 +71,6 @@ void init_aux_new(void) {
   int     nwave, *ai_idx, *ad_idx, nai, nad;
   double *wave, *lambda_air;
   char    group_name[ARR_STRLEN];
-  FILE   *test;
   Atom   *atom;
   Molecule *molecule;
   ActiveSet *as;
@@ -362,9 +361,8 @@ void init_aux_new(void) {
 void init_aux_old(void) {
   const char routineName[] = "init_aux_old";
   int     ierror, ncid, i, dimid;
-  size_t  len_id, nlevel, nline, ncont, nz;
+  size_t  len_id, nlevel, nline, ncont;
   char    group_name[ARR_STRLEN], *atmosID;
-  FILE   *test;
   Atom   *atom;
   Molecule *molecule;
 

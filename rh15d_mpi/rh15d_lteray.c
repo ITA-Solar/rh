@@ -50,18 +50,13 @@ IO_buffer iobuf;
 int main(int argc, char *argv[])
 {
   bool_t write_analyze_output, equilibria_only, run_ray, exit_on_EOF;
-  int    niter, nact, i, Ntest, k, Nspect, Nread, Nrequired,
+  int    nact, Nspect, Nread, Nrequired,
          checkPoint, *wave_index = NULL;
   double muz;
   Atom *atom;
-  Molecule *molecule;
-  AtomicLine *line;
-  FILE   *fp_out, *fp_ray, *fp_stokes;
-  ActiveSet *as;
+  FILE   *fp_ray;
 
-  time_t     curtime;
-  struct tm *loctime;
-  char timestr[ARR_STRLEN], rayFileName[14], inputLine[MAX_LINE_SIZE];
+  char inputLine[MAX_LINE_SIZE];
 
 
   /* --- Set up MPI ----------------------             -------------- */

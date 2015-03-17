@@ -705,8 +705,6 @@ void freeBufVars(bool_t writej) {
 /* ------- begin -------------------------- writeOutput.c ------------ */
 void writeOutput(bool_t writej) {
 /* Writes all output files, in the case where output all at once is active */
-  int msg;
-  MPI_Status status;
 
   /* Write output in order of rank. First 0, then send to next, until all
      processes have written the output. 

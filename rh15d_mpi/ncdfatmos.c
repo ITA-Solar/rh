@@ -114,7 +114,7 @@ void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *inf
   /* Microturbulence, get ID if variable found */
   if ((ierror=nc_inq_varid(ncid, VTURB_NAME, &infile->vturb_varid))) {
     /* exception for variable not found (errcode -49)*/
-    (ierror == -49) ? infile->vturb_varid = -1 : ERR(ierror,routineName);
+    if (ierror == -49) infile->vturb_varid = -1; else ERR(ierror,routineName);
   }
 
   if (atmos->Stokes) {
@@ -200,9 +200,8 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   size_t     count[]    = {1, 1, 1, 1};
   size_t     start_nh[] = {0, 0, 0, 0, 0};
   size_t     count_nh[] = {1, 1, 1, 1, 1};
-  int        ncid, ierror, i, j, z_varid, imin, i50k;
+  int        ncid, ierror, i, j, z_varid;
   bool_t     old_moving;
-  double     Tmin, diff;
   double    *Bx, *By, *Bz;
 
   ncid = infile->ncid;

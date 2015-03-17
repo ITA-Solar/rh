@@ -60,20 +60,14 @@ void init_ncdf_indata_new(void)
           /* B_var, gB_var, chiB_var, */
           ew_var, ab_var, eid_var, mu_var, wmu_var, height_var,x_var, y_var,
           xnum_var, ynum_var, tm_var, tn_var, it_var, conv_var, dm_var, dmh_var, 
-          zch_var, ntsk_var, host_var, st_var, ft_var, z_varid, dimids[4],
+          zch_var, ntsk_var, host_var, st_var, ft_var, dimids[4],
           PRD_angle_dep;
   /* This value is harcoded for efficiency. Maximum number of iterations ever needed */
   int     NMaxIter = 1500;
-  long    task;
   size_t  start[] = {0, 0, 0};
   size_t  count[] = {1, 1, 1};
   bool_t   XRD;
-  double *height;
-  char    startJ[MAX_LINE_SIZE], StokesMode[MAX_LINE_SIZE], angleSet[MAX_LINE_SIZE],
-          hostname[ARR_STRLEN], timestr[ARR_STRLEN];
-  FILE   *test;
-  time_t  curtime;
-  struct tm *loctime;
+  char    startJ[MAX_LINE_SIZE], StokesMode[MAX_LINE_SIZE], angleSet[MAX_LINE_SIZE];
 
   /* Create the file  */
   if ((ierror = nc_create_par(INPUTDATA_FILE, NC_NETCDF4 | NC_CLOBBER | NC_MPIPOSIX, 
@@ -596,25 +590,9 @@ void init_ncdf_indata_old(void)
 /* Opens an existing NetCDF input data file, loads structures and ids */
 {
   const char routineName[] = "init_ncdf_indata_old";
-  int     i, ierror, ncid, ncid_input, ncid_atmos, ncid_mpi, nx_id, ny_id, 
-          nspace_id, nhydr_id, nelem_id, nrays_id, nproc_id, atstr_id, niter_id,
-          temp_var, ne_var, vz_var, vturb_var, Bx_var, By_var, Bz_var, nh_var, 
-          /* B_var, gB_var, chiB_var, */
-          ew_var, ab_var, eid_var, mu_var, wmu_var, height_var,x_var, y_var,
-          xnum_var, ynum_var, tm_var, tn_var, it_var, conv_var, dm_var, dmh_var, 
-          zch_var, ntsk_var, host_var, st_var, ft_var, z_varid, dimids[4];
-  int     PRD_angle_dep;
-  long    task;
-  size_t  start[] = {0, 0, 0};
-  size_t  count[] = {1, 1, 1};
+  int     ierror, ncid;
   size_t  len_id;
-  bool_t  XRD;
-  double *height;
-  char    startJ[MAX_LINE_SIZE], StokesMode[MAX_LINE_SIZE], angleSet[MAX_LINE_SIZE],
-          hostname[ARR_STRLEN], timestr[ARR_STRLEN], *atmosID;
-  FILE   *test;
-  time_t  curtime;
-  struct tm *loctime;
+  char   *atmosID;
 
   /* Open the file  */
   if ((ierror = nc_open_par(INPUTDATA_FILE, NC_WRITE | NC_MPIPOSIX, 
@@ -1033,7 +1011,6 @@ void readConvergence(void) {
   size_t len_id, nx, ny;
   int    ncid, ncid_mpi, ierror, dimid, varid;
   char  *atmosID;
-  FILE  *test;
 
   mpi.rh_converged = matrix_int(mpi.nx, mpi.ny);
   

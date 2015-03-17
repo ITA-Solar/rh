@@ -186,7 +186,7 @@ void Iterate_p(int NmaxIter, double iterLimit)
 
 double solveSpectrum_p(bool_t eval_operator, bool_t redistribute)
 {
-  register int nspect, n, nt,k;
+  register int nspect, nt,k;
 
   int         Nthreads, lambda_max;
   double      dJ, dJmax;
