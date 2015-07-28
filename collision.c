@@ -457,6 +457,7 @@ void CollisionRate(struct Atom *atom, FILE *fp_atom)
   int     nitem, i1, i2, i, j, ij, ji, Nlevel = atom->Nlevel, Nitem,
           status;
   long    Nspace = atmos.Nspace;
+  fpos_t  collpos;
   double  dE, C0, *T, *coeff, *C, Cdown, Cup, gij, *np, xj, fac, fxj;
 
   int      Ncoef, Nrow;
@@ -476,6 +477,9 @@ void CollisionRate(struct Atom *atom, FILE *fp_atom)
       atom->C[ij][k] = 0.0;
     }
   }
+  
+  collpos = ftell(fp_atom);
+  
   C = (double *) malloc(Nspace * sizeof(double));
 
   T = coeff = NULL;
@@ -927,6 +931,8 @@ void CollisionRate(struct Atom *atom, FILE *fp_atom)
   free(C);
   free(T);
   free(coeff);
+  
+  fsetpos(fp_atom, &collpos);
 
   sprintf(labelStr, "Collision Rate %2s", atom->ID);
   getCPU(3, TIME_POLL, labelStr);
