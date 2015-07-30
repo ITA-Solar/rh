@@ -114,7 +114,7 @@ void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *inf
   /* Microturbulence, get ID if variable found */
   if ((ierror=nc_inq_varid(ncid, VTURB_NAME, &infile->vturb_varid))) {
     /* exception for variable not found (errcode -49)*/
-    if (ierror == -49) infile->vturb_varid = -1; else ERR(ierror,routineName);
+    if (ierror == NC_ENOTVAR) infile->vturb_varid = -1; else ERR(ierror,routineName);
   }
 
   if (atmos->Stokes) {
@@ -155,9 +155,18 @@ void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *inf
     atmos->chi_B   = (double *) malloc(atmos->Nspace * sizeof(double));
   }
 
+  /* get boundary conditions from file, assume zero at top and
+   * thermalised at bottom if attribute not found */
+  if ((ierror=nc_get_att_uint(ncid, NC_GLOBAL, BTOP_NAME, &geometry->vboundary[TOP]))) {
+    if (ierror == NC_ENOTATT) geometry->vboundary[TOP] = ZERO;
+    else ERR(ierror,routineName);
+  }
+  if ((ierror=nc_get_att_uint(ncid, NC_GLOBAL, BBOT_NAME, &geometry->vboundary[BOTTOM]))) {
+    if (ierror == NC_ENOTATT) geometry->vboundary[BOTTOM] = THERMALIZED;
+    else ERR(ierror,routineName);
+  }
+
   /* some other housekeeping */ 
-  geometry->vboundary[TOP]    = ZERO;
-  geometry->vboundary[BOTTOM] = THERMALIZED;
   geometry->scale             = GEOMETRIC;
 
   /* --- Construct atmosID from filename and last modification date - */

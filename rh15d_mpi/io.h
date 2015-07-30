@@ -27,6 +27,8 @@
 #define  BY_NAME    "B_y"
 #define  BZ_NAME    "B_z"
 #define  SNAPNAME   "snapshot_number"
+#define  BBOT_NAME  "boundary_bottom"
+#define  BTOP_NAME  "boundary_top"
 
 /* Definitions for background_p */
 #define  FILE_EXT ".dat"
