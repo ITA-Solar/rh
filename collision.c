@@ -478,7 +478,7 @@ void CollisionRate(struct Atom *atom, FILE *fp_atom)
     }
   }
   
-  collpos = ftell(fp_atom);
+  fgetpos(fp_atom, &collpos);
   
   C = (double *) malloc(Nspace * sizeof(double));
 
