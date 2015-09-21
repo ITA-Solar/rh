@@ -14,7 +14,7 @@
 typedef struct {
   char     name[MPI_MAX_PROCESSOR_NAME], rev_id[MAX_LINE_SIZE];
   bool_t   single_log, stop, isfirst;
-  int      size, rank, namelen, nx, ny, ix, iy, *xnum, *ynum, *niter, zcut;
+  int      size, rank, namelen, nx, ny, ix, iy, *xnum, *ynum, *niter, zcut, ndims_z;
   int     *zcut_hist, **rh_converged, StokesMode_save, *convergence, snap_number;
   long     nconv, nnoconv, ncrash, my_start, backgrrecno;
   long   **taskmap, task, Ntasks, total_tasks;

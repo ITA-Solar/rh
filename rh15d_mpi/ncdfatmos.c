@@ -117,6 +117,10 @@ void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *inf
     if (ierror == NC_ENOTVAR) infile->vturb_varid = -1; else ERR(ierror,routineName);
   }
 
+  /* Find out if z is written for each (x, y) column */ 
+  if ((ierror=nc_inq_varndims(ncid, z_varid,  &mpi.ndims_z)))
+    ERR(ierror,routineName);
+  
   if (atmos->Stokes) {
       if ((ierror = nc_inq_varid(ncid, BX_NAME, &infile->Bx_varid)))
 	ERR(ierror,routineName);
@@ -131,8 +135,6 @@ void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *inf
   start[1] = 0;             count[1] = infile->nz;
 
   geometry->height = (double *) malloc(infile->nz * sizeof(double));
-  if ((ierror = nc_get_vara_double(ncid, z_varid, start, count, geometry->height))) 
-    ERR(ierror,routineName);
 
   infile->y   = (double *) malloc(infile->ny * sizeof(double));
   if ((ierror = nc_get_var_double(ncid, y_varid, infile->y))) ERR(ierror,routineName);
@@ -242,15 +244,24 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 
   if ((ierror=nc_inq_varid(ncid, "z",  &z_varid)))          
     ERR(ierror,routineName);
-  if ((ierror = nc_get_vara_double(ncid, z_varid, start, count, geometry->height))) 
-    ERR(ierror,routineName);
+  
+  /* z scale is specified only once per snapshot */
+  if ((mpi.ndims_z) == 2) {
+    if ((ierror = nc_get_vara_double(ncid, z_varid, start, count, geometry->height))) 
+      ERR(ierror,routineName);
+  }
  
-
   start[0] = input.p15d_nt; count[0] = 1;
   start[1] = (size_t) xi;   count[1] = 1;
   start[2] = (size_t) yi;   count[2] = 1;
   start[3] = mpi.zcut;      count[3] = atmos->Nspace;
-
+  
+  /* z scale is specified for every column */
+  if ((mpi.ndims_z) == 4) {
+    if ((ierror = nc_get_vara_double(ncid, z_varid, start, count, geometry->height))) 
+      ERR(ierror,routineName);
+  }
+  
    /* read variables */
   if ((ierror = nc_get_vara_double(ncid, infile->T_varid,  start, count, atmos->T)))
     ERR(ierror,routineName);
