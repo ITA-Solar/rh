@@ -163,6 +163,22 @@ void UpdateAtmosDep(void) {
 
   mpi.zcut_hist[mpi.task] = mpi.zcut;
 
+  /* Recalculate magnetic field projections */
+  if (atmos.Stokes) {
+    if (atmos.cos_gamma != NULL) {
+      freeMatrix((void **) atmos.cos_gamma);
+      atmos.cos_gamma = NULL;
+    }
+    if (atmos.cos_2chi != NULL) {
+      freeMatrix((void **) atmos.cos_2chi);
+      atmos.cos_2chi = NULL;
+    }
+    if (atmos.sin_2chi != NULL) {
+      freeMatrix((void **) atmos.sin_2chi);
+      atmos.sin_2chi = NULL;
+    }
+    Bproject();
+  }
 
   /* Update atmos-dependent atomic  quantities --- --------------- */
   for (nact = 0; nact < atmos.Natom; nact++) {
@@ -354,7 +370,6 @@ void UpdateAtmosDep(void) {
 
   distribute_nH();
 
-  
   /* Update atmos-dependent molecular  quantities --- --------------- */
   for (nact = 0; nact < atmos.Nmolecule; nact++) {
     molecule = &atmos.molecules[nact];
@@ -375,7 +390,6 @@ void UpdateAtmosDep(void) {
       freeMatrix((void **) molecule->pfv);
       molecule->pfv = matrix_double(molecule->Nv, atmos.Nspace);
     }
-    
 
     vtherm = 2.0*KBOLTZMANN / (AMU * molecule->weight);
     for (k = 0;  k < atmos.Nspace;  k++)
@@ -412,10 +426,7 @@ void UpdateAtmosDep(void) {
 	  molecule->pf[k] = partfunction(molecule, atmos.T[k]);
       }
     }
-
   }
-
-
   return;
 }
 /* ------- end   --------------------------  updateAtmosDep.c     --- */

@@ -173,11 +173,8 @@ int main(int argc, char *argv[])
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);
 
-
     /* Read atmosphere column */
     readAtmos_ncdf(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
-
-    if (atmos.Stokes) Bproject();
 
     /* Update quantities that depend on atmosphere and initialise others */
     UpdateAtmosDep();

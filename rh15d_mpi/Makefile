@@ -10,8 +10,8 @@ GEOMETRY = ONE_D_PLANE
 
 include ../makefiles/makefile.$(CPU).$(OS)
 
-CC = openmpicc
-LD = openmpicc
+CC = mpicc
+LD = mpicc
 AR = ar
 NCDF_DIR = /opt/local
 #NCDF_DIR = /Users/tiago/local

@@ -142,7 +142,6 @@ int main(int argc, char *argv[])
   readAtomicModels();   
   readMolecularModels();
 
-	
   SortLambda();
 	
   /* Check if wavelength indices make sense */
@@ -158,7 +157,6 @@ int main(int argc, char *argv[])
   initParallelIO(run_ray=FALSE, writej=FALSE);
   init_ncdf_ray();
 
-  
   /*//////////////////////
   ////////////////////////
   //////////////////////*/
@@ -291,11 +289,8 @@ void drone(void) {
       fprintf(mpi.main_logfile, messageStr);
       Error(MESSAGE, "main", messageStr);
 
-            
       /* Read atmosphere column */
       readAtmos_ncdf(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
-      
-      if (atmos.Stokes) Bproject();
 
       /* Update quantities that depend on atmosphere and initialise others */
       UpdateAtmosDep();
@@ -365,8 +360,6 @@ void drone(void) {
       niter++;
     }
     
-    /* copyBufVars(writej=FALSE); */
-    
     if (mpi.convergence[mpi.task]) {
       /* Redefine geometry just for this ray */
       atmos.Nrays     = 1;
@@ -396,9 +389,6 @@ void drone(void) {
     MPI_Send(&result, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 
   } /* End of main task loop */
-
-  
-  
 }
 /* ------- end   ---------------------------- drone.c ------------ */
 
