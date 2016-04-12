@@ -33,11 +33,25 @@
 
 ##  WAVETABLE = ../../Atoms_example/wave_files/cont.wave
 
-# Starting solution for populations (KEYWORD_REQUIRED).
-# Options: LTE_POPULATIONS, ZERO_RADIATION, OLD_POPULATIONS, OLD_J, and
-# OLD_POPS_AND_J (see initial_xdr.c and inputs.h)
+# N_PESC_ITER sets the number of escape probility iterations
+# It only works if ESCAPE_PROBABILITY is chosen as initial solution method
+# for any of the active atoms.
+  N_PESC_ITER = 4
 
-##  STARTING_SOLUTION = ZERO_RADIATION
+# COLLRAD_SWITCH defines if collisional-radiative switching is on
+# If < 0, switching parameter is constant (and equal to COLLRAD_SWITCH_INI)
+# If = 0, no collisional-radiative switching
+# If > 0, collisional-radiative switching decreases by COLLRAD_SWITCH per log decade,
+#         starting with the COLLRAD_SWITCH_INI value.
+# worked: (25, 50), (x,y,snap) = (300,150,0) [20 SLICE]
+# lead to non-conv instead of crash: (15, 5555500), (x,y,snap) = (400,150,4)
+
+  COLLRAD_SWITCH = 0.
+  COLLRAD_SWITCH_INI = 300.
+
+# PRD Switching. At the moment this number (if > 0), is used so that
+# it converges to full PRD in 1/sqrt(PRD_SWITCH) iterations.
+  PRD_SWITCH = 0.0
 
 # Maximum number of iterations to initialize scattering radiation
 # field in the background (KEYWORD_OPTIONAL).
@@ -64,6 +78,12 @@
   NG_ORDER  = 2
   NG_PERIOD = 9
 
+# Regulate the approximation for the formal solution in the rhf1d and
+# rh15d versions of the code (KEYWORD_DEFAULT). Set to either LINEAR or
+# CUBIC_HERMITE. Default value is LINEAR
+
+# SINTERPOLATION = CUBIC_HERMITE
+
 # PRD specific parameters. PRD_N_MAX_ITER is the maximum number of
 # PRD iterations per main iteration. PRD_ITER_LIMIT is the convergence
 # limit of PRD iterations in each main iteration. If PRD_ITER_LIMIT is
@@ -81,10 +101,12 @@
 #  PRD_NG_ORDER   = 2
 #  PRD_NG_PERIOD  = 3
 
-# If PRD_ANGLE_DEP is set to TRUE angle-dependent PRD is used
-# (KEYWORD_DEFAULT). The default is FALSE.
+# The option PRD_ANGLE_DEP can take the values of :
+# - PRD_ANGLE_INDEP (angle-independent PRD, default)
+# - PRD_ANGLE_APPROX (Jorrit's hybrid scheme)
+# - PRD_ANGLE_DEP (full angle-dependent PRD)
+  PRD_ANGLE_DEP = PRD_ANGLE_APPROX
 
-  PRD_ANGLE_DEP = PRD_ANGLE_INDEP
   XRD = FALSE
 
 # Temporary files for mean intensities and background opacities
