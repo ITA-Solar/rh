@@ -52,7 +52,7 @@ Geometry geometry;
 Spectrum spectrum;
 ProgramStats stats;
 InputData input;
-NCDF_Atmos_file infile;
+Input_Atmos_file infile;
 CommandLine commandline;
 char messageStr[MAX_LINE_SIZE];
 BackgroundData bgdat;

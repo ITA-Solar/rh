@@ -28,12 +28,12 @@ typedef struct {
 /* For the NetCDF input file */
 typedef struct {
   char     *file_name;
-  int       ncid,     nx_id,    ny_id,    nz_id,   nhyd_id;
+  int       ncid,     nx_id,    ny_id,    nz_id,    nhyd_id,     z_varid; 
   int       T_varid,  ne_varid, vz_varid, nh_varid, vturb_varid; 
-  int       Bx_varid, By_varid, Bz_varid;
+  int       Bx_varid, By_varid, Bz_varid; 
   size_t    nx,       ny,       nz,       NHydr;
   double   *x, *y;
-} NCDF_Atmos_file;
+} Input_Atmos_file;
 
 
 /* For the background stuff */
@@ -56,10 +56,10 @@ void getBoundary(Geometry *geometry);
 void MULTIatmos(Atmosphere *atmos, Geometry *geometry);
 void writeGeometry(Geometry *geometry);
 
-void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *infile);
-void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
-		    NCDF_Atmos_file *infile);
-void close_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *infile);
+void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry, Input_Atmos_file *infile);
+void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
+		    Input_Atmos_file *infile);
+void close_hdf5_atmos(Atmosphere *atmos, Geometry *geometry, Input_Atmos_file *infile);
 
 
 /* --- Formal solution related --                      -------------- */

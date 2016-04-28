@@ -32,7 +32,7 @@ void   freeBufVars(bool_t writej);
 /* --- Global variables --                             -------------- */
 extern Atmosphere atmos;
 extern Geometry geometry;
-extern NCDF_Atmos_file infile;
+extern Input_Atmos_file infile;
 extern IO_data io;
 extern IO_buffer iobuf;
 extern InputData input;
@@ -130,7 +130,8 @@ void closeParallelIO(bool_t run_ray, bool_t writej) {
     close_ncdf_indata();
     if (input.p15d_wspec) close_ncdf_spec();
   }
-  close_ncdf_atmos(&atmos, &geometry, &infile);
+  //close_ncdf_atmos(&atmos, &geometry, &infile);
+  close_hdf5_atmos(&atmos, &geometry, &infile);
   close_ncdf_aux();
   if (writej) close_ncdf_J();
 
@@ -448,6 +449,15 @@ void ERR(int ierror, const char *rname) {
   MPI_Abort(mpi.comm, 2);
 
 }
+
+void HERR(const char *rname) {
+  /* Processes NetCDF errors */
+
+  printf("Process %3d: (EEE) %s: HDF5 error.\n", mpi.rank, rname);
+  MPI_Abort(mpi.comm, 2);
+
+}
+
 /* ------- end   --------------------------  ERR.c ------         --- */
 
 /* ------- begin --------------------------  Error_p.c --         --- */

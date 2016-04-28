@@ -13,6 +13,9 @@
 #include <netcdf_par.h>
 #include <netcdf.h>
 
+#include <hdf5.h>
+#include <hdf5_hl.h>
+
 /* Definitions for readj_p */
 #define  J_FILE_TEMPLATE "%s.ncdf"
 

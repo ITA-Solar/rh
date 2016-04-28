@@ -38,7 +38,7 @@ long **matrix_long(long Nrow, long Ncol);
 extern MPI_data mpi;
 extern InputData input;
 extern char messageStr[];
-extern NCDF_Atmos_file infile;
+extern Input_Atmos_file infile;
 
 
 /* ------- begin --------------------------   distribute_jobs.c   --- */

@@ -34,7 +34,7 @@ extern Geometry geometry;
 extern Spectrum spectrum;
 extern InputData input;
 extern char messageStr[];
-extern NCDF_Atmos_file infile;
+extern Input_Atmos_file infile;
 extern MPI_data  mpi;
 extern IO_data   io; 
 extern IO_buffer iobuf; 

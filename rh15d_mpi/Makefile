@@ -30,14 +30,14 @@ LDFLAGS = -L../ -L$(NCDF_DIR)/lib/
 
 ## --- If no FORTRAN compiler is available remove -lrh_f90 in following
 
-      LIBS = -lrh -lrh_f90 $(ARCHLIBS) -lnetcdf
+      LIBS = -lrh -lrh_f90 $(ARCHLIBS) -lnetcdf -lhdf5 -lhdf5_hl
 
 
 ## --- Define groups of object files --                -------------- ##
 
-
+# removed: ncdfatmos.o
 ONE_D_OBJS = anglequad.o      feautrier.o     formal.o           hydrostat.o   \
-             piecestokes.o    piecewise.o     project.o                        \
+             piecestokes.o    piecewise.o     project.o          hdf5atmos.o   \
              riiplane.o       ncdfatmos.o     background_p.o                   \
              readj_p.o        scatter_p.o     writespect_p.o     initial_p.o   \
              writeindata_p.o  writeAux_p.o    parallel.o         iterate_p.o   \

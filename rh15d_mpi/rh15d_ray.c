@@ -39,7 +39,7 @@ Geometry geometry;
 Spectrum spectrum;
 ProgramStats stats;
 InputData input;
-NCDF_Atmos_file infile;
+Input_Atmos_file infile;
 CommandLine commandline;
 char messageStr[MAX_MESSAGE_LENGTH];
 BackgroundData bgdat;
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
   spectrum.updateJ = TRUE;
 
   getCPU(1, TIME_START, NULL);
-  init_ncdf_atmos(&atmos, &geometry, &infile);
+  init_hdf5_atmos(&atmos, &geometry, &infile);
 
   /* Find out the work load for each process */
   distribute_jobs();
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 
   atmos.moving = TRUE;  /* To prevent moving change from column [0, 0] */
    /* Read first atmosphere column just to get dimensions */
-  readAtmos_ncdf(0, 0, &atmos, &geometry, &infile);
+  readAtmos_hdf5(0, 0, &atmos, &geometry, &infile);
       
   if (atmos.Stokes) Bproject();
   
@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
     Error(MESSAGE, "main", messageStr);
     
     /* Read atmosphere column */
-    readAtmos_ncdf(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
+    readAtmos_hdf5(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
     
     /* Update quantities that depend on atmosphere and initialise others */
     UpdateAtmosDep();

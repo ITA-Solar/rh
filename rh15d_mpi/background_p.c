@@ -132,7 +132,7 @@ extern Atmosphere atmos;
 extern Spectrum spectrum;
 extern InputData input;
 extern char messageStr[MAX_MESSAGE_LENGTH];
-extern NCDF_Atmos_file infile;
+extern Input_Atmos_file infile;
 extern BackgroundData bgdat;
 extern MPI_data mpi;
 
