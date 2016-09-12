@@ -66,13 +66,11 @@ void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry, Input_Atmos_file *in
 
   /* --- Open input file for model atmosphere --       -------------- */
   if ((plist_id = H5Pcreate(H5P_FILE_ACCESS)) < 0) HERR(routineName);
-  if ((ierror = H5Pset_fapl_mpio(plist_id, mpi.comm, mpi.info)) < 0)
-    HERR(routineName);
-
+  if ((H5Pset_fapl_mpio(plist_id, mpi.comm, mpi.info)) < 0) HERR(routineName);
   if ((ncid = H5Fopen(input.atmos_input, H5F_ACC_RDWR, plist_id)) < 0)
     HERR(routineName);
   infile->ncid = (int) ncid;
-
+  if ((H5Pclose(plist_id)) < 0) HERR(routineName); /* plist no longer needed */
 
   /* Is magnetic field included? */
   if ((H5LTget_attribute_int(ncid, "/", "has_B", &has_B)) < 0)
@@ -133,7 +131,7 @@ void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry, Input_Atmos_file *in
   
   if (atmos->Stokes) {
     if ((infile->Bx_varid = H5Dopen2(ncid, BX_NAME, H5P_DEFAULT)) < 0)
-    HERR(routineName);
+      HERR(routineName);
     if ((infile->By_varid = H5Dopen2(ncid, BY_NAME, H5P_DEFAULT)) < 0)
       HERR(routineName);
     if ((infile->Bz_varid = H5Dopen2(ncid, BZ_NAME, H5P_DEFAULT)) < 0)
@@ -252,6 +250,8 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
                                NULL, count, NULL)) < 0) HERR(routineName);
   if ((H5Dread(infile->T_varid, H5T_NATIVE_DOUBLE, memspace_id, dataspace_id,
 	      H5P_DEFAULT, atmos->T)) < 0) HERR(routineName);
+  if (( H5Sclose(dataspace_id) ) < 0) HERR(routineName);
+  if (( H5Sclose(memspace_id) ) < 0) HERR(routineName);
   /* Finds z value for Tmax cut, redefines Nspace, reallocates arrays */
   /* Tiago: not using this at the moment, only z cut in depth_refine */
   if (input.p15d_zcut) {
@@ -279,6 +279,7 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   if ((ierror = H5Dread(infile->z_varid, H5T_NATIVE_DOUBLE, memspace_id,
 		        dataspace_id, H5P_DEFAULT, geometry->height)) < 0)
     HERR(routineName);
+  if (( H5Sclose(dataspace_id) ) < 0) HERR(routineName);
   /* redefine dataspace for 4-D variables */
   start[0] = input.p15d_nt; count[0] = 1;
   start[1] = (size_t) xi;   count[1] = 1;
@@ -324,6 +325,8 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
     }
     free(Bx); free(By); free(Bz);
   }
+  if (( H5Sclose(dataspace_id) ) < 0) HERR(routineName);
+  if (( H5Sclose(memspace_id) ) < 0) HERR(routineName);
   /* allocate and zero nHtot */
   atmos->nH = matrix_double(atmos->NHydr, atmos->Nspace);  
   for (j = 0; j < atmos->Nspace; j++) atmos->nHtot[j] = 0.0; 
@@ -342,7 +345,8 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   memspace_id = H5Screate_simple(2, dims_memory, NULL);  
   ierror = H5Dread(infile->nh_varid, H5T_NATIVE_DOUBLE,
 		   memspace_id, dataspace_id, H5P_DEFAULT, atmos->nH[0]);  
-
+  if (( H5Sclose(dataspace_id) ) < 0) HERR(routineName);
+  if (( H5Sclose(memspace_id) ) < 0) HERR(routineName);
   /* Depth grid refinement */
   if (input.p15d_refine)
     depth_refine(atmos, geometry, input.p15d_tmax);
@@ -377,9 +381,6 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
       break;
     }
   }
-  ierror = H5Sclose(memspace_id);
-  ierror = H5Sclose(dataspace_id);
-
   return;
 }
 

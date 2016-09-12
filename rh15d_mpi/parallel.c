@@ -71,7 +71,6 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
   mpi.nnoconv = 0;
   mpi.ncrash  = 0;
 
-
   return;
 }
 /* ------- end   --------------------------   initParallel.c --   --- */
@@ -81,13 +80,11 @@ void initParallelIO(bool_t run_ray, bool_t writej) {
   int    nact, i;
   Atom  *atom;
 
-  init_ncdf_aux();
+  //init_ncdf_aux();
 
-  if (writej) init_ncdf_J();
   init_Background();
   if (!run_ray) {
-    if (input.p15d_wspec) init_ncdf_spec();
-    init_ncdf_indata();
+    init_hdf5_indata();
   }
 
   /* Get file position of atom files (to re-read collisions) */
@@ -127,13 +124,10 @@ void initParallelIO(bool_t run_ray, bool_t writej) {
 void closeParallelIO(bool_t run_ray, bool_t writej) {
 
   if (!run_ray) {
-    close_ncdf_indata();
-    if (input.p15d_wspec) close_ncdf_spec();
+    close_hdf5_indata();
   }
-  //close_ncdf_atmos(&atmos, &geometry, &infile);
   close_hdf5_atmos(&atmos, &geometry, &infile);
-  close_ncdf_aux();
-  if (writej) close_ncdf_J();
+  //close_ncdf_aux();
 
   free(io.atom_file_pos);
   free(mpi.niter);
@@ -432,24 +426,7 @@ void UpdateAtmosDep(void) {
 }
 /* ------- end   --------------------------  updateAtmosDep.c     --- */
 
-/* ------- begin --------------------------  ERR.c ------         --- */
-void ERR(int ierror, const char *rname) {
-  /* Processes NetCDF errors */
-
-
-  /* For conversion not representable (ie, NaNs, Inf, etc.), return so
-     that process can go to next task */
-  if (ierror == NC_ERANGE) {
-    Error(WARNING, rname, "NetCDF: Numeric conversion not representable");
-    return; 
-  } 
-
-  printf("Process %3d: (EEE) %s: %d %s\n", mpi.rank, rname, ierror,
-	 nc_strerror(ierror));
-  MPI_Abort(mpi.comm, 2);
-
-}
-
+/* ------- begin --------------------------  HRRR.c -----         --- */
 void HERR(const char *rname) {
   /* Processes NetCDF errors */
 
@@ -457,8 +434,7 @@ void HERR(const char *rname) {
   MPI_Abort(mpi.comm, 2);
 
 }
-
-/* ------- end   --------------------------  ERR.c ------         --- */
+/* ------- end   --------------------------  HERR.c -----         --- */
 
 /* ------- begin --------------------------  Error_p.c --         --- */
 void Error(enum errorlevel level, const char *routineName,
@@ -674,9 +650,6 @@ void allocBufVars(bool_t writej) {
     if (iobuf.nvstar[nact] == NULL) 
       Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
   }
-
-
-
   return;
 }
 
@@ -686,8 +659,6 @@ void allocBufVars(bool_t writej) {
 
 void freeBufVars(bool_t writej) {
   int nact;
-
-  if (writej) free(iobuf.J);
 
   if (input.backgr_pol) free(iobuf.J20);
 
@@ -746,9 +717,7 @@ void writeOutput(bool_t writej) {
     Error(MESSAGE, "main", messageStr);
     
     writeMPI_all();
-    if (writej) writeJ_all();
-    writeAux_all();
-    /* writeAtmos_all();  */ 
+    //writeAux_all();
     
     sprintf(messageStr, "Process %3d: *** END output\n", mpi.rank);
     fprintf(mpi.main_logfile, messageStr);

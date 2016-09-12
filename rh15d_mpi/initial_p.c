@@ -72,9 +72,6 @@ void initSolution_alloc(void) {
   long int idx, lc;
   double *lambda,fac,lambda_prv,lambda_gas,lambda_nxt,dl,lag;
 
-
-
-
   /* --- Allocate space for angle-averaged mean intensity -- -------- */
 
   if (!input.limit_memory) {
@@ -530,14 +527,6 @@ void initSolution_p(void)
 
   /* allocate memory always (because of dynamic Nspace) */
   initSolution_alloc();
-
-
-  /* --- Read angle-averaged intensity from previous run if necessary,
-         and open file for J in case option for limited memory is set */
-
-  /* --- Fill matrix J with old values from previous run ----- -- */
-  if (input.startJ == OLD_J) readJ_p();
- 
 
   for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
     atom = atmos.activeatoms[nact];

@@ -28,11 +28,6 @@ void init_Background();
 void Background_p(bool_t analyzeoutput, bool_t equilibria_only);
 void close_Background();
 
-void init_ncdf_J(void);
-void close_ncdf_J(void);
-void writeJ_all(void);
-void writeJ_p(void);
-void readJ_p(void);
 void writeJlambda_single(int nspect, double *J);
 void writeJ20_single(int nspect, double *J);
 void readJlambda_single(int nspect, double *J);
@@ -44,23 +39,19 @@ void distribute_jobs(void);
 void finish_jobs(void);
 void readConvergence(void);
 
-void init_ncdf_spec(void);
-void close_ncdf_spec(void);
-void writeSpectrum_p(void);
-
-void init_ncdf_indata(void);
-void init_ncdf_indata_new(void);
-void init_ncdf_indata_old(void);
-void close_ncdf_indata(void);
+void init_hdf5_indata(void);
+void init_hdf5_indata_new(void);
+void init_hdf5_indata_existing(void);
+void close_hdf5_indata(void);
 void writeAtmos_all(void);
 void writeAtmos_p(void);
 void writeMPI_all(void);
 void writeMPI_p(int task);
 
-void init_ncdf_aux(void);
+void init_hdf5_aux(void);
 void init_aux_new(void);
-void init_aux_old(void);
-void close_ncdf_aux(void);
+void init_aux_existing(void);
+void close_hdf5_aux(void);
 void writeAux_all(void);
 void writeAux_p(void);
 void writeOpacity_p(void);

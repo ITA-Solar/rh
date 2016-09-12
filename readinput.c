@@ -221,8 +221,6 @@ void readInput()
      setboolValue},
     {"15D_WRITE_EXTRA",    "TRUE",  FALSE, KEYWORD_OPTIONAL, &input.p15d_wxtra,
      setboolValue},
-    {"15D_WRITE_SPECTRUM", "TRUE",  FALSE, KEYWORD_OPTIONAL, &input.p15d_wspec,
-     setboolValue},
     {"15D_TMAX_CUT", "-1.0",  FALSE, KEYWORD_OPTIONAL, &input.p15d_tmax,
      setdoubleValue}
 

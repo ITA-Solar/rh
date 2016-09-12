@@ -24,11 +24,9 @@
 #endif
 
 /* --- Function prototypes --                          -------------- */
-void init_ncdf_ray(void);
-void init_ncdf_ray_new(void);
-void init_ncdf_ray_old(void);
+void init_hdf5_ray(void);
 void writeRay(void);
-void close_ncdf_ray(void);
+void close_hdf5_ray(void);
 void calculate_ray(void);
 void overlord(void);
 void drone(void);
@@ -88,7 +86,7 @@ int main(int argc, char *argv[])
   spectrum.updateJ = TRUE;
 
   getCPU(1, TIME_START, NULL);
-  init_ncdf_atmos(&atmos, &geometry, &infile);
+  init_hdf5_atmos(&atmos, &geometry, &infile);
   
   /* --- Read ray.input --                            --------------- */
   /* --- Read direction cosine for ray --              -------------- */
@@ -135,7 +133,7 @@ int main(int argc, char *argv[])
   
   atmos.moving = TRUE;  /* To prevent moving change from column [0, 0] */
   /* Read first atmosphere column just to get dimensions */
-  readAtmos_ncdf(0, 0, &atmos, &geometry, &infile);
+  readAtmos_hdf5(0, 0, &atmos, &geometry, &infile);
       
   if (atmos.Stokes) Bproject();
   
@@ -155,7 +153,7 @@ int main(int argc, char *argv[])
     }
 	
   initParallelIO(run_ray=FALSE, writej=FALSE);
-  init_ncdf_ray();
+  init_hdf5_ray();
 
   /*//////////////////////
   ////////////////////////
@@ -176,7 +174,7 @@ int main(int argc, char *argv[])
   /* writeOutput(writej=FALSE); */
 
   closeParallelIO(run_ray=FALSE, writej=FALSE);
-  close_ncdf_ray();
+  close_hdf5_ray();
 
   /* Frees from memory stuff used for job control */
   finish_jobs();
@@ -290,7 +288,7 @@ void drone(void) {
       Error(MESSAGE, "main", messageStr);
 
       /* Read atmosphere column */
-      readAtmos_ncdf(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
+      readAtmos_hdf5(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
 
       /* Update quantities that depend on atmosphere and initialise others */
       UpdateAtmosDep();

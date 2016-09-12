@@ -22,11 +22,9 @@
 #endif
 
 /* --- Function prototypes --                          -------------- */
-void init_ncdf_ray(void);
-void init_ncdf_ray_new(void);
-void init_ncdf_ray_old(void);
+void init_hdf5_ray(void);
 void writeRay(void);
-void close_ncdf_ray(void);
+void close_hdf5_ray(void);
 void calculate_ray(void);
 void writeAtmos_p(void);
 
@@ -143,8 +141,8 @@ int main(int argc, char *argv[])
   }
 
   initParallelIO(run_ray=FALSE, writej=FALSE);
-  init_ncdf_ray();
-
+  init_hdf5_ray();
+  
   /* Main loop over tasks */
   for (mpi.task = 0; mpi.task < mpi.Ntasks; mpi.task++) {
     
@@ -182,8 +180,8 @@ int main(int argc, char *argv[])
     
     /* Treat odd cases as a crash */
     if (isnan(mpi.dpopsmax[mpi.task]) || isinf(mpi.dpopsmax[mpi.task]) || 
-	(mpi.dpopsmax[mpi.task] < 0) || ((mpi.dpopsmax[mpi.task] == 0) && (input.NmaxIter > 0)))
-      mpi.stop = TRUE;
+      	(mpi.dpopsmax[mpi.task] < 0) || ((mpi.dpopsmax[mpi.task] == 0) &&
+        (input.NmaxIter > 0))) mpi.stop = TRUE;
     
     /* In case of crash, write dummy data and proceed to next task */
     if (mpi.stop) {
@@ -255,16 +253,13 @@ int main(int argc, char *argv[])
     getCPU(1, TIME_START, NULL);
     writeAtmos_p();
 
-    if (input.p15d_wspec) 
-      writeSpectrum_p(); /* replaces writeSpectrum, writeFlux */
-
     getCPU(1, TIME_POLL, "Write output");
 
   } /* End of main task loop */
 
   writeOutput(writej=FALSE);
   closeParallelIO(run_ray=FALSE, writej=FALSE);
-  close_ncdf_ray();
+  close_hdf5_ray();
   /* Frees from memory stuff used for job control */
   finish_jobs();
 

@@ -171,7 +171,7 @@ void Escape(Atom *atom) {
                 /* Use old J and zero new array */
                 if (input.limit_memory) {
                     J = (double *) malloc(atmos.Nspace *sizeof(double));
-                    readJlambda_single(nspect, Jdag);
+                    //readJlambda_single(nspect, Jdag);
                 } else {
                     J = spectrum.J[nspect];
                     for (k = 0;  k < atmos.Nspace;  k++) Jdag[k] = J[k];

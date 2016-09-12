@@ -24,9 +24,9 @@
 #endif
 
 /* --- Function prototypes --                          -------------- */
-void init_ncdf_ray(void);
+void init_hdf5_ray(void);
 void writeRay(void);
-void close_ncdf_ray(void);
+void close_hdf5_ray(void);
 
 /* --- Global variables --                             -------------- */
 
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
   spectrum.updateJ = FALSE;
 
   getCPU(1, TIME_START, NULL);
-  init_ncdf_atmos(&atmos, &geometry, &infile);
+  init_hdf5_atmos(&atmos, &geometry, &infile);
 
   /* Find out the work load for each process */
   distribute_jobs();
@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
   mpi.single_log       = FALSE;
   
   /* --- END of stuff from initParalleIO ---*/
-  init_ncdf_ray();  
+  init_hdf5_ray();  
   
   /* Main loop over tasks */
   for (mpi.task = 0; mpi.task < mpi.Ntasks; mpi.task++) {
@@ -213,7 +213,7 @@ int main(int argc, char *argv[])
   free(io.atom_file_pos);
   /* --- END of stuff from closeParallelIO ---*/
   
-  close_ncdf_ray();
+  close_hdf5_ray();
   
   /* Frees from memory stuff used for job control */
   finish_jobs();

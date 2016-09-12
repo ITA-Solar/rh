@@ -10,16 +10,13 @@
 #ifndef __IO_H__
 #define __IO_H__
 
-#include <netcdf_par.h>
-#include <netcdf.h>
-
 #include <hdf5.h>
 #include <hdf5_hl.h>
 
 /* Definitions for readj_p */
-#define  J_FILE_TEMPLATE "%s.ncdf"
+#define  J_FILE_TEMPLATE "%s.hdf5"
 
-/* Definitions for readatmos_ncdf */
+/* Definitions for readAtmos_hdf5 */
 #define  TEMP_NAME  "temperature"
 #define  VTURB_NAME "velocity_turbulent"
 #define  VZ_NAME    "velocity_z"
@@ -36,17 +33,14 @@
 /* Definitions for background_p */
 #define  FILE_EXT ".dat"
 
-/* Definitions for the spectrum file */
-#define SPEC_FILE   "output/output_spectrum.ncdf"
+/* Definitions for the ray file */
+#define RAY_FILE     "output/output_ray.hdf5"
 #define INT_NAME    "intensity"
 #define FLUX_NAME   "flux"
 #define STOKES_Q    "stokes_Q"
 #define STOKES_U    "stokes_U"
 #define STOKES_V    "stokes_V"
 #define WAVE_NAME   "wavelength"
-
-/* Definitions for the ray file */
-#define RAY_FILE     "output/output_ray.ncdf"
 #define WAVE_SEL     "wavelength_selected"
 #define WAVE_SEL_IDX "wavelength_indices"
 #define CHI_NAME     "chi"
@@ -59,7 +53,7 @@
 #define SCA_C_NAME   "scattering" // This is actually sca*J
 
 /* Definitions for the input data file */
-#define INPUTDATA_FILE "output/output_indata.ncdf"
+#define INPUTDATA_FILE "output/output_indata.hdf5"
 #define XNUM_NAME      "xnum"
 #define YNUM_NAME      "ynum"
 #define TASK_MAP       "task_map"
@@ -77,7 +71,7 @@
 
 /* Definitions for the Aux file */
 #define ARR_STRLEN  30
-#define AUX_FILE    "output/output_aux.ncdf"
+#define AUX_FILE    "output/output_aux.hdf5"
 #define POP_NAME    "populations"
 #define POPLTE_NAME "populations_LTE"
 #define RIJ_L_NAME  "Rij_line"
@@ -104,18 +98,18 @@
 /* Log files buffer size (in bytes) */
 #define BUFSIZ_MPILOG  52428800
 
-/* For keeping the netCDF file and variable IDs */
+/* For keeping the HDF5 file and variable IDs */
 typedef struct {
   /* for the J file */
   int  j_ncid,            j_jlambda_var,     j_j20_var,          j_jgas_var; 
   /* for the spectrum file*/ 
   int  spec_ncid,         spec_int_var,      spec_flux_var,     spec_wave_var, 
        spec_stokes_u_var, spec_stokes_q_var, spec_stokes_v_var; 
-  /* for the input data file. Note: this netCDF file has several groups */
+  /* for the input data file. Note: this HDF5 file has several groups */
   int  in_ncid,           in_input_ncid,     in_atmos_ncid,     in_mpi_ncid;
   int  in_atmos_T,        in_atmos_ne,       in_atmos_vz,       in_atmos_vt,
        in_atmos_Bx,       in_atmos_By,       in_atmos_Bz,       in_atmos_nh,
-       /* in_atmos_B,        in_atmos_gB,       in_atmos_chiB,     in_atmos_nh, */
+    /* in_atmos_B,        in_atmos_gB,       in_atmos_chiB,     in_atmos_nh, */
        in_atmos_ew,       in_atmos_ab,       in_atmos_eid,      in_atmos_mu,
        in_atmos_wmu,      in_atmos_z,        in_atmos_x,        in_atmos_y;
   int  in_mpi_xnum,       in_mpi_ynum,       in_mpi_tm,         in_mpi_tn,

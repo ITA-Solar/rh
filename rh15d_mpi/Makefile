@@ -13,47 +13,39 @@ include ../makefiles/makefile.$(CPU).$(OS)
 CC = mpicc
 LD = mpicc
 AR = ar
-NCDF_DIR = /opt/local
-#NCDF_DIR = /Users/tiago/local
+HDF5_DIR = /opt/local
 
 # Try to get git revision, set preprocessor macros if successful 
 REV=$(shell git describe --always)
 ifeq ($(REV), )
-    CFLAGS  = -O2 -I../ -I$(NCDF_DIR)/include/ 
+    CFLAGS  = -O2 -I../ -I$(HDF5_DIR)/include/ 
 else
     REV = $(shell git log -1 --pretty=format:"%h  %an  %ai")
-    CFLAGS  = -O2 -I../ -I$(NCDF_DIR)/include/ -D'REV_ID="$(REV)"'
+    CFLAGS  = -O2 -I../ -I$(HDF5_DIR)/include/ -D'REV_ID="$(REV)"'
 endif
 
-LDFLAGS = -L../ -L$(NCDF_DIR)/lib/
+LDFLAGS = -L../ -L$(HDF5_DIR)/lib/
 
 
 ## --- If no FORTRAN compiler is available remove -lrh_f90 in following
 
-      LIBS = -lrh -lrh_f90 $(ARCHLIBS) -lnetcdf -lhdf5 -lhdf5_hl
+      LIBS = -lrh -lrh_f90 $(ARCHLIBS) -lhdf5 -lhdf5_hl
 
 
 ## --- Define groups of object files --                -------------- ##
 
-# removed: ncdfatmos.o
 ONE_D_OBJS = anglequad.o      feautrier.o     formal.o           hydrostat.o   \
              piecestokes.o    piecewise.o     project.o          hdf5atmos.o   \
-             riiplane.o       ncdfatmos.o     background_p.o                   \
-             readj_p.o        scatter_p.o     writespect_p.o     initial_p.o   \
-             writeindata_p.o  writeAux_p.o    parallel.o         iterate_p.o   \
-             ludcmp_p.o       accelerate_p.o  redistribute_p.o   statequil_p.o \
-	     escape.o         distribute_jobs.o
+             riiplane.o       background_p.o  distribute_jobs.o  escape.o      \
+             scatter_p.o      initial_p.o                                      \
+             writeindata_p.o  parallel.o         iterate_p.o   \
+             ludcmp_p.o       accelerate_p.o  redistribute_p.o   statequil_p.o 
+			 writeAux_p.o
+	         
 
 SUBSTITUTE = pops_xdr.o
 
    ONEDOBJ = iter_1d.o        feautrier.o
-
-  RAY_OBJS = anglequad.o      feautrier.o     formal.o          hydrostat.o    \
-             readj_p.o        ncdfatmos.o     brs_p.o           parallel.o     \
-             writespect_p.o   writeAux_p.o    writeindata_p.o   background_p.o \
-             initial_p.o      scatter_p.o     writeRay.o        project.o      \
-             piecestokes.o    piecewise.o     riiplane.o        solveray.o     \
-             escape.o         distribute_jobs.o
 
 BACKGROPAC = anglequad.o      backgrcontr.o   multiatmos.o      project.o
 
@@ -70,10 +62,6 @@ rh15d_ray:  $(ONE_D_OBJS)  librh rh15d_ray.o writeRay.o
         
 rh15d_ray_pool:  $(ONE_D_OBJS)  librh rh15d_ray_pool.o writeRay.o
 	$(LD) -o $@  $(LDFLAGS) $(ONE_D_OBJS) rh15d_ray_pool.o writeRay.o $(LIBS)
-
-solveray:  $(RAY_OBJS)  librh
-#	cd ..; $(AR) dsv librh.a $(SUBSTITUTE)
-	$(LD) -o $@  $(LDFLAGS) $(RAY_OBJS) $(LIBS)
 
 backgrcontr:  $(BACKGROPAC) librh
 	$(LD) -o $@  $(LDFLAGS) $(BACKGROPAC) $(LIBS)
@@ -160,12 +148,6 @@ ludcmp_p.o:             ../rh.h          ../error.h       parallel.h       \
                         ludcmp_p.c
 	$(CC) $(CFLAGS) -Wall -c -o $@   ludcmp_p.c
 
-
-ncdfatmos.o:            ../rh.h          ../atom.h        ../atmos.h       \
-                        ../inputs.h      geometry.h       ../statistics.h  \
-                        parallel.h       io.h             ncdfatmos.c
-	$(CC) $(CFLAGS) -Wall -c  -o $@  ncdfatmos.c
-
 parallel.o:             ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../error.h       ../inputs.h      \
                         ../constant.h    ../accelerate.h  parallel.h       \
@@ -204,7 +186,7 @@ rh15d_ray.o:            ../rh.h          ../atom.h        ../atmos.h       \
                         parallel.h       io.h             rh15d_ray.c
 	$(CC) $(CFLAGS) -Wall -c -o $@   rh15d_ray.c
         
-rh15d_ray_pool.o:            ../rh.h          ../atom.h        ../atmos.h       \
+rh15d_ray_pool.o:            ../rh.h          ../atom.h        ../atmos.h  \
                         geometry.h       ../spectrum.h    ../background.h  \
                         ../statistics.h  ../error.h       ../inputs.h      \
                         parallel.h       io.h             rh15d_ray_pool.c
@@ -216,10 +198,6 @@ riiplane.o:             ../rh.h          ../atom.h        ../atmos.h       \
 scatter_p.o:            ../rh.h          ../atom.h        ../atmos.h      \
                         ../spectrum.h    ../inputs.h      ../constant.h   \
                         ../error.h       ../statistics.h
-
-solveray.o:             ../rh.h          ../atom.h        ../atmos.h      \
-                        geometry.h       ../spectrum.h    ../background.h \
-                        ../statistics.h  ../inputs.h      ../error.h  
 
 statequil_p.o:          ../rh.h          ../atom.h        ../atmos.h      \
                         ../accelerate.h  ../error.h       ../inputs.h     \
@@ -242,12 +220,5 @@ writeRay.o:             ../rh.h          ../atom.h        ../atmos.h      \
                         ../error.h       ../inputs.h      parallel.h      \
                         io.h             writeRay.c
 	$(CC) $(CFLAGS) -Wall -c -o $@   writeRay.c
-
-writespect_p.o:         ../rh.h          ../atom.h        ../atmos.h      \
-	                ../spectrum.h    ../constant.h    ../error.h      \
-	                ../inputs.h      parallel.h       io.h            \
-                        writespect_p.c
-	$(CC) $(CFLAGS) -Wall -c -o $@   writespect_p.c
-
 
 ## ------- end ---------------------------- Makefile ---------------- ##
