@@ -14,7 +14,7 @@
          http://kurucz.harvard.edu/linelists.html
 
 FORMAT(F11.4,F7.3,F6.2,F12.3,F5.2,1X,A10,F12.3,F5.2,1X,A10,
-3F6.2,A4,2I2,I3,F6.3,I3,F6.3,2I5,1X,A1,A1,1X,A1,A1,i1,A3.2I5,I6) 
+3F6.2,A4,2I2,I3,F6.3,I3,F6.3,2I5,1X,A1,A1,1X,A1,A1,i1,A3.2I5,I6)
 
  1 wavelength (nm)  air above 200 nm   F11.4
  2 log gf  F7.3
@@ -24,15 +24,15 @@ FORMAT(F11.4,F7.3,F6.2,F12.3,F5.2,1X,A10,F12.3,F5.2,1X,A10,
    blank for legibility   1X
  6 label field for first level   A10
  7 second energy level in cm-1   F12.3
-        (negative energies are predicted or extrapolated}  
+        (negative energies are predicted or extrapolated}
  8 J for second level   F5.1
    blank for legibility   1X
  9 label field for second level   A10
 10 log of radiative damping constant, Gamma Rad  F6.2 or F6.3
 11 log of stark damping constant/electron number. Gamma Stark  F6.2 or F6.3
-12 log of van der Waals damping constant/neutral hydrogen number, 
+12 log of van der Waals damping constant/neutral hydrogen number,
        Gamma van der Waals   F6.2 or F6.3
-13 reference that can be expanded in subdirectory LINES   A4  
+13 reference that can be expanded in subdirectory LINES   A4
 14 non-LTE level index for first level   I2
 15 non-LTE level index for second level   I2
 16 isotope number   I3
@@ -48,10 +48,10 @@ FORMAT(F11.4,F7.3,F6.2,F12.3,F5.2,1X,A10,F12.3,F5.2,1X,A10,
 24 hyperfine F' for the second level  I1
 25 note on character of hyperfine data for second level: z none, ? guessed  A1
 26 1-digit code, sometimes for line strength classes   I1
-27 3-character code such as AUT for autoionizing    A3  
+27 3-character code such as AUT for autoionizing    A3
 28 lande g for first level times 1000   I5
 29 lande g for second level times 1000   I5
-30 isotope shift of wavelength in mA 
+30 isotope shift of wavelength in mA
 
 
  Note: The periodic table index of Kurucz starts at 1 (for Hydrogen).
@@ -76,7 +76,7 @@ FORMAT(F11.4,F7.3,F6.2,F12.3,F5.2,1X,A10,F12.3,F5.2,1X,A10,
 
 #define COMMENT_CHAR        "#"
 #define RLK_RECORD_LENGTH   160
-#define Q_WING              40.0
+#define Q_WING              20.0
 #define MILLI               1.0E-03
 #define ANGSTROM_TO_NM      0.1
 #define MAX_GAUSS_DOPPLER   7.0
@@ -107,7 +107,7 @@ extern char messageStr[];
 void readKuruczLines(char *inputFile)
 {
   const char routineName[] = "readKuruczLines";
-  const double  C = 2.0*PI * (Q_ELECTRON/EPSILON_0) * 
+  const double  C = 2.0*PI * (Q_ELECTRON/EPSILON_0) *
                              (Q_ELECTRON/M_ELECTRON) / CLIGHT;
 
   char   inputLine[RLK_RECORD_LENGTH+1], listName[MAX_LINE_SIZE],
@@ -139,7 +139,7 @@ void readKuruczLines(char *inputFile)
     Error(ERROR_LEVEL_1, routineName, messageStr);
     return;
   }
-  /* --- Go through each of the linelist files listed in input file - */  
+  /* --- Go through each of the linelist files listed in input file - */
 
   while (getLine(fp_Kurucz, commentChar, listName, FALSE) != EOF) {
     Nread = sscanf(listName, "%s", filename);
@@ -184,7 +184,7 @@ void readKuruczLines(char *inputFile)
                lower level --                          -------------- */
 
 	if (Ej < Ei) {
-	  swap_levels = TRUE; 
+	  swap_levels = TRUE;
 	  rlk->Ei = Ej;
 	  rlk->Ej = Ei;
 	  strncpy(labeli, inputLine+69, RLK_LABEL_LENGTH);
@@ -222,7 +222,7 @@ void readKuruczLines(char *inputFile)
 	strncpy(Gvalues, inputLine+79, 18);
 	Nread += sscanf(Gvalues, "%lf %lf %lf", &Grad, &GStark, &GvdWaals);
 
-	if (GStark != 0.0) 
+	if (GStark != 0.0)
 	  rlk->GStark = POW10(GStark) * CUBE(CM_TO_M);
 	else
 	  rlk->GStark = 0.0;
@@ -259,7 +259,7 @@ void readKuruczLines(char *inputFile)
 	} else {
 
 	  /* --- Just take the Einstein Aji value, but only if either
-                 Stark or vd Waals broadening is in effect -- ------- */     
+                 Stark or vd Waals broadening is in effect -- ------- */
 
 	  if (GStark != 0.0  || GvdWaals != 0.0)
 	    rlk->Grad = rlk->Aji;
@@ -334,7 +334,7 @@ void readKuruczLines(char *inputFile)
 /* ------- end ---------------------------- readKuruczLines.c ------- */
 
 /* ------- begin -------------------------- rlk_ascend.c ------------ */
- 
+
 int rlk_ascend(const void *v1, const void *v2)
 {
   double lambda1 = ((RLK_Line *) v1)->lambda0,
@@ -368,7 +368,7 @@ void rlk_locate(int N, RLK_Line *lines, double lambda, int *low)
     high = N;
   } else {
 
-    /* --- Else hunt up or down to bracket value --    -------------- */ 
+    /* --- Else hunt up or down to bracket value --    -------------- */
 
     increment = 1;
     if (lambda >= lines[*low].lambda0) {
@@ -506,7 +506,7 @@ flags rlk_opacity(double lambda, int nspect, int mu, bool_t to_obs,
 
   for (n = Nblue;  n <= Nred;  n++) {
     rlk = &atmos.rlk_lines[n];
-    if (fabs(rlk->lambda0 - lambda) <= dlamb_char) {      
+    if (fabs(rlk->lambda0 - lambda) <= dlamb_char) {
       element = &atmos.elements[rlk->pt_index - 1];
 
       /* --- Check whether partition function is present for this
@@ -582,7 +582,7 @@ flags rlk_opacity(double lambda, int nspect, int mu, bool_t to_obs,
 
 	    if (input.rlkscatter) {
 	      epsilon = 1.0 / (1.0 + C3 * pow(atmos.T[k], 1.5) /
-			       (atmos.ne[k] * 
+			       (atmos.ne[k] *
 				pow(KBOLTZMANN * atmos.T[k] / dE, 1 + x)));
 
               scatt[k] += (1.0 - epsilon) * chi_l * phi;
@@ -664,8 +664,8 @@ double RLKProfile(RLK_Line *rlk, int k, int mu, bool_t to_obs,
       break;
     }
     np = atmos.H->n[atmos.H->Nlevel-1];
-    adamp = (rlk->Grad + rlk->GStark * atmos.ne[k] + 
-	     GvdW * (atmos.nHtot[k] - np[k])) * 
+    adamp = (rlk->Grad + rlk->GStark * atmos.ne[k] +
+	     GvdW * (atmos.nHtot[k] - np[k])) *
       (rlk->lambda0  * NM_TO_M) / (4.0*PI * vbroad);
   } else {
     phi = (fabs(v) <= MAX_GAUSS_DOPPLER) ? exp(-v*v) : 0.0;
@@ -738,7 +738,7 @@ ZeemanMultiplet* RLKZeeman(RLK_Line *rlk)
          of q = [-1, 0, 1].
 
          Convention:
- 
+
           -- q = +1 corresponds to a redshifted \sigma profile
 	     (zm->shift > 0). This redshifted profile has
              right-handed circular polarization when the
@@ -779,7 +779,7 @@ ZeemanMultiplet* RLKZeeman(RLK_Line *rlk)
 	zm->q[n]        = (int) (Ml - Mu);
 	zm->shift[n]    = gLl*Ml - gLu*Mu;
 	zm->strength[n] = ZeemanStrength(Ju, Mu, Jl, Ml);
-	  
+
 	norm[zm->q[n]+1] += zm->strength[n];
         if (zm->q[n] == 1) g_eff += zm->shift[n] * zm->strength[n];
 	n++;
@@ -813,7 +813,7 @@ bool_t RLKdeterminate(char *labeli, char *labelj, RLK_Line *rlk)
 		    &multiplicity, orbit);
     free(words);
     if (Nread != 2 || !isupper(orbit[0])) return FALSE;
-    
+
     rlk->Li = getOrbital(orbit[0]);
     rlk->Si = (multiplicity - 1) / 2.0;
     Ji = (rlk->gi - 1.0) / 2.0;
@@ -834,7 +834,7 @@ bool_t RLKdeterminate(char *labeli, char *labelj, RLK_Line *rlk)
   } else
     return FALSE;
 
-  /* --- For the moment only allow electronic dipole transitions -- --*/ 
+  /* --- For the moment only allow electronic dipole transitions -- --*/
 
   /*  if (fabs(Ji - Jj) > 1.0)
     return FALSE;
@@ -848,7 +848,7 @@ bool_t RLKdeterminate(char *labeli, char *labelj, RLK_Line *rlk)
 void initRLK(RLK_Line *rlk)
 {
   rlk->polarizable = FALSE;
-  rlk->zm = NULL; 
+  rlk->zm = NULL;
 }
 /* ------- end ---------------------------- initRLK.c --------------- */
 
@@ -873,9 +873,9 @@ void getUnsoldcross(RLK_Line *rlk)
     return;
   }
 
-  vrel35_H  = pow(8.0*KBOLTZMANN/(PI * AMU * element->weight) * 
+  vrel35_H  = pow(8.0*KBOLTZMANN/(PI * AMU * element->weight) *
 		  (1.0 + element->weight/atmos.H->weight), 0.3);
-  vrel35_He = pow(8.0*KBOLTZMANN/(PI * AMU * element->weight) * 
+  vrel35_He = pow(8.0*KBOLTZMANN/(PI * AMU * element->weight) *
 		  (1.0 + element->weight/He->weight), 0.3);
 
   C625 = pow(2.5 * (SQ(Q_ELECTRON)/FOURPIEPS0) *

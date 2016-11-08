@@ -2,14 +2,14 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Wed Feb 13 14:40:08 2008 --
+       Last modified: Thu Jan 26 14:50:56 2012 --
 
        --------------------------                      ----------RH-- */
 
 /* --- Routines for reading and writing populations from and to file.
        XDR (external data representation) version. --  -------------- */
 
-#include <stdlib.h> 
+#include <stdlib.h>
 #include <string.h>
 
 #include "rh.h"
@@ -36,8 +36,7 @@ bool_t xdr_populations(XDR *xdrs, char *atmosID, int Nlevel, long Nspace,
 
   char  *ID;
   bool_t result = TRUE;
-  int    Nl, Ns;
-  long   Npop = Nlevel * Nspace;
+  long    Npop = Nlevel * Nspace, Nl, Ns;
 
   /* --- The actual reading/writing routine. Upon input the values
          for atmosID, Nlevel and Nspace in the file are checked against
@@ -88,8 +87,9 @@ void writePopulations(Atom *atom)
   FILE *fp_out;
   XDR   xdrs;
 
-  if ((fp_out = fopen(atom->popsFile, "w")) == NULL) {
-    sprintf(messageStr, "Unable to open output file %s", atom->popsFile);
+  if ((fp_out = fopen(atom->popsoutFile, "w")) == NULL) {
+    sprintf(messageStr, "Unable to open output file %s",
+	    atom->popsoutFile);
     Error(ERROR_LEVEL_1, routineName, messageStr);
     return;
   }
@@ -97,7 +97,8 @@ void writePopulations(Atom *atom)
 
   if (!xdr_populations(&xdrs, atmos.ID, atom->Nlevel, atmos.Nspace,
 		       atom->n[0], atom->nstar[0])) {
-    sprintf(messageStr, "Unable to write to output file %s", atom->popsFile);
+    sprintf(messageStr, "Unable to write to output file %s",
+	    atom->popsoutFile);
     Error(ERROR_LEVEL_1, routineName, messageStr);
   }
 
@@ -122,15 +123,17 @@ void readPopulations(Atom *atom)
          to xdr_populations as its last argument.
          --                                            -------------- */
 
-  if ((fp_in = fopen(atom->popsFile, "r")) == NULL) {
-    sprintf(messageStr, "Unable to open input file %s", atom->popsFile);
+  if ((fp_in = fopen(atom->popsinFile, "r")) == NULL) {
+    sprintf(messageStr, "Unable to open input file %s",
+	    atom->popsinFile);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
   xdrstdio_create(&xdrs, fp_in, XDR_DECODE);
 
   if (!xdr_populations(&xdrs, atmos.ID, atom->Nlevel, atmos.Nspace,
 		       atom->n[0], atom->nstar[0])) {
-    sprintf(messageStr, "Unable to read from input file %s", atom->popsFile);
+    sprintf(messageStr, "Unable to read from input file %s",
+	    atom->popsinFile);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
   xdr_destroy(&xdrs);

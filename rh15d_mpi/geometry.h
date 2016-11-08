@@ -18,7 +18,7 @@ enum vertical   {TOP=0, BOTTOM};
 
 typedef struct {
   enum     mass_scale  scale;
-  enum     boundcond vboundary[2]; 
+  enum     boundcond vboundary[2];
   int      Ndep, Nrays;
   double  *height, *cmass, *tau_ref, *mux, *muy, *muz, *wmu, *vel,
          **Itop, **Ibottom;
@@ -29,7 +29,7 @@ typedef struct {
 typedef struct {
   char     *file_name;
   int       ncid,     nx_id,    ny_id,    nz_id,   nhyd_id;
-  int       T_varid,  ne_varid, vz_varid, nh_varid, vturb_varid; 
+  int       T_varid,  ne_varid, vz_varid, nh_varid, vturb_varid;
   int       Bx_varid, By_varid, Bz_varid;
   size_t    nx,       ny,       nz,       NHydr;
   double   *x, *y;
@@ -41,7 +41,7 @@ typedef struct {
   bool_t    do_fudge;
   int       Nfudge;
   // for now here, in the future perhaps write things in io.h:
-  int       j_ncid, jlambda_var, j20_var; 
+  int       j_ncid, jlambda_var, j20_var;
   double   *lambda_fudge, **fudge;
   double **chi_c,**eta_c,*sca_c,**chip_c;
 } BackgroundData;
@@ -72,6 +72,8 @@ void PiecewiseStokes(int nspect, int mu, bool_t to_obs,
 		     double *chi_I, double **S, double **I, double *Psi);
 void Piecewise_Hermite_1D(int nspect, int mu, bool_t to_obs,
 		  double *chi, double *S, double *I, double *Psi);
+void PieceBezier_1D(int nspect, int mu, bool_t to_obs,
+          double *chi, double *S, double *I, double *Psi);
 
 
 #endif /* !__GEOMETRY_H__ */

@@ -78,7 +78,7 @@ typedef struct {
   enum Hund Hundi, Hundj;
   bool_t symmetric, Voigt, polarizable;
   char   configi[3], configj[3], parityi[2], parityj[2];
-  int    vi, vj, Nlambda, Nblue, subi, subj, Lambdai, Lambdaj;
+  int    vi, vj, Nlambda, Nblue, subi, subj, Lambdai, Lambdaj, ecnoi, ecnoj;
   double lambda0, *lambda, isotope_frac, Ei, Ej, gi, gj, Si, Sj,
          Omegai, Omegaj, **phi, *wphi, g_Lande_eff,
          Grad, qcore, qwing, Aji, Bji, Bij;
@@ -116,14 +116,14 @@ struct rhthread {
 };
 
 struct Atom {
-  char    ID[ATOM_ID_WIDTH+1], **label, *popsFile;
+  char    ID[ATOM_ID_WIDTH+1], **label, *popsinFile, *popsoutFile;
   bool_t  active, NLTEpops;
   enum solution initial_solution;
   int     Nlevel, Nline, Ncont, Nfixed, Nprd, *stage, periodic_table,
           activeindex;
   long    offset_coll;
   double  abundance, weight, *g, *E, **C, *vbroad, **n, **nstar,
-         *ntotal, **Gamma;  
+         *ntotal, **Gamma;
   AtomicLine *line;
   AtomicContinuum *continuum;
   FixedTransition *ft;
@@ -142,7 +142,7 @@ typedef struct {
 } Element;
 
 struct Molecule {
-  char    ID[MOLECULE_ID_WIDTH+1], *popsFile;
+  char    ID[MOLECULE_ID_WIDTH+1], *popsFile, *configs;
   bool_t  active;
   enum    fit_type fit;
   enum    solution initial_solution;
@@ -247,6 +247,7 @@ bool_t getBarklemactivecross(AtomicLine *line);
 void statEquilMolecule(Molecule *molecule, int isum);
 
 void   COcollisions(Molecule *molecule);
+void   H2collisions(Molecule *molecule);
 void   MolecularDamping(MolecularLine *mrt, double *adamp);
 double equilconstant(Molecule *molecule, double T);
 void   freeMolecule(Molecule *molecule);

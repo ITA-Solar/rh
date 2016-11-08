@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Wed Mar 31 14:44:25 1999 --
+       Last modified: Fri Jan  4 13:30:36 2013 --
 
        --------------------------                      ----------RH-- */
 
@@ -28,7 +28,7 @@ void w2(double dtau, double *w)
 
   if (dtau < 5.0E-4) {
     w[0] = dtau*(1.0 - 0.5*dtau);
-    w[1] = SQ(dtau) * (0.5 - 0.33333333*dtau);
+    w[1] = SQ(dtau) * (0.5 - dtau/3.0);
   } else if (dtau > 50.0) {
     w[1] = w[0] = 1.0;
   } else {
@@ -48,9 +48,9 @@ void w3(double dtau, double *w)
   if (dtau < 5.0E-4) {
     w[0]   = dtau*(1.0 - 0.5*dtau);
     delta  = SQ(dtau);
-    w[1]   = delta*(0.5 - 0.33333333*dtau);
+    w[1]   = delta*(0.5 - dtau/3.0);
     delta *= dtau;
-    w[2]   = delta*(0.33333333 - 0.25*dtau);
+    w[2]   = delta*(1.0/3.0 - 0.25*dtau);
   } else if (dtau > 50.0) {
     w[1] = w[0] = 1.0;
     w[2] = 2.0;
@@ -62,3 +62,27 @@ void w3(double dtau, double *w)
   }
 }
 /* ------- end ---------------------------- w3.c -------------------- */
+
+/* ------- begin -------------------------- U3.c -------------------- */
+
+void U3(double dtau, double *U)
+{
+  double expdt, delta;
+
+  if (dtau < 2.0E-4) {
+    U[0]   = dtau*(1.0 - 0.5*dtau);
+    delta  = SQ(dtau);
+    U[1]   = 0.5*delta * (1.0 - dtau/3.0);
+    delta *= dtau;
+    U[2]   = (delta/3.0) * (1.0 - 0.25*dtau);
+  } else if (dtau > 200.0) {
+    U[0] = 1.0;
+    U[1] = dtau - U[0];
+    U[2] = SQ(dtau)  - 2.0*U[1];
+  } else {
+    U[0]  = 1.0 - exp(-dtau);
+    U[1]  = dtau - U[0];
+    U[2]  = SQ(dtau) - 2.0*U[1];
+  }
+}
+/* ------- end ---------------------------- U3.c -------------------- */

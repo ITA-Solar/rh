@@ -221,7 +221,7 @@ void setAngleSet(char *value, void *pointer)
 
     sprintf(messageStr,
 	    "\n  Found Gauss-Legendre angleset with "
-	    "Ninclination = %d and Nazimuth = %d", 
+	    "Ninclination = %d and Nazimuth = %d",
 	    Ninclination, Nazimuth);
     Error(MESSAGE, "setAngleSet", messageStr);
 
@@ -280,26 +280,28 @@ void setStokesMode(char *value, void *pointer)
 /* ------- end ---------------------------- setStokesMode.c --------- */
 
 
-/* ------- begin ---------------------- setSinterpolation.c --------- */
+/* ------- begin ---------------------- set_S_interpolation.c ------- */
 
-void setSinterpolation(char *value, void *pointer)
+void set_S_interpolation(char *value, void *pointer)
 {
-  const char routineName[] = "setSinterpolation";
+  const char routineName[] = "set_S_interpolation";
 
-  enum Sinterpolation Sinterpolation;
+  enum S_interpol interpolation;
 
   if (!strcmp(value, "LINEAR"))
-    Sinterpolation = S_LINEAR;
+    interpolation = S_LINEAR;
+  else if (!strcmp(value, "BEZIER"))
+    interpolation = BEZIER;
   else if (!strcmp(value, "CUBIC_HERMITE"))
-    Sinterpolation = S_CUBIC_HERMITE;
+    interpolation = CUBIC_HERMITE;
   else {
     sprintf(messageStr,
-	     "Invalid value for keyword SINTERPOLATION: %s", value);
+	     "Invalid value for keyword S_INTERPOLATION: %s", value);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
-  memcpy(pointer, &Sinterpolation, sizeof(enum_t));
+  memcpy(pointer, &interpolation, sizeof(enum S_interpol));
 }
-/* ------- end -----------------------setSinterpolation.c --------- */
+/* ------- end -----------------------set_S_interpolation.c ------- */
 
 
 /* ------- begin -------------------------- setPRDangle.c --------- */
@@ -369,7 +371,7 @@ void setThreadValue(char *value, void *pointer)
       Error(WARNING, routineName, "Non-default thread scheduling policy");
 
     /* --- Suggest thread concurrency to the operating system -- ---- */
-    
+
     if ((return_value = pthread_setconcurrency(Nthreads)))
       Error(ERROR_LEVEL_2, routineName,
 	    "Failed to set concurrency level for threads.");

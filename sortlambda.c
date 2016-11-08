@@ -415,7 +415,7 @@ void SortLambda()
 	as = &spectrum.as[nspect];
 	nact = molecule->activeindex;
 	
-	as->mrt[nact][as->Nactivemolrt[nact]].type = VIBRATION_ROTATION;
+	as->mrt[nact][as->Nactivemolrt[nact]].type = mrt->type;
 	as->mrt[nact][as->Nactivemolrt[nact]].ptype.vrline = mrt;
 	as->Nactivemolrt[nact]++;
 

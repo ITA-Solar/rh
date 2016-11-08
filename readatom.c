@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Wed Nov 17 10:17:49 2010 --
+       Last modified: Wed Feb 26 16:11:25 2014 --
 
        --------------------------                      ----------RH-- */
 
@@ -23,7 +23,7 @@
 
        --                                              -------------- */
 
- 
+
 #include <ctype.h>
 #include <stdlib.h>
 #include <math.h>
@@ -40,7 +40,7 @@
 #include "statistics.h"
 
 #define  COMMENT_CHAR   "#"
-
+#define  MAX_ABUND_ERROR    0.001
 
 /* --- Function prototypes --                          -------------- */
 
@@ -68,9 +68,10 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
           symmStr[20], optionStr[20], labelStr[MAX_LINE_SIZE];
   bool_t  Debeye, exit_on_EOF, match;
   int     i, j, Nlevel, Nrad, Nline, Ncont, Nfixed,
+          Nspace = atmos.Nspace,
           Nread, Nrequired, checkPoint, L, nq, status;
   double  f, C, lambda0, lambdamin, vtherm, S, Ju, Jl,
-          c_sum, waveratio;
+    c_sum, waveratio, lambda_air;
 
   AtomicLine *line, *line1;
   AtomicContinuum *continuum;
@@ -94,17 +95,17 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
   atom->active = active;
 
   /* --- Read atom ID and convert to uppercase --     -------------- */
- 
+
   getLine(atom->fp_input, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
   Nread = sscanf(inputLine, "%2s", atom->ID);
   checkNread(Nread, Nrequired=1, routineName, checkPoint=1);
   for (n = 0;  n < (int) strlen(atom->ID);  n++)
     atom->ID[n] = toupper(atom->ID[n]);
   if (strlen(atom->ID) == 1) strcat(atom->ID, " ");
- 
-  /* --- NOTE: atomic weight and abundance are read from the 
+
+  /* --- NOTE: atomic weight and abundance are read from the
          abundance input file (abundance.input by default).
- 
+
          When atom is part of the background the abundance and atomic
          weight are taken from the list of elements in atmos.
          See: abundance.c --                          -------------- */
@@ -129,7 +130,7 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
   }
 
   /* --- Get Number of levels, lines fixed transitions, and continua  */
- 
+
   getLine(atom->fp_input, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
   Nread = sscanf(inputLine, "%d %d %d %d",
 		 &atom->Nlevel, &atom->Nline, &atom->Ncont, &atom->Nfixed);
@@ -147,7 +148,7 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
          and ionization stage --                       -------------- */
 
   for (i = 0;  i < Nlevel;  i++) {
-    atom->label[i] = (char *) calloc((ATOM_LABEL_WIDTH+1), sizeof(char)); 
+    atom->label[i] = (char *) calloc((ATOM_LABEL_WIDTH+1), sizeof(char));
     getLine(atom->fp_input, COMMENT_CHAR, inputLine , exit_on_EOF=TRUE);
     Nread = sscanf(inputLine, "%lf %lf '%20c' %d",
       &atom->E[i], &atom->g[i], atom->label[i], &atom->stage[i]);
@@ -162,19 +163,19 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
 
-  atom->nstar  = matrix_double(Nlevel, atmos.Nspace);
-  atom->ntotal = (double *) malloc(atmos.Nspace * sizeof(double));
+  atom->nstar  = matrix_double(Nlevel, Nspace);
+  atom->ntotal = (double *) malloc(Nspace * sizeof(double));
 
-  for (k = 0;  k < atmos.Nspace;  k++)
+  for (k = 0;  k < Nspace;  k++)
     atom->ntotal[k] = atom->abundance * atmos.nHtot[k];
 
   /* --- Ratio of thermal velocity and speed of light for use in
          Doppler width for this particular atomic weight --  -------- */
 
   if (atom->Nline > 0) {
-    atom->vbroad = (double *) malloc(atmos.Nspace * sizeof(double));
+    atom->vbroad = (double *) malloc(Nspace * sizeof(double));
     vtherm = 2.0*KBOLTZMANN/(AMU * atom->weight);
-    for (k = 0;  k < atmos.Nspace;  k++)
+    for (k = 0;  k < Nspace;  k++)
       atom->vbroad[k] = sqrt(vtherm*atmos.T[k] + SQ(atmos.vturb[k]));
   }
 
@@ -255,16 +256,19 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
 		       &line->c_shift[n], &line->c_fraction[n]);
 	c_sum += line->c_fraction[n];
       }
-      if (c_sum != 1.0) {
+      if (c_sum > (1.0 + MAX_ABUND_ERROR) ||
+	  c_sum < (1.0 - MAX_ABUND_ERROR)) {
+        vacuum_to_air(1, &line->lambda0, &lambda_air);
 	sprintf(messageStr,
 		"Line %d -> %d (%9.3f [nm]): \n"
 		" Component fractions do not add up to unity: %f",
-		line->j, line->i, line->lambda0, c_sum);
+		line->j, line->i, lambda_air, c_sum);
 	Error(ERROR_LEVEL_2, routineName, messageStr);
       } else {
+	vacuum_to_air(1, &line->lambda0, &lambda_air);
 	sprintf(messageStr,
 		" Line %d -> %d (%9.3f [nm]) has %d components\n",
-		line->j, line->i, line->lambda0, line->Ncomponent);
+		line->j, line->i, lambda_air, line->Ncomponent);
 	Error(MESSAGE, routineName, messageStr);
       }
     } else {
@@ -295,7 +299,7 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
       sprintf(messageStr, "Invalid value for vd Waals string: %s", vdWstr);
       Error(ERROR_LEVEL_2, routineName, messageStr);
     }
- 
+
     line->symmetric   = (strstr(symmStr, "ASYMM")) ? FALSE : TRUE;
     line->polarizable = FALSE;
 
@@ -303,8 +307,8 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
 
       /* --- Allocate space for up- and downward radiative rates -- - */
 
-      line->Rij = (double *) malloc(atmos.Nspace * sizeof(double));
-      line->Rji = (double *) malloc(atmos.Nspace * sizeof(double));
+      line->Rij = (double *) malloc(Nspace * sizeof(double));
+      line->Rji = (double *) malloc(Nspace * sizeof(double));
 
       /* --- Initialize the mutex lock for the radiative rates if there
              is more than one thread --                -------------- */
@@ -401,8 +405,8 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
 
       /* --- Allocate space for up- and downward radiative rates -- - */
 
-      continuum->Rij = (double *) malloc(atmos.Nspace * sizeof(double));
-      continuum->Rji = (double *) malloc(atmos.Nspace * sizeof(double));
+      continuum->Rij = (double *) malloc(Nspace * sizeof(double));
+      continuum->Rji = (double *) malloc(Nspace * sizeof(double));
 
       /* --- Initialize the mutex lock for the radiative rates if there
              is more than one thread --                -------------- */
@@ -458,7 +462,7 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
 
       if (atom->stage[j] == atom->stage[i])
 	fixed->type = FIXED_LINE;
-      else 
+      else
 	fixed->type = FIXED_CONTINUUM;
 
       if (strstr(optionStr, "TRAD_ATMOSPHERIC"))
@@ -477,34 +481,34 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
 
   if (atom->active) {
 
-      atom->popsFile = (char *) malloc(12 * sizeof(char));
-      sprintf(atom->popsFile, (atom->ID[1] == ' ') ?
+      atom->popsoutFile = (char *) malloc(12 * sizeof(char));
+      sprintf(atom->popsoutFile, (atom->ID[1] == ' ') ?
 	      "pops.%.1s.out" : "pops.%.2s.out", atom->ID);
 
     if (atom->Nprd > 0) {
-      if (atmos.moving && input.PRD_angle_dep == PRD_ANGLE_INDEP) {
+      if (atmos.moving && !input.PRD_angle_dep) {
 	sprintf(messageStr,
 		"Using angle-averaged PRD in moving atmosphere for "
                 "atom %2s\n", atom->ID);
 	Error(WARNING, routineName, messageStr);
       }
-      if (!atmos.moving && input.PRD_angle_dep == PRD_ANGLE_DEP) {
+      if (!atmos.moving && input.PRD_angle_dep) {
 	sprintf(messageStr,
 		"Using angle-dependent PRD in static atmosphere for "
                 "atom %2s\n", atom->ID);
 	Error(WARNING, routineName, messageStr);
       }
-      
+
       /* --- Create the array to store cross redistribution lines - - */
 
       if (input.XRD) {
 	for (kr = 0;  kr < Nline;  kr++) {
 	  line = &atom->line[kr];
-	  line->xrd = (AtomicLine **) malloc(Nline * sizeof(AtomicLine *)); 
+	  line->xrd = (AtomicLine **) malloc(Nline * sizeof(AtomicLine *));
 	  if (line->PRD) {
 	    for (krp = 0;  krp < Nline;  krp++) {
 	      if (atom->line[krp].PRD  &&
-		  line->j == atom->line[krp].j  && 
+		  line->j == atom->line[krp].j  &&
 		  line->i != atom->line[krp].i) {
 		line->xrd[line->Nxrd] = &atom->line[krp];
 		line->Nxrd++;
@@ -533,7 +537,7 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
            for populations --                          -------------- */
 
     for (kr = 0;  kr < Nline;  kr++) getLambda(atom->line + kr);
-    atom->n = matrix_double(Nlevel, atmos.Nspace);
+    atom->n = matrix_double(Nlevel, Nspace);
 
     /* --- Allocate space for thread dependent quantities -- -------- */
 
@@ -544,20 +548,23 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
            space for rate coefficients --               ------------- */
 
     atom->offset_coll = ftell(atom->fp_input);
-    atom->C = matrix_double(SQ(Nlevel), atmos.Nspace);
+    atom->C = matrix_double(SQ(Nlevel), Nspace);
 
   } else {
 
-    if (atom->popsFile) {
+    if (atom->popsinFile  &&
+	atom->initial_solution == OLD_POPULATIONS) {
+
       atom->NLTEpops = TRUE;
 
       /* --- Allocate memory for Non-LTE populations -- ------------- */
 
       atom->n = matrix_double(atom->Nlevel, atmos.Nspace);
       readPopulations(atom);
+
       sprintf(messageStr,
 	  " --- Read input file: %s with NLTE populations for atom %s\n",
-	      atom->popsFile, atom->ID);
+	      atom->popsinFile, atom->ID);
       Error(MESSAGE, routineName, messageStr);
     } else {
       atom->NLTEpops = FALSE;
@@ -578,7 +585,7 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
   sprintf(labelStr, "Read %s %2s",
 	  (atom->active) ? "Active" : "Atom", atom->ID);
   getCPU(3, TIME_POLL, labelStr);
-} 
+}
 /* ------- end ---------------------------- readAtom.c -------------- */
 
 /* ------- begin -------------------------- initAtom.c -------------- */
@@ -588,7 +595,8 @@ void initAtom(Atom *atom)
   /* --- Initialize atomic data structure. Set pointers to NULL -- -- */
 
   atom->label = NULL;
-  atom->popsFile = NULL;
+  atom->popsinFile = NULL;
+  atom->popsoutFile = NULL;
   atom->initial_solution = UNKNOWN;
   atom->active = FALSE;
   atom->NLTEpops = FALSE;
@@ -674,16 +682,17 @@ void freeAtom(Atom *atom)
 
   /* --- Free allocated memory for atomic data structure -- --------- */
 
-  if (atom->label != NULL)     freeMatrix((void **) atom->label);
-  if (atom->popsFile != NULL)  free(atom->popsFile);
-  if (atom->stage != NULL)     free(atom->stage);
-  if (atom->g != NULL)         free(atom->g);
-  if (atom->E != NULL)         free(atom->E);
-  if (atom->C != NULL)         freeMatrix((void **) atom->C);
-  if (atom->vbroad != NULL)    free(atom->vbroad);
+  if (atom->label != NULL)       freeMatrix((void **) atom->label);
+  if (atom->popsinFile != NULL)  free(atom->popsinFile);
+  if (atom->popsoutFile != NULL) free(atom->popsoutFile);
+  if (atom->stage != NULL)       free(atom->stage);
+  if (atom->g != NULL)           free(atom->g);
+  if (atom->E != NULL)           free(atom->E);
+  if (atom->C != NULL)           freeMatrix((void **) atom->C);
+  if (atom->vbroad != NULL)      free(atom->vbroad);
 
   /* --- Be careful here because atom->n points to atom->nstar in
-         the case of LTE populations (see readAtom.c) -- ------------ */ 
+         the case of LTE populations (see readAtom.c) -- ------------ */
 
   if (atom->n != atom->nstar)
     if (atom->n != NULL) freeMatrix((void **) atom->n);
@@ -832,7 +841,7 @@ void readAtomicModels(void)
 	      "Unknown initial solution specified for atom: %s\n",
 	      atomID);
       Error(ERROR_LEVEL_2, routineName, messageStr);
-    } 
+    }
 
     /* --- If input.startJ == OLD_J then enforce OLD_POPULATIONAS - - */
 
@@ -848,17 +857,17 @@ void readAtomicModels(void)
 		atomID);
 	Error(ERROR_LEVEL_2, routineName, messageStr);
       }
-      atom->popsFile =
+      atom->popsinFile =
 	(char *) malloc((strlen(popsFile) + 1) * sizeof(char));
-      strcpy(atom->popsFile, popsFile);
+      strcpy(atom->popsinFile, popsFile);
     }
   }
-  fclose(fp_atoms);  
+  fclose(fp_atoms);
 
   /* --- Create an alias to the hydrogen atom structure -- ---------- */
 
   atmos.H = &atmos.atoms[0];
-  
+
   /* --- Store pointers to models in element structures -- ---------- */
 
   for (n = 0;  n < atmos.Natom;  n++)
@@ -890,7 +899,7 @@ char *getAtomID(char *atom_file)
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
   /* --- Read atom ID and convert to uppercase --     -------------- */
- 
+
   getLine(fp_atom, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
   sscanf(inputLine, "%2s", atomID);
 

@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Fri Jul  8 14:57:57 2011 --
+       Last modified: Wed Jul 24 12:38:33 2013 --
 
        --------------------------                      ----------RH-- */
 
@@ -22,6 +22,7 @@
 
 
 enum keywordtype  {KEYWORD_REQUIRED, KEYWORD_DEFAULT, KEYWORD_OPTIONAL};
+enum S_interpol   {S_LINEAR, CUBIC_HERMITE, BEZIER};
 enum order_3D     {LINEAR_3D, BICUBIC_3D};
 enum ne_solution  {NONE, ONCE, ITERATION};
 
@@ -64,6 +65,7 @@ typedef struct {
          opac_output[MAX_VALUE_LENGTH],
          JFile[MAX_VALUE_LENGTH],
          background_File[MAX_VALUE_LENGTH],
+         background_ray_File[MAX_VALUE_LENGTH],
          H_atom[MAX_VALUE_LENGTH],
          H2_molecule[MAX_VALUE_LENGTH],
          radrateFile[MAX_VALUE_LENGTH],
@@ -73,14 +75,14 @@ typedef struct {
          Itop[MAX_VALUE_LENGTH];
   bool_t magneto_optical, XRD, Eddington,
          backgr_pol, limit_memory, allow_passive_bb, NonICE,
-         rlkscatter, prdh_limit_mem, backgr_in_mem;
+         rlkscatter, prdh_limit_mem, backgr_in_mem, xdr_endian,
+         old_background, accelerate_mols;
   enum   solution startJ;
   enum   StokesMode StokesMode;
+  enum   S_interpol S_interpolation;
   enum   order_3D interpolate_3D;
   enum   ne_solution solve_ne;
   enum   PRDangle PRD_angle_dep;
-  /* jorritl: choice of source function interpolation for rhf1d and rh15d */
-  enum   Sinterpolation Sinterpolation;
   int    isum, Ngdelay, Ngorder, Ngperiod, NmaxIter,
          PRD_NmaxIter, PRD_Ngdelay, PRD_Ngorder, PRD_Ngperiod,
          NmaxScatter, Nthreads;
@@ -121,7 +123,7 @@ void  setStokesMode(char *value, void *pointer);
 void  setPRDangle(char *value, void *pointer);
 void  setThreadValue(char *value, void *pointer);
 void  setInterpolate_3D(char *value, void *pointer);
-void  setSinterpolation(char *value, void *pointer);
+void  set_S_interpolation(char *value, void *pointer);
 void  showValues(int Nkeyword, Keyword *theKeywords);
 char *substring(const char *string, int N0, int Nchar);
 void  UpperCase(char *string);

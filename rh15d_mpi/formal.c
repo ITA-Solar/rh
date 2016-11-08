@@ -10,7 +10,7 @@
        a PRD emission profile, polarized line radiation, polarized
        background lines, and scattering background polarization -- -- */
 
- 
+
 #include <stdlib.h>
 #include <math.h>
 
@@ -48,7 +48,7 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
 
   bool_t   initialize, boundbound, polarized_as, polarized_c,
            PRD_angle_dep, to_obs, solveStokes, angle_dep;
-  enum     FeautrierOrder F_order;     
+  enum     FeautrierOrder F_order;
   int      Nrays = atmos.Nrays,lamuk;
   long     Nspace = atmos.Nspace;
   long int idx,idx0;
@@ -61,12 +61,12 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
 
   as = &spectrum.as[nspect];
   alloc_as(nspect, eval_operator);
-  
+
   /* --- Check whether current active set includes a bound-bound
          and/or polarized transition and/or angle-dependent PRD
          transition, and/or polarization through background scattering.
          Otherwise, only angle-independent opacity and source functions
-         are needed --                                 -------------- */ 
+         are needed --                                 -------------- */
 
   /* --- Check for bound-bound transition in active set -- ---------- */
 
@@ -203,15 +203,15 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
 	  PiecewiseStokes(nspect, mu, to_obs, chi, Spol, Ipol, Psi);
 
 	} else {
-	  for (k = 0;  k < Nspace;  k++)
-	    S[k] /= chi[k];
-
-	  if (input.Sinterpolation == S_LINEAR) {
-	    Piecewise_1D(nspect, mu, to_obs, chi, S, I, Psi);
-	  } else {
-	    Piecewise_Hermite_1D(nspect, mu, to_obs, chi, S, I, Psi);
-	  }
-
+        for (k = 0;  k < Nspace;  k++)
+  	        S[k] /= chi[k];
+        if (input.S_interpolation == S_LINEAR) {
+            Piecewise_1D(nspect, mu, to_obs, chi, S, I, Psi);
+  	    } else if (input.S_interpolation == CUBIC_HERMITE) {
+	        Piecewise_Hermite_1D(nspect, mu, to_obs, chi, S, I, Psi);
+        } else {
+            PieceBezier_1D(nspect, mu, to_obs, chi, S, I, Psi);
+        }
 	}
 
 	if (eval_operator) {
@@ -239,85 +239,85 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
 	  if (atmos.NPRDactive >0 && input.PRD_angle_dep == PRD_ANGLE_APPROX
 	      && atmos.Nrays > 1) {
 	    if (input.prdh_limit_mem) {
-	      
+
 	      sign = (to_obs) ? 1.0 : -1.0;
-	      
+
 	      for (k = 0;  k < Nspace;  k++) {
 
 		// Observer's frame wavelenght grid
 		lambda = spectrum.lambda;
-		
-		// previous, current and next wavelength shifted to gas rest frame 
+
+		// previous, current and next wavelength shifted to gas rest frame
 		fac = (1.+spectrum.v_los[mu][k]*sign/CLIGHT);
 		lambda_prv = lambda[ MAX(nspect-1,0)                 ]*fac;
 		lambda_gas = lambda[ nspect                          ]*fac;
 		lambda_nxt = lambda[ MIN(nspect+1,spectrum.Nspect-1) ]*fac;
-	  
+
 		// do lambda_prv and lambda_gas bracket lambda points?
 		if (lambda_prv !=  lambda_gas) {
-		  
+
 		  dl= lambda_gas - lambda_prv;
-		  for (idx = 0; idx < spectrum.Nspect ; idx++) {     
+		  for (idx = 0; idx < spectrum.Nspect ; idx++) {
 		    if (lambda[idx] > lambda_prv && lambda[idx] <= lambda_gas) {
 		      frac=(lambda[idx]-lambda_prv)/dl;
-		      spectrum.Jgas[idx][k] += frac * wmu * I[k];	   
+		      spectrum.Jgas[idx][k] += frac * wmu * I[k];
 		    }
 		  }
-		  
+
 		} else {
-		  
+
 		  // edge case, use constant extrapolation for lambda[idx]<lambda gas
 		  for (idx = 0; idx < spectrum.Nspect ; idx++) {
 		    if (lambda[idx] <  lambda_gas)  spectrum.Jgas[idx][k] += wmu * I[k];
 		  }
-		  
-		} 
-		
+
+		}
+
 		// do lambda_gas and lambda_nxt bracket lambda points?
 		if (lambda_gas != lambda_nxt) {
-		  
+
 		  dl= lambda_nxt - lambda_gas;
-		  for (idx = 0; idx < spectrum.Nspect ; idx++) {     
+		  for (idx = 0; idx < spectrum.Nspect ; idx++) {
 		    if (lambda[idx] > lambda_gas && lambda[idx] < lambda_nxt) {
 		      frac=(lambda[idx]-lambda_gas)/dl;
 		      spectrum.Jgas[idx][k] += (1.0-frac) * wmu * I[k];
 		    }
 		  }
-		  
+
 		} else {
 		  // edge case, use constant extrapolation for lambda[idx]>lambda gas
 		  for (idx = 0; idx < spectrum.Nspect ; idx++) {
 		    if (lambda[idx] >  lambda_gas)  spectrum.Jgas[idx][k] += wmu * I[k];
 		  }
-		} 
+		}
 
 	      } // spatial location
 
 	    } else {
-	      
+
 	      for (k = 0;  k < Nspace;  k++)  {
-			
-		lamuk = nspect * (atmos.Nrays*2*Nspace) 
+
+		lamuk = nspect * (atmos.Nrays*2*Nspace)
 		  + mu * (2*Nspace) + to_obs * (Nspace) + k;
-		
+
 		idx0 = (lamuk==0) ? 0 : spectrum.nc[lamuk-1];
-		
-		for ( idx = idx0 ; idx <  spectrum.nc[lamuk] ; idx++ ) 
+
+		for ( idx = idx0 ; idx <  spectrum.nc[lamuk] ; idx++ )
 		  spectrum.Jgas[ spectrum.iprdh[idx]][k] += wmu *  spectrum.cprdh[idx] * I[k];
-		
-	      } 
-	      
-	    } // prdh_limit_mem switch 
-	  } // Jgas accumulation endif 
-		
-	  if (containsPRDline(as) && input.PRD_angle_dep == PRD_ANGLE_DEP) 
+
+	      }
+
+	    } // prdh_limit_mem switch
+	  } // Jgas accumulation endif
+
+	  if (containsPRDline(as) && input.PRD_angle_dep == PRD_ANGLE_DEP)
 	    writeImu(nspect, mu, to_obs, I);
 
 	}
       }
 
       /* --- Save emergent intensity --              -------------- */
-      
+
       spectrum.I[nspect][mu] = I[0];
       if (solveStokes) {
 	spectrum.Stokes_Q[nspect][mu] = Ipol[1][0];
@@ -355,14 +355,14 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
       if (spectrum.updateJ) {
 	for (k = 0;  k < Nspace;  k++) J[k] += I[k] * geometry.wmu[mu];
 	addtoRates(nspect, mu, 0, geometry.wmu[mu], I, redistribute);
-	
+
 	/* --- Accumulate gas-frame mean intensity, which is the same
 	   as J in the angle-independent case ------------- */
 	if (atmos.NPRDactive >0 && input.PRD_angle_dep == PRD_ANGLE_APPROX) {
-	  for (k = 0;  k < Nspace;  k++) 
+	  for (k = 0;  k < Nspace;  k++)
 	    spectrum.Jgas[nspect][k] += I[k] * geometry.wmu[mu];
 	}
-	
+
       }
     }
   }
@@ -385,7 +385,7 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
   free_as(nspect, eval_operator);
   if (eval_operator) free(Psi);
 
-  free(chi); 
+  free(chi);
   if (solveStokes) {
     freeMatrix((void **) Ipol);
     freeMatrix((void **) Spol);
@@ -402,5 +402,5 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
   }
 
   return dJmax;
-}   
+}
 /* ------- end ---------------------------- Formal.c ---------------- */

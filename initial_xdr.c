@@ -88,29 +88,29 @@ void initSolution(Atom *atom, Molecule *molecule)
     cswitch = 1.0;
 
   /* --- Allocate space for angle-averaged mean intensity -- -------- */
-  if (!input.limit_memory) 
+  if (!input.limit_memory)
     spectrum.J = matrix_double(spectrum.Nspect, atmos.Nspace);
 
   /* --- If we do background polarization we need space for the
      anisotropy --                               -------------- */
-  
+
   if (input.backgr_pol)
     spectrum.J20 = matrix_double(spectrum.Nspect, atmos.Nspace);
-  
+
  /* --- For the PRD angle approximation  we need to store J in
      the gas frame,                                   -------- */
   if (input.PRD_angle_dep == PRD_ANGLE_APPROX &&  atmos.NPRDactive > 0) {
-    
+
     spectrum.Jgas  = matrix_double(spectrum.Nspect, atmos.Nspace);
-    spectrum.v_los = matrix_double(    atmos.Nrays, atmos.Nspace);     
-    
+    spectrum.v_los = matrix_double(    atmos.Nrays, atmos.Nspace);
+
     /* Calculate line of sight velocity */
     for (mu = 0;  mu < atmos.Nrays;  mu++) {
       for (k = 0;  k < atmos.Nspace;  k++) {
 	spectrum.v_los[mu][k] = vproject(k, mu); // / vbroad[k];
       }
     }
- 
+
 
     /* precompute prd_rho interpolation coefficients if requested */
     if (!input.prdh_limit_mem) {
@@ -122,25 +122,25 @@ void initSolution(Atom *atom, Molecule *molecule)
 	for (kr = 0;  kr < atom->Nline;  kr++) {
 
 	  line = &atom->line[kr];
-	  
+
 	  if (line->PRD) {
-	      
+
 	    Nlamu = 2*atmos.Nrays * line->Nlambda;
 	    line->frac = matrix_double(Nlamu, atmos.Nspace);
 	    line->id0  = matrix_int(Nlamu, atmos.Nspace);
 	    line->id1  = matrix_int(Nlamu, atmos.Nspace);
-	      
+
 	    for (la = 0;  la < line->Nlambda;  la++) {
 	      for (mu = 0;  mu < atmos.Nrays;  mu++) {
 		for (to_obs = 0;  to_obs <= 1;  to_obs++) {
 		  sign = (to_obs) ? 1.0 : -1.0;
 		  lamu = 2*(atmos.Nrays*la + mu) + to_obs;
-		  
+
 		  for (k = 0;  k < atmos.Nspace;  k++) {
-		    
-		    // wavelength in local rest frame 
+
+		    // wavelength in local rest frame
 		    lag=line->lambda[la] * (1.+spectrum.v_los[mu][k]*sign/CLIGHT);
-		    		    
+
 		    if (lag <= line->lambda[0]) {
 		      // out of the lambda table, constant extrapolation
 		      line->frac[lamu][k]=0.0;
@@ -166,7 +166,7 @@ void initSolution(Atom *atom, Molecule *molecule)
 	}
       }
     }
-   
+
     /* precompute Jgas interpolation coefficients if requested */
     if (!input.prdh_limit_mem) {
 
@@ -179,28 +179,28 @@ void initSolution(Atom *atom, Molecule *molecule)
       for (la = 0;  la < spectrum.Nspect;  la++) {
 	for (mu = 0;  mu < atmos.Nrays;  mu++) {
 	  for (to_obs = 0;  to_obs <= 1;  to_obs++) {
-	    
+
 	    sign = (to_obs) ? 1.0 : -1.0;
-	    
+
 	    for (k = 0;  k < atmos.Nspace;  k++) {
-	      
-	      lamuk = la * (atmos.Nrays*2*atmos.Nspace) 
+
+	      lamuk = la * (atmos.Nrays*2*atmos.Nspace)
 		+ mu     * (2*atmos.Nspace)
 		+ to_obs * (atmos.Nspace)
 		+ k ;
-	      
+
 	      ncoef=0;
-	      
-	      // previous, current and next wavelength shifted to gas rest frame 
+
+	      // previous, current and next wavelength shifted to gas rest frame
 	      fac = (1.+spectrum.v_los[mu][k]*sign/CLIGHT);
 	      lambda_prv = lambda[ MAX(la-1,0)                 ]*fac;
 	      lambda_gas = lambda[ la                          ]*fac;
 	      lambda_nxt = lambda[ MIN(la+1,spectrum.Nspect-1) ]*fac;
-	      
+
 	      // do lambda_prv and lambda_gas bracket lambda points?
 	      if (lambda_prv !=  lambda_gas) {
 		dl= lambda_gas - lambda_prv;
-		for (idx = 0; idx < spectrum.Nspect ; idx++) {     
+		for (idx = 0; idx < spectrum.Nspect ; idx++) {
 		  if (lambda[idx] > lambda_prv && lambda[idx] <= lambda_gas) ncoef=ncoef+1;
 		}
 	      } else {
@@ -208,12 +208,12 @@ void initSolution(Atom *atom, Molecule *molecule)
 		for (idx = 0; idx < spectrum.Nspect ; idx++) {
 		  if (lambda[idx] <=  lambda_gas) ncoef=ncoef+1;
 		}
-	      } 
-	      
+	      }
+
 	      // do lambda_gas and lambda_nxt bracket lambda points?
 	      if (lambda_gas != lambda_nxt) {
 		dl= lambda_nxt - lambda_gas;
-		for (idx = 0; idx < spectrum.Nspect ; idx++) {     
+		for (idx = 0; idx < spectrum.Nspect ; idx++) {
 		  if (lambda[idx] > lambda_gas && lambda[idx] < lambda_nxt) ncoef=ncoef+1;
 		}
 	      } else {
@@ -221,7 +221,7 @@ void initSolution(Atom *atom, Molecule *molecule)
 		for (idx = 0; idx < spectrum.Nspect ; idx++) {
 		  if (lambda[idx] >=  lambda_gas) ncoef=ncoef+1;
 		}
-	      } 
+	      }
 
 	      /* --- number of point this lambda contributes to is
 	 	 computed as a difference --- */
@@ -229,20 +229,20 @@ void initSolution(Atom *atom, Molecule *molecule)
 		spectrum.nc[lamuk] = ncoef;
 	      } else {
 		spectrum.nc[lamuk]=spectrum.nc[lamuk-1]+ncoef;
-	      } 
-				
+	      }
+
 	    } // k
 	  } // to_obs
 	} // mu
       } // la
-    
+
       /* --- now we know the number of interpolation coefficients,
              it's stored in the last element of spectrum.nc,
 	     so allocate space                                     --- */
       idx=spectrum.nc[2*atmos.Nrays*spectrum.Nspect*atmos.Nspace-1];
-      spectrum.iprdh= (int *)    malloc( idx * sizeof(int   )); 
+      spectrum.iprdh= (int *)    malloc( idx * sizeof(int   ));
       spectrum.cprdh= (double *) malloc( idx * sizeof(double));
- 
+
      /* --- Run through all lamuk points again, and now store indices
             to lambda array and the corresponding interpolation
             coefficients                                          --- */
@@ -254,24 +254,24 @@ void initSolution(Atom *atom, Molecule *molecule)
 
 	    for (k = 0;  k < atmos.Nspace;  k++) {
 
-	      lamuk = la * (atmos.Nrays*2*atmos.Nspace) 
+	      lamuk = la * (atmos.Nrays*2*atmos.Nspace)
 		+ mu     * (2*atmos.Nspace)
 		+ to_obs * (atmos.Nspace)
 		+ k ;
 
 	      // starting index for storage for this lamuk point
 	      lc = (lamuk==0) ? 0 : spectrum.nc[lamuk-1];
-	 	      
-	      // previous, current and next wavelength shifted to gas rest frame 
+
+	      // previous, current and next wavelength shifted to gas rest frame
 	      fac = (1.+spectrum.v_los[mu][k]*sign/CLIGHT);
 	      lambda_prv = lambda[ MAX(la-1,0)                 ]*fac;
 	      lambda_gas = lambda[ la                          ]*fac;
 	      lambda_nxt = lambda[ MIN(la+1,spectrum.Nspect-1) ]*fac;
-	      
+
 	      // do lambda_prv and lambda_gas bracket lambda points?
 	      if (lambda_prv !=  lambda_gas) {
 		dl= lambda_gas - lambda_prv;
-		for (idx = 0; idx < spectrum.Nspect ; idx++) {     
+		for (idx = 0; idx < spectrum.Nspect ; idx++) {
 		  if (lambda[idx] > lambda_prv && lambda[idx] <= lambda_gas) {
 		    // bracketed point found
 		    spectrum.iprdh[lc]=idx;
@@ -282,18 +282,18 @@ void initSolution(Atom *atom, Molecule *molecule)
 	      } else {
 		// edge case, use constant extrapolation for lambda[idx]<lambda gas
 		for (idx = 0; idx < spectrum.Nspect ; idx++) {
-		  if (lambda[idx] <=  lambda_gas)  {  
+		  if (lambda[idx] <=  lambda_gas)  {
 		    spectrum.iprdh[lc]=idx;
 		    spectrum.cprdh[lc]=1.0;
 		    lc++;
 		  }
 		}
-	      } 
-		
+	      }
+
 	      // do lambda_gas and lambda_nxt bracket lambda points?
 	      if (lambda_gas != lambda_nxt) {
 		dl= lambda_nxt - lambda_gas;
-		for (idx = 0; idx < spectrum.Nspect ; idx++) {     
+		for (idx = 0; idx < spectrum.Nspect ; idx++) {
 		  if (lambda[idx] > lambda_gas && lambda[idx] < lambda_nxt) {
 		    // bracketed point found
 		    spectrum.iprdh[lc]=idx;
@@ -310,14 +310,14 @@ void initSolution(Atom *atom, Molecule *molecule)
 		    lc++;
 		  }
 		}
-	      } 
-	   
+	      }
+
 	    } // k
 	  } // to_obs
 	} // mu
       } // la
 
-    }  //input.prdh_limit_mem if switch      
+    }  //input.prdh_limit_mem if switch
   } // PRD_ANGLE_APPROX if switch
 
   /* --- Allocate space for the emergent intensity --  -------------- */
@@ -341,7 +341,7 @@ void initSolution(Atom *atom, Molecule *molecule)
     }
     break;
   case THREE_D_PLANE:
-    spectrum.I = matrix_double(spectrum.Nspect * atmos.Nrays, 
+    spectrum.I = matrix_double(spectrum.Nspect * atmos.Nrays,
 			       atmos.N[0] * atmos.N[1]);
     if (atmos.Stokes || input.backgr_pol) {
       Nsr    = spectrum.Nspect * atmos.Nrays;
@@ -360,7 +360,7 @@ void initSolution(Atom *atom, Molecule *molecule)
     if (atmos.Stokes) {
       Error(ERROR_LEVEL_2, routineName,
 	    "Cannot do a full Stokes solution in spherical geometry");
-    }    
+    }
     break;
   default:
     sprintf(messageStr, "Unknown topology (%d)", topology);
@@ -376,16 +376,16 @@ void initSolution(Atom *atom, Molecule *molecule)
 
   if (input.startJ == OLD_J) {
     if (spectrum.updateJ) {
-      strcpy(permission, "r+"); 
+      strcpy(permission, "r+");
       oflag |= O_RDWR;
     } else {
-      strcpy(permission, "r"); 
+      strcpy(permission, "r");
       oflag |= O_RDONLY;
     }
     openJfile = TRUE;
   } else {
     if (input.limit_memory) {
-      strcpy(permission, "w+"); 
+      strcpy(permission, "w+");
       oflag |= (O_RDWR | O_CREAT);
       openJfile = TRUE;
     }
@@ -412,7 +412,7 @@ void initSolution(Atom *atom, Molecule *molecule)
       J = (double *) malloc(atmos.Nspace * sizeof(double));
 
       /* --- Initialize J file with zeroes --          -------------- */
-      
+
       for (k = 0;  k < atmos.Nspace;  k++) J[k] = 0.0;
       for (nspect = 0;  nspect < spectrum.Nspect;  nspect++)
 	writeJlambda(nspect, J);
@@ -435,14 +435,14 @@ void initSolution(Atom *atom, Molecule *molecule)
 
       for (nspect = 0;  nspect < spectrum.Nspect;  nspect++)
 	readJlambda(nspect, spectrum.J[nspect]);
-    
+
       close(spectrum.fd_J);
       spectrum.fd_J = -1;
 
       if (input.backgr_pol) {
 	for (nspect = 0;  nspect < spectrum.Nspect;  nspect++)
 	  readJ20lambda(nspect, spectrum.J20[nspect]);
-    
+
 	close(spectrum.fd_J20);
 	spectrum.fd_J20 = -1;
       }
@@ -553,7 +553,7 @@ void initSolution(Atom *atom, Molecule *molecule)
 	    i  = line->i;
 	    j  = line->j;
 	    ij = i*atom->Nlevel + j;
-	    
+
 	    if (la == 0) {
 	      for (k = 0;  k < atmos.Nspace;  k++)
 		atom->Gamma[ij][k] += line->Aji;
@@ -596,7 +596,7 @@ void initSolution(Atom *atom, Molecule *molecule)
     }
   }
   /* --- Now the molecules that are active --          -------------- */
-  
+
   for (nact = 0;  nact < atmos.Nactivemol;  nact++) {
     molecule = atmos.activemols[nact];
 
@@ -632,7 +632,7 @@ void initSolution(Atom *atom, Molecule *molecule)
 	  molecule->nv[i][k] = molecule->nvstar[i][k];
       }
       break;
-      
+
     case OLD_POPULATIONS:
       readMolPops(molecule);
       break;
@@ -647,6 +647,8 @@ void initSolution(Atom *atom, Molecule *molecule)
 
     if (strstr(molecule->ID, "CO"))
       COcollisions(molecule);
+    else if (strstr(molecule->ID, "H2"))
+      H2collisions(molecule);
     else {
       sprintf(messageStr, "Collisions for molecule %s not implemented\n",
 	      molecule->ID);
