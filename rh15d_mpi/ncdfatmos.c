@@ -46,9 +46,9 @@ extern char messageStr[];
 /* ------- begin --------------------------   init_ncdf_atmos   ----- */
 
 void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *infile)
-/* Initialises the input atmosphere file, gets dimensions and variable ids. 
+/* Initialises the input atmosphere file, gets dimensions and variable ids.
    Also performs other basic RH initialisations like readAbundance       */
-{ 
+{
   const char routineName[] = "init_ncdf";
   struct  stat statBuffer;
   int ierror, ncid, x_varid, y_varid, z_varid, has_B, sn_varid;
@@ -63,13 +63,13 @@ void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *inf
   readAbundance(atmos);
 
   /* --- Open input file for model atmosphere --       -------------- */
-  if ((ierror = nc_open_par(input.atmos_input ,NC_NOWRITE | NC_MPIIO, mpi.comm, 
+  if ((ierror = nc_open_par(input.atmos_input ,NC_NOWRITE | NC_MPIIO, mpi.comm,
 			    mpi.info, &infile->ncid))) ERR(ierror,routineName);
 
   ncid = infile->ncid;
 
   /* Is magnetic field included? */
-  if ((ierror = nc_get_att_int( ncid, NC_GLOBAL, "has_B", &has_B))) 
+  if ((ierror = nc_get_att_int( ncid, NC_GLOBAL, "has_B", &has_B)))
     ERR(ierror,routineName);
 
   atmos->Stokes = FALSE;
@@ -103,24 +103,36 @@ void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *inf
 
   /* Get the varids */
   if ((ierror=nc_inq_varid(ncid, TEMP_NAME, &infile->T_varid)))  ERR(ierror,routineName);
-  if ((ierror=nc_inq_varid(ncid, NE_NAME,   &infile->ne_varid))) ERR(ierror,routineName);
   if ((ierror=nc_inq_varid(ncid, VZ_NAME,   &infile->vz_varid))) ERR(ierror,routineName);
   if ((ierror=nc_inq_varid(ncid, NH_NAME,   &infile->nh_varid))) ERR(ierror,routineName);
   if ((ierror=nc_inq_varid(ncid, "z",       &z_varid)))          ERR(ierror,routineName);
   if ((ierror=nc_inq_varid(ncid, "y",       &y_varid)))          ERR(ierror,routineName);
   if ((ierror=nc_inq_varid(ncid, "x",       &x_varid)))          ERR(ierror,routineName);
   if ((ierror=nc_inq_varid(ncid, SNAPNAME,  &sn_varid)))         ERR(ierror,routineName);
-  
+
   /* Microturbulence, get ID if variable found */
   if ((ierror=nc_inq_varid(ncid, VTURB_NAME, &infile->vturb_varid))) {
     /* exception for variable not found (errcode -49)*/
     if (ierror == NC_ENOTVAR) infile->vturb_varid = -1; else ERR(ierror,routineName);
   }
+  /* Only read electron density if it exists. Otherwise, force calculation */
+  if (input.solve_ne == NONE) {
+      if ((ierror=nc_inq_varid(ncid, NE_NAME, &infile->ne_varid))) {
+          /* exception for variable not found (errcode -49)*/
+          if (ierror == NC_ENOTVAR) {
+            sprintf(messageStr, "Electron density not found in atmosphere file,"
+                       " calculating it assuming Saha-Boltzmann ionisation.\n");
+            Error(WARNING, routineName, messageStr);
+            input.solve_ne = ONCE;
+          } else ERR(ierror,routineName);
+      }
+  }
+  if (input.solve_ne != NONE) infile->ne_varid = -1;
 
-  /* Find out if z is written for each (x, y) column */ 
+  /* Find out if z is written for each (x, y) column */
   if ((ierror=nc_inq_varndims(ncid, z_varid,  &mpi.ndims_z)))
     ERR(ierror,routineName);
-  
+
   if (atmos->Stokes) {
       if ((ierror = nc_inq_varid(ncid, BX_NAME, &infile->Bx_varid)))
 	ERR(ierror,routineName);
@@ -168,7 +180,7 @@ void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *inf
     else ERR(ierror,routineName);
   }
 
-  /* some other housekeeping */ 
+  /* some other housekeeping */
   geometry->scale             = GEOMETRIC;
 
   /* --- Construct atmosID from filename and last modification date - */
@@ -204,7 +216,7 @@ void init_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *inf
 
 void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 		    NCDF_Atmos_file *infile)
-/* Reads the variables T, ne, vel, nh for a given (xi,yi) pair */ 
+/* Reads the variables T, ne, vel, nh for a given (xi,yi) pair */
 {
   const char routineName[] = "readAtmos_ncdf";
   size_t     start[]    = {0, 0, 0, 0}; /* starting values */
@@ -224,8 +236,8 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   start[1] = (size_t) xi;   count[1] = 1;
   start[2] = (size_t) yi;   count[2] = 1;
   start[3] = 0;             count[3] = infile->nz;
-  
-  atmos->T = (double *) realloc(atmos->T, infile->nz * sizeof(double)); 
+
+  atmos->T = (double *) realloc(atmos->T, infile->nz * sizeof(double));
 
   if ((ierror = nc_get_vara_double(ncid, infile->T_varid,  start, count, atmos->T)))
     ERR(ierror,routineName);
@@ -242,34 +254,38 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   start[0] = input.p15d_nt; count[0] = 1;
   start[1] = mpi.zcut;      count[1] = atmos->Nspace;
 
-  if ((ierror=nc_inq_varid(ncid, "z",  &z_varid)))          
+  if ((ierror=nc_inq_varid(ncid, "z",  &z_varid)))
     ERR(ierror,routineName);
-  
+
   /* z scale is specified only once per snapshot */
   if ((mpi.ndims_z) == 2) {
-    if ((ierror = nc_get_vara_double(ncid, z_varid, start, count, geometry->height))) 
+    if ((ierror = nc_get_vara_double(ncid, z_varid, start, count, geometry->height)))
       ERR(ierror,routineName);
   }
- 
+
   start[0] = input.p15d_nt; count[0] = 1;
   start[1] = (size_t) xi;   count[1] = 1;
   start[2] = (size_t) yi;   count[2] = 1;
   start[3] = mpi.zcut;      count[3] = atmos->Nspace;
-  
+
   /* z scale is specified for every column */
   if ((mpi.ndims_z) == 4) {
-    if ((ierror = nc_get_vara_double(ncid, z_varid, start, count, geometry->height))) 
+    if ((ierror = nc_get_vara_double(ncid, z_varid, start, count, geometry->height)))
       ERR(ierror,routineName);
   }
-  
+
    /* read variables */
   if ((ierror = nc_get_vara_double(ncid, infile->T_varid,  start, count, atmos->T)))
     ERR(ierror,routineName);
-  if ((ierror = nc_get_vara_double(ncid, infile->ne_varid, start, count, atmos->ne)))
-    ERR(ierror,routineName);
+  /* electron density, only if requested */
+  if (infile->ne_varid != -1) {
+      if ((ierror = nc_get_vara_double(ncid, infile->ne_varid, start, count,
+                                       atmos->ne))) ERR(ierror,routineName);
+  }
+
   if ((ierror = nc_get_vara_double(ncid, infile->vz_varid, start, count, geometry->vel)))
     ERR(ierror,routineName);
-  /* vturb, if available */   
+  /* vturb, if available */
   if (infile->vturb_varid != -1) {
     if ((ierror = nc_get_vara_double(ncid, infile->vturb_varid, &start[3], &count[3],
 				     atmos->vturb))) ERR(ierror,routineName);
@@ -287,29 +303,29 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 				     By))) ERR(ierror,routineName);
     if ((ierror = nc_get_vara_double(ncid, infile->Bz_varid,  start, count,
 				     Bz))) ERR(ierror,routineName);
-    
+
     /* Convert to spherical coordinates */
     for (j = 0; j < atmos->Nspace; j++) {
       atmos->B[j]       = sqrt(SQ(Bx[j]) + SQ(By[j]) + SQ(Bz[j]));
       atmos->gamma_B[j] = acos(Bz[j]/atmos->B[j]);
       atmos->chi_B[j]   = atan(By[j]/Bx[j]);
-      
+
       /* Protect from undefined cases */
       if ((Bx[j] == 0) && (By[j] == 0) && (Bz[j] == 0))
 	atmos->gamma_B[j] = 0.0;
-      
+
       if ((Bx[j] == 0) && (By[j] == 0))
 	atmos->chi_B[j]   = 1.0;
     }
 
     free(Bx); free(By); free(Bz);
   }
-  
+
 
 
   /* allocate and zero nHtot */
-  atmos->nH = matrix_double(atmos->NHydr, atmos->Nspace);  
-  for (j = 0; j < atmos->Nspace; j++) atmos->nHtot[j] = 0.0; 
+  atmos->nH = matrix_double(atmos->NHydr, atmos->Nspace);
+  for (j = 0; j < atmos->Nspace; j++) atmos->nHtot[j] = 0.0;
 
   /* read nH, all at once */
   start_nh[0] = input.p15d_nt; count_nh[0] = 1;
@@ -317,13 +333,13 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   start_nh[2] = (size_t) xi;   count_nh[2] = 1;
   start_nh[3] = (size_t) yi;   count_nh[3] = 1;
   start_nh[4] = mpi.zcut;      count_nh[4] = atmos->Nspace;
-  if ((ierror = nc_get_vara_double(ncid, infile->nh_varid, start_nh, count_nh, 
+  if ((ierror = nc_get_vara_double(ncid, infile->nh_varid, start_nh, count_nh,
 				   atmos->nH[0]))) ERR(ierror,routineName);
 
   /* Depth grid refinement */
   if (input.p15d_refine)
     depth_refine(atmos, geometry, input.p15d_tmax);
-  
+
   /* Fix vturb: remove zeros, use multiplier and add */
   for (i = 0; i < atmos->Nspace; i++) {
     if (atmos->vturb[i] < 0.0) atmos->vturb[i] = 0.0;
@@ -334,7 +350,7 @@ void readAtmos_ncdf(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   for (i = 0; i < atmos->NHydr; i++){
     for (j = 0; j < atmos->Nspace; j++) atmos->nHtot[j] += atmos->nH[i][j];
   }
-  
+
   /* Some other housekeeping */
   old_moving = atmos->moving;
   atmos->moving = FALSE;
@@ -367,7 +383,7 @@ void close_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *in
 {
   const char routineName[] = "close_atmos_ncdf";
   int ierror;
-  
+
   /* Close the file. */
   if ((ierror = nc_close(infile->ncid))) ERR(ierror,routineName);
 
@@ -381,7 +397,7 @@ void close_ncdf_atmos(Atmosphere *atmos, Geometry *geometry, NCDF_Atmos_file *in
   free(infile->y);
   free(infile->x);
 
-  return; 
+  return;
 
 }
 
@@ -421,9 +437,9 @@ void setTcut(Atmosphere *atmos, Geometry *geometry, double Tmax) {
   atmos->Nspace  -= mpi.zcut;
   geometry->Ndep -= mpi.zcut;
 
-  /* Reallocate arrays of Nspace */ 
+  /* Reallocate arrays of Nspace */
   realloc_ndep(atmos, geometry);
-   
+
   return;
 }
 /* ------- end  --------------------------- setTcut      ----------- */
@@ -432,24 +448,24 @@ void setTcut(Atmosphere *atmos, Geometry *geometry, double Tmax) {
 void realloc_ndep(Atmosphere *atmos, Geometry *geometry) {
   /* Reallocates the arrays of Nspace */
 
-  
+
 
   atmos->T     = (double *) realloc(atmos->T,     atmos->Nspace * sizeof(double));
   atmos->ne    = (double *) realloc(atmos->ne,    atmos->Nspace * sizeof(double));
   atmos->nHtot = (double *) realloc(atmos->nHtot, atmos->Nspace * sizeof(double));
-  geometry->vel    = (double *) realloc(geometry->vel, 
-					atmos->Nspace * sizeof(double));  
-  geometry->height = (double *) realloc(geometry->height, 
+  geometry->vel    = (double *) realloc(geometry->vel,
 					atmos->Nspace * sizeof(double));
-  if (atmos->nHmin != NULL) 
+  geometry->height = (double *) realloc(geometry->height,
+					atmos->Nspace * sizeof(double));
+  if (atmos->nHmin != NULL)
       atmos->nHmin = (double *) realloc(atmos->nHmin,
 					atmos->Nspace * sizeof(double));
   /* default zero */
   free(atmos->vturb);
-  atmos->vturb  = (double *) calloc(atmos->Nspace , sizeof(double)); 
+  atmos->vturb  = (double *) calloc(atmos->Nspace , sizeof(double));
 
   if (atmos->Stokes) {
-    atmos->B       = (double *) realloc(atmos->B, 
+    atmos->B       = (double *) realloc(atmos->B,
 					atmos->Nspace * sizeof(double));
     atmos->gamma_B = (double *) realloc(atmos->gamma_B,
 					atmos->Nspace * sizeof(double));
@@ -465,18 +481,18 @@ void realloc_ndep(Atmosphere *atmos, Geometry *geometry) {
 void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
   /* Performs depth refinement to optimise for gradients in temperature,
      density and optical depth. In the same fashion as multi23's ipol_dscal
-     (in fact, shamelessly copied). 
+     (in fact, shamelessly copied).
   */
-  
+
   bool_t nhm_flag, hunt;
   long    i, k, k0=0, k1=0;
   size_t  bufsize;
   double  CI, PhiHmin, *chi, *eta, *tau, tdiv, rdiv, taudiv, *aind, *xpt;
   double *new_height, *buf;
   const double taumax = 100.0, lg1 = log10(1.1);
-  
-  if (Tmax < 0) Tmax = 1.e20; /* No zcut if Tmax is negative */ 
-  
+
+  if (Tmax < 0) Tmax = 1.e20; /* No zcut if Tmax is negative */
+
   chi = (double *) malloc(atmos->Nspace * sizeof(double));
   eta = (double *) malloc(atmos->Nspace * sizeof(double));
   tau = (double *) calloc(atmos->Nspace , sizeof(double));
@@ -484,13 +500,13 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
   buf = (double *) malloc(atmos->Nspace * sizeof(double));
   aind = (double *) calloc(atmos->Nspace , sizeof(double));
   new_height = (double *) calloc(atmos->Nspace , sizeof(double));
-  
+
   bufsize = atmos->Nspace * sizeof(double);
-  
+
   nhm_flag = FALSE;
   CI = (HPLANCK/(2.0*PI*M_ELECTRON)) * (HPLANCK/KBOLTZMANN);
   k1 = atmos->Nspace;
-  
+
   /* --- Calculate tau500 scale from H-bf opacity alone. --- */
   /* First, build nHmin because ChemicalEquilibrium has not been called yet.
      Unless H level pops are given in ncdf file, all H is assumed neutral.  */
@@ -498,15 +514,15 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
     atmos->nHmin = (double *) malloc(atmos->Nspace * sizeof(double));
     nhm_flag = TRUE;
   }
-  
+
   for (k = 0; k < atmos->Nspace; k++) {
     PhiHmin = 0.25*pow(CI/atmos->T[k], 1.5) *
         exp(0.754 * EV / (KBOLTZMANN * atmos->T[k]));
     atmos->nHmin[k] = atmos->ne[k] * atmos->nH[0][k] * PhiHmin;
   }
-  
+
   Hminus_bf(500.0, chi, eta);
-  
+
   /* integrate for optical depth */
   for (k = 1; k < atmos->Nspace; k++) {
     if ((atmos->T[k] > Tmax) && (k0 == k - 1)) k0 = k;
@@ -515,56 +531,56 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
     if (tau[k] < taumax) k1 = k;
     xpt[k] = (double) k;
   }
-  
+
   tau[0] = tau[1];
-  
+
   /* --- Compute log variations --- */
-  for (k = k0+1; k <= k1; k++) {  
+  for (k = k0+1; k <= k1; k++) {
     tdiv = fabs(log10(atmos->T[k]) - log10(atmos->T[k-1]))/lg1;
     /* rho is not available, so nH[0] used instead */
     rdiv = fabs(log10(atmos->nH[0][k]) - log10(atmos->nH[0][k-1]))/lg1;
     taudiv = fabs(log10(tau[k]) - log10(tau[k-1]))/0.1;
     aind[k] = aind[k-1] + MAX(MAX(tdiv,rdiv),taudiv);
   }
-  
-  for (k = 1; k <= k1; k++)  
+
+  for (k = 1; k <= k1; k++)
     aind[k] *= (atmos->Nspace-1)/aind[k1];
-    
+
   /* --- Create new height scale --- */
   splineCoef(k1-k0+1, &aind[k0], &geometry->height[k0]);
   splineEval(atmos->Nspace, xpt, new_height, hunt=FALSE);
-    
+
   /* --- Interpolate quantities to new scale --- */
   /* Take logs of densities to avoid interpolation to negatives */
   for (k = 0; k < atmos->Nspace; k++) {
     atmos->ne[k] = log(atmos->ne[k]);
     for (i = 0; i < atmos->NHydr; i++)
-      atmos->nH[i][k] = log(atmos->nH[i][k]);    
+      atmos->nH[i][k] = log(atmos->nH[i][k]);
   }
 
   splineCoef(atmos->Nspace, geometry->height, atmos->T);
   splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
   memcpy((void *) atmos->T, (void *) buf, bufsize);
   /* condition for T < 1000 K ? */
- 
+
   splineCoef(atmos->Nspace, geometry->height, atmos->ne);
   splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
   memcpy((void *) atmos->ne, (void *) buf, bufsize);
-  
+
   for (i = 0; i < atmos->NHydr; i++) {
     splineCoef(atmos->Nspace, geometry->height, atmos->nH[i]);
     splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
     memcpy((void *) atmos->nH[i], (void *) buf, bufsize);
   }
-  
+
   splineCoef(atmos->Nspace, geometry->height, geometry->vel);
   splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
   memcpy((void *) geometry->vel, (void *) buf, bufsize);
-  
+
   splineCoef(atmos->Nspace, geometry->height, atmos->vturb);
   splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
   memcpy((void *) atmos->vturb, (void *) buf, bufsize);
-  
+
   if (atmos->Stokes) {
     splineCoef(atmos->Nspace, geometry->height, atmos->B);
     splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
@@ -578,16 +594,16 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
     splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
     memcpy((void *) atmos->chi_B, (void *) buf, bufsize);
   }
-  
+
   /* Take back logs */
   for (k = 0; k < atmos->Nspace; k++) {
     atmos->ne[k] = exp(atmos->ne[k]);
     for (i = 0; i < atmos->NHydr; i++)
-      atmos->nH[i][k] = exp(atmos->nH[i][k]);    
+      atmos->nH[i][k] = exp(atmos->nH[i][k]);
   }
-  
+
   memcpy((void *) geometry->height, (void *) new_height, bufsize);
-    
+
   if (nhm_flag) {
     free(atmos->nHmin);
     atmos->nHmin = NULL;
@@ -595,7 +611,7 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
   free(buf); free(new_height);
   free(chi); free(eta);
   free(tau); free(aind); free(xpt);
-  
-  return; 
+
+  return;
 }
 /* ------- end  --------------------------- depth_refine ----------- */
