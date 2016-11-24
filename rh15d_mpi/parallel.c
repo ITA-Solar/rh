@@ -193,22 +193,16 @@ void UpdateAtmosDep(void) {
       atom->nstar = matrix_double(atom->Nlevel, atmos.Nspace);
     }
 
-    /* When H is treated in LTE, n is just a pointer to nstar,
-       so we don't need to free it */
-    if (nact == 0) {
-      if (!atmos.H_LTE) {
-        freeMatrix((void **) atom->n);
-	atom->n = matrix_double(atom->Nlevel, atmos.Nspace);
-      }
+    /* Only allocate n again for active atoms or atoms with read populations
+       Hydrogen is a special case because populations can be read differently.
+       When H_LTE is on, n is just a pointer to nstar and needs no freeing.  */
+    if ((atom->active) || (atom->popsinFile) ||
+        ((nact == 0) && (!atmos.H_LTE))) {
+         if (atom->n != NULL) freeMatrix((void **) atom->n);
+         atom->n = matrix_double(atom->Nlevel, atmos.Nspace);
     } else {
-	/* Only allocate n again for active or atoms with read populations */
-	if ((atom->active) || (atom->popsinFile)) {
-	  if (atom->n != NULL) freeMatrix((void **) atom->n);
-	  atom->n = matrix_double(atom->Nlevel, atmos.Nspace);
-	} else {
-	  /* alias to nstar again, just in case */
-	  atom->n = atom->nstar;
-	}
+     /* alias to nstar again, just in case */
+         atom->n = atom->nstar;
     }
 
 
