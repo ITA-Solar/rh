@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Mon Jun 19 17:02:19 2006 --
+       Last modified: Thu Jan 19 13:21:37 2012 --
 
        --------------------------                      ----------RH-- */
 
@@ -89,18 +89,18 @@ void writeSpectrum(Spectrum *spectrum)
     Nintensity = 0;
     break;
   }
-  result &= xdr_vector(&xdrs, (char *) spectrum->I[0], Nintensity, 
+  result &= xdr_vector(&xdrs, (char *) spectrum->I[0], Nintensity,
 		       sizeof(double), (xdrproc_t) xdr_double);
 
   result &= xdr_bool(&xdrs, &spectrum->vacuum_to_air);
   result &= xdr_double(&xdrs, &vacuum_to_air_limit);
 
   if (atmos.Stokes || input.backgr_pol) {
-    result &= xdr_vector(&xdrs, (char *) spectrum->Stokes_Q[0], Nintensity, 
+    result &= xdr_vector(&xdrs, (char *) spectrum->Stokes_Q[0], Nintensity,
 			 sizeof(double), (xdrproc_t) xdr_double);
-    result &= xdr_vector(&xdrs, (char *) spectrum->Stokes_U[0], Nintensity, 
+    result &= xdr_vector(&xdrs, (char *) spectrum->Stokes_U[0], Nintensity,
 			 sizeof(double), (xdrproc_t) xdr_double);
-    result &= xdr_vector(&xdrs, (char *) spectrum->Stokes_V[0], Nintensity, 
+    result &= xdr_vector(&xdrs, (char *) spectrum->Stokes_V[0], Nintensity,
 			 sizeof(double), (xdrproc_t) xdr_double);
   }
 
@@ -137,7 +137,7 @@ void writeSpectrum(Spectrum *spectrum)
       }
       for (nspect = 0;  nspect < spectrum->Nspect;  nspect++)
 	writeJ20lambda(nspect, spectrum->J20[nspect]);
-      
+
       close(spectrum->fd_J20);
     }
   }

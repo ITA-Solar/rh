@@ -41,7 +41,7 @@ typedef struct {
   bool_t    do_fudge;
   int       Nfudge;
   // for now here, in the future perhaps write things in io.h:
-  int       j_ncid, jlambda_var, j20_var; 
+  int       j_ncid, jlambda_var, j20_var;
   double   *lambda_fudge, **fudge;
   double **chi_c,**eta_c,*sca_c,**chip_c;
 } BackgroundData;
@@ -72,6 +72,8 @@ void PiecewiseStokes(int nspect, int mu, bool_t to_obs,
 		     double *chi_I, double **S, double **I, double *Psi);
 void Piecewise_Hermite_1D(int nspect, int mu, bool_t to_obs,
 		  double *chi, double *S, double *I, double *Psi);
+void PieceBezier_1D(int nspect, int mu, bool_t to_obs,
+          double *chi, double *S, double *I, double *Psi);
 
 
 #endif /* !__GEOMETRY_H__ */

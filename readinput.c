@@ -2,14 +2,14 @@
 
        Version:       rh2.0, 1-D plane-parallel
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Mon Jul 11 09:12:48 2011 --
+       Last modified: Wed Jul 24 13:00:16 2013 --
 
        --------------------------                      ----------RH-- */
 
 /* --- Reads input data for and defines keywords for 1-D
        plane-parallel version --                       -------------- */
 
- 
+
 #include <string.h>
 
 #include "rh.h"
@@ -82,7 +82,8 @@ void readInput()
     {"NG_ORDER",  "0", FALSE, KEYWORD_OPTIONAL, &input.Ngorder, setintValue},
     {"NG_PERIOD", "1", FALSE, KEYWORD_OPTIONAL, &input.Ngperiod,
      setintValue},
-    
+    {"NG_MOLECULES", "FALSE", FALSE, KEYWORD_DEFAULT, &input.accelerate_mols,
+     setboolValue},
     {"PRD_N_MAX_ITER", "3", FALSE, KEYWORD_OPTIONAL, &input.PRD_NmaxIter,
      setintValue},
     {"PRD_ITER_LIMIT", "1.0E-2", FALSE, KEYWORD_OPTIONAL, &input.PRDiterLimit,
@@ -99,11 +100,16 @@ void readInput()
      setboolValue},
     {"BACKGR_IN_MEM", "FALSE", FALSE, KEYWORD_OPTIONAL, &input.backgr_in_mem,
      setboolValue},
-    {"XRD", "FALSE", FALSE, KEYWORD_DEFAULT, &input.XRD, setboolValue}, 
+    {"XRD", "FALSE", FALSE, KEYWORD_DEFAULT, &input.XRD, setboolValue},
 
     {"J_FILE",     "", FALSE, KEYWORD_REQUIRED, input.JFile, setcharValue},
     {"BACKGROUND_FILE", "", FALSE, KEYWORD_REQUIRED, input.background_File,
      setcharValue},
+    {"BACKGROUND_RAY_FILE", "background.ray", FALSE,
+     KEYWORD_OPTIONAL, input.background_ray_File,
+     setcharValue},
+    {"OLD_BACKGROUND", "FALSE", FALSE, KEYWORD_OPTIONAL,
+     &input.old_background, setboolValue},
     {"STARTING_J", "", FALSE, KEYWORD_REQUIRED, &input.startJ,
      setstartValue},
     {"HYDROGEN_LTE", "FALSE", FALSE, KEYWORD_DEFAULT, &atmos.H_LTE,
@@ -122,7 +128,7 @@ void readInput()
      setcharValue},
     {"METALLICITY", "0.0", FALSE, KEYWORD_DEFAULT, &input.metallicity,
      setdoubleValue},
-    
+
     {"ATMOS_OUTPUT", "atmos.out", FALSE, KEYWORD_DEFAULT, input.atmos_output,
      setcharValue},
     {"GEOMETRY_OUTPUT", "geometry.out", FALSE, KEYWORD_OPTIONAL,
@@ -148,8 +154,6 @@ void readInput()
      setdoubleValue},
     {"VACUUM_TO_AIR", "0", FALSE, KEYWORD_OPTIONAL, &spectrum.vacuum_to_air,
      setboolValue},
-    {"SINTERPOLATION", "LINEAR", FALSE, KEYWORD_DEFAULT, &input.Sinterpolation,
-     setSinterpolation},
 
     /* --- Magnetic field related inputs go here --     ------------- */
 
@@ -163,6 +167,11 @@ void readInput()
      &input.magneto_optical, setboolValue},
     {"BACKGROUND_POLARIZATION", "FALSE", FALSE, KEYWORD_DEFAULT,
      &input.backgr_pol, setboolValue},
+    {"XDR_ENDIAN", "TRUE", FALSE, KEYWORD_OPTIONAL,
+     &input.xdr_endian, setboolValue},
+
+    {"S_INTERPOLATION", "LINEAR", FALSE, KEYWORD_DEFAULT,
+     &input.S_interpolation, set_S_interpolation},
 
     {"INTERPOLATE_3D", "LINEAR_3D", FALSE, KEYWORD_DEFAULT,
      &input.interpolate_3D, setInterpolate_3D},
@@ -198,19 +207,19 @@ void readInput()
      setdoubleValue},
     {"COLLRAD_SWITCH_INI", "1.0", FALSE, KEYWORD_OPTIONAL, &input.crsw_ini,
      setdoubleValue},
-     
+
     {"PRD_SWITCH",     "0.0", FALSE, KEYWORD_OPTIONAL, &input.prdsw,
-     setdoubleValue},     
-     
+     setdoubleValue},
+
     {"N_PESC_ITER", "3",  FALSE, KEYWORD_OPTIONAL, &input.NpescIter,
      setintValue},
-     
+
     {"VTURB_MULTIPLIER",     "1.0", FALSE, KEYWORD_OPTIONAL, &input.vturb_mult,
      setdoubleValue},
-     
+
     {"VTURB_ADD",     "0.0", FALSE, KEYWORD_OPTIONAL, &input.vturb_add,
      setdoubleValue},
-     
+
     {"15D_RERUN", "FALSE", FALSE, KEYWORD_OPTIONAL, &input.p15d_rerun,
      setboolValue},
     {"15D_DEPTH_REFINE", "FALSE", FALSE, KEYWORD_OPTIONAL, &input.p15d_refine,
@@ -259,7 +268,7 @@ void readInput()
             "spherical geometry");
     }
     break;
- 
+
   case TWO_D_PLANE:
     if (input.Eddington && atmos.angleSet.set != NO_SET) {
       Error(WARNING, routineName,
@@ -297,7 +306,7 @@ void readInput()
     break;
   }
   /* --- Stokes for the moment only in 1D plane --     -------------- */
- 
+
   if (strcmp(input.Stokes_input, "none")) {
     switch (topology) {
     case ONE_D_PLANE:
@@ -359,7 +368,7 @@ void readInput()
             " in 1-D Cartesian geometry");
     break;
   }
-  
+
   /* --- If called with -showkeywords commandline option -- --------- */
 
   if (commandline.showkeywords) showValues(Nkeyword, theKeywords);

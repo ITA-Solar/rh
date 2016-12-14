@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Thu Sep 29 21:36:56 2011 --
+       Last modified: Wed Jul 24 12:52:46 2013 --
 
        --------------------------                      ----------RH-- */
 
@@ -38,7 +38,7 @@
        data files with transition lists in the molecular input files.
     -- Bound-free absorption and emission by OH and CH molecules.
 
- * Atomic models are specified in atoms.input, molecules in 
+ * Atomic models are specified in atoms.input, molecules in
    molecules.input
 
  * Entries for the atoms.input and molecules.input files should have
@@ -66,7 +66,7 @@
    data for this metal (generic atomic input data format), and
    population_file is the input file containing the NLTE population
    numbers from a previous calculation. This last entry is only read when
-   the second entry is set to NLTE. 
+   the second entry is set to NLTE.
 
    -- Units:
       Wavelengths are given in nm, densities in m^-3, opacities in m^2,
@@ -178,6 +178,17 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
     return;
   }
 
+  if (input.old_background) {
+    if ((atmos.fd_background =
+	 open(input.background_File, O_RDONLY, 0)) == -1) {
+      sprintf(messageStr, "Unable to open input file %s",
+	      input.background_File);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
+    }
+    readBRS();
+    return;
+  }
+
   getCPU(3, TIME_START, NULL);
   if (strcmp(input.fudgeData, "none")) {
     do_fudge = TRUE;
@@ -225,7 +236,7 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
          When the atmosphere is not moving and has no magnetic fields
          these just point to the total quantities chi_c and eta_c.
 
-   Note: In case of magnetic fields in the atmosphere chi, eta and 
+   Note: In case of magnetic fields in the atmosphere chi, eta and
          chip, and chi_c, eta_c and chip_c contain all four Stokes
          parameters, and should be allocated a 4 and 3 times larger
          storage space, respectively.
@@ -243,7 +254,7 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
   chi   = (double *) malloc(NrecStokes*atmos.Nspace * sizeof(double));
   eta   = (double *) malloc(NrecStokes*atmos.Nspace * sizeof(double));
   scatt = (double *) malloc(atmos.Nspace * sizeof(double));
-    
+
   if (atmos.Stokes && input.magneto_optical) {
     chip   = (double *) malloc(3*atmos.Nspace * sizeof(double));
     chip_c = (double *) malloc(3*atmos.Nspace * sizeof(double));
@@ -296,7 +307,7 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
   backgrrecno = 0;
 
   if (atmos.moving || atmos.Stokes) {
-    atmos.backgrrecno = 
+    atmos.backgrrecno =
       (long *) malloc(2*spectrum.Nspect*atmos.Nrays * sizeof(long));
   } else
     atmos.backgrrecno = (long *) malloc(spectrum.Nspect * sizeof(long));
@@ -310,7 +321,7 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
 	    input.background_File);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
-  
+
   /* --- Go through the spectrum and add the different opacity and
          emissivity contributions. This is the main loop --  -------- */
 
@@ -381,7 +392,7 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
     }
     Hydrogen_ff(wavelength, chi);
     for (k = 0;  k < atmos.Nspace;  k++) {
-      chi_ai[k] += chi[k]; 
+      chi_ai[k] += chi[k];
       eta_ai[k] += chi[k] * Bnu[k];
     }
     /* --- Rayleigh scattering by neutral hydrogen --  -------------- */
@@ -402,7 +413,7 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
 
     if (H2plus_ff(wavelength, chi)) {
       for (k = 0;  k < atmos.Nspace;  k++) {
-	chi_ai[k] += chi[k]; 
+	chi_ai[k] += chi[k];
 	eta_ai[k] += chi[k] * Bnu[k];
       }
     }
@@ -416,7 +427,7 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
     }
     if (H2minus_ff(wavelength, chi)) {
       for (k = 0;  k < atmos.Nspace;  k++) {
-	chi_ai[k] += chi[k]; 
+	chi_ai[k] += chi[k];
 	eta_ai[k] += chi[k] * Bnu[k];
       }
     }
@@ -464,7 +475,7 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
 	    eta_c[k] = eta_ai[k];
             sca_c[k] = sca_ai[k];
 	  }
-	  
+
           /* --- Zero the polarized quantities, if necessary -- ----- */
 
 	  if (atmos.Stokes) {
@@ -552,16 +563,16 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
 	  }
 	  /* --- Store angle-dependent results only if at least one
                  line was found at this wavelength --  -------------- */
-      
+
 	  atmos.backgrrecno[index] = backgrrecno;
 	  if ((mu == atmos.Nrays-1 && to_obs) ||
-	      (atmos.backgrflags[nspect].hasline && 
+	      (atmos.backgrflags[nspect].hasline &&
 	       (atmos.moving || atmos.backgrflags[nspect].ispolarized))) {
 	    backgrrecno += writeBackground(nspect, mu, to_obs,
 					   chi_c, eta_c, sca_c, chip_c);
 	  }
 	}
-      }    
+      }
     } else {
       /* --- Angle-independent case. First, add opacity from passive
 	     atomic lines (including hydrogen) --      -------------- */
@@ -617,7 +628,7 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
 
   if (write_analyze_output) {
     /* --- Write background record structure --          ------------ */
-    
+
     writeBRS();
 
     /* --- Write out the metals and molecules --         ------------ */
@@ -630,16 +641,16 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
 
   if (atmos.Natom > 1) {
     for (n = 1;  n < atmos.Natom;  n++)
-      if (!atmos.atoms[n].active  &&  
+      if (!atmos.atoms[n].active  &&
           !atmos.hydrostatic  &&
 	  input.solve_ne < ITERATION)
 	freeAtom(&atmos.atoms[n]);
   }
   if (atmos.Nmolecule > 1) {
     for (n = 1;  n < atmos.Nmolecule;  n++)
-      if (!atmos.molecules[n].active  &&  
+      if (!atmos.molecules[n].active  &&
           !atmos.hydrostatic  &&
-	  input.solve_ne < ITERATION) 
+	  input.solve_ne < ITERATION)
 	freeMolecule(&atmos.molecules[n]);
   }
 

@@ -2,7 +2,7 @@
 
        Version:       rh2.0, 1-D plane-parallel
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Thu Apr 10 13:49:58 2003 --
+       Last modified: Fri Feb 24 08:21:55 2012 --
 
        --------------------------                      ----------RH-- */
 
@@ -39,6 +39,8 @@ double Feautrier(int nspect, int mu, double *chi, double *S,
 		 enum FeautrierOrder order, double *P, double *Psi);
 void Piecewise_1D(int nspect, int mu, bool_t to_obs,
 		  double *chi, double *S, double *I, double *Psi);
+void PieceBezier_1D(int nspect, int mu, bool_t to_obs,
+		    double *chi, double *S, double *I, double *Psi);
 void PiecewiseStokes(int nspect, int mu, bool_t to_obs,
 		     double *chi_I, double **S, double **I, double *Psi);
 

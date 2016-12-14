@@ -55,11 +55,11 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
   mpi.comm = MPI_COMM_WORLD;
   mpi.info = MPI_INFO_NULL;
 
-  /* Open log files */ 
+  /* Open log files */
   sprintf(logfile, (run_ray) ? RAY_MPILOG_TEMPLATE : MPILOG_TEMPLATE, mpi.rank);
 
   if ((mpi.logfile = fopen(logfile, "w")) == NULL) {
-    sprintf(messageStr, "Process %d: Unable to open log file %s", 
+    sprintf(messageStr, "Process %d: Unable to open log file %s",
 	    mpi.rank, logfile);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
@@ -108,7 +108,7 @@ void initParallelIO(bool_t run_ray, bool_t writej) {
   mpi.dpopsmax_hist = matrix_double(MAX(mpi.Ntasks, 1), input.NmaxIter);
 
   mpi.zcut_hist[mpi.task] = mpi.zcut;
-  
+
   /* Fill mpi.niter with ones, to avoid problems with crashes on 1st iteration */
   for (i=0; i < mpi.Ntasks; i++) mpi.niter[i] = 1;
 
@@ -187,29 +187,23 @@ void UpdateAtmosDep(void) {
       freeMatrix((void **) atom->nstar);
       atom->nstar = matrix_double(atom->Nlevel, atmos.Nspace);
     }
-    
-    /* When H is treated in LTE, n is just a pointer to nstar,
-       so we don't need to free it */
-    if (nact == 0) {
-      if (!atmos.H_LTE) {
-        freeMatrix((void **) atom->n);
-	atom->n = matrix_double(atom->Nlevel, atmos.Nspace);	
-      } 
+
+    /* Only allocate n again for active atoms or atoms with read populations
+       Hydrogen is a special case because populations can be read differently.
+       When H_LTE is on, n is just a pointer to nstar and needs no freeing.  */
+    if ((atom->active) || (atom->popsinFile) ||
+        ((nact == 0) && (!atmos.H_LTE))) {
+         if (atom->n != NULL) freeMatrix((void **) atom->n);
+         atom->n = matrix_double(atom->Nlevel, atmos.Nspace);
     } else {
-	/* Only allocate n again for active or atoms with read populations */
-	if ((atom->active) || (atom->popsFile)) {
-	  if (atom->n != NULL) freeMatrix((void **) atom->n);
-	  atom->n = matrix_double(atom->Nlevel, atmos.Nspace);
-	} else {
-	  /* alias to nstar again, just in case */
-	  atom->n = atom->nstar; 
-	}
+     /* alias to nstar again, just in case */
+         atom->n = atom->nstar;
     }
-    
-    
+
+
     for (k = 0;  k < atmos.Nspace;  k++)
       atom->ntotal[k] = atom->abundance * atmos.nHtot[k];
-    
+
     if (atom->Nline > 0) {
       vtherm = 2.0*KBOLTZMANN/(AMU * atom->weight);
       for (k = 0;  k < atmos.Nspace;  k++)
@@ -221,13 +215,13 @@ void UpdateAtmosDep(void) {
   for (nact = 0; nact < atmos.Nactiveatom; nact++) {
     atom = atmos.activeatoms[nact];
 
-    
+
     /* Rewind atom files to point just before collisional data */
     if ((ierror = fseek(atom->fp_input, io.atom_file_pos[nact], SEEK_SET))) {
       sprintf(messageStr, "Unable to rewind atom file for %s", atom->ID);
       Error(ERROR_LEVEL_2, routineName, messageStr);
     }
-    
+
     /* Reallocate some stuff (because of varying Nspace) */
 
     /* Free collision rate array, will be reallocated by calls in Background_p */
@@ -239,7 +233,7 @@ void UpdateAtmosDep(void) {
     /* Allocate Gamma, as iterate released the memory */
     atom->Gamma = matrix_double(SQ(atom->Nlevel), atmos.Nspace);
 
-    
+
     /* Initialise some continuum quantities */
     for (kr = 0; kr < atom->Ncont; kr++) {
       atom->continuum[kr].Rij = (double *) realloc(atom->continuum[kr].Rij,
@@ -251,12 +245,12 @@ void UpdateAtmosDep(void) {
 	atom->continuum[kr].Rji[k] = 0.0;
       }
     }
-    
-    
+
+
     /* Initialise some line quantities */
     for (kr = 0;  kr < atom->Nline;  kr++) {
       line = &atom->line[kr];
-      
+
       if (line->phi  != NULL) {
 	freeMatrix((void **) line->phi);
 	line->phi = NULL;
@@ -265,9 +259,9 @@ void UpdateAtmosDep(void) {
 	free(line->wphi);
 	line->wphi = NULL;
       }
-      
+
       if (atmos.moving && line->polarizable && (input.StokesMode >= FIELD_FREE)) {
-	
+
 	if (line->phi_Q != NULL) {
 	  freeMatrix((void **) line->phi_Q);
 	  line->phi_Q = NULL;
@@ -280,7 +274,7 @@ void UpdateAtmosDep(void) {
 	  freeMatrix((void **) line->phi_V);
 	  line->phi_V = NULL;
 	}
-	
+
 
 	if (input.magneto_optical) {
 	  if (line->psi_Q != NULL) {
@@ -297,7 +291,7 @@ void UpdateAtmosDep(void) {
 	  }
 	}
       }
-	
+
 
       /* realloc because of varying Nspace */
       line->Rij = (double *) realloc(line->Rij, atmos.Nspace * sizeof(double));
@@ -306,15 +300,15 @@ void UpdateAtmosDep(void) {
       for (k = 0;  k < atmos.Nspace;  k++) {
 	line->Rij[k] = 0.0;
 	line->Rji[k] = 0.0;
-      }	
-     
-      
+      }
+
+
       if (line->PRD) {
 	if (line->Ng_prd != NULL) {
 	  NgFree(line->Ng_prd);
 	  line->Ng_prd = NULL;
 	}
-	
+
 	if (line->fp_GII != NULL) {
 	  fclose(line->fp_GII);
 	  line->fp_GII = NULL;
@@ -324,12 +318,12 @@ void UpdateAtmosDep(void) {
 	  Nlamu = 2*atmos.Nrays * line->Nlambda;
 	else
 	  Nlamu = line->Nlambda;
-	
+
 	/* Idea: instead of doing this, why not free and just set line->rho_prd = NULL,
 	   (and also line->Qelast?), because profile.c will act on that and reallocate */
 	if (line->rho_prd != NULL) freeMatrix((void **) line->rho_prd);
 	line->rho_prd = matrix_double(Nlamu, atmos.Nspace);
-	
+
 	if (line->Qelast != NULL) {
 	  line->Qelast = (double *) realloc(line->Qelast, atmos.Nspace * sizeof(double));
 	} else {
@@ -342,9 +336,9 @@ void UpdateAtmosDep(void) {
 	    line->rho_prd[la][k] = 1.0;
 	}
 
-	// reset interpolation weights 
+	// reset interpolation weights
 	if (input.PRD_angle_dep == PRD_ANGLE_APPROX) {
-	  Nlamu = 2*atmos.Nrays * line->Nlambda;	  
+	  Nlamu = 2*atmos.Nrays * line->Nlambda;
 	  if (line->frac != NULL) {
 	    freeMatrix((void **) line->frac);
 	    line->frac = NULL;
@@ -389,11 +383,11 @@ void UpdateAtmosDep(void) {
     vtherm = 2.0*KBOLTZMANN / (AMU * molecule->weight);
     for (k = 0;  k < atmos.Nspace;  k++)
       molecule->vbroad[k] = sqrt(vtherm*atmos.T[k] + SQ(atmos.vturb[k]));
-    
+
     if (molecule->active) {
       /* Allocate Gamma, as iterate released the memory */
       molecule->Gamma = matrix_double(SQ(molecule->Nv), atmos.Nspace);
-      
+
       LTEmolecule(molecule);
 
       /* Free CO collision rate array, will be reallocated in initSolution_p */
@@ -450,7 +444,7 @@ void Error(enum errorlevel level, const char *routineName,
       fprintf(commandline.logfile, "%s", (messageStr) ? messageStr : "");
     return;
   case WARNING:
-    if ((mpi.single_log) && (mpi.rank != 0)) 
+    if ((mpi.single_log) && (mpi.rank != 0))
       fprintf(mpi.logfile, "\nProcess %3d: -WARNING in routine %s\n %s\n",
 	      mpi.rank, routineName, (messageStr) ? messageStr : " (Undocumented)\n");
     fprintf(commandline.logfile, "\nProcess %d: -WARNING in routine %s\n %s\n",
@@ -461,7 +455,7 @@ void Error(enum errorlevel level, const char *routineName,
       fprintf(commandline.logfile, "\a\n-ERROR in routine %s\n %s \n %s\n",
 	      routineName,(messageStr) ? messageStr : " (Undocumented)\n",
 	      "Trying to continue.....");
-      if (commandline.logfile == mpi.logfile) 
+      if (commandline.logfile == mpi.logfile)
 	fprintf(mpi.main_logfile, "\a\n-Process %3d: ERROR in routine %s\n %s \n %s\n",
 		mpi.rank, routineName,(messageStr) ? messageStr : " (Undocumented)\n",
 		"Trying to continue.....");
@@ -470,7 +464,7 @@ void Error(enum errorlevel level, const char *routineName,
       sprintf(errorStr, "\a\n\n-FATAL_ERROR in routine %s\n %s \n %s\n",
 	      routineName,(messageStr) ? messageStr : " (Undocumented)\n",
 	      "Exiting.....");
-      if (commandline.logfile == mpi.logfile) 
+      if (commandline.logfile == mpi.logfile)
 	fprintf(mpi.main_logfile, "\nProcess %3d: %s", mpi.rank, errorStr);
 
       fprintf(commandline.logfile, "%s", errorStr);
@@ -502,11 +496,11 @@ void copyBufVars(bool_t writej) {
     for (nspect=0; nspect < spectrum.Nspect; nspect++) {
       i = 0;
       for (ndep=mpi.zcut; ndep < infile.nz; ndep++, i++) {
-        iobuf.J[(mpi.task*spectrum.Nspect + nspect)*infile.nz + ndep] = 
+        iobuf.J[(mpi.task*spectrum.Nspect + nspect)*infile.nz + ndep] =
             (float) spectrum.J[nspect][i];
       }
     }
-    
+
     if (input.backgr_pol) {
       memcpy((void *) &iobuf.J20[ind*spectrum.Nspect], (void *) spectrum.J20[0],
       	   spectrum.Nspect * atmos.Nspace * sizeof(double));
@@ -548,11 +542,11 @@ void copyBufVars(bool_t writej) {
     molecule = atmos.activemols[nact];
 
     /* nv, nvstar */
-    memcpy((void *) &iobuf.nv[nact][ind*molecule->Nv],     
-	   (void *) molecule->nv[0], 
+    memcpy((void *) &iobuf.nv[nact][ind*molecule->Nv],
+	   (void *) molecule->nv[0],
 	   molecule->Nv * atmos.Nspace * sizeof(double));
-    memcpy((void *) &iobuf.nvstar[nact][ind*molecule->Nv], 
-	   (void *) molecule->nvstar[0], 
+    memcpy((void *) &iobuf.nvstar[nact][ind*molecule->Nv],
+	   (void *) molecule->nvstar[0],
 	   molecule->Nv * atmos.Nspace * sizeof(double));
 
   }
@@ -578,14 +572,14 @@ void allocBufVars(bool_t writej) {
   if (writej) {
     iobuf.J = (float *) calloc(jsize, sizeof(float));
     if (iobuf.J == NULL) Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
-    
+
     if (input.backgr_pol) {
       iobuf.J20 = (float *) calloc(jsize, sizeof(float));
       if (iobuf.J20 == NULL) Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
     }
   }
 
-  
+
   if (atmos.Nactiveatom > 0) {
     iobuf.n     = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
     iobuf.nstar = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
@@ -606,32 +600,32 @@ void allocBufVars(bool_t writej) {
     nsize  = mpi.Ntasks * atom->Nlevel * infile.nz * sizeof(double);
     RLsize = mpi.Ntasks * atom->Nline  * infile.nz * sizeof(double);
     RCsize = mpi.Ntasks * atom->Ncont  * infile.nz * sizeof(double);
-    
+
     /* n, nstar */
     iobuf.n[nact]     = (double *) malloc(nsize);
-    if (iobuf.n[nact] == NULL) 
+    if (iobuf.n[nact] == NULL)
       Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
 
     iobuf.nstar[nact] = (double *) malloc(nsize);
-    if (iobuf.nstar[nact] == NULL) 
+    if (iobuf.nstar[nact] == NULL)
       Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
 
     /* Rij, Rji for lines */
     iobuf.RijL[nact] = (double *) malloc(RLsize);
-    if (iobuf.RijL[nact] == NULL) 
+    if (iobuf.RijL[nact] == NULL)
       Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
 
     iobuf.RjiL[nact] = (double *) malloc(RLsize);
-    if (iobuf.RjiL[nact] == NULL) 
+    if (iobuf.RjiL[nact] == NULL)
       Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
 
     /* Rij, Rji for continua */
     iobuf.RijC[nact] = (double *) malloc(RCsize);
-    if (iobuf.RijC[nact] == NULL) 
+    if (iobuf.RijC[nact] == NULL)
       Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
 
     iobuf.RjiC[nact] = (double *) malloc(RCsize);
-    if (iobuf.RjiC[nact] == NULL) 
+    if (iobuf.RjiC[nact] == NULL)
       Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
 
   }
@@ -640,14 +634,14 @@ void allocBufVars(bool_t writej) {
   for (nact = 0;  nact < atmos.Nactivemol;  nact++) {
     molecule = atmos.activemols[nact];
     nsize  = mpi.Ntasks * molecule->Nv * infile.nz * sizeof(double);
-    
+
     /* nv, nvstar */
     iobuf.nv[nact]     = (double *) malloc(nsize);
-    if (iobuf.nv[nact] == NULL) 
+    if (iobuf.nv[nact] == NULL)
       Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
 
     iobuf.nvstar[nact] = (double *) malloc(nsize);
-    if (iobuf.nvstar[nact] == NULL) 
+    if (iobuf.nvstar[nact] == NULL)
       Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
   }
   return;
@@ -687,7 +681,7 @@ void freeBufVars(bool_t writej) {
 
   free(iobuf.nv);
   free(iobuf.nvstar);
-  
+
 
   return;
 }
@@ -699,10 +693,10 @@ void writeOutput(bool_t writej) {
 /* Writes all output files, in the case where output all at once is active */
 
   /* Write output in order of rank. First 0, then send to next, until all
-     processes have written the output. 
+     processes have written the output.
 
      This can also be used with an integer, like if mpi.rank > ml,
-     and then adding ml to mpi.rank in the send. But for now not using 
+     and then adding ml to mpi.rank in the send. But for now not using
   if (mpi.rank > 0)
     MPI_Recv(&msg, 0, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, mpi.comm, &status);
   */
@@ -715,7 +709,7 @@ void writeOutput(bool_t writej) {
     sprintf(messageStr, "Process %3d: --- START output\n", mpi.rank);
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);
-    
+
     writeMPI_all();
     //writeAux_all();
     
@@ -723,7 +717,7 @@ void writeOutput(bool_t writej) {
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);
   }
-    
+
 
 
   return;

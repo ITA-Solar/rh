@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Wed Jan 26 11:32:34 2000 --
+       Last modified: Thu Jan 19 16:51:09 2012 --
 
        --------------------------                      ----------RH-- */
 
@@ -48,6 +48,8 @@ bool_t readB(Atmosphere *atmos)
   const char routineName[] = "readB";
 
   bool_t  result = TRUE;
+  size_t  recordsize;
+  off_t   offset;
   FILE   *fp_stokes;
   XDR     xdrs;
 
@@ -57,18 +59,31 @@ bool_t readB(Atmosphere *atmos)
     sprintf(messageStr, "Unable to open inputfile %s", input.Stokes_input);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
-  xdrstdio_create(&xdrs, fp_stokes, XDR_DECODE);
 
   atmos->B = (double *) malloc(atmos->Nspace * sizeof(double));
   atmos->gamma_B = (double *) malloc(atmos->Nspace * sizeof(double));
   atmos->chi_B   = (double *) malloc(atmos->Nspace * sizeof(double));
 
-  result &= xdr_vector(&xdrs, (char *) atmos->B, atmos->Nspace,
-		       sizeof(double), (xdrproc_t) xdr_double);
-  result &= xdr_vector(&xdrs, (char *) atmos->gamma_B, atmos->Nspace,
-		       sizeof(double), (xdrproc_t) xdr_double);
-  result &= xdr_vector(&xdrs, (char *) atmos->chi_B, atmos->Nspace,
-		       sizeof(double), (xdrproc_t) xdr_double);
+  if (input.xdr_endian) {
+    xdrstdio_create(&xdrs, fp_stokes, XDR_DECODE);
+
+    result &= xdr_vector(&xdrs, (char *) atmos->B, atmos->Nspace,
+			 sizeof(double), (xdrproc_t) xdr_double);
+    result &= xdr_vector(&xdrs, (char *) atmos->gamma_B, atmos->Nspace,
+			 sizeof(double), (xdrproc_t) xdr_double);
+    result &= xdr_vector(&xdrs, (char *) atmos->chi_B, atmos->Nspace,
+			 sizeof(double), (xdrproc_t) xdr_double);
+    xdr_destroy(&xdrs);
+  } else {
+    recordsize = atmos->Nspace;
+
+    result &= (fread(atmos->B, sizeof(double), recordsize,
+		     fp_stokes) == recordsize);
+    result &= (fread(atmos->gamma_B, sizeof(double), recordsize,
+		     fp_stokes) == recordsize);
+    result &= (fread(atmos->chi_B, sizeof(double), recordsize,
+		     fp_stokes) == recordsize);
+  }
 
   if (!result) {
     sprintf(messageStr, "Unable to read from input file %s",
@@ -76,7 +91,6 @@ bool_t readB(Atmosphere *atmos)
     Error(ERROR_LEVEL_1, routineName, messageStr);
   }
 
-  xdr_destroy(&xdrs);
   fclose(fp_stokes);
 
   return result;

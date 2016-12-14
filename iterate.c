@@ -8,7 +8,7 @@
 
 /* --- Main iteration routine --                       -------------- */
 
- 
+
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
@@ -52,6 +52,7 @@ void Iterate(int NmaxIter, double iterLimit)
   double cswitch;
 
   bool_t eval_operator, write_analyze_output, equilibria_only;
+  int       Ngorder;
   double dpopsmax, PRDiterlimit;
   Atom *atom;
   Molecule *molecule;
@@ -71,26 +72,28 @@ void Iterate(int NmaxIter, double iterLimit)
   }
   for (nact = 0;  nact < atmos.Nactivemol;  nact++) {
     molecule = atmos.activemols[nact];
+    Ngorder  = (input.accelerate_mols) ? input.Ngorder : 0;
+
     molecule->Ng_nv = NgInit(molecule->Nv*atmos.Nspace, input.Ngdelay,
-			       input.Ngorder, input.Ngperiod,
+			       Ngorder, input.Ngperiod,
 			       molecule->nv[0]);
   }
   /* --- Start of the main iteration loop --             ------------ */
 
   niter = 1;
-  
+
   /* Collisional-radiative switching ? */
   if (input.crsw != 0.0)
     cswitch = input.crsw_ini;
   else
     cswitch = 1.0;
-    
+
   /* PRD switching ? */
   if (input.prdsw > 0.0)
     input.prdswitch = 0.0;
   else
     input.prdswitch = 1.0;
-  
+
   while (niter <= NmaxIter && !StopRequested()) {
     getCPU(2, TIME_START, NULL);
 
@@ -112,7 +115,7 @@ void Iterate(int NmaxIter, double iterLimit)
     dpopsmax = updatePopulations(niter);
 
     if (atmos.NPRDactive > 0) {
-      
+
       /* --- Redistribute intensity in PRD lines if necessary -- ---- */
 
       if (input.PRDiterLimit < 0.0)
@@ -127,15 +130,15 @@ void Iterate(int NmaxIter, double iterLimit)
 
     if (dpopsmax < iterLimit && cswitch <= 1.0 && input.prdswitch == 1.0 ) break;
     niter++;
-    
+
     if (input.solve_ne == ITERATION)
       Background(write_analyze_output=TRUE, equilibria_only=FALSE);
-    
+
     /* Update collisional multiplier factor */
     if (input.crsw > 0)
       cswitch = MAX(1.0, cswitch * pow(0.1, 1./input.crsw));
 
-    /* Update PRD switching */ 
+    /* Update PRD switching */
     if (input.prdsw > 0.0)
       input.prdswitch = MIN(1.0, input.prdsw * (double) (niter * niter) ); // quadratic, for now
 
@@ -150,12 +153,12 @@ void Iterate(int NmaxIter, double iterLimit)
       Hydrostatic(N_MAX_HSE_ITER, HSE_ITER_LIMIT);
     }
   }
-  
+
       // Tiago: temporary printouts to get PRD rho after iteration
       /*
        atom = atmos.activeatoms[0];
        line = &atom->line[0];
-       
+
        switch (input.PRD_angle_dep) {
 	case PRD_ANGLE_INDEP:
 	  printf("rho_prd = \n");
@@ -164,7 +167,7 @@ void Iterate(int NmaxIter, double iterLimit)
 	  }
           //exit(1);
 	  break;
-	
+
 	case PRD_ANGLE_DEP:
 	    for (mu = 0; mu < atmos.Nrays; mu++) {
 	      for (to_obs = 0; to_obs <= 1; to_obs++) {
@@ -179,15 +182,15 @@ void Iterate(int NmaxIter, double iterLimit)
           break;
        }
       */
-      
-      
-  
+
+
+
 
   for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
     atom = atmos.activeatoms[nact];
     freeMatrix((void **) atom->Gamma);
     NgFree(atom->Ng_n);
-  } 
+  }
   for (nact = 0;  nact < atmos.Nactivemol;  nact++) {
     molecule = atmos.activemols[nact];
     freeMatrix((void **) molecule->Gamma);
@@ -235,7 +238,7 @@ double solveSpectrum(bool_t eval_operator, bool_t redistribute)
   dJmax = 0.0;
 
   /* zero out J in gas parcel's frame */
-  if (spectrum.updateJ && input.PRD_angle_dep == PRD_ANGLE_APPROX 
+  if (spectrum.updateJ && input.PRD_angle_dep == PRD_ANGLE_APPROX
       && atmos.Nrays > 1 && atmos.NPRDactive > 0){
     for (k = 0;  k < atmos.Nspace;  k++) {
       for (nspect = 0;  nspect < spectrum.Nspect;  nspect++) {
@@ -293,9 +296,9 @@ double solveSpectrum(bool_t eval_operator, bool_t redistribute)
     free(thread_id);
     free(ti);
   } else {
-      
+
     /* --- Else call the solution for wavelengths sequentially -- --- */
-      
+
     for (nspect = 0;  nspect < spectrum.Nspect;  nspect++) {
       if (!redistribute ||
 	  (redistribute && containsPRDline(&spectrum.as[nspect]))) {
@@ -325,7 +328,7 @@ void *Formal_pthread(void *argument)
 {
   threadinfo *ti = (threadinfo *) argument;
 
-  /* --- Threads wrapper around Formal --              -------------- */ 
+  /* --- Threads wrapper around Formal --              -------------- */
 
   ti->dJ = Formal(ti->nspect, ti->eval_operator, ti->redistribute);
 

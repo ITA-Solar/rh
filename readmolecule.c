@@ -30,11 +30,11 @@
 
 
 #define COMMENT_CHAR   "#"
-
+#define N_MAX_CONFIG   10
 
 /* --- Special case: C^13 fraction for CO --           -------------- */
 
-#define C13_FRACTION    0.011
+#define C_13    0.011
 
 
 /* --- Special case: TI fractions for TiO --           -------------- */
@@ -66,13 +66,13 @@ extern char messageStr[];
 void readMolecule(Molecule *molecule, char *fileName, bool_t active)
 {
   const char routineName[] = "readMolecule";
-  register int k, m, n, kr, la;
+  register int k, m, n, kr, la, i;
 
   char    inputLine[MAX_LINE_SIZE], fitStr[20], line_data[MAX_LINE_SIZE],
           elementID[ATOM_ID_WIDTH+1], *token,
           popsFile[MAX_LINE_SIZE], labelStr[MAX_LINE_SIZE];
   bool_t  exit_on_EOF, match;
-  int     Nread, Nrequired, checkPoint, J_max, v_max, Ji, Jj;
+  int     Nread, Nrequired, checkPoint, J_max, v_max, Ji, Jj, nconfig;
   double  vtherm, dlambda, dlambda_wing, lambda;
   FILE   *fp_molecule;
   MolecularLine *mrt;
@@ -264,33 +264,90 @@ void readMolecule(Molecule *molecule, char *fileName, bool_t active)
            rotational levels in each vibrational level are assumed to
            have LTE ratio's. --                        -------------- */
 
-    v_max = 0;
-    J_max = 0;
+    v_max   = 0;
+    J_max   = 0;
+    nconfig = 0;
+
+    molecule->configs    = (char *) malloc(N_MAX_CONFIG * sizeof(char));
+    molecule->configs[0] = molecule->mrt[0].configi[0];
+    molecule->mrt[0].ecnoi = nconfig++;
+
     for (kr = 0;  kr < molecule->Nrt;  kr++) {
       mrt = molecule->mrt + kr;
 
-      v_max = MAX(v_max, mrt->vj);
+      v_max = MAX(v_max, MAX(mrt->vi, mrt->vj));
+
       Ji = (int) ((mrt->gi - 1) / 2);
       Jj = (int) ((mrt->gj - 1) / 2);
       J_max = MAX(J_max, MAX(Ji, Jj));
+
+      /* --- Collect the unique electronic configurations --      -- */
+
+      match = FALSE;
+      for (i = 0;  i < nconfig;  i++) {
+	if (mrt->configi[0] == molecule->configs[i]) {
+	  match = TRUE;
+          break;
+	}
+      }
+      if (!match) {
+        if (nconfig == N_MAX_CONFIG) {
+	  sprintf(messageStr, "nconfig = %d > N_MAX_CONFIG", nconfig + 1);
+	  Error(ERROR_LEVEL_2, routineName, messageStr);
+	}
+	molecule->configs[nconfig] = mrt->configi[0];
+        mrt->ecnoi = nconfig++;
+      }
+      match = FALSE;
+      for (i = 0;  i < nconfig;  i++) {
+	if (mrt->configj[0] == molecule->configs[i]) {
+	  match = TRUE;
+          break;
+	}
+      }
+      if (!match) {
+        if (nconfig == N_MAX_CONFIG) {
+	  sprintf(messageStr, "nconfig = %d > N_MAX_CONFIG", nconfig + 1);
+	  Error(ERROR_LEVEL_2, routineName, messageStr);
+	}
+	molecule->configs[nconfig] = mrt->configj[0];
+        mrt->ecnoj = nconfig++;
+      }
     }
     molecule->NJ = J_max + 1;
     molecule->Nv = v_max + 1;
+    molecule->Nconfig = nconfig;
 
-    molecule->nv     = matrix_double(molecule->Nv, atmos.Nspace);
-    molecule->nvstar = matrix_double(molecule->Nv, atmos.Nspace);
-    molecule->pfv    = matrix_double(molecule->Nv, atmos.Nspace);
+    molecule->configs = (char *) realloc(molecule->configs,
+				  (molecule->Nconfig + 1) * sizeof(char));
+    molecule->configs[molecule->Nconfig] = '\0';
+    sprintf(messageStr,
+	    " --- Found %d electronic configurations for molecule %s: %s\n\n",
+	    molecule->Nconfig, molecule->ID, molecule->configs);
+    Error(MESSAGE, routineName, messageStr);    
+
+    /* --- Allocate memory for the populations of each vibrational
+           state in each electronic configuration. Within each of these
+           the rotational states will be assumed to be in LTE -- --- */
+
+    molecule->nv     = matrix_double(molecule->Nv * molecule->Nconfig,
+				     atmos.Nspace);
+    molecule->nvstar = matrix_double(molecule->Nv * molecule->Nconfig,
+				     atmos.Nspace);
+    molecule->pfv    = matrix_double(molecule->Nv * molecule->Nconfig,
+				     atmos.Nspace);
 
     sprintf(popsFile, "pops_mol.%s.out", molecule->ID);
     molecule->popsFile =
       (char *) malloc((strlen(popsFile) + 1) * sizeof(char));
     strcpy(molecule->popsFile, popsFile);
 
-    /* --- In this case partition functions for the molecule and
-           each of its vibrational states are calculated in routine
+    /* --- In this case vibrational partition functions for the molecule
+           and each of its vibrational states are calculated in routine
            LTEmolecule --                              -------------- */ 
 
     LTEmolecule(molecule);
+
   } else {
     if (molecule->Npf > 0) {
 
@@ -342,6 +399,7 @@ void initMolecule(Molecule *molecule)
   molecule->Npf = molecule->Neqc = molecule->Nrt = 0;
   molecule->charge = 0;
   molecule->Nv = molecule->NJ = 0;
+  molecule->Nconfig = 0;
   molecule->Ediss = molecule->Tmin = molecule->Tmax = molecule->weight = 0.0;
   molecule->vbroad = NULL;
   molecule->pf_coef = molecule->eqc_coef = molecule->pf = NULL;
@@ -612,9 +670,9 @@ void readMolecularLines(struct Molecule *molecule, char *line_data)
 
       switch (isotope) {
       case 12:
-      case 26: mrt->isotope_frac = 1.0 - C13_FRACTION;  break;
+      case 26: mrt->isotope_frac = 1.0 - C_13;  break;
       case 13:
-      case 36: mrt->isotope_frac = C13_FRACTION;        break;
+      case 36: mrt->isotope_frac = C_13;        break;
       default: mrt->isotope_frac = 1.0;
       }
     }

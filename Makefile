@@ -40,6 +40,7 @@ librh.a: \
  librh.a(getlambda.o) \
  librh.a(getline.o) \
  librh.a(giigen.o) \
+ librh.a(h2collisions.o) \
  librh.a(hunt.o) \
  librh.a(humlicek.o) \
  librh.a(hydrogen.o) \
@@ -168,7 +169,7 @@ librh.a(options.o):       rh.h  error.h  inputs.h
 librh.a(order.o):         rh.h
 librh.a(parse.o):         rh.h  error.h  inputs.h
 librh.a(paschen.o):       rh.h  error.h
-librh.a(planck.o):        rh.h  constant.h
+librh.a(planck.o):        rh.h  atom.h  spectrum.h  constant.h
 librh.a(pops_xdr.o):      rh.h  atom.h  atmos.h  error.h  xdr.h
 librh.a(profile.o):       rh.h  atom.h  atmos.h  inputs.h  constant.h  statistics.h  error.h
 librh.a(radrate_xdr.o):   rh.h  atom.h  atmos.h  error.h  inputs.h  xdr.h
