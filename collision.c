@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Sat Sep 19 15:54:07 2009 --
+       Last modified: Thu Dec 15 13:21:00 2016 (Tiago) --
 
        --------------------------                      ----------RH-- */
 
@@ -31,13 +31,30 @@
 
          TEMP  -->  Temperature grid
 
-         OMEGA -->  Collisional de-excitation of ions by electrons
-         CE    -->  Collisional de-excitation of neutrals by electrons
-         CI    -->  Collisional ionization by electrons
-         CP    -->  Collisional de-excitation by protons
+         OMEGA     -->  Collisional de-excitation of ions by electrons
+         CE        -->  Collisional de-excitation of neutrals by electrons
+         CI        -->  Collisional ionisation by electrons
+         CP        -->  Collisional de-excitation by protons
+         CR        -->  Collisional de-excitation by electrons
 
-         CH0   -->  Charge exchange of ion with neutral hydrogen
-         CH+   -->  Charge exchange of neutral with protons
+         CH0       -->  Charge exchange of ion with neutral hydrogen
+         CH+       -->  Charge exchange of neutral with protons
+
+         AR85-CEA  -->  Collisional auto-ionisation following Arnaud &
+                        Rothenflug (1985, ApJS 60)
+         AR85-CDI  ---> Collisional ionisation following Arnaud & Rothenflug
+                        (1985, ApJS 60)
+         AR85-CHP  -->  Charge exchange with ionised hydrogen following
+                        Arnaud & Rothenflug (1985, ApJS 60)
+         AR85-CHH  -->  Charge exchange with neutral hydrogen following
+                        Arnaud & Rothenflug (1985, ApJS 60)
+         BURGESS   -->  Collisional ionisation from excited states following
+                        Burgess & Chidichimo (1983, MNRAS 203, 1269)
+         BADNELL   -->  Dielectronic recombination following the Badnell
+                        recipe [citation needed]
+         SHULL82   -->  Coefficients for collisional ionization, radiative
+                        recombination, and dielectronic recombination following
+                        Shull & van Steenberg (1982, ApJS, 48, 95)
 
          END   -->  End of input data
          ----------------------------------------------------
@@ -495,7 +512,7 @@ void CollisionRate(struct Atom *atom, FILE *fp_atom)
     } else if (!strcmp(keyword, "OMEGA") || !strcmp(keyword, "CE") ||
 	       !strcmp(keyword, "CI")    || !strcmp(keyword, "CP") ||
 	       !strcmp(keyword, "CH0")   || !strcmp(keyword, "CH+")||
-	       !strcmp(keyword, "CH") ) {
+	       !strcmp(keyword, "CH")    || !strcmp(keyword, "CR") ) {
 
       /* --- Read level indices and collision coefficients -- ------- */
 
@@ -660,7 +677,7 @@ void CollisionRate(struct Atom *atom, FILE *fp_atom)
     if (!strcmp(keyword, "OMEGA") || !strcmp(keyword, "CE") ||
 	!strcmp(keyword, "CI")    || !strcmp(keyword, "CP") ||
 	!strcmp(keyword, "CH0")   || !strcmp(keyword, "CH+")||
-	!strcmp(keyword, "CH") ) {
+	!strcmp(keyword, "CH")    || !strcmp(keyword, "CR") ) {
 
       if (Nitem > 2) {
 	splineCoef(Nitem, T, coeff);
@@ -699,6 +716,14 @@ void CollisionRate(struct Atom *atom, FILE *fp_atom)
 	  exp(-dE/(KBOLTZMANN*atmos.T[k])) * sqrt(atmos.T[k]);
 	atom->C[ji][k] += Cup;
 	atom->C[ij][k] += Cup * atom->nstar[i][k]/atom->nstar[j][k];
+      }
+    } else if (!strcmp(keyword, "CR")) {
+
+      /* --- Collisional de-excitation by electrons --  -------------- */
+
+      for (k = 0;  k < Nspace;  k++) {
+        Cdown =  atmos.ne[k] * C[k];
+        atom->C[ij][k] += Cdown;
       }
     } else if (!strcmp(keyword, "CP")) {
 
@@ -888,7 +913,7 @@ void CollisionRate(struct Atom *atom, FILE *fp_atom)
       }
     } else if (!strcmp(keyword, "BURGESS")) {
 
-      /* --- Electron impact ionzation following Burgess & Chidichimo 1982,
+      /* --- Electron impact ionzation following Burgess & Chidichimo 1983,
 	     MNRAS, 203, 1269-1280
              --                                        -------------- */
 
