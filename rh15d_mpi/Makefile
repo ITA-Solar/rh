@@ -16,10 +16,10 @@ AR = ar
 NCDF_DIR = /opt/local
 #NCDF_DIR = /Users/tiago/local
 
-# Try to get git revision, set preprocessor macros if successful 
+# Try to get git revision, set preprocessor macros if successful
 REV=$(shell git describe --always)
 ifeq ($(REV), )
-    CFLAGS  = -O2 -I../ -I$(NCDF_DIR)/include/ 
+    CFLAGS  = -O2 -I../ -I$(NCDF_DIR)/include/
 else
     REV = $(shell git log -1 --pretty=format:"%h  %an  %ai")
     CFLAGS  = -O2 -I../ -I$(NCDF_DIR)/include/ -D'REV_ID="$(REV)"'
@@ -60,14 +60,14 @@ BACKGROPAC = anglequad.o      backgrcontr.o   multiatmos.o      project.o
 
 ## --- Rules for the executables --                    -------------- ##
 
-all:    rh15d_ray rh15d_ray_pool rh15d_lteray 
+all:    rh15d_ray rh15d_ray_pool rh15d_lteray
 
 rh15d_lteray:  $(ONE_D_OBJS)  librh rh15d_lteray.o writeRay.o
 	$(LD) -o $@  $(LDFLAGS) $(ONE_D_OBJS) rh15d_lteray.o writeRay.o $(LIBS)
-	
+
 rh15d_ray:  $(ONE_D_OBJS)  librh rh15d_ray.o writeRay.o
 	$(LD) -o $@  $(LDFLAGS) $(ONE_D_OBJS) rh15d_ray.o writeRay.o $(LIBS)
-        
+
 rh15d_ray_pool:  $(ONE_D_OBJS)  librh rh15d_ray_pool.o writeRay.o
 	$(LD) -o $@  $(LDFLAGS) $(ONE_D_OBJS) rh15d_ray_pool.o writeRay.o $(LIBS)
 
@@ -126,6 +126,7 @@ escape.o:               ../rh.h          ../atom.h        ../atmos.h       \
 			parallel.h       escape.c
 	$(CC) $(CFLAGS) -Wall -c  -o $@  escape.c
 
+expint_p.o:             ../rh.h          ../error.h       parallel.h
 
 feautrier.o:            ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../spectrum.h    ../error.h
@@ -133,7 +134,7 @@ feautrier.o:            ../rh.h          ../atom.h        ../atmos.h       \
 formal.o:               ../rh.h          ../atom.h        ../atmos.h       \
                         parallel.h       geometry.h       ../spectrum.h    \
                         ../constant.h    ../background.h  ../inputs.h      \
-			../error.h  
+			../error.h
 
 hydrostat.o:            ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../background.h  ../constant.h    \
@@ -190,25 +191,25 @@ readj_p.o:              ../rh.h          ../atom.h        ../atmos.h       \
 
 redistribute_p.o:       ../rh.h          ../atmos.h       ../atom.h        \
                         ../spectrum.h    ../accelerate.h  ../error.h       \
-                        ../inputs.h      parallel.h  
+                        ../inputs.h      parallel.h
 
 rh15d_lteray.o:         ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../spectrum.h    ../background.h  \
                         ../statistics.h  ../error.h       ../inputs.h      \
                         parallel.h       io.h             rh15d_lteray.c
 	$(CC) $(CFLAGS) -Wall -c -o $@   rh15d_lteray.c
-	
+
 rh15d_ray.o:            ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../spectrum.h    ../background.h  \
                         ../statistics.h  ../error.h       ../inputs.h      \
                         parallel.h       io.h             rh15d_ray.c
 	$(CC) $(CFLAGS) -Wall -c -o $@   rh15d_ray.c
-        
+
 rh15d_ray_pool.o:            ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../spectrum.h    ../background.h  \
                         ../statistics.h  ../error.h       ../inputs.h      \
                         parallel.h       io.h             rh15d_ray_pool.c
-	$(CC) $(CFLAGS) -Wall -c -o $@   rh15d_ray_pool.c 
+	$(CC) $(CFLAGS) -Wall -c -o $@   rh15d_ray_pool.c
 
 riiplane.o:             ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../constant.h    ../error.h
@@ -219,7 +220,7 @@ scatter_p.o:            ../rh.h          ../atom.h        ../atmos.h      \
 
 solveray.o:             ../rh.h          ../atom.h        ../atmos.h      \
                         geometry.h       ../spectrum.h    ../background.h \
-                        ../statistics.h  ../inputs.h      ../error.h  
+                        ../statistics.h  ../inputs.h      ../error.h
 
 statequil_p.o:          ../rh.h          ../atom.h        ../atmos.h      \
                         ../accelerate.h  ../error.h       ../inputs.h     \
