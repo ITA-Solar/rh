@@ -15,7 +15,7 @@ LD = mpicc
 AR = ar
 HDF5_DIR = /opt/local
 
-# Try to get git revision, set preprocessor macros if successful 
+# Try to get git revision, set preprocessor macros if successful
 REV=$(shell git describe --always)
 ifeq ($(REV), )
     CFLAGS  = -O2 -I../ -I$(HDF5_DIR)/include/ 
@@ -24,12 +24,12 @@ else
     CFLAGS  = -O2 -I../ -I$(HDF5_DIR)/include/ -D'REV_ID="$(REV)"'
 endif
 
-LDFLAGS = -L../ -L$(HDF5_DIR)/lib/
+LDFLAGS = -L../ -L$(NCDF_DIR)/lib/
 
 
 ## --- If no FORTRAN compiler is available remove -lrh_f90 in following
 
-      LIBS = -lrh -lrh_f90 $(ARCHLIBS) -lhdf5 -lhdf5_hl
+      LIBS = -lrh -lrh_f90 $(ARCHLIBS) -lnetcdf
 
 
 ## --- Define groups of object files --                -------------- ##
@@ -52,14 +52,14 @@ BACKGROPAC = anglequad.o      backgrcontr.o   multiatmos.o      project.o
 
 ## --- Rules for the executables --                    -------------- ##
 
-all:    rh15d_ray rh15d_ray_pool rh15d_lteray 
+all:    rh15d_ray rh15d_ray_pool rh15d_lteray
 
 rh15d_lteray:  $(ONE_D_OBJS)  librh rh15d_lteray.o writeRay.o
 	$(LD) -o $@  $(LDFLAGS) $(ONE_D_OBJS) rh15d_lteray.o writeRay.o $(LIBS)
-	
+
 rh15d_ray:  $(ONE_D_OBJS)  librh rh15d_ray.o writeRay.o
 	$(LD) -o $@  $(LDFLAGS) $(ONE_D_OBJS) rh15d_ray.o writeRay.o $(LIBS)
-        
+
 rh15d_ray_pool:  $(ONE_D_OBJS)  librh rh15d_ray_pool.o writeRay.o
 	$(LD) -o $@  $(LDFLAGS) $(ONE_D_OBJS) rh15d_ray_pool.o writeRay.o $(LIBS)
 
@@ -114,6 +114,7 @@ escape.o:               ../rh.h          ../atom.h        ../atmos.h       \
 			parallel.h       escape.c
 	$(CC) $(CFLAGS) -Wall -c  -o $@  escape.c
 
+expint_p.o:             ../rh.h          ../error.h       parallel.h
 
 feautrier.o:            ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../spectrum.h    ../error.h
@@ -121,7 +122,7 @@ feautrier.o:            ../rh.h          ../atom.h        ../atmos.h       \
 formal.o:               ../rh.h          ../atom.h        ../atmos.h       \
                         parallel.h       geometry.h       ../spectrum.h    \
                         ../constant.h    ../background.h  ../inputs.h      \
-			../error.h  
+			../error.h
 
 hydrostat.o:            ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../background.h  ../constant.h    \
@@ -172,14 +173,14 @@ readj_p.o:              ../rh.h          ../atom.h        ../atmos.h       \
 
 redistribute_p.o:       ../rh.h          ../atmos.h       ../atom.h        \
                         ../spectrum.h    ../accelerate.h  ../error.h       \
-                        ../inputs.h      parallel.h  
+                        ../inputs.h      parallel.h
 
 rh15d_lteray.o:         ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../spectrum.h    ../background.h  \
                         ../statistics.h  ../error.h       ../inputs.h      \
                         parallel.h       io.h             rh15d_lteray.c
 	$(CC) $(CFLAGS) -Wall -c -o $@   rh15d_lteray.c
-	
+
 rh15d_ray.o:            ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../spectrum.h    ../background.h  \
                         ../statistics.h  ../error.h       ../inputs.h      \
@@ -190,7 +191,7 @@ rh15d_ray_pool.o:            ../rh.h          ../atom.h        ../atmos.h  \
                         geometry.h       ../spectrum.h    ../background.h  \
                         ../statistics.h  ../error.h       ../inputs.h      \
                         parallel.h       io.h             rh15d_ray_pool.c
-	$(CC) $(CFLAGS) -Wall -c -o $@   rh15d_ray_pool.c 
+	$(CC) $(CFLAGS) -Wall -c -o $@   rh15d_ray_pool.c
 
 riiplane.o:             ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../constant.h    ../error.h
