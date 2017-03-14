@@ -37,12 +37,12 @@ LDFLAGS = -L../ -L$(NCDF_DIR)/lib/
 
 
 ONE_D_OBJS = anglequad.o      feautrier.o     formal.o           hydrostat.o   \
-             piecestokes.o    piecewise.o     project.o                        \
-             riiplane.o       ncdfatmos.o     background_p.o                   \
+             piecestokes.o    piecewise.o     project.o          escape.o      \
+             riiplane.o       ncdfatmos.o     background_p.o     expint_p.o    \
              readj_p.o        scatter_p.o     writespect_p.o     initial_p.o   \
              writeindata_p.o  writeAux_p.o    parallel.o         iterate_p.o   \
              ludcmp_p.o       accelerate_p.o  redistribute_p.o   statequil_p.o \
-	     escape.o         distribute_jobs.o
+	         distribute_jobs.o
 
 SUBSTITUTE = pops_xdr.o
 
