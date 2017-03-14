@@ -6,6 +6,7 @@ Welcome to RH 1.5D's documentation!
 Contents:
 
 .. toctree::
+   :numbered:
    :maxdepth: 2
 
    introduction
@@ -14,5 +15,6 @@ Contents:
    running
    output
    bugs
+   appendices
 
 

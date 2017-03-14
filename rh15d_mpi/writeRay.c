@@ -41,15 +41,15 @@ extern Geometry geometry;
 extern char messageStr[];
 extern Input_Atmos_file infile;
 extern MPI_data mpi;
-extern IO_data io; 
+extern IO_data io;
 
 
 /* ------- begin --------------------------   init_hdf5_ray.c  ------ */
 void init_hdf5_ray(void) {
   /* Wrapper to find out if we should use old file or create new one. */
-  
+
   if (input.p15d_rerun) init_hdf5_ray_existing(); else init_hdf5_ray_new();
-  
+
   return;
 }
 /* ------- end   --------------------------   init_hdf5_ray.c  ------ */
@@ -63,11 +63,11 @@ void init_hdf5_ray_new(void)
   hsize_t dims[4];
   bool_t  write_xtra;
   double *lambda_air;
-  float   fillval = 9.96921e+36;  /* from netcdf */ 
+  float   fillval = 9.96921e+36;  /* from netcdf */
   char    timestr[ARR_STRLEN];
   time_t  curtime;
   struct tm *loctime;
-  
+
   write_xtra = (io.ray_nwave_sel > 0);
 
   /* Create the file with parallel MPI-IO access */
@@ -83,7 +83,7 @@ void init_hdf5_ray_new(void)
   if (( H5LTset_attribute_ushort(ncid, "/", "snapshot_number",
 			 (const unsigned short *) &mpi.snap_number, 1 ) ) < 0) HERR(routineName);
   if (( H5LTset_attribute_string(ncid, "/", "rev_id", mpi.rev_id) ) < 0)
-    HERR(routineName);  
+    HERR(routineName);
   /* Write old netcdf dimensions as global attributes */
   if (( H5LTset_attribute_int(ncid, "/", "nx", &mpi.nx, 1) ) < 0)
       HERR(routineName);
@@ -106,6 +106,8 @@ void init_hdf5_ray_new(void)
   if (( plist = H5Pcreate(H5P_DATASET_CREATE) ) < 0) HERR(routineName);
   if (( H5Pset_fill_value(plist, H5T_NATIVE_FLOAT, &fillval) ) < 0)
     HERR(routineName);
+  if (( H5Pset_alloc_time(plist, H5D_ALLOC_TIME_EARLY) ) < 0) HERR(routineName);
+  if (( H5Pset_fill_time(plist, H5D_FILL_TIME_ALLOC) ) < 0) HERR(routineName);
   /* Intensity */
   if (( io.ray_int_var = H5Dcreate(ncid, INT_NAME, H5T_NATIVE_FLOAT,
 				    file_dspace, H5P_DEFAULT, plist,
@@ -128,7 +130,7 @@ void init_hdf5_ray_new(void)
 				                               H5P_DEFAULT)) < 0) HERR(routineName);
   }
   if (write_xtra) {
-    dims[0] = mpi.nx;    
+    dims[0] = mpi.nx;
     dims[1] = mpi.ny;
     dims[2] = infile.nz;
     dims[3] = io.ray_nwave_sel;
@@ -145,9 +147,9 @@ void init_hdf5_ray_new(void)
 				                            H5P_DEFAULT)) < 0) HERR(routineName);
     if (( io.ray_sca_c_var = H5Dcreate(ncid, SCA_C_NAME, H5T_NATIVE_FLOAT,
 				                                file_dspace, H5P_DEFAULT, plist,
-				                                H5P_DEFAULT)) < 0) HERR(routineName);    
+				                                H5P_DEFAULT)) < 0) HERR(routineName);
   }
-  
+
   /* --- Write wavelength and wavelength indices --- */
   dims[0] = spectrum.Nspect;
   if (spectrum.vacuum_to_air) {
@@ -163,14 +165,13 @@ void init_hdf5_ray_new(void)
     dims[0] = io.ray_nwave_sel;
     if (( H5LTmake_dataset(ncid, WAVE_SEL_IDX, 1, dims, H5T_NATIVE_INT,
                            io.ray_wave_idx) ) < 0)  HERR(routineName);
-
   /* --- Write attributes --- */
   /* Time of creation in ISO 8601 */
   curtime = time(NULL);
   loctime = localtime(&curtime);
   strftime(timestr, ARR_STRLEN, "%Y-%m-%dT%H:%M:%S%z", loctime);
   if (( H5LTset_attribute_string(ncid, "/", "creation_time",
-                            (const char *) &timestr) ) < 0) HERR(routineName);  
+                            (const char *) &timestr) ) < 0) HERR(routineName);
 
   /*  units  */
   if (( H5LTset_attribute_string(ncid, WAVE_NAME, "units",
@@ -185,14 +186,14 @@ void init_hdf5_ray_new(void)
     if (( H5LTset_attribute_string(ncid, STOKES_V, "units",
                            "J s^-1 m^-2 Hz^-1 sr^-1") ) < 0) HERR(routineName);
   }
-  
+
   if (input.p15d_wtau) {
     if (( H5LTset_attribute_string(ncid, TAU1_NAME, "units",
                                    "m") ) < 0) HERR(routineName);
     if (( H5LTset_attribute_string(ncid, TAU1_NAME, "description",
                      "Height of optical depth unity") ) < 0) HERR(routineName);
   }
-  
+
   if (write_xtra) {
     if (( H5LTset_attribute_string(ncid, S_NAME, "units",
                           "J s^-1 m^-2 Hz^-1 sr^-1" ) ) < 0) HERR(routineName);
@@ -205,15 +206,16 @@ void init_hdf5_ray_new(void)
     if (( H5LTset_attribute_string(ncid, "/Jlambda", "units",
                           "J s^-1 m^-2 Hz^-1 sr^-1" ) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_string(ncid, "/Jlambda", "description",
-                             "Mean radiation field" ) ) < 0) HERR(routineName);    
+                             "Mean radiation field" ) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_string(ncid, SCA_C_NAME, "description",
             "Scattering term multiplied by Jlambda" ) ) < 0) HERR(routineName);
   }
   if (( H5Pclose(plist) ) < 0 ) HERR(routineName);
-  
+  /* Flush ensures file is created in case of crash */
+  if (( H5Fflush(ncid, H5F_SCOPE_LOCAL) ) < 0) HERR(routineName);
   /* Copy stuff to the IO data struct */
-  io.ray_ncid         = ncid;
-  return; 
+  io.ray_ncid = ncid;
+  return;
 }
 
 /* ------- end   -------------------------- init_hdf5_ray_new.c ------- */
@@ -238,7 +240,7 @@ void init_hdf5_ray_existing(void)
   if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
   if (( ncid = H5Fopen(RAY_FILE, H5F_ACC_RDWR, plist) ) < 0) HERR(routineName);
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
-  
+
   io.ray_ncid = ncid;
   /* --- Consistency checks --- */
   /* Check that atmosID is the same */
@@ -281,7 +283,7 @@ void init_hdf5_ray_existing(void)
     if (( io.ray_sca_c_var = H5Dopen(ncid, SCA_C_NAME, H5P_DEFAULT) ) < 0)
       HERR(routineName);
   }
-  return; 
+  return;
 }
 
 /* ------- end   --------------------- init_hdf5_ray_existing.c ------ */
@@ -289,11 +291,11 @@ void init_hdf5_ray_existing(void)
 
 /* ------- begin -------------------------- close_hdf5_ray.c --------- */
 void close_hdf5_ray(void)
-/* Closes the spec netCDF file */ 
+/* Closes the spec netCDF file */
 {
   const char routineName[] = "close_hdf5_ray";
   bool_t     write_xtra;
-  
+
   write_xtra = (io.ray_nwave_sel > 0);
   /* Close all datasets */
   if (( H5Dclose(io.ray_int_var) ) < 0) HERR(routineName);
@@ -312,7 +314,7 @@ void close_hdf5_ray(void)
     if (( H5Dclose(io.ray_sca_c_var ) ) < 0) HERR(routineName);
   }
   if (( H5Fclose(io.ray_ncid) ) < 0) HERR(routineName);
-  return; 
+  return;
 }
 /* ------- end   -------------------------- close_hdf5_ray.c --------- */
 
@@ -341,7 +343,7 @@ void writeRay(void)
   if (( mem_dataspace = H5Screate_simple(1, dims, NULL) ) < 0)
     HERR(routineName);
   /* File dataspace */
-  offset[0] = mpi.ix; 
+  offset[0] = mpi.ix;
   offset[1] = mpi.iy;
   count[2] = spectrum.Nspect;
   if (( file_dataspace = H5Dget_space(io.ray_int_var) ) < 0) HERR(routineName);
@@ -351,42 +353,42 @@ void writeRay(void)
   /* Write intensity */
   if (( H5Dwrite(io.ray_int_var, H5T_NATIVE_DOUBLE, mem_dataspace,
           file_dataspace, H5P_DEFAULT, spectrum.I[0]) ) < 0) HERR(routineName);
-  
+
   /* Calculate height of tau=1 and write to file*/
   if (input.p15d_wtau) {
     tau_one = (float *) calloc(spectrum.Nspect, sizeof(float));
-    
+
     /* set switch so that shift of rho_prd is done with a fresh interpolation */
     prdh_limit_mem_save = FALSE;
     if (input.prdh_limit_mem) prdh_limit_mem_save = TRUE;
     input.prdh_limit_mem = TRUE;
-    
+
     for (nspect = 0; nspect < spectrum.Nspect; nspect++) {
       as  = &spectrum.as[nspect];
       alloc_as(nspect, crosscoupling=FALSE);
       Opacity(nspect, 0, to_obs=TRUE, initialize=TRUE);
       chi_tmp = (float *) calloc(infile.nz, sizeof(float));
-      
+
       if (input.backgr_in_mem) {
       	loadBackground(nspect, 0, to_obs=TRUE);
       } else {
       	readBackground(nspect, 0, to_obs=TRUE);
       }
-        
+
       tau_prev = 0.0;
       tau_cur  = 0.0;
-      
+
       for (k = 0;  k < atmos.Nspace;  k++) {
         l = k + mpi.zcut;
         chi_tmp[l] = (float) (as->chi[k] + as->chi_c[k]);
-      
-        /* Calculate tau=1 depth, manual linear interpolation */	
+
+        /* Calculate tau=1 depth, manual linear interpolation */
         if (k > 0) {
           /* Manually integrate tau, trapezoidal rule*/
           tau_prev = tau_cur;
           tmp = 0.5 * (geometry.height[k - 1] - geometry.height[k]);
           tau_cur  = tau_prev + tmp * (chi_tmp[l] + chi_tmp[l - 1]);
-          
+
           if (((tau_cur > 1.) && (k == 1)) || ((tau_cur < 1.) &&
                                                (k == atmos.Nspace - 1))) {
             tau_one[nspect] = geometry.height[k];
@@ -406,11 +408,11 @@ void writeRay(void)
     if (( H5Dwrite(io.ray_tau1_var, H5T_NATIVE_FLOAT, mem_dataspace,
                  file_dataspace, H5P_DEFAULT, tau_one) ) < 0) HERR(routineName);
     /* set back PRD input option */
-    if (input.PRD_angle_dep == PRD_ANGLE_APPROX && atmos.NPRDactive > 0)  
+    if (input.PRD_angle_dep == PRD_ANGLE_APPROX && atmos.NPRDactive > 0)
       input.prdh_limit_mem = prdh_limit_mem_save ;
-    free(tau_one); 
+    free(tau_one);
   }
-  
+
   if (atmos.Stokes || input.backgr_pol) { /* Write rest of Stokes vector */
     if (( H5Dwrite(io.ray_stokes_q_var, H5T_NATIVE_DOUBLE, mem_dataspace,
                    file_dataspace, H5P_DEFAULT,
@@ -425,14 +427,14 @@ void writeRay(void)
   /* release dataspace resources */
   if (( H5Sclose(mem_dataspace) ) < 0) HERR(routineName);
   if (( H5Sclose(file_dataspace) ) < 0) HERR(routineName);
-  
+
   if (write_xtra) {
     /* Write opacity and emissivity for line and continuum */
     chi = matrix_float(infile.nz, io.ray_nwave_sel);
     S   = matrix_float(infile.nz, io.ray_nwave_sel);
     sca = matrix_float(infile.nz, io.ray_nwave_sel);
     Jnu = matrix_float(infile.nz, io.ray_nwave_sel);
-    
+
     if (input.limit_memory) J = (double *) malloc(atmos.Nspace *
                                                   sizeof(double));
     /* set switch so that shift of rho_prd is done with a fresh
@@ -444,21 +446,21 @@ void writeRay(void)
     for (nspect = 0; nspect < io.ray_nwave_sel; nspect++) {
       idx = io.ray_wave_idx[nspect];
       as  = &spectrum.as[idx];
-      
+
       alloc_as(idx, crosscoupling=FALSE);
       Opacity(idx, 0, to_obs=TRUE, initialize=TRUE);
-      
+
       if (input.backgr_in_mem) {
         loadBackground(idx, 0, to_obs=TRUE);
       } else {
         readBackground(idx, 0, to_obs=TRUE);
-      }      
+      }
 
       if (input.limit_memory) {
         //readJlambda_single(idx, J);
       } else
         J = spectrum.J[idx];
-	
+
       /* Zero S and chi  */
       for (k = 0; k < infile.nz; k++) {
         chi[k][nspect] = 0.0;
@@ -466,7 +468,7 @@ void writeRay(void)
         sca[k][nspect] = 0.0;
         Jnu[k][nspect] = 0.0;
       }
-      
+
       for (k = 0;  k < atmos.Nspace;  k++) {
         l = k + mpi.zcut;
         chi[l][nspect] = (float) (as->chi[k] + as->chi_c[k]);
@@ -477,11 +479,11 @@ void writeRay(void)
       }
       free_as(idx, crosscoupling=FALSE);
     }
-    
+
     /* set back PRD input option */
-    if (input.PRD_angle_dep == PRD_ANGLE_APPROX && atmos.NPRDactive > 0)  
+    if (input.PRD_angle_dep == PRD_ANGLE_APPROX && atmos.NPRDactive > 0)
       input.prdh_limit_mem = prdh_limit_mem_save;
-    
+
     /* Write variables */
     /* Memory dataspace */
     dims[0] = infile.nz;
@@ -495,7 +497,7 @@ void writeRay(void)
     offset[3] = 0;       count[3] = io.ray_nwave_sel;
     if (( file_dataspace = H5Dget_space(io.ray_S_var) ) < 0) HERR(routineName);
     if (( H5Sselect_hyperslab(file_dataspace, H5S_SELECT_SET, offset,
-                              NULL, count, NULL) ) < 0) HERR(routineName);    
+                              NULL, count, NULL) ) < 0) HERR(routineName);
     if (( H5Dwrite(io.ray_chi_var, H5T_NATIVE_FLOAT, mem_dataspace,
                  file_dataspace, H5P_DEFAULT, chi[0]) ) < 0) HERR(routineName);
     if (( H5Dwrite(io.ray_S_var, H5T_NATIVE_FLOAT, mem_dataspace,
@@ -528,7 +530,7 @@ void calculate_ray(void) {
       AtomicLine *line;
 
   close_Background();  /* Was opened previously, will be opened here again */
-  
+
   /* Recalculate magnetic field projections */
   if (atmos.Stokes) {
     if (atmos.cos_gamma != NULL) {
@@ -549,23 +551,23 @@ void calculate_ray(void) {
   /* Must calculate background opacity for new ray, need some prep first */
   for (nact = 0; nact < atmos.Nactiveatom; nact++) {
     atom = atmos.activeatoms[nact];
-    
+
     /* Rewind atom files to point just before collisional data */
     if ((ierror = fseek(atom->fp_input, io.atom_file_pos[nact], SEEK_SET))) {
       sprintf(messageStr, "Unable to rewind atom file for %s", atom->ID);
       Error(ERROR_LEVEL_2, "rh15d_ray", messageStr);
     }
-    
+
     /* Free collisions matrix, going to be re-allocated in background */
     if (atom->C != NULL) {
       freeMatrix((void **) atom->C);
       atom->C = NULL;
     }
-    
+
     /* Recalculate line profiles for new angle */
     for (i = 0; i < atom->Nline; i++) {
       line = &atom->line[i];
-      
+
       if (line->phi  != NULL) {
         freeMatrix((void **) line->phi);
         line->phi = NULL;
@@ -574,7 +576,7 @@ void calculate_ray(void) {
         free(line->wphi);
         line->wphi = NULL;
       }
-  
+
       if (atmos.moving && line->polarizable && (input.StokesMode>FIELD_FREE)) {
         if (line->phi_Q != NULL) {
           freeMatrix((void **) line->phi_Q);
@@ -602,11 +604,11 @@ void calculate_ray(void) {
             line->psi_V = NULL;
           }
         }
-      }	  
-      Profile(line);  
+      }
+      Profile(line);
     }
   }
-  
+
   /* reallocate intensities for correct number of rays */
   if (spectrum.I != NULL) freeMatrix((void **) spectrum.I);
   spectrum.I = matrix_double(spectrum.Nspect, atmos.Nrays);
@@ -625,7 +627,7 @@ void calculate_ray(void) {
     spectrum.v_los = matrix_double( atmos.Nrays, atmos.Nspace);
     for (mu = 0;  mu < atmos.Nrays;  mu++) {
       for (k = 0;  k < atmos.Nspace;  k++) {
-        spectrum.v_los[mu][k] = vproject(k, mu); 
+        spectrum.v_los[mu][k] = vproject(k, mu);
       }
     }
 
@@ -635,14 +637,14 @@ void calculate_ray(void) {
     if (input.prdh_limit_mem) prdh_limit_mem_save = TRUE;
     input.prdh_limit_mem = TRUE;
   }
-  
+
   Background_p(analyze_output=FALSE, equilibria_only=FALSE);
 
   /* --- Solve radiative transfer for ray --           -------------- */
   solveSpectrum(FALSE, FALSE);
 
   // set back PRD input option
-  if (input.PRD_angle_dep == PRD_ANGLE_APPROX && atmos.NPRDactive > 0)  
+  if (input.PRD_angle_dep == PRD_ANGLE_APPROX && atmos.NPRDactive > 0)
     input.prdh_limit_mem = prdh_limit_mem_save ;
 
 }

@@ -6,6 +6,7 @@
 
 /* --- Set of tools to deal with IO initialisation and closure ------- */
 
+#include <errno.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -80,7 +81,7 @@ void initParallelIO(bool_t run_ray, bool_t writej) {
   int    nact, i;
   Atom  *atom;
 
-  //init_ncdf_aux();
+  init_hdf5_aux();
 
   init_Background();
   if (!run_ray) {
@@ -127,7 +128,7 @@ void closeParallelIO(bool_t run_ray, bool_t writej) {
     close_hdf5_indata();
   }
   close_hdf5_atmos(&atmos, &geometry, &infile);
-  //close_ncdf_aux();
+  close_hdf5_aux();
 
   free(io.atom_file_pos);
   free(mpi.niter);
@@ -711,8 +712,8 @@ void writeOutput(bool_t writej) {
     Error(MESSAGE, "main", messageStr);
 
     writeMPI_all();
-    //writeAux_all();
-    
+    writeAux_all();
+
     sprintf(messageStr, "Process %3d: *** END output\n", mpi.rank);
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);

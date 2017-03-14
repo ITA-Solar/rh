@@ -42,9 +42,9 @@ extern IO_data io;
 /* ------- begin --------------------------   init_hdf5_indata.c  --- */
 void init_hdf5_indata(void) {
   /* Wrapper to find out if we should use old file or create new one */
-  
+
   if (input.p15d_rerun) init_hdf5_indata_existing(); else init_hdf5_indata_new();
-  
+
   return;
 }
 /* ------- end   --------------------------   init_hdf5_indata.c  --- */
@@ -60,7 +60,7 @@ void init_hdf5_indata_new(void)
   /* This value is harcoded for efficiency.
      Maximum number of iterations ever needed */
   int     NMaxIter = 1500;
-  float   fillval = 9.96921e+36;  /* from netcdf */ 
+  float   fillval = 9.96921e+36;  /* from netcdf */
   hid_t   plist, ncid, file_dspace, ncid_input, ncid_atmos, ncid_mpi;
   hsize_t dims[4];
   bool_t   XRD;
@@ -72,7 +72,7 @@ void init_hdf5_indata_new(void)
   if (( ncid = H5Fcreate(INPUTDATA_FILE, H5F_ACC_TRUNC, H5P_DEFAULT,
                          plist) ) < 0) HERR(routineName);
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
-  
+
   /* Create groups */
   if (( ncid_input = H5Gcreate(ncid, "/input", H5P_DEFAULT, H5P_DEFAULT,
                                H5P_DEFAULT) ) < 0) HERR(routineName);
@@ -81,7 +81,7 @@ void init_hdf5_indata_new(void)
   if (( ncid_mpi = H5Gcreate(ncid, "/mpi", H5P_DEFAULT, H5P_DEFAULT,
                                H5P_DEFAULT) ) < 0) HERR(routineName);
 
-  /* --- Definitions for the root group --- */ 
+  /* --- Definitions for the root group --- */
   /* dimensions as attributes */
   if (( H5LTset_attribute_int(ncid, "/", "nx", &mpi.nx, 1) ) < 0)
       HERR(routineName);
@@ -93,7 +93,7 @@ void init_hdf5_indata_new(void)
   if (( H5LTset_attribute_string(ncid, "/", "atmosID", atmos.ID)) < 0)
     HERR(routineName);
   if (( H5LTset_attribute_string(ncid, "/", "rev_id", mpi.rev_id) ) < 0)
-    HERR(routineName);    
+    HERR(routineName);
 
   /* --- Definitions for the INPUT group --- */
   /* attributes */
@@ -101,9 +101,9 @@ void init_hdf5_indata_new(void)
     PRD_angle_dep = input.PRD_angle_dep;
   else
     PRD_angle_dep=0;
-    
+
   XRD = (input.XRD  &&  atmos.NPRDactive > 0);
-  
+
   if (( H5LTset_attribute_uchar(ncid_input, ".", "Magneto_optical",
           (unsigned char *) &input.magneto_optical, 1)) < 0) HERR(routineName);
   if (( H5LTset_attribute_uchar(ncid_input, ".", "PRD_angle_dep",
@@ -112,7 +112,7 @@ void init_hdf5_indata_new(void)
           (unsigned char *) &XRD, 1)) < 0) HERR(routineName);
   if (( H5LTset_attribute_uchar(ncid_input, ".", "Background_polarization",
           (unsigned char *) &input.backgr_pol, 1)) < 0) HERR(routineName);
-  
+
   switch (input.startJ) {
   case UNKNOWN:
     strcpy(startJ, "Unknown");
@@ -195,7 +195,7 @@ void init_hdf5_indata_new(void)
   if (( H5LTset_attribute_string(ncid_input, ".", "Abundances_file",
                                  input.abund_input) ) < 0) HERR(routineName);
   if (( H5LTset_attribute_string(ncid_input, ".", "Kurucz_PF_data",
-                                 &input.pfData) ) < 0) HERR(routineName);
+                                 input.pfData) ) < 0) HERR(routineName);
   if (( H5LTset_attribute_double(ncid_input, ".", "Iteration_limit",
                                  &input.iterLimit, 1) ) < 0) HERR(routineName);
   if (( H5LTset_attribute_double(ncid_input, ".", "PRD_Iteration_limit",
@@ -239,9 +239,11 @@ void init_hdf5_indata_new(void)
   if (( plist = H5Pcreate(H5P_DATASET_CREATE) ) < 0) HERR(routineName);
   if (( H5Pset_fill_value(plist, H5T_NATIVE_FLOAT, &fillval) ) < 0)
     HERR(routineName);
-  
+  if (( H5Pset_alloc_time(plist, H5D_ALLOC_TIME_EARLY) ) < 0) HERR(routineName);
+  if (( H5Pset_fill_time(plist, H5D_FILL_TIME_ALLOC) ) < 0) HERR(routineName);
+
   if (( io.in_atmos_T = H5Dcreate(ncid_atmos, "temperature", H5T_NATIVE_FLOAT,
-         file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);  
+         file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
   if (( io.in_atmos_vz = H5Dcreate(ncid_atmos, "velocity_z", H5T_NATIVE_FLOAT,
          file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
   if (( io.in_atmos_z = H5Dcreate(ncid_atmos, "height", H5T_NATIVE_FLOAT,
@@ -261,20 +263,20 @@ void init_hdf5_indata_new(void)
                 H5T_NATIVE_DOUBLE, eweight) ) < 0) HERR(routineName);
   if (( H5LTmake_dataset(ncid_atmos, "element_abundance", 1, dims,
                 H5T_NATIVE_DOUBLE, eabund) ) < 0) HERR(routineName);
-  /* Not writing element_id for now  
+  /* Not writing element_id for now
   dims[1] = strlen;
   if (( H5LTmake_dataset(ncid_atmos, "element_id", 2, dims,
-                H5T_C_S1, eID) ) < 0) HERR(routineName); 
+                H5T_C_S1, eID) ) < 0) HERR(routineName);
   */
   free(eweight);
   free(eabund);
-  
+
   dims[0] = geometry.Nrays;
   if (( H5LTmake_dataset(ncid_atmos, "muz", 1, dims,
               H5T_NATIVE_DOUBLE, geometry.muz) ) < 0) HERR(routineName);
   if (( H5LTmake_dataset(ncid_atmos, "wmu", 1, dims,
               H5T_NATIVE_DOUBLE, geometry.wmu) ) < 0) HERR(routineName);
-  
+
   x = (double *) malloc(mpi.nx * sizeof(double));
   y = (double *) malloc(mpi.ny * sizeof(double));
   for (i=0; i < mpi.nx; i++) x[i] = infile.x[mpi.xnum[i]];
@@ -287,7 +289,7 @@ void init_hdf5_indata_new(void)
                          H5T_NATIVE_DOUBLE, y) ) < 0) HERR(routineName);
   free(x);
   free(y);
-  
+
   /* attributes */
   if (( H5LTset_attribute_uchar(ncid_atmos, ".", "moving",
                    (unsigned char *) &atmos.moving, 1)) < 0) HERR(routineName);
@@ -324,9 +326,11 @@ void init_hdf5_indata_new(void)
   if (( file_dspace = H5Screate_simple(2, dims, NULL) ) < 0) HERR(routineName);
   if (( plist = H5Pcreate(H5P_DATASET_CREATE) ) < 0) HERR(routineName);
   if (( H5Pset_fill_value(plist, H5T_NATIVE_FLOAT, &fillval) ) < 0)
-    HERR(routineName);  
+    HERR(routineName);
+  if (( H5Pset_alloc_time(plist, H5D_ALLOC_TIME_EARLY) ) < 0) HERR(routineName);
+  if (( H5Pset_fill_time(plist, H5D_FILL_TIME_ALLOC) ) < 0) HERR(routineName);
   if (( io.in_mpi_tm = H5Dcreate(ncid_mpi, TASK_MAP, H5T_NATIVE_LONG,
-         file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);   
+         file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
   if (( io.in_mpi_tn = H5Dcreate(ncid_mpi, TASK_NUMBER, H5T_NATIVE_LONG,
          file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
   if (( io.in_mpi_it = H5Dcreate(ncid_mpi, ITER_NAME, H5T_NATIVE_LONG,
@@ -339,19 +343,21 @@ void init_hdf5_indata_new(void)
          file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
   if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
- 
+
   dims[0] = mpi.nx;
   dims[1] = mpi.ny;
   dims[2] = NMaxIter;
   if (( file_dspace = H5Screate_simple(3, dims, NULL) ) < 0) HERR(routineName);
   if (( plist = H5Pcreate(H5P_DATASET_CREATE) ) < 0) HERR(routineName);
   if (( H5Pset_fill_value(plist, H5T_NATIVE_FLOAT, &fillval) ) < 0)
-    HERR(routineName);    
+    HERR(routineName);
+  if (( H5Pset_alloc_time(plist, H5D_ALLOC_TIME_EARLY) ) < 0) HERR(routineName);
+  if (( H5Pset_fill_time(plist, H5D_FILL_TIME_ALLOC) ) < 0) HERR(routineName);
   if (( io.in_mpi_dmh = H5Dcreate(ncid_mpi, DMH_NAME, H5T_NATIVE_FLOAT,
-         file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName); 
+         file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
   if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
-  
+
   /* attributes */
   if (( H5LTset_attribute_int(ncid_mpi, ".", "x_start",
                               &input.p15d_x0, 1) ) < 0) HERR(routineName);
@@ -372,7 +378,9 @@ void init_hdf5_indata_new(void)
             avoid causing problems with pool mode, where these quantities are
             not known from the start.
   */
- 
+
+  /* Flush ensures file is created in case of crash */
+  if (( H5Fflush(ncid, H5F_SCOPE_LOCAL) ) < 0) HERR(routineName);
   /* --- Copy stuff to the IO data struct --- */
   io.in_ncid       = ncid;
   io.in_input_ncid = ncid_input;
@@ -413,7 +421,7 @@ void init_hdf5_indata_existing(void)
 	     atmosID);
     Error(WARNING, routineName, messageStr);
     }
-  free(atmosID);  
+  free(atmosID);
   /* Get group IDs */
   if (( io.in_input_ncid = H5Gopen(ncid, "input", H5P_DEFAULT) ) < 0)
       HERR(routineName);
@@ -450,10 +458,10 @@ void init_hdf5_indata_existing(void)
 
 /* ------- begin --------------------------   close_hdf5_indata.c --- */
 void close_hdf5_indata(void)
-/* Closes the indata netCDF file */ 
+/* Closes the indata netCDF file */
 {
   const char routineName[] = "close_hdf5_indata";
-  
+
   /* Close all datasets */
   if (( H5Dclose(io.in_atmos_T) ) < 0) HERR(routineName);
   if (( H5Dclose(io.in_atmos_vz) ) < 0) HERR(routineName);
@@ -465,15 +473,15 @@ void close_hdf5_indata(void)
   if (( H5Dclose(io.in_mpi_dm) ) < 0) HERR(routineName);
   if (( H5Dclose(io.in_mpi_dmh) ) < 0) HERR(routineName);
   if (( H5Dclose(io.in_mpi_zc) ) < 0) HERR(routineName);
-  
+
   /* Close all groups */
   if (( H5Gclose(io.in_input_ncid) ) < 0) HERR(routineName);
   if (( H5Gclose(io.in_atmos_ncid) ) < 0) HERR(routineName);
   if (( H5Gclose(io.in_mpi_ncid) ) < 0) HERR(routineName);
-  
+
   /* Close file */
   if (( H5Fclose(io.in_ncid) ) < 0) HERR(routineName);
-  return; 
+  return;
 }
 /* ------- end   --------------------------   close_hdf5_indata.c --- */
 
@@ -485,10 +493,10 @@ void writeAtmos_p(void)
      to write the atmos data, as there is no option to save in memory and
      writeAtmos_all used to write from the input file, not the interpolated
      quantities
-     
+
      IMPORTANT: at the moment this is a trimmed version, only writing z to save
                 space and computational time.
-     
+
      */
   const char routineName[] = "writeAtmos_p";
   hsize_t  offset[] = {0, 0, 0, 0};
@@ -501,7 +509,7 @@ void writeAtmos_p(void)
   if (( mem_dspace = H5Screate_simple(1, dims, NULL) ) < 0)
     HERR(routineName);
   /* File dataspace */
-  offset[0] = mpi.ix; 
+  offset[0] = mpi.ix;
   offset[1] = mpi.iy;
   offset[2] = mpi.zcut;
   count[2] = atmos.Nspace;
@@ -523,7 +531,7 @@ void writeAtmos_p(void)
 
 /* ------- begin --------------------------   writeMPI_all.c --- */
 void writeMPI_all(void) {
-/* Writes output on indata file, MPI group, all tasks at once */ 
+/* Writes output on indata file, MPI group, all tasks at once */
   const char routineName[] = "writeMPI_all";
   int      task;
   hsize_t  offset[] = {0, 0, 0, 0};
@@ -553,7 +561,7 @@ void writeMPI_all(void) {
     if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
   }
   if (( H5Sclose(mem_dspace) ) < 0) HERR(routineName);
-  
+
   /* Write array with multiple values */
   for (task = 0; task < mpi.Ntasks; task++) {
     dims[0] = mpi.niter[task];
@@ -564,12 +572,12 @@ void writeMPI_all(void) {
     count[2] = mpi.niter[task];
     if (( file_dspace = H5Dget_space(io.in_mpi_dmh) ) < 0) HERR(routineName);
     if (( H5Sselect_hyperslab(file_dspace, H5S_SELECT_SET, offset,
-                              NULL, count, NULL) ) < 0) HERR(routineName);  
+                              NULL, count, NULL) ) < 0) HERR(routineName);
     if (( H5Dwrite(io.in_mpi_dmh, H5T_NATIVE_DOUBLE, mem_dspace, file_dspace,
-               H5P_DEFAULT, mpi.dpopsmax_hist[task]) ) < 0) HERR(routineName); 
+               H5P_DEFAULT, mpi.dpopsmax_hist[task]) ) < 0) HERR(routineName);
     if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
     if (( H5Sclose(mem_dspace) ) < 0) HERR(routineName);
-  }  
+  }
   return;
 }
 /* ------- end   --------------------------   writeMPI_all.c --- */
@@ -577,7 +585,7 @@ void writeMPI_all(void) {
 
 /* ------- begin --------------------------   writeMPI_p.c ----- */
 void writeMPI_p(int task) {
-/* Writes output on indata file, MPI group, one task at once */ 
+/* Writes output on indata file, MPI group, one task at once */
   const char routineName[] = "writeMPI_p";
   hsize_t  offset[] = {0, 0, 0, 0};
   hsize_t  count[] = {1, 1, 1, 1};
@@ -605,7 +613,7 @@ void writeMPI_p(int task) {
                    H5P_DEFAULT, &mpi.dpopsmax[0]) ) < 0) HERR(routineName);
   if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
   if (( H5Sclose(mem_dspace) ) < 0) HERR(routineName);
-  
+
   dims[0] = mpi.niter[0];
   if (( mem_dspace = H5Screate_simple(1, dims, NULL) ) < 0) HERR(routineName);
   offset[0] = mpi.ix;
@@ -627,15 +635,14 @@ void readConvergence(void) {
   /* This is a self-contained function to read the convergence matrix,
      written by RH. */
   const char routineName[] = "readConvergence";
-  size_t len_id, nx, ny;
-  int    ncid, ncid_mpi, ierror, dimid, varid;
-  size_t  attr_size;
-  hid_t   plist;
-  char   *atmosID;
+  char *atmosID;
+  int ncid, ncid_mpi, nx, ny;
+  size_t attr_size;
+  hid_t plist;
   H5T_class_t type_class;
 
   mpi.rh_converged = matrix_int(mpi.nx, mpi.ny);
-  
+
   /* --- Open the inputdata file --- */
   if (( plist = H5Pcreate(H5P_FILE_ACCESS )) < 0) HERR(routineName);
   if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
@@ -661,14 +668,14 @@ void readConvergence(void) {
   free(atmosID);
   /* Check that dimension sizes match */
   if (( H5LTget_attribute_int(ncid, "/", "nx", &nx) ) < 0) HERR(routineName);
-    if (nx != mpi.nx) {
+  if (nx != mpi.nx) {
     sprintf(messageStr,
 	    "Number of x points mismatch: expected %d, found %d.",
 	    mpi.nx, (int)nx);
     Error(WARNING, routineName, messageStr);
   }
   if (( H5LTget_attribute_int(ncid, "/", "ny", &ny) ) < 0) HERR(routineName);
-    if (ny != mpi.ny) {
+  if (ny != mpi.ny) {
     sprintf(messageStr,
 	    "Number of y points mismatch: expected %d, found %d.",
 	    mpi.ny, (int)ny);
@@ -683,4 +690,3 @@ void readConvergence(void) {
   return;
 }
 /* ------- end   -------------------------- readConvergence.c  --- */
-

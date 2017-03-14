@@ -24,12 +24,12 @@ else
     CFLAGS  = -O2 -I../ -I$(HDF5_DIR)/include/ -D'REV_ID="$(REV)"'
 endif
 
-LDFLAGS = -L../ -L$(NCDF_DIR)/lib/
+LDFLAGS = -L../ -L$(HDF5_DIR)/lib/
 
 
 ## --- If no FORTRAN compiler is available remove -lrh_f90 in following
 
-      LIBS = -lrh -lrh_f90 $(ARCHLIBS) -lnetcdf
+      LIBS = -lrh -lrh_f90 $(ARCHLIBS) -lhdf5 -lhdf5_hl
 
 
 ## --- Define groups of object files --                -------------- ##
@@ -39,8 +39,8 @@ ONE_D_OBJS = anglequad.o      feautrier.o     formal.o           hydrostat.o   \
              riiplane.o       background_p.o  distribute_jobs.o  escape.o      \
              scatter_p.o      initial_p.o                                      \
              writeindata_p.o  parallel.o         iterate_p.o   \
-             ludcmp_p.o       accelerate_p.o  redistribute_p.o   statequil_p.o 
-			 writeAux_p.o
+             ludcmp_p.o       accelerate_p.o  redistribute_p.o   statequil_p.o \
+             writeAux_p.o
 	         
 
 SUBSTITUTE = pops_xdr.o

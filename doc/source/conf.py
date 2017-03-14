@@ -41,7 +41,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'RH 1.5D'
-copyright = u'2014, Tiago M. D. Pereira'
+copyright = u'2017, Tiago M. D. Pereira'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -248,7 +248,7 @@ texinfo_documents = [
 epub_title = u'RH 1.5D'
 epub_author = u'Tiago M. D. Pereira'
 epub_publisher = u'Tiago M. D. Pereira'
-epub_copyright = u'2014, Tiago M. D. Pereira'
+epub_copyright = u'2017, Tiago M. D. Pereira'
 
 # The language of the text. It defaults to the language option
 # or en if the language is not set.
