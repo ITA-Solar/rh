@@ -412,7 +412,7 @@ void writeAux_all(void) {
       if (mpi.convergence[task] < 0) continue;
       /* Memory dataspace */
       dims[0] = atom->Nlevel;
-      dims[1] = atmos.Nspace;
+      dims[1] = infile.nz - mpi.zcut_hist[task];
       if (( mem_dspace = H5Screate_simple(2, dims, NULL) ) < 0)
         HERR(routineName);
       /* File dataspace */
@@ -421,7 +421,9 @@ void writeAux_all(void) {
       offset[2] = mpi.taskmap[task + mpi.my_start][1];
       offset[3] = mpi.zcut_hist[task];
       count[0] = atom->Nlevel;
-      count[3] = infile.nz - offset[3];
+      count[1] = 1;
+      count[2] = 1;
+      count[3] = infile.nz - mpi.zcut_hist[task];
       if (( file_dspace = H5Dget_space(io.aux_atom_pop[nact]) ) < 0)
         HERR(routineName);
       if (( H5Sselect_hyperslab(file_dspace, H5S_SELECT_SET, offset,
@@ -487,7 +489,7 @@ void writeAux_all(void) {
       if (mpi.convergence[task] < 0) continue;
       /* Memory dataspace */
       dims[0] = molecule->Nv;
-      dims[1] = atmos.Nspace;
+      dims[1] = infile.nz - mpi.zcut_hist[task];
       if (( mem_dspace = H5Screate_simple(2, dims, NULL) ) < 0)
         HERR(routineName);
       /* File dataspace */
@@ -496,7 +498,7 @@ void writeAux_all(void) {
       offset[2] = mpi.taskmap[task + mpi.my_start][1];
       offset[3] = mpi.zcut_hist[task];
       count[0] = molecule->Nv;
-      count[3] = infile.nz - offset[3];
+      count[3] = infile.nz - mpi.zcut_hist[task];
       if (( file_dspace = H5Dget_space(io.aux_mol_pop[nact]) ) < 0)
         HERR(routineName);
       if (( H5Sselect_hyperslab(file_dspace, H5S_SELECT_SET, offset,
