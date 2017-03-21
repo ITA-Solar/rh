@@ -49,7 +49,8 @@ IO_data   io;
 IO_buffer iobuf;
 int Nspect, *wave_index = NULL, save_Nrays;
 double muz, save_muz, save_mux, save_muy, save_wmu;
-
+/* Default fill value for HDF5 to be same as netCDF default */
+const float FILLVALUE = 9.96921e+36;
 
 /* ------- begin -------------------------- rhf1d.c ----------------- */
 

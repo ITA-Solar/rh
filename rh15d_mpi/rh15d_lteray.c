@@ -44,6 +44,8 @@ BackgroundData bgdat;
 MPI_data  mpi;
 IO_data   io;
 IO_buffer iobuf;
+/* Default fill value for HDF5 to be same as netCDF default */
+const float FILLVALUE = 9.96921e+36;
 
 /* ------- begin -------------------------- rhf1d.c ----------------- */
 
@@ -87,7 +89,7 @@ int main(int argc, char *argv[])
     sprintf(messageStr, "Unable to open inputfile %s", RAY_INPUT_FILE);
     Error(ERROR_LEVEL_2, argv[0], messageStr);
   }
-  
+
   getLine(fp_ray, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
   Nread = sscanf(inputLine, "%lf", &muz);
   checkNread(Nread, Nrequired=1, argv[0], checkPoint=1);
@@ -132,20 +134,20 @@ int main(int argc, char *argv[])
   atmos.moving = TRUE;  /* To prevent moving change from column [0, 0] */
    /* Read first atmosphere column just to get dimensions */
   readAtmos_hdf5(0, 0, &atmos, &geometry, &infile);
-  readAtomicModels();   
+  readAtomicModels();
   readMolecularModels();
   SortLambda();
-  
+
   /* --- Force LTE populations for all active atoms -- ------------ */
   for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
     atom = atmos.activeatoms[nact];
     atom->initial_solution = LTE_POPULATIONS;
   }
-  
+
   /* --- START stuff from initParallelIO, just getting the needed parts --- */
   init_Background();
   mpi.StokesMode_save = input.StokesMode;
-  
+
   /* Get file position of atom files (to re-read collisions) */
   io.atom_file_pos = (long *) malloc(atmos.Nactiveatom * sizeof(long));
   mpi.zcut_hist    = (int *)    calloc(mpi.Ntasks , sizeof(int));
@@ -155,17 +157,17 @@ int main(int argc, char *argv[])
     io.atom_file_pos[nact] = ftell(atom->fp_input);
   }
   mpi.single_log       = FALSE;
-  
+
   /* --- END of stuff from initParalleIO ---*/
-  init_hdf5_ray();  
-  
+  init_hdf5_ray();
+
   /* Main loop over tasks */
   for (mpi.task = 0; mpi.task < mpi.Ntasks; mpi.task++) {
 
     /* Indices of x and y */
     mpi.ix = mpi.taskmap[mpi.task + mpi.my_start][0];
     mpi.iy = mpi.taskmap[mpi.task + mpi.my_start][1];
-   
+
     /* Printout some info */
     sprintf(messageStr,
       "Process %3d: --- START task %3ld [of %ld], (xi,yi) = (%3d,%3d)\n",
@@ -181,23 +183,23 @@ int main(int argc, char *argv[])
 
     /* --- Calculate background opacities --             ------------- */
     Background_p(write_analyze_output=FALSE, equilibria_only=FALSE);
-    
+
     getProfiles();
     initSolution_p();
     initScatter();
-    
+
     getCPU(1, TIME_POLL, "Total Initialize");
-    
+
     /* --- Solve radiative transfer equations --         -------------- */
     solveSpectrum(FALSE, FALSE);
     /* --- Write emergent spectrum to output file --     -------------- */
     writeRay();
-    
+
     sprintf(messageStr,
       "Process %3d: *** END   task %3ld\n",
 	    mpi.rank, mpi.task+1);
     fprintf(mpi.main_logfile, messageStr);
-    Error(MESSAGE, "main", messageStr);	
+    Error(MESSAGE, "main", messageStr);
 
     mpi.nconv++;
   } /* End of main task loop */
@@ -212,16 +214,16 @@ int main(int argc, char *argv[])
   close_hdf5_atmos(&atmos, &geometry, &infile);
   free(io.atom_file_pos);
   /* --- END of stuff from closeParallelIO ---*/
-  
+
   close_hdf5_ray();
-  
+
   /* Frees from memory stuff used for job control */
   finish_jobs();
 
   sprintf(messageStr,
 	  "*** Job ending. Total %ld 1-D columns: %ld computed, %ld skipped.\n%s",
 	  mpi.Ntasks, mpi.nconv, mpi.ncrash,
-	  "*** RH lte ray finished gracefully.\n");	  
+	  "*** RH lte ray finished gracefully.\n");
   if (mpi.rank == 0) fprintf(mpi.main_logfile, messageStr);
   Error(MESSAGE,"main",messageStr);
 

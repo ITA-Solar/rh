@@ -44,6 +44,8 @@ BackgroundData bgdat;
 MPI_data  mpi;
 IO_data   io;
 IO_buffer iobuf;
+/* Default fill value for HDF5 to be same as netCDF default */
+const float FILLVALUE = 9.96921e+36;
 
 /* ------- begin -------------------------- rhf1d.c ----------------- */
 
@@ -78,15 +80,15 @@ int main(int argc, char *argv[])
 
   /* Find out the work load for each process */
   distribute_jobs();
-  
-  
+
+
   /* --- Read ray.input --                            --------------- */
   /* --- Read direction cosine for ray --              -------------- */
   if ((fp_ray = fopen(RAY_INPUT_FILE, "r")) == NULL) {
     sprintf(messageStr, "Unable to open inputfile %s", RAY_INPUT_FILE);
     Error(ERROR_LEVEL_2, argv[0], messageStr);
   }
-  
+
   getLine(fp_ray, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
   Nread = sscanf(inputLine, "%lf", &muz);
   checkNread(Nread, Nrequired=1, argv[0], checkPoint=1);
@@ -114,7 +116,7 @@ int main(int argc, char *argv[])
 
     wave_index = io.ray_wave_idx;
   }
-  
+
   /* --- Save geometry values to change back after --    ------------ */
   save_Nrays = atmos.Nrays;   save_wmu = geometry.wmu[0];
   save_muz = geometry.muz[0]; save_mux = geometry.mux[0]; save_muy = geometry.muy[0];
@@ -122,19 +124,19 @@ int main(int argc, char *argv[])
   atmos.moving = TRUE;  /* To prevent moving change from column [0, 0] */
    /* Read first atmosphere column just to get dimensions */
   readAtmos_hdf5(0, 0, &atmos, &geometry, &infile);
-      
+
   if (atmos.Stokes) Bproject();
-  
-  readAtomicModels();   
+
+  readAtomicModels();
   readMolecularModels();
 
   SortLambda();
-  
+
   /* Check if wavelength indices make sense */
   for (i = 0;  i < Nspect;  i++) {
     if (wave_index[i] < 0  ||  wave_index[i] >= spectrum.Nspect) {
 	sprintf(messageStr, "Illegal value of wave_index[n]: %4d\n"
-	"Value has to be between 0 and %4d\n", 
+	"Value has to be between 0 and %4d\n",
 	wave_index[i], spectrum.Nspect);
 	Error(ERROR_LEVEL_2, "main", messageStr);
     }
@@ -142,47 +144,47 @@ int main(int argc, char *argv[])
 
   initParallelIO(run_ray=FALSE, writej=FALSE);
   init_hdf5_ray();
-  
+
   /* Main loop over tasks */
   for (mpi.task = 0; mpi.task < mpi.Ntasks; mpi.task++) {
-    
-    mpi.isfirst = (mpi.task == 0); 
+
+    mpi.isfirst = (mpi.task == 0);
     if (mpi.stop) mpi.stop = FALSE;
 
     /* Indices of x and y */
     mpi.ix = mpi.taskmap[mpi.task + mpi.my_start][0];
     mpi.iy = mpi.taskmap[mpi.task + mpi.my_start][1];
-  
+
     /* Printout some info */
     sprintf(messageStr,
       "Process %3d: --- START task %3ld [of %ld], (xi,yi) = (%3d,%3d)\n",
        mpi.rank, mpi.task+1, mpi.Ntasks, mpi.xnum[mpi.ix], mpi.ynum[mpi.iy]);
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);
-    
+
     /* Read atmosphere column */
     readAtmos_hdf5(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
-    
+
     /* Update quantities that depend on atmosphere and initialise others */
     UpdateAtmosDep();
 
     /* --- Calculate background opacities --             ------------- */
     Background_p(write_analyze_output=TRUE, equilibria_only=FALSE);
-    
+
     getProfiles();
     initSolution_p();
     initScatter();
-    
+
     getCPU(1, TIME_POLL, "Total Initialize");
-    
+
     /* --- Solve radiative transfer for active ingredients -- --------- */
     Iterate_p(input.NmaxIter, input.iterLimit);
-    
+
     /* Treat odd cases as a crash */
-    if (isnan(mpi.dpopsmax[mpi.task]) || isinf(mpi.dpopsmax[mpi.task]) || 
+    if (isnan(mpi.dpopsmax[mpi.task]) || isinf(mpi.dpopsmax[mpi.task]) ||
       	(mpi.dpopsmax[mpi.task] < 0) || ((mpi.dpopsmax[mpi.task] == 0) &&
         (input.NmaxIter > 0))) mpi.stop = TRUE;
-    
+
     /* In case of crash, write dummy data and proceed to next task */
     if (mpi.stop) {
       sprintf(messageStr,
@@ -190,9 +192,9 @@ int main(int argc, char *argv[])
 	      mpi.rank, mpi.task+1, mpi.niter[mpi.task]);
       fprintf(mpi.main_logfile, messageStr);
       Error(MESSAGE, "main", messageStr);
-      
+
       close_Background();  /* To avoid many open files */
-      
+
       mpi.ncrash++;
       mpi.stop = FALSE;
       mpi.dpopsmax[mpi.task] = 0.0;
@@ -216,7 +218,7 @@ int main(int argc, char *argv[])
 
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);
-      
+
     /* Lambda iterate mean radiation field */
     adjustStokesMode();
     niter = 0;
@@ -226,7 +228,7 @@ int main(int argc, char *argv[])
     }
 
     copyBufVars(writej=FALSE);
-    
+
     if (mpi.convergence[mpi.task]) {
       /* Redefine geometry just for this ray */
       atmos.Nrays     = 1;
@@ -236,10 +238,10 @@ int main(int argc, char *argv[])
       geometry.muy[0] = 0.0;
       geometry.wmu[0] = 1.0;
       spectrum.updateJ = FALSE;
-      
+
       calculate_ray();
       writeRay();
-      
+
       /* Put back previous values for geometry  */
       atmos.Nrays     = geometry.Nrays = save_Nrays;
       geometry.muz[0] = save_muz;
@@ -266,7 +268,7 @@ int main(int argc, char *argv[])
   sprintf(messageStr,
    "*** Job ending. Total %ld 1-D columns: %ld converged, %ld not converged, %ld crashed.\n%s",
 	  mpi.Ntasks, mpi.nconv, mpi.nnoconv, mpi.ncrash,
-	  "*** RH finished gracefully.\n");	  
+	  "*** RH finished gracefully.\n");
   if (mpi.rank == 0) fprintf(mpi.main_logfile, messageStr);
   Error(MESSAGE,"main",messageStr);
 

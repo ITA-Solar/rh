@@ -101,10 +101,10 @@
 /* For keeping the HDF5 file and variable IDs */
 typedef struct {
   /* for the J file */
-  int  j_ncid,            j_jlambda_var,     j_j20_var,          j_jgas_var; 
-  /* for the spectrum file*/ 
-  int  spec_ncid,         spec_int_var,      spec_flux_var,     spec_wave_var, 
-       spec_stokes_u_var, spec_stokes_q_var, spec_stokes_v_var; 
+  int  j_ncid,            j_jlambda_var,     j_j20_var,          j_jgas_var;
+  /* for the spectrum file*/
+  int  spec_ncid,         spec_int_var,      spec_flux_var,     spec_wave_var,
+       spec_stokes_u_var, spec_stokes_q_var, spec_stokes_v_var;
   /* for the input data file. Note: this HDF5 file has several groups */
   int  in_ncid,           in_input_ncid,     in_atmos_ncid,     in_mpi_ncid;
   int  in_atmos_T,        in_atmos_ne,       in_atmos_vz,       in_atmos_vt,
@@ -120,7 +120,7 @@ typedef struct {
   int  aux_ncid,         *aux_atom_ncid,     aux_op_ncid,      *aux_atom_pop,
       *aux_atom_poplte,  *aux_atom_RijL,    *aux_atom_RjiL,    *aux_atom_RijC,
       *aux_atom_RjiC,    *aux_atom_coll,    *aux_atom_damp,    *aux_atom_vbroad,
-      *aux_mol_ncid,     *aux_mol_pop,      *aux_mol_poplte,   *aux_mol_E, 
+      *aux_mol_ncid,     *aux_mol_pop,      *aux_mol_poplte,   *aux_mol_E,
       *aux_mol_vbroad,
        aux_op_chi_ai,     aux_op_chi_ad,     aux_op_eta_ai,     aux_op_eta_ad;
   /* for atom file positions */
@@ -138,7 +138,9 @@ typedef struct {
   float   *J,  *J20;
 } IO_buffer;
 
+/* Default fill value for HDF5 */
+extern const float FILLVALUE;
 
 #endif /* !__IO_H__ */
-              
+
 /* ---------------------------------------- io.h -------------------- */

@@ -60,7 +60,6 @@ void init_hdf5_indata_new(void)
   /* This value is harcoded for efficiency.
      Maximum number of iterations ever needed */
   int     NMaxIter = 1500;
-  float   fillval = 9.96921e+36;  /* from netcdf */
   hid_t   plist, ncid, file_dspace, ncid_input, ncid_atmos, ncid_mpi;
   hsize_t dims[4];
   bool_t   XRD;
@@ -237,7 +236,7 @@ void init_hdf5_indata_new(void)
   dims[2] = infile.nz;
   if (( file_dspace = H5Screate_simple(3, dims, NULL) ) < 0) HERR(routineName);
   if (( plist = H5Pcreate(H5P_DATASET_CREATE) ) < 0) HERR(routineName);
-  if (( H5Pset_fill_value(plist, H5T_NATIVE_FLOAT, &fillval) ) < 0)
+  if (( H5Pset_fill_value(plist, H5T_NATIVE_FLOAT, &FILLVALUE) ) < 0)
     HERR(routineName);
   if (( H5Pset_alloc_time(plist, H5D_ALLOC_TIME_EARLY) ) < 0) HERR(routineName);
   if (( H5Pset_fill_time(plist, H5D_FILL_TIME_ALLOC) ) < 0) HERR(routineName);
@@ -325,7 +324,7 @@ void init_hdf5_indata_new(void)
   dims[1] = mpi.ny;
   if (( file_dspace = H5Screate_simple(2, dims, NULL) ) < 0) HERR(routineName);
   if (( plist = H5Pcreate(H5P_DATASET_CREATE) ) < 0) HERR(routineName);
-  if (( H5Pset_fill_value(plist, H5T_NATIVE_FLOAT, &fillval) ) < 0)
+  if (( H5Pset_fill_value(plist, H5T_NATIVE_FLOAT, &FILLVALUE) ) < 0)
     HERR(routineName);
   if (( H5Pset_alloc_time(plist, H5D_ALLOC_TIME_EARLY) ) < 0) HERR(routineName);
   if (( H5Pset_fill_time(plist, H5D_FILL_TIME_ALLOC) ) < 0) HERR(routineName);
@@ -349,7 +348,7 @@ void init_hdf5_indata_new(void)
   dims[2] = NMaxIter;
   if (( file_dspace = H5Screate_simple(3, dims, NULL) ) < 0) HERR(routineName);
   if (( plist = H5Pcreate(H5P_DATASET_CREATE) ) < 0) HERR(routineName);
-  if (( H5Pset_fill_value(plist, H5T_NATIVE_FLOAT, &fillval) ) < 0)
+  if (( H5Pset_fill_value(plist, H5T_NATIVE_FLOAT, &FILLVALUE) ) < 0)
     HERR(routineName);
   if (( H5Pset_alloc_time(plist, H5D_ALLOC_TIME_EARLY) ) < 0) HERR(routineName);
   if (( H5Pset_fill_time(plist, H5D_FILL_TIME_ALLOC) ) < 0) HERR(routineName);
@@ -623,7 +622,7 @@ void writeMPI_p(int task) {
   if (( H5Sselect_hyperslab(file_dspace, H5S_SELECT_SET, offset,
                             NULL, count, NULL) ) < 0) HERR(routineName);
   if (( H5Dwrite(io.in_mpi_dmh, H5T_NATIVE_DOUBLE, mem_dspace, file_dspace,
-                 H5P_DEFAULT, &mpi.dpopsmax_hist[0]) ) < 0) HERR(routineName);
+                 H5P_DEFAULT, mpi.dpopsmax_hist[0]) ) < 0) HERR(routineName);
   if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
   if (( H5Sclose(mem_dspace) ) < 0) HERR(routineName);
   return;

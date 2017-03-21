@@ -63,7 +63,6 @@ void init_hdf5_ray_new(void)
   hsize_t dims[4];
   bool_t  write_xtra;
   double *lambda_air;
-  float   fillval = 9.96921e+36;  /* from netcdf */
   char    timestr[ARR_STRLEN];
   time_t  curtime;
   struct tm *loctime;
@@ -104,7 +103,7 @@ void init_hdf5_ray_new(void)
   dims[2] = spectrum.Nspect;
   if (( file_dspace = H5Screate_simple(3, dims, NULL) ) < 0) HERR(routineName);
   if (( plist = H5Pcreate(H5P_DATASET_CREATE) ) < 0) HERR(routineName);
-  if (( H5Pset_fill_value(plist, H5T_NATIVE_FLOAT, &fillval) ) < 0)
+  if (( H5Pset_fill_value(plist, H5T_NATIVE_FLOAT, &FILLVALUE) ) < 0)
     HERR(routineName);
   if (( H5Pset_alloc_time(plist, H5D_ALLOC_TIME_EARLY) ) < 0) HERR(routineName);
   if (( H5Pset_fill_time(plist, H5D_FILL_TIME_ALLOC) ) < 0) HERR(routineName);
