@@ -127,10 +127,10 @@ typedef struct {
   long *atom_file_pos;
   /* for the ray file */
   int  ray_ncid,          ray_nwave_sel,     ray_wave_var,      ray_int_var,
-       ray_stokes_q_var,  ray_stokes_u_var,  ray_stokes_v_var,  ray_wave_idx_var,
+       ray_stokes_q_var,  ray_stokes_u_var,  ray_stokes_v_var,  ray_j_var, 
        ray_chi_l_var,     ray_eta_l_var,     ray_chi_c_var,     ray_eta_c_var,
        ray_sca_c_var,     ray_chi_var,       ray_S_var,        *ray_wave_idx,
-       ray_tau1_var,      ray_j_var;
+       ray_tau1_var;
 } IO_data;
 
 typedef struct {

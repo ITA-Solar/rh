@@ -271,8 +271,6 @@ void init_hdf5_ray_existing(void)
       HERR(routineName);
   }
   if (write_xtra) {
-    if (( io.ray_wave_idx_var = H5Dopen(ncid, WAVE_SEL_IDX, H5P_DEFAULT) ) < 0)
-      HERR(routineName);
     if (( io.ray_chi_var = H5Dopen(ncid, CHI_NAME, H5P_DEFAULT) ) < 0)
       HERR(routineName);
     if (( io.ray_S_var = H5Dopen(ncid, S_NAME, H5P_DEFAULT) ) < 0)
@@ -289,9 +287,8 @@ void init_hdf5_ray_existing(void)
 
 
 /* ------- begin -------------------------- close_hdf5_ray.c --------- */
-void close_hdf5_ray(void)
-/* Closes the spec netCDF file */
-{
+void close_hdf5_ray(void) {
+  /* Closes the spec netCDF file */
   const char routineName[] = "close_hdf5_ray";
   bool_t     write_xtra;
 
@@ -319,9 +316,8 @@ void close_hdf5_ray(void)
 
 
 /* ------- begin -------------------------- writeRay.c --------------- */
-void writeRay(void)
-/* Writes ray data to netCDF file. */
-{
+void writeRay(void) {
+  /* Writes ray data to netCDF file. */
   const char routineName[] = "writeRay";
   int        idx, ncid, k, l, nspect;
   double    *J;
