@@ -292,6 +292,8 @@ void set_S_interpolation(char *value, void *pointer)
     interpolation = S_LINEAR;
   else if (!strcmp(value, "BEZIER"))
     interpolation = BEZIER;
+  else if (!strcmp(value, "BEZIER3"))
+    interpolation = BEZIER3;
   else if (!strcmp(value, "CUBIC_HERMITE"))
     interpolation = CUBIC_HERMITE;
   else {
@@ -302,6 +304,27 @@ void set_S_interpolation(char *value, void *pointer)
   memcpy(pointer, &interpolation, sizeof(enum S_interpol));
 }
 /* ------- end -----------------------set_S_interpolation.c ------- */
+
+/* ------- begin ---------------------- set_S_interpolation_stokes.c ------- */
+
+void set_S_interpolation_stokes(char *value, void *pointer)
+{
+  const char routineName[] = "set_S_interpolation_stokes";
+
+  enum S_interpol_stokes interpolation;
+
+  if (!strcmp(value, "DELO_BEZIER3"))
+    interpolation = DELO_BEZIER3;
+  else if (!strcmp(value, "DELO_PARABOLIC"))
+    interpolation = DELO_PARABOLIC;
+  else {
+    sprintf(messageStr,
+	     "Invalid value for keyword S_INTERPOLATION_STOKES: %s", value);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
+  memcpy(pointer, &interpolation, sizeof(enum S_interpol));
+}
+/* ------- end -----------------------set_S_interpolation_stokes.c ------- */
 
 
 /* ------- begin -------------------------- setPRDangle.c --------- */

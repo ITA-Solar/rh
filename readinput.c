@@ -173,6 +173,9 @@ void readInput()
     {"S_INTERPOLATION", "LINEAR", FALSE, KEYWORD_DEFAULT,
      &input.S_interpolation, set_S_interpolation},
 
+    {"S_INTERPOLATION_STOKES", "DELO_BEZIER3", FALSE, KEYWORD_DEFAULT,
+     &input.S_interpolation_stokes, set_S_interpolation_stokes},
+    
     {"INTERPOLATE_3D", "LINEAR_3D", FALSE, KEYWORD_DEFAULT,
      &input.interpolate_3D, setInterpolate_3D},
 
