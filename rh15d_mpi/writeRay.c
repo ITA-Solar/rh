@@ -125,8 +125,8 @@ void init_hdf5_ray_new(void)
   }
   if (input.p15d_wtau) {
     if (( io.ray_tau1_var = H5Dcreate(ncid, TAU1_NAME, H5T_NATIVE_FLOAT,
-				                               file_dspace, H5P_DEFAULT, plist,
-				                               H5P_DEFAULT)) < 0) HERR(routineName);
+				                      file_dspace, H5P_DEFAULT, plist,
+				                      H5P_DEFAULT)) < 0) HERR(routineName);
   }
   if (write_xtra) {
     dims[0] = mpi.nx;

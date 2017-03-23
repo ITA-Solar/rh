@@ -46,9 +46,9 @@ extern char messageStr[];
 /* ------- begin --------------------------   init_hdf5_atmos   ----- */
 
 void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry, Input_Atmos_file *infile)
-/* Initialises the input atmosphere file, gets dimensions and variable ids. 
+/* Initialises the input atmosphere file, gets dimensions and variable ids.
    Also performs other basic RH initialisations like readAbundance       */
-{ 
+{
   const char routineName[] = "init_hdf5_atmos";
   struct  stat statBuffer;
   int ierror, has_B;
@@ -107,8 +107,17 @@ void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry, Input_Atmos_file *in
   }
 
   /* Get the varids (collective operation!) */
-  if ((infile->ne_varid = H5Dopen2(ncid, NE_NAME, H5P_DEFAULT)) < 0)
-    HERR(routineName);
+  if (input.solve_ne == NONE) {
+      if (H5LTfind_dataset(ncid, NE_NAME)) {
+        if ((infile->ne_varid = H5Dopen2(ncid, NE_NAME, H5P_DEFAULT)) < 0)
+          HERR(routineName);
+      } else {
+          sprintf(messageStr, "Electron density not found in atmosphere file,"
+                  " calculating it assuming Saha-Boltzmann ionisation.\n");
+          Error(WARNING, routineName, messageStr);
+          input.solve_ne = ONCE;
+      }
+  }
   if ((infile->vz_varid = H5Dopen2(ncid, VZ_NAME, H5P_DEFAULT)) < 0)
     HERR(routineName);
   if ((infile->nh_varid = H5Dopen2(ncid, NH_NAME, H5P_DEFAULT)) < 0)
@@ -124,11 +133,11 @@ void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry, Input_Atmos_file *in
       HERR(routineName);
   } else {
     infile->vturb_varid = -1;
-  } 
-  
+  }
+
   /* Find out if z is written for each (x, y) column */
   if ((H5LTget_dataset_ndims(ncid, "z", &mpi.ndims_z)) < 0) HERR(routineName);
-  
+
   if (atmos->Stokes) {
     if ((infile->Bx_varid = H5Dopen2(ncid, BX_NAME, H5P_DEFAULT)) < 0)
       HERR(routineName);
@@ -180,8 +189,8 @@ void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry, Input_Atmos_file *in
   } else {
     geometry->vboundary[BOTTOM] = THERMALIZED;
   }
-  
-  /* some other housekeeping */ 
+
+  /* some other housekeeping */
   geometry->scale             = GEOMETRIC;
 
   /* --- Construct atmosID from filename and last modification date - */
@@ -217,7 +226,7 @@ void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry, Input_Atmos_file *in
 
 void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 		    Input_Atmos_file *infile)
-/* Reads the variables T, ne, vel, nh for a given (xi,yi) pair */ 
+/* Reads the variables T, ne, vel, nh for a given (xi,yi) pair */
 {
   const char routineName[] = "readAtmos_hdf5";
   hsize_t     start[]    = {0, 0, 0, 0}; /* starting values */
@@ -239,7 +248,7 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   dims_memory[0] = infile->nz;
   if ((memspace_id = H5Screate_simple(1, dims_memory, NULL)) < 0)
     HERR(routineName);
-  atmos->T = (double *) realloc(atmos->T, infile->nz * sizeof(double));   
+  atmos->T = (double *) realloc(atmos->T, infile->nz * sizeof(double));
   /* File dataspace */
   start[0] = input.p15d_nt; count[0] = 1;
   start[1] = (size_t) xi;   count[1] = 1;
@@ -259,8 +268,8 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   } else {
     mpi.zcut = 0;
   }
-  
-  /* Memory dataspace, redefine for Nspace */ 
+
+  /* Memory dataspace, redefine for Nspace */
   dims_memory[0] = atmos->Nspace;
   memspace_id = H5Screate_simple(1, dims_memory, NULL);
   /* Get z again */
@@ -291,11 +300,13 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
    /* read variables */
   if ((ierror = H5Dread(infile->T_varid, H5T_NATIVE_DOUBLE, memspace_id,
 	          dataspace_id, H5P_DEFAULT, atmos->T)) < 0) HERR(routineName);
-  if ((ierror = H5Dread(infile->ne_varid, H5T_NATIVE_DOUBLE, memspace_id,
-      	         dataspace_id, H5P_DEFAULT, atmos->ne)) < 0) HERR(routineName);
+  if (input.solve_ne == NONE) {
+      if ((ierror = H5Dread(infile->ne_varid, H5T_NATIVE_DOUBLE, memspace_id,
+      	          dataspace_id, H5P_DEFAULT, atmos->ne)) < 0) HERR(routineName);
+  }
   if ((ierror = H5Dread(infile->vz_varid, H5T_NATIVE_DOUBLE, memspace_id,
-	     dataspace_id, H5P_DEFAULT, geometry->vel)) < 0) HERR(routineName);  
-  /* vturb, if available */   
+	     dataspace_id, H5P_DEFAULT, geometry->vel)) < 0) HERR(routineName);
+  /* vturb, if available */
   if (infile->vturb_varid != -1) {
     ierror = H5Dread(infile->vturb_varid, H5T_NATIVE_DOUBLE, memspace_id,
 		   dataspace_id, H5P_DEFAULT, atmos->vturb);
@@ -328,8 +339,8 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   if (( H5Sclose(dataspace_id) ) < 0) HERR(routineName);
   if (( H5Sclose(memspace_id) ) < 0) HERR(routineName);
   /* allocate and zero nHtot */
-  atmos->nH = matrix_double(atmos->NHydr, atmos->Nspace);  
-  for (j = 0; j < atmos->Nspace; j++) atmos->nHtot[j] = 0.0; 
+  atmos->nH = matrix_double(atmos->NHydr, atmos->Nspace);
+  for (j = 0; j < atmos->Nspace; j++) atmos->nHtot[j] = 0.0;
 
   /* read nH, all at once */
   start_nh[0] = input.p15d_nt; count_nh[0] = 1;
@@ -342,15 +353,15 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
                                NULL, count_nh, NULL);
   dims_memory[0] = atmos->NHydr;
   dims_memory[1] = atmos->Nspace;
-  memspace_id = H5Screate_simple(2, dims_memory, NULL);  
+  memspace_id = H5Screate_simple(2, dims_memory, NULL);
   ierror = H5Dread(infile->nh_varid, H5T_NATIVE_DOUBLE,
-		   memspace_id, dataspace_id, H5P_DEFAULT, atmos->nH[0]);  
+		   memspace_id, dataspace_id, H5P_DEFAULT, atmos->nH[0]);
   if (( H5Sclose(dataspace_id) ) < 0) HERR(routineName);
   if (( H5Sclose(memspace_id) ) < 0) HERR(routineName);
   /* Depth grid refinement */
   if (input.p15d_refine)
     depth_refine(atmos, geometry, input.p15d_tmax);
-  
+
   /* Fix vturb: remove zeros, use multiplier and add */
   for (i = 0; i < atmos->Nspace; i++) {
     if (atmos->vturb[i] < 0.0) atmos->vturb[i] = 0.0;
@@ -361,7 +372,7 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   for (i = 0; i < atmos->NHydr; i++){
     for (j = 0; j < atmos->Nspace; j++) atmos->nHtot[j] += atmos->nH[i][j];
   }
-  
+
   /* Some other housekeeping */
   old_moving = atmos->moving;
   atmos->moving = FALSE;
@@ -393,11 +404,11 @@ void close_hdf5_atmos(Atmosphere *atmos, Geometry *geometry, Input_Atmos_file *i
 {
   const char routineName[] = "close_atmos_hdf5";
   int ierror;
-  
+
   /* Close the file. */
   ierror = H5Dclose(infile->z_varid);
   ierror = H5Dclose(infile->T_varid);
-  ierror = H5Dclose(infile->ne_varid);
+  if (input.solve_ne == NONE) ierror = H5Dclose(infile->ne_varid);
   ierror = H5Dclose(infile->vz_varid);
   ierror = H5Dclose(infile->nh_varid);
   if (atmos->Stokes) {
@@ -418,7 +429,7 @@ void close_hdf5_atmos(Atmosphere *atmos, Geometry *geometry, Input_Atmos_file *i
   free(infile->y);
   free(infile->x);
 
-  return; 
+  return;
 
 }
 
@@ -458,9 +469,9 @@ void setTcut(Atmosphere *atmos, Geometry *geometry, double Tmax) {
   atmos->Nspace  -= mpi.zcut;
   geometry->Ndep -= mpi.zcut;
 
-  /* Reallocate arrays of Nspace */ 
+  /* Reallocate arrays of Nspace */
   realloc_ndep(atmos, geometry);
-   
+
   return;
 }
 /* ------- end  --------------------------- setTcut      ----------- */
@@ -469,24 +480,24 @@ void setTcut(Atmosphere *atmos, Geometry *geometry, double Tmax) {
 void realloc_ndep(Atmosphere *atmos, Geometry *geometry) {
   /* Reallocates the arrays of Nspace */
 
-  
+
 
   atmos->T     = (double *) realloc(atmos->T,     atmos->Nspace * sizeof(double));
   atmos->ne    = (double *) realloc(atmos->ne,    atmos->Nspace * sizeof(double));
   atmos->nHtot = (double *) realloc(atmos->nHtot, atmos->Nspace * sizeof(double));
-  geometry->vel    = (double *) realloc(geometry->vel, 
-					atmos->Nspace * sizeof(double));  
-  geometry->height = (double *) realloc(geometry->height, 
+  geometry->vel    = (double *) realloc(geometry->vel,
 					atmos->Nspace * sizeof(double));
-  if (atmos->nHmin != NULL) 
+  geometry->height = (double *) realloc(geometry->height,
+					atmos->Nspace * sizeof(double));
+  if (atmos->nHmin != NULL)
       atmos->nHmin = (double *) realloc(atmos->nHmin,
 					atmos->Nspace * sizeof(double));
   /* default zero */
   free(atmos->vturb);
-  atmos->vturb  = (double *) calloc(atmos->Nspace , sizeof(double)); 
+  atmos->vturb  = (double *) calloc(atmos->Nspace , sizeof(double));
 
   if (atmos->Stokes) {
-    atmos->B       = (double *) realloc(atmos->B, 
+    atmos->B       = (double *) realloc(atmos->B,
 					atmos->Nspace * sizeof(double));
     atmos->gamma_B = (double *) realloc(atmos->gamma_B,
 					atmos->Nspace * sizeof(double));
@@ -502,18 +513,18 @@ void realloc_ndep(Atmosphere *atmos, Geometry *geometry) {
 void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
   /* Performs depth refinement to optimise for gradients in temperature,
      density and optical depth. In the same fashion as multi23's ipol_dscal
-     (in fact, shamelessly copied). 
+     (in fact, shamelessly copied).
   */
-  
+
   bool_t nhm_flag, hunt;
   long    i, k, k0=0, k1=0;
   size_t  bufsize;
   double  CI, PhiHmin, *chi, *eta, *tau, tdiv, rdiv, taudiv, *aind, *xpt;
   double *new_height, *buf;
   const double taumax = 100.0, lg1 = log10(1.1);
-  
-  if (Tmax < 0) Tmax = 1.e20; /* No zcut if Tmax is negative */ 
-  
+
+  if (Tmax < 0) Tmax = 1.e20; /* No zcut if Tmax is negative */
+
   chi = (double *) malloc(atmos->Nspace * sizeof(double));
   eta = (double *) malloc(atmos->Nspace * sizeof(double));
   tau = (double *) calloc(atmos->Nspace , sizeof(double));
@@ -521,13 +532,13 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
   buf = (double *) malloc(atmos->Nspace * sizeof(double));
   aind = (double *) calloc(atmos->Nspace , sizeof(double));
   new_height = (double *) calloc(atmos->Nspace , sizeof(double));
-  
+
   bufsize = atmos->Nspace * sizeof(double);
-  
+
   nhm_flag = FALSE;
   CI = (HPLANCK/(2.0*PI*M_ELECTRON)) * (HPLANCK/KBOLTZMANN);
   k1 = atmos->Nspace;
-  
+
   /* --- Calculate tau500 scale from H-bf opacity alone. --- */
   /* First, build nHmin because ChemicalEquilibrium has not been called yet.
      Unless H level pops are given in hdf5 file, all H is assumed neutral.  */
@@ -535,15 +546,15 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
     atmos->nHmin = (double *) malloc(atmos->Nspace * sizeof(double));
     nhm_flag = TRUE;
   }
-  
+
   for (k = 0; k < atmos->Nspace; k++) {
     PhiHmin = 0.25*pow(CI/atmos->T[k], 1.5) *
         exp(0.754 * EV / (KBOLTZMANN * atmos->T[k]));
     atmos->nHmin[k] = atmos->ne[k] * atmos->nH[0][k] * PhiHmin;
   }
-  
+
   Hminus_bf(500.0, chi, eta);
-  
+
   /* integrate for optical depth */
   for (k = 1; k < atmos->Nspace; k++) {
     if ((atmos->T[k] > Tmax) && (k0 == k - 1)) k0 = k;
@@ -552,56 +563,56 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
     if (tau[k] < taumax) k1 = k;
     xpt[k] = (double) k;
   }
-  
+
   tau[0] = tau[1];
-  
+
   /* --- Compute log variations --- */
-  for (k = k0+1; k <= k1; k++) {  
+  for (k = k0+1; k <= k1; k++) {
     tdiv = fabs(log10(atmos->T[k]) - log10(atmos->T[k-1]))/lg1;
     /* rho is not available, so nH[0] used instead */
     rdiv = fabs(log10(atmos->nH[0][k]) - log10(atmos->nH[0][k-1]))/lg1;
     taudiv = fabs(log10(tau[k]) - log10(tau[k-1]))/0.1;
     aind[k] = aind[k-1] + MAX(MAX(tdiv,rdiv),taudiv);
   }
-  
-  for (k = 1; k <= k1; k++)  
+
+  for (k = 1; k <= k1; k++)
     aind[k] *= (atmos->Nspace-1)/aind[k1];
-    
+
   /* --- Create new height scale --- */
   splineCoef(k1-k0+1, &aind[k0], &geometry->height[k0]);
   splineEval(atmos->Nspace, xpt, new_height, hunt=FALSE);
-    
+
   /* --- Interpolate quantities to new scale --- */
   /* Take logs of densities to avoid interpolation to negatives */
   for (k = 0; k < atmos->Nspace; k++) {
     atmos->ne[k] = log(atmos->ne[k]);
     for (i = 0; i < atmos->NHydr; i++)
-      atmos->nH[i][k] = log(atmos->nH[i][k]);    
+      atmos->nH[i][k] = log(atmos->nH[i][k]);
   }
 
   splineCoef(atmos->Nspace, geometry->height, atmos->T);
   splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
   memcpy((void *) atmos->T, (void *) buf, bufsize);
   /* condition for T < 1000 K ? */
- 
+
   splineCoef(atmos->Nspace, geometry->height, atmos->ne);
   splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
   memcpy((void *) atmos->ne, (void *) buf, bufsize);
-  
+
   for (i = 0; i < atmos->NHydr; i++) {
     splineCoef(atmos->Nspace, geometry->height, atmos->nH[i]);
     splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
     memcpy((void *) atmos->nH[i], (void *) buf, bufsize);
   }
-  
+
   splineCoef(atmos->Nspace, geometry->height, geometry->vel);
   splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
   memcpy((void *) geometry->vel, (void *) buf, bufsize);
-  
+
   splineCoef(atmos->Nspace, geometry->height, atmos->vturb);
   splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
   memcpy((void *) atmos->vturb, (void *) buf, bufsize);
-  
+
   if (atmos->Stokes) {
     splineCoef(atmos->Nspace, geometry->height, atmos->B);
     splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
@@ -615,16 +626,16 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
     splineEval(atmos->Nspace, new_height, buf, hunt=FALSE);
     memcpy((void *) atmos->chi_B, (void *) buf, bufsize);
   }
-  
+
   /* Take back logs */
   for (k = 0; k < atmos->Nspace; k++) {
     atmos->ne[k] = exp(atmos->ne[k]);
     for (i = 0; i < atmos->NHydr; i++)
-      atmos->nH[i][k] = exp(atmos->nH[i][k]);    
+      atmos->nH[i][k] = exp(atmos->nH[i][k]);
   }
-  
+
   memcpy((void *) geometry->height, (void *) new_height, bufsize);
-    
+
   if (nhm_flag) {
     free(atmos->nHmin);
     atmos->nHmin = NULL;
@@ -632,7 +643,7 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
   free(buf); free(new_height);
   free(chi); free(eta);
   free(tau); free(aind); free(xpt);
-  
-  return; 
+
+  return;
 }
 /* ------- end  --------------------------- depth_refine ----------- */
