@@ -60,7 +60,7 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
   sprintf(logfile, (run_ray) ? RAY_MPILOG_TEMPLATE : MPILOG_TEMPLATE, mpi.rank);
 
   if ((mpi.logfile = fopen(logfile, "w")) == NULL) {
-    sprintf(messageStr, "Process %d: Unable to open log file %s",
+    sprintf(messageStr, "Process %4d: Unable to open log file %s",
 	    mpi.rank, logfile);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
@@ -425,7 +425,7 @@ void UpdateAtmosDep(void) {
 void HERR(const char *rname) {
   /* Processes NetCDF errors */
 
-  printf("Process %3d: (EEE) %s: HDF5 error.\n", mpi.rank, rname);
+  printf("Process %4d: (EEE) %s: HDF5 error.\n", mpi.rank, rname);
   MPI_Abort(mpi.comm, 2);
 
 }
@@ -446,7 +446,7 @@ void Error(enum errorlevel level, const char *routineName,
     return;
   case WARNING:
     if ((mpi.single_log) && (mpi.rank != 0))
-      fprintf(mpi.logfile, "\nProcess %3d: -WARNING in routine %s\n %s\n",
+      fprintf(mpi.logfile, "\nProcess %4d: -WARNING in routine %s\n %s\n",
 	      mpi.rank, routineName, (messageStr) ? messageStr : " (Undocumented)\n");
     fprintf(commandline.logfile, "\nProcess %d: -WARNING in routine %s\n %s\n",
 	    mpi.rank, routineName, (messageStr) ? messageStr : " (Undocumented)\n");
@@ -457,7 +457,7 @@ void Error(enum errorlevel level, const char *routineName,
 	      routineName,(messageStr) ? messageStr : " (Undocumented)\n",
 	      "Trying to continue.....");
       if (commandline.logfile == mpi.logfile)
-	fprintf(mpi.main_logfile, "\a\n-Process %3d: ERROR in routine %s\n %s \n %s\n",
+	fprintf(mpi.main_logfile, "\a\n-Process %4d: ERROR in routine %s\n %s \n %s\n",
 		mpi.rank, routineName,(messageStr) ? messageStr : " (Undocumented)\n",
 		"Trying to continue.....");
       return;
@@ -466,7 +466,7 @@ void Error(enum errorlevel level, const char *routineName,
 	      routineName,(messageStr) ? messageStr : " (Undocumented)\n",
 	      "Exiting.....");
       if (commandline.logfile == mpi.logfile)
-	fprintf(mpi.main_logfile, "\nProcess %3d: %s", mpi.rank, errorStr);
+	fprintf(mpi.main_logfile, "\nProcess %4d: %s", mpi.rank, errorStr);
 
       fprintf(commandline.logfile, "%s", errorStr);
       if (commandline.logfile != stderr) fprintf(stderr, "%s", errorStr);
@@ -703,18 +703,18 @@ void writeOutput(bool_t writej) {
   */
 
   if (mpi.Ntasks == 0) {
-    sprintf(messageStr, "Process %3d: *** NO WORK (more processes than tasks!)\n", mpi.rank);
+    sprintf(messageStr, "Process %4d: *** NO WORK (more processes than tasks!)\n", mpi.rank);
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);
   } else {
-    sprintf(messageStr, "Process %3d: --- START output\n", mpi.rank);
+    sprintf(messageStr, "Process %4d: --- START output\n", mpi.rank);
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);
 
     writeMPI_all();
     writeAux_all();
 
-    sprintf(messageStr, "Process %3d: *** END output\n", mpi.rank);
+    sprintf(messageStr, "Process %4d: *** END output\n", mpi.rank);
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);
   }

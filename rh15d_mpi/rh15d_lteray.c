@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
 
     /* Printout some info */
     sprintf(messageStr,
-      "Process %3d: --- START task %3ld [of %ld], (xi,yi) = (%3d,%3d)\n",
+      "Process %4d: --- START task %3ld [of %ld], (xi,yi) = (%3d,%3d)\n",
        mpi.rank, mpi.task+1, mpi.Ntasks, mpi.xnum[mpi.ix], mpi.ynum[mpi.iy]);
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);
@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
     writeRay();
 
     sprintf(messageStr,
-      "Process %3d: *** END   task %3ld\n",
+      "Process %4d: *** END   task %3ld\n",
 	    mpi.rank, mpi.task+1);
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);
@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
   } /* End of main task loop */
 
   if (mpi.Ntasks == 0) {
-    sprintf(messageStr, "Process %3d: *** NO WORK (more processes than tasks!)\n", mpi.rank);
+    sprintf(messageStr, "Process %4d: *** NO WORK (more processes than tasks!)\n", mpi.rank);
     fprintf(mpi.main_logfile, messageStr);
     Error(MESSAGE, "main", messageStr);
   }
