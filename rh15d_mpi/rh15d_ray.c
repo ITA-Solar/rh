@@ -266,7 +266,7 @@ int main(int argc, char *argv[])
   finish_jobs();
 
   sprintf(messageStr,
-   "*** Job ending. Total %ld 1-D columns: %ld converged, %ld not converged, %ld crashed.\n%s",
+   "*** Job ending. Total %ld 1-D columns: %ld converged, %ld did not converge, %ld crashed.\n%s",
 	  mpi.Ntasks, mpi.nconv, mpi.nnoconv, mpi.ncrash,
 	  "*** RH finished gracefully.\n");
   if (mpi.rank == 0) fprintf(mpi.main_logfile, messageStr);
