@@ -35,16 +35,22 @@ rh/tools         Associate C programs for RH, not tested.
 Dependencies
 ============
 
-RH 1.5D makes use of the `NetCDF <http://www.unidata.ucar.edu/software/netcdf/>`_ library to read the atmosphere files and write the output.  It is not possible to run the code without this library. The parallel output requires NetCDF version 4.1.2 or newer. To enable the parallel output and other advanced features, NetCDF files with format version 4 are in effect HDF5 files, and the NetCDF library in turn depends on the `HDF5 <http://www.hdfgroup.org/HDF5/>`_ library. If compiling from sources, HDF5 must be installed first, and then NetCDF.
+RH 1.5D makes use of the `HDF5 <http://www.hdfgroup.org/HDF5/>`_ library to read the atmosphere files and write the output.  It is not possible to run the code without this library. RH 1.5D requires HDF5 version 1.8.1 or newer (versions from branch 1.10.x do not currently work).
 
-Because NetCDF and HDF5 are commonly used in high-performance computing, many supercomputers already have them available. In Hexagon, they can be loaded as::
+.. note::
+   RH 1.5D previously made use of the netCDF4 library for its output (which in turn also required HDF5). The latest changes mean RH 1.5D needs only HDF5. Because netCDF4 files are also HDF5 files, the output is still readable in the same way as before and input files in netCDF version 4 format can still be read in the same way by RH 1.5D. If you used input atmospheres in netCDF version 3 format, then these will have to be converted to HDF5. It is recommended that new atmosphere files be created in HDF5 only.
 
-    module load netcdf-hdf5parallel
+Because HDF5 is commonly used in high-performance computing, many supercomputers already have them available. In Hexagon, they can be loaded as::
 
-And in Pleiades::
+    module load cray-hdf5-parallel
+
+in Pleiades::
 
     module load hdf5/1.8.7/gcc/mpt
-    module load netcdf/4.1.3/gcc/mpt
+
+and at ITA's Linux system::
+
+    module load hdf5/Intel/openmpi/1.8.18
 
 Compilation
 ===========
@@ -76,24 +82,26 @@ After setting the correct compiler, just build the main libraries with ``make`` 
 Program binaries
 ----------------
 
-Go to the ``rh/rh15d_mpi/`` directory and update the Makefile with your compiler and flags. You will need to set ``CC`` to the MPI alias (e.g. ``mpicc``). The path to the NetCDF libraries needs to be explicitly set in ``NCDF_DIR``. In Hexagon this is already stored in the ``NETCDF_DIR`` environment variable.
+Go to the ``rh/rh15d_mpi/`` directory and update the Makefile with your compiler and flags. You will need to set ``CC`` to the MPI alias (e.g. ``mpicc``). The path to the HDF5 library needs to be explicitly set in ``HDF5_DIR``. In Hexagon this is already stored in the ``HDF5_DIR`` environment variable.
 
-In Pleiades, the current version of NetCDF was not built as a shared binary so you need to link HDF5 directly, set the ``LDFLAGS`` accordingly, and update the ``LIBS`` variable to contain all the other libraries. For Pleaides, make sure your Makefile contains the following:
+If your version of HDF5 was not built as a shared binary, you need to link HDF5 and other used libraries directly. Set the ``LDFLAGS`` accordingly, and update the ``LIBS`` variable to contain all the other libraries. For Pleiades, make sure your Makefile contains the following:
 
 .. code-block:: bash
 
-    NCDF_DIR = /nasa/sles11/netcdf/4.1.3/gcc/mpt
-    HDF5_DIR = /nasa/sles11/hdf5/1.8.7/gcc/mpt
-    LDFLAGS = -L../ -L$(NCDF_DIR)/lib/  -L$(HDF5_DIR)/lib/
-    LIBS = -lrh -lrh_f90 $(ARCHLIBS) -lnetcdf -lhdf5_hl -lhdf5 -lz -lm
+    OTHER_LIBRARY_DIR = /path/to/library
+    HDF5_DIR = /path/to/hdf5
+    LDFLAGS = -L../ -L$(OTHER_LIBRARY_DIR)/lib/  -L$(HDF5_DIR)/lib/
+    LIBS = -lrh -lrh_f90 $(ARCHLIBS) -lhdf5_hl -lhdf5 -lz -lm
 
 Once the Makefile is updated, compilation is achieved with ``make``. The following executables will be created:
 
 ============== =======================================================================
 File           Description
 ============== =======================================================================
-rh15d_ray      Main RH 1.5D binary
-rh15d_ray_pool Alternative RH 1.5D binary using a job pool (see :ref:`binaries-label`)
+rh15d_ray_pool Main RH 1.5D binary, uses a job pool (see :ref:`binaries-label`)
+rh15d_ray      Alternative RH 1.5D binary. **Deprecated.** This program runs much slower
+               than rh15d_ray_pool and is kept for backwards compatibility only. Will
+               be removed in a future revision.
 rh15d_lteray   Special binary for running in LTE
 ============== =======================================================================
 

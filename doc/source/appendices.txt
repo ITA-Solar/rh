@@ -5,26 +5,25 @@ Appendices
 A. Compiling netCDF
 ===================
 
-By far the easiest way to use RH is when the proper netCDF4 library is already installed in the system. This is the case at most supercomputers, but not usually in user workstations or laptops. Even if your operative system can provide netCDF through it's packaging system (e.g. macports in macOS, rpm in linux distributions), this is often suitable for running RH. The reason is that there needs to be consistency between the compiler, MPI libraries used, and both HDF5 and netCDF4 libraries must be compiled with parallel support. 
+By far the easiest way to use RH is when the proper HDF5 library is already installed in the system. This is the case at most supercomputers, but not usually in user workstations or laptops. Even if your operative system can provide HDF5 through its packaging system (e.g. macports in macOS, rpm in linux distributions), this is often unsuitable for running RH. The reason is that there needs to be consistency between the compiler, MPI libraries used, and the HDF5 library must be compiled with parallel support.
 
 Compiling all of this from scratch is burdensome and prone to fail. Care must be taken to ensure that each library is built properly, and that MPI functions well. Errors with MPI libraries are particularly difficult to diagnose.
 
-The recommended approach is to use an MPI library already in the system. If this is not possible or it is not working properly, then MPI must also be compiled (see below for instructions for Open MPI). The following instructions go through the different steps of compiling the libraries. They assume a bash shell is used, so please adapt if you need csh or tcsh. 
+The recommended approach is to use an MPI library already in the system. If this is not possible or it is not working properly, then MPI must also be compiled (see below for instructions for Open MPI). The following instructions go through the different steps of compiling the libraries. They assume a bash shell is used, so please adapt if you need csh or tcsh.
 
 .. note::
-   The download binary is assumed to be `curl` (commonly available in macOS), but one can also use `wget` (commonly available in Linux). To change, replace `curl -O` by `wget -c`. 
+   The download binary is assumed to be `curl` (commonly available in macOS), but one can also use `wget` (commonly available in Linux). To change, replace `curl -O` by `wget -c`.
 
 .. note::
    The instructions below download specific versions of the libraries, the latest at the time of writing. These should work, but feel free to use more recent versions if available.
 
 
-
 Compilers and installation directory
 ------------------------------------
 
-One must take care to compile all the libraries with the same compiler or family of compilers. And of course be aware of the different flags of each. Once MPI is compiled, one should always use the `mpicc` and `mpif90` binaries for the compilers of HDF5 and netCDF4. If compiling MPI, then one should use the proper name (e.g. `gcc`, `clang`, `icc`). For this, one uses the `CC` environment variable, e.g.::
+One should compile all the libraries with the same compiler or family of compilers. And of course be aware of the different flags of each. Once MPI is compiled, one should always use the `mpicc` and `mpif90` binaries for the compiler of HDF5. If compiling MPI, then one should use the proper name (e.g. `gcc`, `clang`, `icc`). For this, one uses the `CC` environment variable, e.g.::
 
-    export CC=mpicc     # or gcc, clang, icc, 
+    export CC=mpicc     # or gcc, clang, icc,
     export FC=gfortran  # or mpif90, ifort
 
 All of the instructions below assume all the libraries to be installed under a directory local to the user, and set to the `MYPREFIX` environment variable, e.g.::
@@ -35,110 +34,3 @@ Compiling Open MPI (optional)
 -----------------------------
 
 Use this if you don't currently have any MPI library or suspect it is not working properly (e.g. too old).
-
-
-
-    
-
-
-The code is available on a git repository, hosted on github: `https://github.com/ita-solar/rh <https://github.com/ita-solar/rh>`_. If you don't have `git <http://git-scm.com/>`_ installed and just want to get started, the easiest way is to download a zip file with the latest revision: `https://github.com/ita-solar/rh/archive/master.zip <https://github.com/ita-solar/rh/archive/master.zip>`_. If you have git installed and would like to be up-to-date with the repository, you can do a git clone:
-
-    git clone https://github.com/ita-solar/rh.git
-
-or using SSH (only for contributors):
-
-    git clone git@github.com:ita-solar/rh.git
-
-Whether you unpack the zip file or do one of the above it will create a directory called ``rh`` in your current path. This directory will have the following subdirectories:
-
-================ ============================================================
-Directory        Contents
-================ ============================================================
-rh               Main RH source
-rh/Atmos         Used to keep atmosphere files
-rh/Atoms_example Used to keep atom files, line and wavelength lists (example)
-rh/idl           Old RH IDL routines, not used
-rh/Molecules     Used to keep molecule files
-rh/python        Utility Python programs
-rh/rh15d_mpi     Source files for RH 1.5D
-rh/rhf1d         Source files for 1D geometry
-rh/rhsc2d        Source files for 2D geometry, not used
-rh/rhsc3d        Source files for 3D geometry, not used
-rh/rhsphere      Source files for spherical geometry, not used
-rh/tools         Associate C programs for RH, not tested.
-================ ============================================================
-
-Dependencies
-============
-
-RH 1.5D makes use of the `NetCDF <http://www.unidata.ucar.edu/software/netcdf/>`_ library to read the atmosphere files and write the output.  It is not possible to run the code without this library. The parallel output requires NetCDF version 4.1.2 or newer. To enable the parallel output and other advanced features, NetCDF files with format version 4 are in effect HDF5 files, and the NetCDF library in turn depends on the `HDF5 <http://www.hdfgroup.org/HDF5/>`_ library. If compiling from sources, HDF5 must be installed first, and then NetCDF.
-
-Because NetCDF and HDF5 are commonly used in high-performance computing, many supercomputers already have them available. In Hexagon, they can be loaded as::
-
-    module load netcdf-hdf5parallel
-
-And in Pleiades::
-
-    module load hdf5/1.8.7/gcc/mpt
-    module load netcdf/4.1.3/gcc/mpt
-
-Compilation
-===========
-
-Compilation of RH 1.5D consists of two steps:
-
-1. Compilation of the geometry-independent main libraries (``librh.a`` and ``librh_f90.a``)
-2. Compilation of the ``rh15d_mpi`` tree and main binaries
-
-RH 1.5D has been compiled in a variety of architectures and compilers, including gcc, the Intel compilers, and clang. As for MPI implementations, it has been tested with SGI's mpt, OpenMPI, mpich, mvapich, and Intel's MPI.
-
-Main libraries
---------------
-
-First, one needs to set the environment variables ``OS`` and ``CPU``:
-
-.. code-block:: bash
-
-   export CPU=`uname -m`
-   export OS=`uname -s`
-
-.. note::
-   All the shell commands given in this manual are for bash, so you'll have to modify them if using another shell.
-
-The main Makefile will then look for an architecture-dependent Makefile in ``rh/makefile.$CPU.$OS``. If a Makefile for your system combination does not exist, you'll have to create a new Makefile and adapt it to your configuration. You need to make sure that the architecture-dependent Makefile reflects your system's configuration (i.e., compiler names and flags).
-
-After setting the correct compiler, just build the main libraries with ``make`` on the ``rh`` directory. If successful, the compilation will produce the two library files ``librh.a`` and ``librh_f90.a``.
-
-Program binaries
-----------------
-
-Go to the ``rh/rh15d_mpi/`` directory and update the Makefile with your compiler and flags. You will need to set ``CC`` to the MPI alias (e.g. ``mpicc``). The path to the NetCDF libraries needs to be explicitly set in ``NCDF_DIR``. In Hexagon this is already stored in the ``NETCDF_DIR`` environment variable.
-
-In Pleiades, the current version of NetCDF was not built as a shared binary so you need to link HDF5 directly, set the ``LDFLAGS`` accordingly, and update the ``LIBS`` variable to contain all the other libraries. For Pleaides, make sure your Makefile contains the following:
-
-.. code-block:: bash
-
-    NCDF_DIR = /nasa/sles11/netcdf/4.1.3/gcc/mpt
-    HDF5_DIR = /nasa/sles11/hdf5/1.8.7/gcc/mpt
-    LDFLAGS = -L../ -L$(NCDF_DIR)/lib/  -L$(HDF5_DIR)/lib/
-    LIBS = -lrh -lrh_f90 $(ARCHLIBS) -lnetcdf -lhdf5_hl -lhdf5 -lz -lm
-
-Once the Makefile is updated, compilation is achieved with ``make``. The following executables will be created:
-
-============== =======================================================================
-File           Description
-============== =======================================================================
-rh15d_ray      Main RH 1.5D binary
-rh15d_ray_pool Alternative RH 1.5D binary using a job pool (see :ref:`binaries-label`)
-rh15d_lteray   Special binary for running in LTE
-============== =======================================================================
-
-Run directory
-=============
-
-Once compiled, you can copy or link the binaries to a run directory. This directory will contain all the necessary input files, and it should contain two subdirectories called ``output`` and ``scratch``.
-
-.. warning::
-   If the subdirectories ``output`` and ``scratch`` do not exist in the directory where the code is run, the code will crash with an obscure error message.
-
-The run directory can be located anywhere, but it **must** have a directory called ``Atoms`` two levels below (i.e. ``../../Atoms/``) with the ``Barklem_*data.dat`` files. This is because these relative paths are hardcoded in ``barklem.c``. The input files in the run directory must obviously point to existing path names.

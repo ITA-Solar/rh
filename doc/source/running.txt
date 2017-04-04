@@ -7,18 +7,18 @@ Running the code
 Binaries and execution
 ======================
 
-Compilation should produce three executables: ``rh15d_ray``, ``rh15d_ray_pool``, and ``rh15d_lteray``. The latter is a special case for running only in LTE. The other two are the main programs. The other two binaries represent two different modes of job distribution: `normal` and `pool`. 
+Compilation should produce three executables: ``rh15d_ray_pool``, ``rh15d_ray``, and ``rh15d_lteray``. The latter is a special case for running only in LTE. The other two are the main programs. They represent two different modes of job distribution: `normal` and `pool`.
 
-In the `normal` mode the jobs (all the atmosphere columns for which one wants to calculate) are divided by the number of processes at the start of the execution. There is no communication between processes, and each process knows from the start all the columns it is going to run. These columns are adjacent. If the number of columns is not a multiple of the number of processes, there will be some processes with larger workloads. There is no minimum number of processes to run, and ``rh15d_ray`` can also be run in a single process.
+In the `pool` mode there is a process that works as `overlord`: its function is to distribute the work to other processes. The other processes (`drones`) ask the `overlord` for a work unit. When they finish their unit, they go back and ask for more, until all tasks are completed. Because of race conditions and because different columns will run at different speeds, it is not possible to know which columns a given process will run beforehand. Due to the `overlord`, ``rh15d_ray_pool`` needs to run with two or more processes. The advantage of the `pool` mode is that the dynamic load allocation ensures the most efficient use of the resources. With the normal mode it may happen that some processors will work on columns that take longer to converge (especially as they are adjacent), and in the end the execution will have to wait for the process that takes longer. In some cases (especially with PRD) the `pool` mode can be 2-3 times faster than the `normal` mode. When one runs with a large number of processes (> 2000) and each column takes little time to calculate, the `pool` mode can suffer from communication bottlenecks and may be slower because a single `overlord` cannot distribute the tasks fast enough. The only disadvantage of the pool mode (so far) is that not all output is currently supported with this mode.
 
-In the `pool` mode there is a process that works as `overlord`: its function is to distribute the work to other processes. The other processes (`drones`) ask the `overlord` for a work unit. When they finish their unit, they go back and ask for more, until all tasks are completed. Because of race conditions and because different columns will run at different speeds, it is not possible to know which columns a given process will run beforehand. Due to the `overlord`, ``rh15d_ray_pool`` needs to run with two or more processes. The advantage of the `pool` mode is that the dynamic load allocation ensures the most efficient use of the resources. With the normal mode it may happen that some processors will work on columns that take longer to converge (especially as they are adjacent), and in the end the execution will have to wait for the process that takes longer. In some cases (especially with PRD) the `pool` mode can be 2-3 times faster than the `normal` mode. When one runs with a large number of processes (> 2000) and each column takes little time to calculate, the `pool` mode can suffer from communication bottlenecks and may be slower because a single `overlord` cannot distribute the tasks fast enough. The only disadvantage of the pool mode (so far) is that not all output is currently supported with this mode. 
+**The `normal` mode is deprecated and will be removed in a later revision. Use only if you know what you're doing!** In the `normal` mode the jobs (all the atmosphere columns for which one wants to calculate) are divided by the number of processes at the start of the execution. There is no communication between processes, and each process knows from the start all the columns it is going to run. These columns are adjacent. If the number of columns is not a multiple of the number of processes, there will be some processes with larger workloads. There is no minimum number of processes to run, and ``rh15d_ray`` can also be run in a single process. Regions of an atmosphere can take a lot longer to run than others, and the processes that work on those will take longer to finish. In the `normal` mode this means that the slowest process will set the overall running time, and therefore in practice it can take more than 10x longer than the `pool` mode (and is therefore not recommended).
 
 
 As an MPI program, the binaries should be launched with the appropriate command. Some examples::
 
-    mpirun -np N ./rh15d_ray
-    mpiexec -np N ./rh15d_ray    # use in Pleiades
-    aprun -B ./rh15d_ray         # use in Hexagon or other Cray
+    mpirun -np N ./rh15d_ray_pool
+    mpiexec ./rh15d_ray_pool    # use in Pleiades
+    aprun -B ./rh15d_ray        # use in Hexagon or other Cray
 
 
 The run directory
@@ -38,17 +38,17 @@ The ``scratch`` directory contains different types of files. Most of them are bi
 
 One should replace ``_IOLBF`` by ``_IOFBF`` to change from line buffering to full buffering.
 
-The ``output`` will contain the three output files: ``output_aux.ncdf``, ``output_indata.ncdf``, and ``output_ray.ncdf``. See :ref:`output-label` for more details on the structure of these files. If doing a re-run, these files must already exist; they will be updated with the new results. Otherwise, if these files are already in ``output`` before the execution, they will be overwritten. The way that NetCDF/HDF5 work means that these files are created and filled with special (masked) values at the start of the execution. This means that the disk space for the full output must be available at the start of the run, and no CPU time will be wasted if at the end of the run there is not enough disk space. The files are usually written every time a process finishes work on a given column. The masked values are overwritten with the data. One advantage of this method is that even if the system crashes or the program stops, it is possible to recover the results already written (and a re-run can be performed for just the missing columns). 
+The ``output`` will contain the three output files: ``output_aux.hdf5``, ``output_indata.hdf5``, and ``output_ray.hdf5``. See :ref:`output-label` for more details on the structure of these files. If doing a re-run, these files must already exist; they will be updated with the new results. Otherwise, if these files are already in ``output`` before the execution, they will be overwritten. The way that HDF5 work means that these files are created and filled with special (masked) values at the start of the execution. This means that the disk space for the full output must be available at the start of the run, and no CPU time will be wasted if at the end of the run there is not enough disk space. The files are usually written every time a process finishes work on a given column. The masked values are overwritten with the data. One advantage of this method is that even if the system crashes or the program stops, it is possible to recover the results already written (and a re-run can be performed for just the missing columns).
 
 All the processes write asynchronously to all the output files. In some cases this can cause contention in the filesystem, with many processes trying to access the same data at the same time. In the worst case scenario, the contention can create bottlenecks which practically stop the execution. Therefore, it is highly recommended that the users tune their filesystem for the typical loads of RH. Many supercomputers make use of Lustre, a parallel filesystem. With Lustre, resources such as files can be divided in different stripes that can be placed in several different machines (OSTs). For running RH with more than 500 processes, one should use as many OSTs as available in the system, and select the lustre stripe size to the typical amount of data written to a file per simulation column. The stripe can set with the `lfs setstripe` command::
 
     lfs setstripe -s stripe_size -c stripe_count -o stripe_offset directory|filename
 
-It can be run per file (e.g. ``output_ray.ncdf``), or for the whole ``output`` directory. Using a stripe count of ``-1`` will ensure that the maximum number of OSTs is used. For the typical files RH 1.5D produces, it is usually ok to apply the same Lustre settings to the whole ``output`` directory, and the following settings seem to reasonable::
+It can be run per file (e.g. ``output_ray.hdf5``), or for the whole ``output`` directory. Using a stripe count of ``-1`` will ensure that the maximum number of OSTs is used. For the typical files RH 1.5D produces, it is usually ok to apply the same Lustre settings to the whole ``output`` directory, and the following settings seem to reasonable::
 
     lfs setstripe -s 4m -c -1 output/
 
-Similarly, the ``scratch`` directory can also benefit from Lustre striping. Because most files there are small, it is recommended to use a stripe count of 1 for ``scratch``. 
+Similarly, the ``scratch`` directory can also benefit from Lustre striping. Because most files there are small, it is recommended to use a stripe count of 1 for ``scratch``.
 
 
 Logs and messages
@@ -68,16 +68,16 @@ In addition to the logs per process saved to ``scratch``, a much smaller log wil
     Process  12: --- START task   2, (xi,yi) = ( 23, 65)
     Process   4: --- START task   2, (xi,yi) = ( 23, 65)
     (...)
-    *** Job ending. Total 262144 1-D columns: 262142 converged, 1 not converged, 1 crashed.
+    *** Job ending. Total 262144 1-D columns: 262142 converged, 1 did not converge, 1 crashed.
     *** RH finished gracefully.
 
-In this example one can see the three possible outputs for a single-column calculation: convergence, non-convergence (meaning the target ``ITER_LIMIT`` was not met in ``N_MAX_ITER`` iterations), or a crash (many reasons). If there are singular matrices or other causes for a column to crash, RH 1.5D will skip that column and proceed to the next work unit. Such cases can be re-run with different parameters. In some cases (e.g. inexistent files) it is not possible to prevent a crash, and RH 1.5D will finish non-gracefully. 
+In this example one can see the three possible outputs for a single-column calculation: convergence, non-convergence (meaning the target ``ITER_LIMIT`` was not met in ``N_MAX_ITER`` iterations), or a crash (many reasons). If there are singular matrices or other causes for a column to crash, RH 1.5D will skip that column and proceed to the next work unit. Such cases can be re-run with different parameters. In some cases (e.g. inexistent files) it is not possible to prevent a crash, and RH 1.5D will finish non-gracefully.
 
 
 Helper script
 =============
 
-There is a Python script called ``runtools.py`` designed to make it easier to run RH 1.5D for large projects. It resides in ``rh/python/runtools.py``. It requires `Python <http://www.python.org/>`_ with the `numpy <http://www.numpy.org/>`_ and `netCDF4 <http://code.google.com/p/netcdf4-python/>`_ modules. It was made to run a given RH 1.5D setup over many simulation snapshots, spanning several atmosphere files. It supports a progressive re-run of a given problem, and allows the of use different ``keyword.input`` parameters for different columns, tackling columns harder to converge.
+There is a Python script called ``runtools.py`` designed to make it easier to run RH 1.5D for large projects. It resides in ``rh/python/runtools.py``. It requires `Python <http://www.python.org/>`_ with the `numpy <http://www.numpy.org/>`_ and `h5py <http://www.h5py.org/>`_ (or `netCDF4 <http://code.google.com/p/netcdf4-python/>`_) modules. It was made to run a given RH 1.5D setup over many simulation snapshots, spanning several atmosphere files. It supports a progressive re-run of a given problem, and allows the of use different ``keyword.input`` parameters for different columns, tackling columns harder to converge.
 
 The first part of ``runtools.py`` should be modified for a users's need. It typically contains:
 
@@ -85,12 +85,12 @@ The first part of ``runtools.py`` should be modified for a users's need. It typi
 
     atmos_dir = '/mydata_dir'
     seq_file = 'RH_SEQUENCE'
-    outsuff = 'output/output_ray_mysim_CaII_PRD_s%03i.ncdf'
+    outsuff = 'output/output_ray_mysim_CaII_PRD_s%03i.hdf5'
     mpicmd = 'mpiexec'
     bin = './rh15d_ray_pool'
     defkey = 'keyword.save'
     log = 'rh_running.log'
-    tm = 40  
+    tm = 40
     rerun = True
     rerun_opt = [ {'NG_DELAY': 60, 'NG_PERIOD': 40, '15D_DEPTH_REFINE': 'FALSE',
                    '15D_ZCUT': 'TRUE', 'N_MAX_ITER': 250, 'PRD_SWITCH': 0.002 },
@@ -108,28 +108,28 @@ The different options are:
 +---------------+--------+-------------------------------------------------------------------+
 | ``seq_file``  | string | Location of sequence file. This file contains the names of the    |
 |               |        | atmosphere files to be used (one file per line). The script will  |
-|               |        | then run RH 1.5D for every snapshot in every file listed.         | 
+|               |        | then run RH 1.5D for every snapshot in every file listed.         |
 +---------------+--------+-------------------------------------------------------------------+
 | ``outsuff``   | string | Template to write the ``output_ray.ncdf`` files. The ``%03i``     |
 |               |        | format will be replaced with the snapshot number.                 |
 +---------------+--------+-------------------------------------------------------------------+
 | ``mpicmd``    | string | System-dependent command to launch MPI. The script knows that for |
 |               |        | aprun the -B option should be used. This option also activates    |
-|               |        | system specific routines (e.g. how to kill the run in pleiades).  |           
+|               |        | system specific routines (e.g. how to kill the run in pleiades).  |
 +---------------+--------+-------------------------------------------------------------------+
 | ``bin``       | string | RH 1.5D binary to use.                                            |
 +---------------+--------+-------------------------------------------------------------------+
 | ``defkey``    | string | Default template for ``keyword.input``. Because the of the        |
 |               |        | rerun options, ``keyword.input`` is overwritten for every rerun.  |
 |               |        | This file is used as a template it (i.e., most of its options     |
-|               |        | will be unchanged, unless specified in ``rerun_opt``).            | 
+|               |        | will be unchanged, unless specified in ``rerun_opt``).            |
 +---------------+--------+-------------------------------------------------------------------+
 | ``log``       | string | File where to save the main log. Will be overwritten for each new |
 |               |        | snapshot.                                                         |
 +---------------+--------+-------------------------------------------------------------------+
 | ``tm``        | int    | Timeout (in minutes) to kill execution of code, if there is no    |
-|               |        | message written to main log. Used to prevent code from hanging if | 
-|               |        | there are system issues. After killed, program is relaunched.     | 
+|               |        | message written to main log. Used to prevent code from hanging if |
+|               |        | there are system issues. After killed, program is relaunched.     |
 |               |        | If ``tm = 0``, program will never be killed.                      |
 +---------------+--------+-------------------------------------------------------------------+
 | ``rerun``     | bool   | If ``True``, will re-run the program (with different settings) to |
@@ -147,11 +147,3 @@ The different options are:
 
 .. note::
    The script also includes a tenaciously persistent wait and relaunch feature designed to avoid corruption if there are system crashes or problems. Besides the ``tm`` timeout, if there is any problem with the execution, the code will wait for some periods and try and relaunch the code. For example, if one of the atmosphere files does not exist, ``runtools.py`` will try three times and then proceed to the next file.
-
-
-
-
-
-
-
-
