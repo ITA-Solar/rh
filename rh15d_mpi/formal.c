@@ -25,6 +25,8 @@
 #include "error.h"
 #include "parallel.h"
 #include "xdr.h"
+#include "bezier.h"
+
 
 /* --- Function prototypes --                          -------------- */
 
@@ -200,20 +202,25 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
 	    for (k = 0;  k < Nspace;  k++)
 	      Spol[n][k] /= chi[k];
 	  }
-	  PiecewiseStokes(nspect, mu, to_obs, chi, Spol, Ipol, Psi);
-
+	  if (input.S_interpolation_stokes == DELO_BEZIER3){
+	    PiecewiseStokesBezier3(nspect, mu, to_obs, chi, Spol, Ipol, Psi);
+	  }else {
+	    PiecewiseStokes(nspect, mu, to_obs, chi, Spol, Ipol, Psi);
+	  }
 	} else {
-        for (k = 0;  k < Nspace;  k++)
-  	        S[k] /= chi[k];
-        if (input.S_interpolation == S_LINEAR) {
-            Piecewise_1D(nspect, mu, to_obs, chi, S, I, Psi);
-  	    } else if (input.S_interpolation == CUBIC_HERMITE) {
-	        Piecewise_Hermite_1D(nspect, mu, to_obs, chi, S, I, Psi);
-        } else {
-            PieceBezier_1D(nspect, mu, to_obs, chi, S, I, Psi);
-        }
+	  for (k = 0;  k < Nspace;  k++)
+	    S[k] /= chi[k];
+	  if (input.S_interpolation == S_LINEAR) {
+	    Piecewise_1D(nspect, mu, to_obs, chi, S, I, Psi);
+	  } else if (input.S_interpolation == CUBIC_HERMITE) {
+	    Piecewise_Hermite_1D(nspect, mu, to_obs, chi, S, I, Psi);
+	  } else if (input.S_interpolation == BEZIER3) {
+	    Piecewise_Bezier3(nspect, mu, to_obs, chi, S, I, Psi);
+	  } else {
+	    PieceBezier_1D(nspect, mu, to_obs, chi, S, I, Psi);
+	  }
 	}
-
+	
 	if (eval_operator) {
           for (k = 0;  k < Nspace;  k++) Psi[k] /= chi[k];
 	  addtoGamma(nspect, wmu, I, Psi);

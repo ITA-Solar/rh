@@ -22,7 +22,8 @@
 
 
 enum keywordtype  {KEYWORD_REQUIRED, KEYWORD_DEFAULT, KEYWORD_OPTIONAL};
-enum S_interpol   {S_LINEAR, CUBIC_HERMITE, BEZIER};
+enum S_interpol   {S_LINEAR, CUBIC_HERMITE, BEZIER, BEZIER3};
+enum S_interpol_stokes   {DELO_PARABOLIC, DELO_BEZIER3};
 enum order_3D     {LINEAR_3D, BICUBIC_3D};
 enum ne_solution  {NONE, ONCE, ITERATION};
 
@@ -80,6 +81,7 @@ typedef struct {
   enum   solution startJ;
   enum   StokesMode StokesMode;
   enum   S_interpol S_interpolation;
+  enum   S_interpol_stokes S_interpolation_stokes;
   enum   order_3D interpolate_3D;
   enum   ne_solution solve_ne;
   enum   PRDangle PRD_angle_dep;
@@ -125,6 +127,7 @@ void  setPRDangle(char *value, void *pointer);
 void  setThreadValue(char *value, void *pointer);
 void  setInterpolate_3D(char *value, void *pointer);
 void  set_S_interpolation(char *value, void *pointer);
+void  set_S_interpolation_stokes(char *value, void *pointer);
 void  showValues(int Nkeyword, Keyword *theKeywords);
 char *substring(const char *string, int N0, int Nchar);
 void  UpperCase(char *string);

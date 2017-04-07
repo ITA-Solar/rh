@@ -37,10 +37,9 @@ LDFLAGS = -L../ -L$(HDF5_DIR)/lib/
 ONE_D_OBJS = anglequad.o      feautrier.o     formal.o           hydrostat.o   \
              piecestokes.o    piecewise.o     project.o          hdf5atmos.o   \
              riiplane.o       background_p.o  distribute_jobs.o  escape.o      \
-             scatter_p.o      initial_p.o                                      \
-             writeindata_p.o  parallel.o         iterate_p.o   \
-             ludcmp_p.o       accelerate_p.o  redistribute_p.o   statequil_p.o \
-             writeAux_p.o
+             scatter_p.o      initial_p.o     bezier.o           writeAux_p.o  \
+             writeindata_p.o  parallel.o      iterate_p.o        ludcmp_p.o    \
+             statequil_p.o    accelerate_p.o  redistribute_p.o 
 	         
 
 SUBSTITUTE = pops_xdr.o
@@ -157,6 +156,9 @@ parallel.o:             ../rh.h          ../atom.h        ../atmos.h       \
 
 piecestokes.o:          ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../spectrum.h
+
+bezier.o:               ../rh.h          ../atom.h        ../atmos.h       \
+                        geometry.h       ../spectrum.h    bezier.h
 
 piecewise.o:            ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../spectrum.h

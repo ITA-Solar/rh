@@ -19,6 +19,7 @@
 
 
 #include <math.h>
+#include <stdlib.h> // abs(int)
 
 #include "rh.h"
 #include "atom.h"
