@@ -53,9 +53,9 @@ The atom groups contain the following variables:
 +---------------------+------------------------------+------------------------------------+
 | Name                | Dimensions                   | Description                        |
 +=====================+==============================+====================================+
-| ``populations``     | ``(nlevel, nx, ny, nz)``     | Atomic LTE populations.            |
+| ``populations``     | ``(nlevel, nx, ny, nz)``     | Atomic populations.            |
 +---------------------+------------------------------+------------------------------------+
-| ``populations_LTE`` | ``(nlevel, nx, ny, nz)``     | Atomic populations.                |
+| ``populations_LTE`` | ``(nlevel, nx, ny, nz)``     | Atomic LTE populations.                |
 +---------------------+------------------------------+------------------------------------+
 | ``Rij_line``        | ``(nline, nx, ny, nz)``      | Radiative rates out of the line.   |
 +---------------------+------------------------------+------------------------------------+
@@ -75,9 +75,9 @@ The molecule groups contain the following variables:
 +---------------------+-------------------------------+------------------------------------+
 | Name                | Dimensions                    | Description                        |
 +=====================+===============================+====================================+
-| ``populations``     | ``(nlevel_vibr, nx, ny, nz)`` | Atomic LTE populations.            |
+| ``populations``     | ``(nlevel_vibr, nx, ny, nz)`` | Molecular populations.            |
 +---------------------+-------------------------------+------------------------------------+
-| ``populations_LTE`` | ``(nlevel_vibr, nx, ny, nz)`` | Atomic populations.                |
+| ``populations_LTE`` | ``(nlevel_vibr, nx, ny, nz)`` | Molecular LTE populations.                |
 +---------------------+-------------------------------+------------------------------------+
 
 All units are SI.
