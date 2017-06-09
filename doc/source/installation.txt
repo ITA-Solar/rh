@@ -25,12 +25,16 @@ rh/idl           Old RH IDL routines, not used
 rh/Molecules     Used to keep molecule files
 rh/python        Utility Python programs
 rh/rh15d_mpi     Source files for RH 1.5D
-rh/rhf1d         Source files for 1D geometry
-rh/rhsc2d        Source files for 2D geometry, not used
-rh/rhsc3d        Source files for 3D geometry, not used
-rh/rhsphere      Source files for spherical geometry, not used
+rh/rhf1d         Source files for 1D geometry, **deprecated, do not use**
+rh/rhsc2d        Source files for 2D geometry, **deprecated, do not use**
+rh/rhsc3d        Source files for 3D geometry, **deprecated, do not use**
+rh/rhsphere      Source files for spherical geometry, **deprecated, do not use**
 rh/tools         Associate C programs for RH, not tested.
 ================ ============================================================
+
+.. warning::
+   The source code directories for different geometries (rhf1d, rhsc2d, rhsc3d, rhsphere) are still in the code tree, but they are deprecated and will be removed soon. With the latest changes related to rh15d, they are not guaranteed to work or even run. Do not use.
+
 
 Dependencies
 ============

@@ -6,7 +6,7 @@
 # First specify input files for atmosphere and abundances
 # (both KEYWORD_REQUIRED).
 
-  ATMOS_FILE = ../../Atmos/FALC_82_5x5.ncdf  
+  ATMOS_FILE = ../../Atmos/FALC_82_5x5.hdf5 
   ABUND_FILE = ../../Atoms_example/abundance.input
 
 # Stuff for 1.5D version:
@@ -33,9 +33,11 @@
 # Perform depth optimisation for each column (interpolates height scale)?
   15D_DEPTH_REFINE = FALSE
 
-# These two are no longer used, only here for historical purposes
-  15D_WRITE_EXTRA    = FALSE
-  15D_WRITE_SPECTRUM = FALSE
+# Write level populations? (NLTE and LTE)
+  15D_WRITE_POPS = FALSE
+
+# Write radiative rates?
+  15D_WRITE_RRATES = FALSE
 
 # Value to add to supplied VTURB (in m/s)
   VTURB_ADD = 0.0
