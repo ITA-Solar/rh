@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
   spectrum.updateJ = FALSE;
 
   getCPU(1, TIME_START, NULL);
-  init_hdf5_atmos(&atmos, &geometry, &infile);
+  init_atmos(&atmos, &geometry, &infile);
 
   /* Find out the work load for each process */
   distribute_jobs();
@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
 
   atmos.moving = TRUE;  /* To prevent moving change from column [0, 0] */
    /* Read first atmosphere column just to get dimensions */
-  readAtmos_hdf5(0, 0, &atmos, &geometry, &infile);
+  readAtmos(0, 0, &atmos, &geometry, &infile);
   readAtomicModels();
   readMolecularModels();
   SortLambda();
@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
     Error(MESSAGE, "main", messageStr);
 
     /* Read atmosphere column */
-    readAtmos_hdf5(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
+    readAtmos(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
 
     /* Update quantities that depend on atmosphere and initialise others */
     UpdateAtmosDep();
@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
   }
 
   /* --- Stuff that was on closeParallelIO --- */
-  close_hdf5_atmos(&atmos, &geometry, &infile);
+  close_atmos(&atmos, &geometry, &infile);
   free(io.atom_file_pos);
   /* --- END of stuff from closeParallelIO ---*/
 

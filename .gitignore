@@ -21,15 +21,23 @@
 *rh15d_lteray
 *rh15d_ray
 *rh15d_ray_pool
+*rhf1d
+*backgrcontr
+*solve1d
+*solveray
 
 # Packages and other stuff
 *.tgz
 *.tar.gz
 *.tar.bz2
+*.dat
+*.old
+*.orig
 
 # Directories
 Atoms
 rh15d_mpi/run/
+rh15d_mpi/run_t*/
 rhf1d/run/
 rhsc2d/run/
 rhsc3d/run/

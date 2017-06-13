@@ -18,7 +18,7 @@ HDF5_DIR = /opt/local
 # Try to get git revision, set preprocessor macros if successful
 REV=$(shell git describe --always)
 ifeq ($(REV), )
-    CFLAGS  = -O2 -I../ -I$(HDF5_DIR)/include/ 
+    CFLAGS  = -O0 -g -I../ -I$(HDF5_DIR)/include/
 else
     REV = $(shell git log -1 --pretty=format:"%h  %an  %ai")
     CFLAGS  = -O2 -I../ -I$(HDF5_DIR)/include/ -D'REV_ID="$(REV)"'
@@ -29,7 +29,7 @@ LDFLAGS = -L../ -L$(HDF5_DIR)/lib/
 
 ## --- If no FORTRAN compiler is available remove -lrh_f90 in following
 
-      LIBS = -lrh -lrh_f90 $(ARCHLIBS) -lhdf5 -lhdf5_hl
+LIBS = -lrh -lrh_f90 $(ARCHLIBS) -lhdf5 -lhdf5_hl
 
 
 ## --- Define groups of object files --                -------------- ##
@@ -39,14 +39,12 @@ ONE_D_OBJS = anglequad.o      feautrier.o     formal.o           hydrostat.o   \
              riiplane.o       background_p.o  distribute_jobs.o  escape.o      \
              scatter_p.o      initial_p.o     bezier.o           writeAux_p.o  \
              writeindata_p.o  parallel.o      iterate_p.o        ludcmp_p.o    \
-             statequil_p.o    accelerate_p.o  redistribute_p.o 
-	         
+             statequil_p.o    accelerate_p.o  redistribute_p.o   multiatmos.o  \
+			 readatmos.o
 
 SUBSTITUTE = pops_xdr.o
 
    ONEDOBJ = iter_1d.o        feautrier.o
-
-BACKGROPAC = anglequad.o      backgrcontr.o   multiatmos.o      project.o
 
 
 ## --- Rules for the executables --                    -------------- ##
@@ -61,9 +59,6 @@ rh15d_ray:  $(ONE_D_OBJS)  librh rh15d_ray.o writeRay.o
 
 rh15d_ray_pool:  $(ONE_D_OBJS)  librh rh15d_ray_pool.o writeRay.o
 	$(LD) -o $@  $(LDFLAGS) $(ONE_D_OBJS) rh15d_ray_pool.o writeRay.o $(LIBS)
-
-backgrcontr:  $(BACKGROPAC) librh
-	$(LD) -o $@  $(LDFLAGS) $(BACKGROPAC) $(LIBS)
 
 
 ## --- If no FORTRAN compiler is available remove librh_f90.a in following
@@ -188,7 +183,7 @@ rh15d_ray.o:            ../rh.h          ../atom.h        ../atmos.h       \
                         ../statistics.h  ../error.h       ../inputs.h      \
                         parallel.h       io.h             rh15d_ray.c
 	$(CC) $(CFLAGS) -Wall -c -o $@   rh15d_ray.c
-        
+
 rh15d_ray_pool.o:            ../rh.h          ../atom.h        ../atmos.h  \
                         geometry.h       ../spectrum.h    ../background.h  \
                         ../statistics.h  ../error.h       ../inputs.h      \

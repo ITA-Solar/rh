@@ -82,7 +82,6 @@ void initParallelIO(bool_t run_ray, bool_t writej) {
   Atom  *atom;
 
   init_hdf5_aux();
-
   init_Background();
   if (!run_ray) {
     init_hdf5_indata();
@@ -115,8 +114,6 @@ void initParallelIO(bool_t run_ray, bool_t writej) {
 
   /* buffer quantities for final writes */
   allocBufVars(writej);
-
-  return;
 }
 /* ------- end   --------------------------   initParallelIO.c    --- */
 
@@ -127,7 +124,7 @@ void closeParallelIO(bool_t run_ray, bool_t writej) {
   if (!run_ray) {
     close_hdf5_indata();
   }
-  close_hdf5_atmos(&atmos, &geometry, &infile);
+  close_atmos(&atmos, &geometry, &infile);
   close_hdf5_aux();
 
   free(io.atom_file_pos);
@@ -138,8 +135,6 @@ void closeParallelIO(bool_t run_ray, bool_t writej) {
 
   /* Free buffer variables */
   freeBufVars(writej);
-
-  return;
 }
 /* ------- end   --------------------------  closeParallelIO.c    --- */
 
@@ -158,6 +153,9 @@ void UpdateAtmosDep(void) {
   input.StokesMode = mpi.StokesMode_save;
 
   mpi.zcut_hist[mpi.task] = mpi.zcut;
+
+  /* For single 1D atmosphere, this is not needed */
+  //if (geometry.atmos_format == MULTI) return;
 
   /* Recalculate magnetic field projections */
   if (atmos.Stokes) {
@@ -337,7 +335,7 @@ void UpdateAtmosDep(void) {
 	    line->rho_prd[la][k] = 1.0;
 	}
 
-	// reset interpolation weights
+	/* reset interpolation weights */
 	if (input.PRD_angle_dep == PRD_ANGLE_APPROX) {
 	  Nlamu = 2*atmos.Nrays * line->Nlambda;
 	  if (line->frac != NULL) {
@@ -417,7 +415,6 @@ void UpdateAtmosDep(void) {
       }
     }
   }
-  return;
 }
 /* ------- end   --------------------------  updateAtmosDep.c     --- */
 

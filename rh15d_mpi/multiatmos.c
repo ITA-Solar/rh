@@ -28,6 +28,7 @@
 #include "inputs.h"
 #include "statistics.h"
 #include "xdr.h"
+#include "parallel.h"
 
 
 #define MULTI_COMMENT_CHAR  "*"
@@ -38,33 +39,24 @@
 
 
 /* --- Global variables --                             -------------- */
-
+extern MPI_data mpi;
 extern Spectrum spectrum;
 extern InputData input;
 extern char messageStr[];
 
 
 /* ------- begin -------------------------- MULTIatmos.c ------------ */
-
-void MULTIatmos(Atmosphere *atmos, Geometry *geometry)
-{
-  const char routineName[] = "MULTIatmos";
-  register int k, n, mu;
-
+void readAtmos_multi(Atmosphere *atmos, Geometry *geometry,
+                     Input_Atmos_file *infile) {
+  const char routineName[] = "readAtmos_multi";
+  register int k, n;
+  struct  stat statBuffer;
   char    scaleStr[20], inputLine[MAX_LINE_SIZE], *filename;
   bool_t  exit_on_EOF, enhanced_atmos_ID = FALSE;
   int     Nread, Ndep, Nrequired, checkPoint;
   double *dscale, turbpress, turbelecpress, nbaryon, meanweight;
-  struct  stat statBuffer;
-
-  getCPU(2, TIME_START, NULL);
-
-  /* --- Get abundances of background elements --        ------------ */
-
-  readAbundance(atmos);
 
   /* --- Open the input file for model atmosphere in MULTI format - - */
-
   if ((atmos->fp_atmos = fopen(input.atmos_input, "r")) == NULL) {
     sprintf(messageStr, "Unable to open inputfile %s", input.atmos_input);
     Error(ERROR_LEVEL_2, routineName, messageStr);
@@ -77,24 +69,19 @@ void MULTIatmos(Atmosphere *atmos, Geometry *geometry)
   atmos->NHydr = N_HYDROGEN_MULTI;
 
   /* --- Boundary condition at TOP of atmosphere --      ------------ */
-
   if (strcmp(input.Itop, "none"))
     geometry->vboundary[TOP] = IRRADIATED;
   else
     geometry->vboundary[TOP] = ZERO;
 
   /* --- Boundary condition at BOTTOM of atmosphere --   ------------ */
-
   geometry->vboundary[BOTTOM] = THERMALIZED;
 
   /* --- Read atmos ID, scale type, gravity, and number of depth
          points --                                       ------------ */
-
   getLine(atmos->fp_atmos, MULTI_COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
   if (enhanced_atmos_ID) {
-
     /* --- Construct atmosID from filename and last modification date */
-
     stat(input.atmos_input, &statBuffer);
     if ((filename = strrchr(input.atmos_input, '/')) != NULL)
       filename++;
@@ -116,16 +103,13 @@ void MULTIatmos(Atmosphere *atmos, Geometry *geometry)
 
   /* --- Keep duplicates of some of the geometrical quantities in
          Atmos structure --                            -------------- */
-
   atmos->Ndim = 1;
   atmos->N = (int *) malloc(atmos->Ndim * sizeof(int));
   atmos->Nspace = Ndep = geometry->Ndep;
   atmos->N[0] = Ndep;
-
   atmos->gravity = POW10(atmos->gravity) * CM_TO_M;
 
   /* --- Allocate space for arrays that define structure -- --------- */
-
   geometry->tau_ref = (double *) malloc(Ndep * sizeof(double));
   geometry->cmass   = (double *) malloc(Ndep * sizeof(double));
   geometry->height  = (double *) malloc(Ndep * sizeof(double));
@@ -167,7 +151,7 @@ void MULTIatmos(Atmosphere *atmos, Geometry *geometry)
   for (k = 0;  k < Ndep;  k++) {
     geometry->vel[k] *= KM_TO_M;
     atmos->vturb[k] = atmos->vturb[k] * KM_TO_M * input.vturb_mult + input.vturb_add;
-    atmos->ne[k]     /= CUBE(CM_TO_M);
+    atmos->ne[k] /= CUBE(CM_TO_M);
   }
   atmos->moving = FALSE;
   for (k = 0;  k < Ndep;  k++) {
@@ -178,16 +162,13 @@ void MULTIatmos(Atmosphere *atmos, Geometry *geometry)
   }
   /* --- Get angle-quadrature and copy geometry independent quantity
          wmu to atmos structure. --                    -------------- */
-
   getAngleQuad(geometry);
   atmos->wmu = geometry->wmu;
 
   /* --- Magnetic field is read here. --               -------------- */
-
   atmos->Stokes = readB(atmos);
 
   /* --- Read Hydrogen populations if present --       -------------- */
-
   atmos->nH = matrix_double(atmos->NHydr, Ndep);
   for (k = 0;  k < Ndep;  k++) {
     if (getLine(atmos->fp_atmos, MULTI_COMMENT_CHAR, inputLine,
@@ -206,7 +187,6 @@ void MULTIatmos(Atmosphere *atmos, Geometry *geometry)
 
     /* --- No hydrogen populations supplied: use LTE populations
            like MULTI does --                          -------------- */
-
     if (geometry->scale != COLUMN_MASS) {
       sprintf(messageStr,
 	      "Height scale should be COLUMNMASS when nH not supplied: "
@@ -237,24 +217,38 @@ void MULTIatmos(Atmosphere *atmos, Geometry *geometry)
       }
     }
   }
+  fclose(atmos->fp_atmos);
 
-  getCPU(2, TIME_POLL, "Read Atmosphere");
+  /* Standard fill for 1.5D version */
+  infile->nx = 1;
+  infile->ny = 1;
+  infile->nz = Ndep;
+  infile->x  = (double *) calloc(infile->nx, sizeof(double));
+  infile->y  = (double *) calloc(infile->ny, sizeof(double));
+  mpi.zcut = 0;  /* Disabled for MULTI atmospheres */
+  if (input.p15d_refine)
+    depth_refine(atmos, geometry, input.p15d_tmax);
+  /* --- Construct atmosID from filename and last modification date - */
+  stat(input.atmos_input, &statBuffer);
+  if ((filename = strrchr(input.atmos_input, '/')) != NULL)
+    filename++;
+  else
+    filename = input.atmos_input;
+  sprintf(atmos->ID, "%s (%.24s)", filename,
+	  asctime(localtime(&statBuffer.st_mtime)));
 }
 /* ------- end ---------------------------- MULTIatmos.c ------------ */
 
+
 /* ------- begin -------------------------- convertScales.c --------- */
-
-void convertScales(Atmosphere *atmos, Geometry *geometry)
-{
+void convertScales(Atmosphere *atmos, Geometry *geometry) {
   register int k;
-
   bool_t hunt;
   int    ref_index, Ndep = geometry->Ndep;
   double *rho, *height, *cmass, *tau_ref, h_zero, unity;
   ActiveSet *as;
 
   /* --- Convert between different depth scales --       ------------ */
-
   height  = geometry->height;
   cmass   = geometry->cmass;
   tau_ref = geometry->tau_ref;
@@ -264,7 +258,6 @@ void convertScales(Atmosphere *atmos, Geometry *geometry)
     rho[k] = (AMU * atmos->wght_per_H) * atmos->nHtot[k];
 
   /* --- Get opacity of reference wavelength --          ------------ */
-
   Locate(spectrum.Nspect, spectrum.lambda, atmos->lambda_ref, &ref_index);
 
   as = &spectrum.as[ref_index];
@@ -272,7 +265,6 @@ void convertScales(Atmosphere *atmos, Geometry *geometry)
   readBackground(ref_index, 0, 0);
 
   /* --- Convert to missing depth scales --              ------------ */
-
   switch (geometry->scale) {
   case COLUMN_MASS:
     height[0] = 0.0;
@@ -314,17 +306,13 @@ void convertScales(Atmosphere *atmos, Geometry *geometry)
     Linear(Ndep, tau_ref, height, 1, &unity, &h_zero, hunt=FALSE);
     for (k = 0;  k < Ndep;  k++) height[k] = height[k] - h_zero;
   }
-
   free(rho);
 }
 /* ------- end ---------------------------- convertScales.c --------- */
 
 /* ------- begin -------------------------- getBoundary.c ----------- */
-
-void getBoundary(Geometry *geometry)
-{
+void getBoundary(Geometry *geometry) {
   const char routineName[] = "getBoundary";
-  register int la;
 
   bool_t result = TRUE;
   FILE  *fp_Itop;
@@ -334,15 +322,12 @@ void getBoundary(Geometry *geometry)
   case ZERO: break;
   case THERMALIZED: break;
   case IRRADIATED:
-
     sprintf(messageStr, "\n -- reading irradiance input file: %s\n\n",
 	    input.Itop);
     Error(MESSAGE, NULL, messageStr);
-
     geometry->Itop = matrix_double(spectrum.Nspect, geometry->Nrays);
 
     /* --- Open input file for irradiation at TOP --     -------------- */
-
     if ((fp_Itop = fopen(input.Itop, "r")) == NULL) {
       sprintf(messageStr, "Unable to open inputfile %s", input.Itop);
       Error(ERROR_LEVEL_2, routineName, messageStr);
@@ -372,9 +357,7 @@ void getBoundary(Geometry *geometry)
   case THERMALIZED: break;
   case IRRADIATED:
     geometry->Ibottom = matrix_double(spectrum.Nspect, geometry->Nrays);
-
     /* --- Infalling intensities at BOTTOM should be read here -- --- */
-
     Error(ERROR_LEVEL_1, routineName,
 	  "Boundary condition IRRADIATED at BOTTOM not yet implemented");
     break;

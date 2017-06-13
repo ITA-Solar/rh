@@ -36,7 +36,7 @@
        data files with transition lists in the molecular input files.
     -- Bound-free absorption and emission by OH and CH molecules.
 
- * Atomic models are specified in atoms.input, molecules in 
+ * Atomic models are specified in atoms.input, molecules in
    molecules.input
 
  * Entries for the atoms.input and molecules.input files should have
@@ -64,7 +64,7 @@
    data for this metal (generic atomic input data format), and
    population_file is the input file containing the NLTE population
    numbers from a previous calculation. This last entry is only read when
-   the second entry is set to NLTE. 
+   the second entry is set to NLTE.
 
    -- Units:
       Wavelengths are given in nm, densities in m^-3, opacities in m^2,
@@ -129,6 +129,7 @@ void storeBackground(int la, int mu, bool_t to_obs,
 /* --- Global variables --                             -------------- */
 
 extern Atmosphere atmos;
+extern Geometry geometry;
 extern Spectrum spectrum;
 extern InputData input;
 extern char messageStr[MAX_MESSAGE_LENGTH];
@@ -148,7 +149,7 @@ void init_Background(void)
 
   if (strcmp(input.fudgeData, "none")) {
     bgdat.do_fudge = TRUE;
-    
+
     /* --- Read wavelength-dependent fudge factors to compensate for
            missing UV backround line haze --           -------------- */
 
@@ -160,7 +161,7 @@ void init_Background(void)
 	    "\n-Fudging background opacities with file\n  %s\n\n",
 	    input.fudgeData);
     Error(MESSAGE, routineName, messageStr);
-    
+
     getLine(fp_fudge, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
     sscanf(inputLine, "%d", &bgdat.Nfudge);
     bgdat.lambda_fudge = (double *) malloc(bgdat.Nfudge * sizeof(double));
@@ -189,8 +190,8 @@ void init_Background(void)
          scattering opacity, and emissivity --         -------------- */
 
   if (atmos.moving || atmos.Stokes) {
-    atmos.backgrrecno = 
-      (long *) malloc(2*spectrum.Nspect*atmos.Nrays * sizeof(long)); 
+    atmos.backgrrecno =
+      (long *) malloc(2*spectrum.Nspect*atmos.Nrays * sizeof(long));
   } else
     atmos.backgrrecno = (long *) malloc(spectrum.Nspect * sizeof(long));
 
@@ -202,7 +203,7 @@ void init_Background(void)
   }
 
   return;
-  
+
 }
 /* ------- end   -------------------------- init_Background.c ------- */
 
@@ -273,37 +274,37 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
     // in memory
 
     // sanity check
-    if (input.StokesMode != NO_STOKES) 
+    if (input.StokesMode != NO_STOKES)
 	Error(ERROR_LEVEL_2,routineName,"Polarized transfer and in-memory backgr. op. is not implemented.");
 
 	if (atmos.chi_b != NULL) freeMatrix((void **) atmos.chi_b);
 	atmos.chi_b = matrix_double(spectrum.Nspect * 2 * atmos.Nrays, atmos.Nspace);
-	
+
 	if (atmos.eta_b != NULL) freeMatrix((void **) atmos.eta_b);
 	atmos.eta_b = matrix_double(spectrum.Nspect * 2 * atmos.Nrays, atmos.Nspace);
-	
+
 	if (atmos.sca_b != NULL) freeMatrix((void **) atmos.sca_b);
 	atmos.sca_b = matrix_double(spectrum.Nspect * 2 * atmos.Nrays, atmos.Nspace);
-		
+
   } else {
 
 	// on file
-	
+
 	/* --- Open background file --                        ------------- */
-	
+
 	/* get file name, with the MPI rank */
 	sprintf(file_background,"%s_p%d%s", input.background_File , mpi.rank, fext);
-	
+
 	if ((atmos.fd_background =
 	     open(file_background, O_RDWR | O_CREAT | O_TRUNC, PERMISSIONS)) == -1) {
 	  sprintf(messageStr, "Unable to open output file %s",
 		  file_background);
 	  Error(ERROR_LEVEL_2, routineName, messageStr);
 	}
-	
+
 	/* Zero record number, as background file is being overwritten */
 	mpi.backgrrecno = 0;
-	
+
  }
 
 
@@ -324,7 +325,7 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
          When the atmosphere is not moving and has no magnetic fields
          these just point to the total quantities chi_c and eta_c.
 
-   Note: In case of magnetic fields in the atmosphere chi, eta and 
+   Note: In case of magnetic fields in the atmosphere chi, eta and
          chip, and chi_c, eta_c and chip_c contain all four Stokes
          parameters, and should be allocated a 4 and 3 times larger
          storage space, respectively.
@@ -342,7 +343,7 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
   chi   = (double *) malloc(NrecStokes*atmos.Nspace * sizeof(double));
   eta   = (double *) malloc(NrecStokes*atmos.Nspace * sizeof(double));
   scatt = (double *) malloc(atmos.Nspace * sizeof(double));
-    
+
   if (atmos.Stokes && input.magneto_optical) {
     chip   = (double *) malloc(3*atmos.Nspace * sizeof(double));
     chip_c = (double *) malloc(3*atmos.Nspace * sizeof(double));
@@ -372,7 +373,7 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
 
   He = (atmos.elements[1].model) ? atmos.elements[1].model : NULL;
 
-  
+
   /* --- Go through the spectrum and add the different opacity and
          emissivity contributions. This is the main loop --  -------- */
 
@@ -443,7 +444,7 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
     }
     Hydrogen_ff(wavelength, chi);
     for (k = 0;  k < atmos.Nspace;  k++) {
-      chi_ai[k] += chi[k]; 
+      chi_ai[k] += chi[k];
       eta_ai[k] += chi[k] * Bnu[k];
     }
     /* --- Rayleigh scattering by neutral hydrogen --  -------------- */
@@ -464,7 +465,7 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
 
     if (H2plus_ff(wavelength, chi)) {
       for (k = 0;  k < atmos.Nspace;  k++) {
-	chi_ai[k] += chi[k]; 
+	chi_ai[k] += chi[k];
 	eta_ai[k] += chi[k] * Bnu[k];
       }
     }
@@ -478,7 +479,7 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
     }
     if (H2minus_ff(wavelength, chi)) {
       for (k = 0;  k < atmos.Nspace;  k++) {
-	chi_ai[k] += chi[k]; 
+	chi_ai[k] += chi[k];
 	eta_ai[k] += chi[k] * Bnu[k];
       }
     }
@@ -577,7 +578,7 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
                 }
               } else
                 NrecStokes = 1;
-	      
+
               for (k = 0;  k < NrecStokes*atmos.Nspace;  k++) {
                 chi_c[k] += chi[k];
                 eta_c[k] += eta[k];
@@ -613,23 +614,23 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
 	  }
 	  /* --- Store angle-dependent results only if at least one
                  line was found at this wavelength --  -------------- */
-      
+
 	  atmos.backgrrecno[index] = mpi.backgrrecno;
 	  if ((mu == atmos.Nrays-1 && to_obs) ||
-	      (atmos.backgrflags[nspect].hasline && 
+	      (atmos.backgrflags[nspect].hasline &&
 	       (atmos.moving || atmos.backgrflags[nspect].ispolarized))) {
-	    
+
 	      if (input.backgr_in_mem) {
-		  
-		if ((mu == atmos.Nrays-1 && to_obs) && !(atmos.backgrflags[nspect].hasline && 
+
+		if ((mu == atmos.Nrays-1 && to_obs) && !(atmos.backgrflags[nspect].hasline &&
 							 (atmos.moving || atmos.backgrflags[nspect].ispolarized)) ){
 		    storeBackground(nspect, 0, 0, chi_c, eta_c, sca_c);
 		} else {
 		    storeBackground(nspect, mu, to_obs, chi_c, eta_c, sca_c);
 		}
-		
+
 	      } else {
-		
+
 		mpi.backgrrecno += writeBackground(nspect, mu, to_obs,
 						   chi_c, eta_c, sca_c, chip_c);
 	    }
@@ -725,6 +726,9 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
     }
   }
 
+  /* In MULTI case, must convert scales once background opacity is known */
+  if (geometry.atmos_format == MULTI) convertScales(&atmos, &geometry);
+
   getCPU(2, TIME_POLL, "Total Background");
 }
 /* ------- end ---------------------------- Background.c ------------ */
@@ -745,9 +749,9 @@ void SetLTEQuantities_p(void)
 
     /* --- Get LTE populations for each atom --        -------------- */
     LTEpops(atom, Debeye);
-      
+
     if (atom->active) {
-      
+
       /* --- Read the collisional data (in MULTI's GENCOL format).
              After this we can close the input file for the active
              atom. --                                  -------------- */
@@ -759,4 +763,3 @@ void SetLTEQuantities_p(void)
   }
 }
 /* ------- end ---------------------------- SetLTEQuantities_p.c ---- */
-
