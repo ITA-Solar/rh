@@ -6,7 +6,7 @@ import numpy as N
 
 atmos_dir = '/mydata'
 seq_file = 'RH_SEQUENCE'
-outsuff = 'output/output_ray_CaII_PRD_s%03i.ncdf'
+outsuff = 'output/output_ray_CaII_PRD_s%03i.hdf5'
 mpicmd = 'mpiexec'  # 'aprun'
 bin = './rh15d_ray_pool'
 defkey = 'keyword.save'
@@ -85,16 +85,16 @@ def run_single(atmos_file, snap, snapnum=None):
                 return
     # re-run to obtain convergence
     if rerun:
-        import netCDF4
+        import h5py
         nv['15D_RERUN'] = 'TRUE'
         for i in range(rerun_max):
             # find out how many non-converged items
             try:
-                f = netCDF4.Dataset('output/output_indata.ncdf', 'r')
-                conv = f.groups['mpi'].variables['convergence'][:]
+                f = h5py.File('output/output_indata.hdf5', mode='r')
+                conv = f['mpi']['convergence'][:]
                 f.close()
             except:
-                print('WARNING: output_indata.ncdf not found or lacking'
+                print('WARNING: output_indata.hdf5 not found or lacking'
                       'convergence info. Aborting rerun.')
                 break
             nremain = N.sum(conv < 1)
@@ -123,16 +123,16 @@ def run_single(atmos_file, snap, snapnum=None):
                     if run_timeout(runcmd, timeout=tm, log=log):
                         print('ERROR: unclean exit status, skipping'
                               ' but copying file.')
-    print('mv output/output_ray.ncdf ' + outfile)
-    if os.system('mv output/output_ray.ncdf ' + outfile):
+    print('mv output/output_ray.hdf5 ' + outfile)
+    if os.system('mv output/output_ray.hdf5 ' + outfile):
         print('ERROR: unclean exit status, sleeping 5 minutes and'
               ' retrying...')
         time.sleep(60 * 5)
-        if os.system('mv output/output_ray.ncdf ' + outfile):
+        if os.system('mv output/output_ray.hdf5 ' + outfile):
             print('ERROR: unclean exit status, sleeping 15 minutes and'
-                 ' retrying...')
+                  ' retrying...')
             time.sleep(60 * 15)
-            if os.system('mv output/output_ray.ncdf ' + outfile):
+            if os.system('mv output/output_ray.hdf5 ' + outfile):
                 print('ERROR: file copy failed.')
     return
 
@@ -214,7 +214,6 @@ def getjob(filename, fdir='.'):
         numbers.
     """
     import os
-    import netCDF4
     # read first line, write rest to the file
     f = open(filename, 'r')
     lines = f.readlines()
@@ -258,11 +257,11 @@ def getjob(filename, fdir='.'):
     return result
 
 
-def get_snaps(ncdf_file):
-    ''' Gets snapshot numbers from netCDF file'''
-    import netCDF4
-    f = netCDF4.Dataset(ncdf_file, 'r')
-    snaps = f.variables['snapshot_number'][:]
+def get_snaps(hdf5_file):
+    ''' Gets snapshot numbers from HDF5 or netCDF input atmosphere'''
+    import h5py
+    f = h5py.File(hdf5_file, mode='r')
+    snaps = f['snapshot_number'][:]
     f.close()
     return list(snaps)
 
