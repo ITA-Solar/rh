@@ -393,4 +393,6 @@ void close_hdf5_atmos(Atmosphere *atmos, Geometry *geometry,
   free(geometry->height);
   free(infile->y);
   free(infile->x);
+  free(geometry->xscale);
+  free(geometry->yscale);
 }

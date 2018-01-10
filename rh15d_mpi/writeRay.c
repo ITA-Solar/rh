@@ -56,13 +56,14 @@ void init_hdf5_ray(void) {
 
 /* ------- begin -------------------------- init_hdf5_ray_new.c ----- */
 void init_hdf5_ray_new(void)
-/* Creates the netCDF file for the ray */
+/* Creates the file for the ray */
 {
   const char routineName[] = "init_hdf5_ray_new";
-  hid_t   plist, ncid, file_dspace;
+  int     k;
+  hid_t   plist, ncid, file_dspace, id_x, id_y, id_z, id_wave, id_wave_sel;
   hsize_t dims[4];
   bool_t  write_xtra;
-  double *lambda_air;
+  double *lambda_air, *wave_selected, *tmp;
   char    timestr[ARR_STRLEN];
   time_t  curtime;
   struct tm *loctime;
@@ -97,6 +98,53 @@ void init_hdf5_ray_new(void)
 				&io.ray_nwave_sel, 1) ) < 0) HERR(routineName);
   }
 
+  /* --- Write dimensions: x, y, z, wavelength, wavelength selected --- */
+  dims[0] = mpi.nx;
+  if (( H5LTmake_dataset(ncid, X_NAME, 1, dims, H5T_NATIVE_DOUBLE,
+                         geometry.xscale) ) < 0)  HERR(routineName);
+  if (( id_x = H5Dopen2(ncid, X_NAME, H5P_DEFAULT)) < 0) HERR(routineName);
+  dims[0] = mpi.ny;
+  if (( H5LTmake_dataset(ncid, Y_NAME, 1, dims, H5T_NATIVE_DOUBLE,
+                         geometry.yscale) ) < 0)  HERR(routineName);
+  if (( id_y = H5Dopen2(ncid, Y_NAME, H5P_DEFAULT)) < 0) HERR(routineName);
+  dims[0] = infile.nz;
+  tmp = (double *) calloc(infile.nz , sizeof(double));
+  if (( H5LTmake_dataset(ncid, ZOUT_NAME, 1, dims, H5T_NATIVE_DOUBLE,
+                         tmp) ) < 0)  HERR(routineName);
+  /* Define as dimension only (no coordinates) in netCDF standard */
+  if (( H5LTset_attribute_string(ncid, ZOUT_NAME, "NAME",
+                                 NETCDF_COMPAT) ) < 0) HERR(routineName);
+  if (( id_z = H5Dopen2(ncid, ZOUT_NAME, H5P_DEFAULT)) < 0) HERR(routineName);
+  free(tmp);
+
+  wave_selected = (double *) malloc(io.ray_nwave_sel * sizeof(double));
+  dims[0] = spectrum.Nspect;
+  if (spectrum.vacuum_to_air) {
+    lambda_air = (double *) malloc(spectrum.Nspect * sizeof(double));
+    vacuum_to_air(spectrum.Nspect, spectrum.lambda, lambda_air);
+    if (( H5LTmake_dataset(ncid, WAVE_NAME, 1, dims, H5T_NATIVE_DOUBLE,
+                           lambda_air) ) < 0) HERR(routineName);
+    for (k = 0;  k < io.ray_nwave_sel;  k++)
+        wave_selected[k] = lambda_air[io.ray_wave_idx[k]];
+    free(lambda_air);
+  } else {
+    if (( H5LTmake_dataset(ncid, WAVE_NAME, 1, dims, H5T_NATIVE_DOUBLE,
+                           spectrum.lambda) ) < 0) HERR(routineName);
+    for (k = 0;  k < io.ray_nwave_sel;  k++)
+        wave_selected[k] = spectrum.lambda[io.ray_wave_idx[k]];
+  }
+  if (( id_wave = H5Dopen2(ncid, WAVE_NAME, H5P_DEFAULT)) < 0) HERR(routineName);
+  if (write_xtra) {
+    dims[0] = io.ray_nwave_sel;
+    if (( H5LTmake_dataset(ncid, WAVE_SEL_IDX, 1, dims, H5T_NATIVE_INT,
+                           io.ray_wave_idx) ) < 0)  HERR(routineName);
+    if (( H5LTmake_dataset(ncid, WAVE_SEL_NAME, 1, dims, H5T_NATIVE_DOUBLE,
+                           wave_selected) ) < 0)  HERR(routineName);
+    if (( id_wave_sel = H5Dopen2(ncid, WAVE_SEL_NAME,
+                                 H5P_DEFAULT)) < 0) HERR(routineName);
+  }
+  free(wave_selected);
+
   /* Create dataspace with same fill value as netcdf */
   dims[0] = mpi.nx;
   dims[1] = mpi.ny;
@@ -111,22 +159,46 @@ void init_hdf5_ray_new(void)
   if (( io.ray_int_var = H5Dcreate(ncid, INT_NAME, H5T_NATIVE_FLOAT,
 				    file_dspace, H5P_DEFAULT, plist,
             H5P_DEFAULT)) < 0) HERR(routineName);
+  /* Attach dimension scales */
+  if (( H5DSattach_scale(io.ray_int_var, id_x, 0)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.ray_int_var, id_y, 1)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.ray_int_var, id_wave, 2)) < 0) HERR(routineName);
+
+
   /* Other Stokes parameters, if available */
   if (atmos.Stokes || input.backgr_pol) {
     if (( io.ray_stokes_q_var = H5Dcreate(ncid, STOKES_Q, H5T_NATIVE_FLOAT,
 				          file_dspace, H5P_DEFAULT, plist,
 				          H5P_DEFAULT)) < 0) HERR(routineName);
+    /* Attach dimension scales */
+    if (( H5DSattach_scale(io.ray_stokes_q_var, id_x, 0)) < 0) HERR(routineName);
+    if (( H5DSattach_scale(io.ray_stokes_q_var, id_y, 1)) < 0) HERR(routineName);
+    if (( H5DSattach_scale(io.ray_stokes_q_var, id_wave, 2)) < 0) HERR(routineName);
+
     if (( io.ray_stokes_u_var = H5Dcreate(ncid, STOKES_U, H5T_NATIVE_FLOAT,
 				          file_dspace, H5P_DEFAULT, plist,
 				          H5P_DEFAULT)) < 0) HERR(routineName);
+    /* Attach dimension scales */
+    if (( H5DSattach_scale(io.ray_stokes_u_var, id_x, 0)) < 0) HERR(routineName);
+    if (( H5DSattach_scale(io.ray_stokes_u_var, id_y, 1)) < 0) HERR(routineName);
+    if (( H5DSattach_scale(io.ray_stokes_u_var, id_wave, 2)) < 0) HERR(routineName);
+
     if (( io.ray_stokes_v_var = H5Dcreate(ncid, STOKES_V, H5T_NATIVE_FLOAT,
 				          file_dspace, H5P_DEFAULT, plist,
 				          H5P_DEFAULT)) < 0) HERR(routineName);
+    /* Attach dimension scales */
+    if (( H5DSattach_scale(io.ray_stokes_v_var, id_x, 0)) < 0) HERR(routineName);
+    if (( H5DSattach_scale(io.ray_stokes_v_var, id_y, 1)) < 0) HERR(routineName);
+    if (( H5DSattach_scale(io.ray_stokes_v_var, id_wave, 2)) < 0) HERR(routineName);
   }
   if (input.p15d_wtau) {
     if (( io.ray_tau1_var = H5Dcreate(ncid, TAU1_NAME, H5T_NATIVE_FLOAT,
 				                      file_dspace, H5P_DEFAULT, plist,
 				                      H5P_DEFAULT)) < 0) HERR(routineName);
+    /* Attach dimension scales */
+    if (( H5DSattach_scale(io.ray_tau1_var, id_x, 0)) < 0) HERR(routineName);
+    if (( H5DSattach_scale(io.ray_tau1_var, id_y, 1)) < 0) HERR(routineName);
+    if (( H5DSattach_scale(io.ray_tau1_var, id_wave, 2)) < 0) HERR(routineName);
   }
   if (write_xtra) {
     dims[0] = mpi.nx;
@@ -136,34 +208,39 @@ void init_hdf5_ray_new(void)
     if (( file_dspace = H5Screate_simple(4, dims, NULL) ) < 0) HERR(routineName);
     /* Source function, opacity and emissivity, line and continuum */
     if (( io.ray_chi_var = H5Dcreate(ncid, CHI_NAME, H5T_NATIVE_FLOAT,
-				                              file_dspace, H5P_DEFAULT, plist,
-				                              H5P_DEFAULT)) < 0) HERR(routineName);
+				                     file_dspace, H5P_DEFAULT, plist,
+				                     H5P_DEFAULT)) < 0) HERR(routineName);
+    /* Attach dimension scales */
+    if (( H5DSattach_scale(io.ray_chi_var, id_x, 0)) < 0) HERR(routineName);
+    if (( H5DSattach_scale(io.ray_chi_var, id_y, 1)) < 0) HERR(routineName);
+    if (( H5DSattach_scale(io.ray_chi_var, id_z, 2)) < 0) HERR(routineName);
+    if (( H5DSattach_scale(io.ray_chi_var, id_wave_sel, 3)) < 0) HERR(routineName);
     if (( io.ray_S_var = H5Dcreate(ncid, S_NAME, H5T_NATIVE_FLOAT,
-				                            file_dspace, H5P_DEFAULT, plist,
-				                            H5P_DEFAULT)) < 0) HERR(routineName);
+				                   file_dspace, H5P_DEFAULT, plist,
+				                   H5P_DEFAULT)) < 0) HERR(routineName);
+    /* Attach dimension scales */
+    if (( H5DSattach_scale(io.ray_S_var, id_x, 0)) < 0) HERR(routineName);
+    if (( H5DSattach_scale(io.ray_S_var, id_y, 1)) < 0) HERR(routineName);
+    if (( H5DSattach_scale(io.ray_S_var, id_z, 2)) < 0) HERR(routineName);
+    if (( H5DSattach_scale(io.ray_S_var, id_wave_sel, 3)) < 0) HERR(routineName);
     if (( io.ray_j_var = H5Dcreate(ncid, "Jlambda", H5T_NATIVE_FLOAT,
-				                            file_dspace, H5P_DEFAULT, plist,
-				                            H5P_DEFAULT)) < 0) HERR(routineName);
+				                   file_dspace, H5P_DEFAULT, plist,
+				                   H5P_DEFAULT)) < 0) HERR(routineName);
+    /* Attach dimension scales */
+    if (( H5DSattach_scale(io.ray_j_var, id_x, 0)) < 0) HERR(routineName);
+    if (( H5DSattach_scale(io.ray_j_var, id_y, 1)) < 0) HERR(routineName);
+    if (( H5DSattach_scale(io.ray_j_var, id_z, 2)) < 0) HERR(routineName);
+    if (( H5DSattach_scale(io.ray_j_var, id_wave_sel, 3)) < 0) HERR(routineName);
     if (( io.ray_sca_c_var = H5Dcreate(ncid, SCA_C_NAME, H5T_NATIVE_FLOAT,
-				                                file_dspace, H5P_DEFAULT, plist,
-				                                H5P_DEFAULT)) < 0) HERR(routineName);
+				                       file_dspace, H5P_DEFAULT, plist,
+				                       H5P_DEFAULT)) < 0) HERR(routineName);
+    /* Attach dimension scales */
+    if (( H5DSattach_scale(io.ray_sca_c_var, id_x, 0)) < 0) HERR(routineName);
+    if (( H5DSattach_scale(io.ray_sca_c_var, id_y, 1)) < 0) HERR(routineName);
+    if (( H5DSattach_scale(io.ray_sca_c_var, id_z, 2)) < 0) HERR(routineName);
+    if (( H5DSattach_scale(io.ray_sca_c_var, id_wave_sel, 3)) < 0) HERR(routineName);
   }
 
-  /* --- Write wavelength and wavelength indices --- */
-  dims[0] = spectrum.Nspect;
-  if (spectrum.vacuum_to_air) {
-    lambda_air = (double *) malloc(spectrum.Nspect * sizeof(double));
-    vacuum_to_air(spectrum.Nspect, spectrum.lambda, lambda_air);
-    if (( H5LTmake_dataset(ncid, WAVE_NAME, 1, dims, H5T_NATIVE_DOUBLE,
-                           lambda_air) ) < 0) HERR(routineName);
-    free(lambda_air);
-  } else
-    if (( H5LTmake_dataset(ncid, WAVE_NAME, 1, dims, H5T_NATIVE_DOUBLE,
-                           spectrum.lambda) ) < 0) HERR(routineName);
-  if (write_xtra)
-    dims[0] = io.ray_nwave_sel;
-    if (( H5LTmake_dataset(ncid, WAVE_SEL_IDX, 1, dims, H5T_NATIVE_INT,
-                           io.ray_wave_idx) ) < 0)  HERR(routineName);
   /* --- Write attributes --- */
   /* Time of creation in ISO 8601 */
   curtime = time(NULL);
@@ -172,18 +249,36 @@ void init_hdf5_ray_new(void)
   if (( H5LTset_attribute_string(ncid, "/", "creation_time",
                             (const char *) &timestr) ) < 0) HERR(routineName);
 
-  /*  units  */
+  /*  units and fill value  */
+  if (( H5LTset_attribute_string(ncid, X_NAME, "units",
+                                 "m") ) < 0) HERR(routineName);
+  if (( H5LTset_attribute_string(ncid, Y_NAME, "units",
+                                 "m") ) < 0) HERR(routineName);
+  if (( H5LTset_attribute_string(ncid, ZOUT_NAME, "units",
+                                 "m") ) < 0) HERR(routineName);
   if (( H5LTset_attribute_string(ncid, WAVE_NAME, "units",
                                  "nm") ) < 0) HERR(routineName);
+  if (write_xtra) if (( H5LTset_attribute_string(ncid, WAVE_SEL_NAME, "units",
+                                                 "nm") ) < 0) HERR(routineName);
   if (( H5LTset_attribute_string(ncid, INT_NAME, "units",
                            "J s^-1 m^-2 Hz^-1 sr^-1") ) < 0) HERR(routineName);
+  if (( H5LTset_attribute_float(ncid, INT_NAME, "_FillValue",
+                                &FILLVALUE) ) < 0) HERR(routineName);
+
+
   if (atmos.Stokes || input.backgr_pol) {
     if (( H5LTset_attribute_string(ncid, STOKES_Q, "units",
                            "J s^-1 m^-2 Hz^-1 sr^-1") ) < 0) HERR(routineName);
+    if (( H5LTset_attribute_float(ncid, STOKES_Q, "_FillValue",
+                                  &FILLVALUE) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_string(ncid, STOKES_U, "units",
                            "J s^-1 m^-2 Hz^-1 sr^-1") ) < 0) HERR(routineName);
+    if (( H5LTset_attribute_float(ncid, STOKES_U, "_FillValue",
+                                  &FILLVALUE) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_string(ncid, STOKES_V, "units",
                            "J s^-1 m^-2 Hz^-1 sr^-1") ) < 0) HERR(routineName);
+    if (( H5LTset_attribute_float(ncid, STOKES_V, "_FillValue",
+                                  &FILLVALUE) ) < 0) HERR(routineName);
   }
 
   if (input.p15d_wtau) {
@@ -210,6 +305,12 @@ void init_hdf5_ray_new(void)
             "Scattering term multiplied by Jlambda" ) ) < 0) HERR(routineName);
   }
   if (( H5Pclose(plist) ) < 0 ) HERR(routineName);
+  if (( H5Dclose(id_x) ) < 0) HERR(routineName);
+  if (( H5Dclose(id_y) ) < 0) HERR(routineName);
+  if (( H5Dclose(id_z) ) < 0) HERR(routineName);
+  if (( H5Dclose(id_wave) ) < 0) HERR(routineName);
+  if (write_xtra) if (( H5Dclose(id_wave_sel) ) < 0) HERR(routineName);
+
   /* Flush ensures file is created in case of crash */
   if (( H5Fflush(ncid, H5F_SCOPE_LOCAL) ) < 0) HERR(routineName);
   /* Copy stuff to the IO data struct */
@@ -222,7 +323,7 @@ void init_hdf5_ray_new(void)
 
 /* ------- begin   -------------------- init_hdf5_ray_existing.c ------ */
 void init_hdf5_ray_existing(void)
-/* Opens an existing ray netCDF file */
+/* Opens an existing ray file */
 {
   const char routineName[] = "init_hdf5_ray_existing";
   int     ncid;
@@ -288,7 +389,7 @@ void init_hdf5_ray_existing(void)
 
 /* ------- begin -------------------------- close_hdf5_ray.c --------- */
 void close_hdf5_ray(void) {
-  /* Closes the spec netCDF file */
+  /* Closes the ray file */
   const char routineName[] = "close_hdf5_ray";
   bool_t     write_xtra;
 
@@ -317,7 +418,7 @@ void close_hdf5_ray(void) {
 
 /* ------- begin -------------------------- writeRay.c --------------- */
 void writeRay(void) {
-  /* Writes ray data to netCDF file. */
+  /* Writes ray data to file. */
   const char routineName[] = "writeRay";
   int        idx, ncid, k, l, nspect;
   double    *J;

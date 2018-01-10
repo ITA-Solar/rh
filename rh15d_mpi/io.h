@@ -33,6 +33,24 @@
 /* Definitions for background_p */
 #define  FILE_EXT ".dat"
 
+/* Definitions for dimension names */
+#define X_NAME         "x"
+#define Y_NAME         "y"
+#define ZOUT_NAME         "height"
+#define WAVE_NAME      "wavelength"
+#define WAVE_SEL_NAME  "wavelength_selected"
+#define LINE_NAME      "line"
+#define CONT_NAME      "continuum"
+#define LEVEL_NAME     "level"
+#define VLEVEL_NAME    "vibration_level"
+#define VLINE_NAME     "molecular_line"
+#define NJ_NAME        "rotational_state"
+#define ELEM_NAME      "element"
+#define RAY_NAME       "ray"
+#define PROC_NAME      "process"
+#define IT_NAME        "iteration"
+#define NETCDF_COMPAT  "This is a netCDF dimension but not a netCDF variable.         2"
+
 /* Definitions for the ray file */
 #define RAY_FILE     "output/output_ray.hdf5"
 #define INT_NAME    "intensity"
@@ -40,7 +58,6 @@
 #define STOKES_Q    "stokes_Q"
 #define STOKES_U    "stokes_U"
 #define STOKES_V    "stokes_V"
-#define WAVE_NAME   "wavelength"
 #define WAVE_SEL     "wavelength_selected"
 #define WAVE_SEL_IDX "wavelength_indices"
 #define CHI_NAME     "chi"
@@ -127,7 +144,7 @@ typedef struct {
   long *atom_file_pos;
   /* for the ray file */
   int  ray_ncid,          ray_nwave_sel,     ray_wave_var,      ray_int_var,
-       ray_stokes_q_var,  ray_stokes_u_var,  ray_stokes_v_var,  ray_j_var, 
+       ray_stokes_q_var,  ray_stokes_u_var,  ray_stokes_v_var,  ray_j_var,
        ray_chi_l_var,     ray_eta_l_var,     ray_chi_c_var,     ray_eta_c_var,
        ray_sca_c_var,     ray_chi_var,       ray_S_var,        *ray_wave_idx,
        ray_tau1_var;

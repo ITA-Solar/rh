@@ -21,11 +21,11 @@ typedef struct {
   enum     atmos_type atmos_format;
   int      Ndep, Nrays;
   double  *height, *cmass, *tau_ref, *mux, *muy, *muz, *wmu, *vel,
-         **Itop, **Ibottom;
+          *xscale, *yscale, **Itop, **Ibottom;
 } Geometry;
 
 
-/* For the NetCDF input file */
+/* For the input atmos file */
 typedef struct {
   char     *file_name;
   int       ncid,     nx_id,    ny_id,    nz_id,    nhyd_id,     z_varid;

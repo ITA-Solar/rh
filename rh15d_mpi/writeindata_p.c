@@ -52,15 +52,17 @@ void init_hdf5_indata(void) {
 
 /* ------- begin --------------------------   init_hdf5_indata.c  --- */
 void init_hdf5_indata_new(void)
-/* Creates the netCDF file for the input data */
+/* Creates the file for the input data */
 {
   const char routineName[] = "init_hdf5_indata_new";
+  unsigned int *tmp;
   int     i, PRD_angle_dep;
-  double  *eweight, *eabund, *x, *y;
+  double  *eweight, *eabund, *tmp_double;;
   /* This value is harcoded for efficiency.
      Maximum number of iterations ever needed */
   int     NMaxIter = 1500;
   hid_t   plist, ncid, file_dspace, ncid_input, ncid_atmos, ncid_mpi;
+  hid_t   id_x, id_y, id_z, id_n, id_tmp;
   hsize_t dims[4];
   bool_t   XRD;
   char    startJ[MAX_LINE_SIZE], StokesMode[MAX_LINE_SIZE], angleSet[MAX_LINE_SIZE];
@@ -93,6 +95,16 @@ void init_hdf5_indata_new(void)
     HERR(routineName);
   if (( H5LTset_attribute_string(ncid, "/", "rev_id", mpi.rev_id) ) < 0)
     HERR(routineName);
+  /* --- dimension datasets, all values set to zero --- */
+  dims[0] = infile.nz;
+  tmp_double = (double *) calloc(infile.nz , sizeof(double));
+  if (( H5LTmake_dataset(ncid, ZOUT_NAME, 1, dims, H5T_NATIVE_DOUBLE,
+                         tmp_double) ) < 0)  HERR(routineName);
+  free(tmp_double);
+  if (( id_z = H5Dopen2(ncid, ZOUT_NAME, H5P_DEFAULT)) < 0) HERR(routineName);
+  /* For compatibility with netCDF readers, only use dataset as dimension */
+  if (( H5LTset_attribute_string(ncid, ZOUT_NAME, "NAME",
+                                 NETCDF_COMPAT) ) < 0) HERR(routineName);
 
   /* --- Definitions for the INPUT group --- */
   /* attributes */
@@ -222,13 +234,34 @@ void init_hdf5_indata_new(void)
 
   /* --- Definitions for the ATMOS group --- */
   /* dimensions */
-  if (( H5LTset_attribute_int(ncid_atmos, ".", "nhydr",
-                              &atmos.H->Nlevel, 1) ) < 0) HERR(routineName);
   if (( H5LTset_attribute_int(ncid_atmos, ".", "nelements",
                               &atmos.Nelem, 1) ) < 0) HERR(routineName);
   if (( H5LTset_attribute_int(ncid_atmos, ".", "nrays",
                               &geometry.Nrays, 1) ) < 0) HERR(routineName);
-
+  /* --- dimension datasets --- */
+  dims[0] = mpi.nx;
+  if (( H5LTmake_dataset(ncid_atmos, X_NAME, 1, dims, H5T_NATIVE_DOUBLE,
+                         geometry.xscale) ) < 0)  HERR(routineName);
+  if (( id_x = H5Dopen2(ncid_atmos, X_NAME, H5P_DEFAULT)) < 0) HERR(routineName);
+  dims[0] = mpi.ny;
+  if (( H5LTmake_dataset(ncid_atmos, Y_NAME, 1, dims, H5T_NATIVE_DOUBLE,
+                         geometry.yscale) ) < 0)  HERR(routineName);
+  if (( id_y = H5Dopen2(ncid_atmos, Y_NAME, H5P_DEFAULT)) < 0) HERR(routineName);
+  dims[0] = atmos.Nelem;
+  tmp = (unsigned int *) calloc(atmos.Nelem , sizeof(unsigned int));
+  if (( H5LTmake_dataset(ncid_atmos, ELEM_NAME, 1, dims, H5T_NATIVE_UINT,
+                         tmp) ) < 0)  HERR(routineName);
+  free(tmp);
+  dims[0] = geometry.Nrays;
+  tmp = (unsigned int *) calloc(geometry.Nrays , sizeof(unsigned int));
+  if (( H5LTmake_dataset(ncid_atmos, RAY_NAME, 1, dims, H5T_NATIVE_UINT,
+                         tmp) ) < 0)  HERR(routineName);
+  free(tmp);
+  /* For compatibility with netCDF readers, only use dataset as dimension */
+  if (( H5LTset_attribute_string(ncid_atmos, ELEM_NAME, "NAME",
+                                 NETCDF_COMPAT) ) < 0) HERR(routineName);
+  if (( H5LTset_attribute_string(ncid_atmos, RAY_NAME, "NAME",
+                                 NETCDF_COMPAT) ) < 0) HERR(routineName);
 
   /* variables*/
   dims[0] = mpi.nx;
@@ -240,13 +273,22 @@ void init_hdf5_indata_new(void)
     HERR(routineName);
   if (( H5Pset_alloc_time(plist, H5D_ALLOC_TIME_EARLY) ) < 0) HERR(routineName);
   if (( H5Pset_fill_time(plist, H5D_FILL_TIME_ALLOC) ) < 0) HERR(routineName);
-
   if (( io.in_atmos_T = H5Dcreate(ncid_atmos, "temperature", H5T_NATIVE_FLOAT,
          file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_atmos_T, id_x, 0)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_atmos_T, id_y, 1)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_atmos_T, id_z, 2)) < 0) HERR(routineName);
   if (( io.in_atmos_vz = H5Dcreate(ncid_atmos, "velocity_z", H5T_NATIVE_FLOAT,
          file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
-  if (( io.in_atmos_z = H5Dcreate(ncid_atmos, "height", H5T_NATIVE_FLOAT,
+  if (( H5DSattach_scale(io.in_atmos_vz, id_x, 0)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_atmos_vz, id_y, 1)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_atmos_vz, id_z, 2)) < 0) HERR(routineName);
+  if (( io.in_atmos_z = H5Dcreate(ncid_atmos, "height_scale", H5T_NATIVE_FLOAT,
          file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_atmos_z, id_x, 0)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_atmos_z, id_y, 1)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_atmos_z, id_z, 2)) < 0) HERR(routineName);
+
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
   if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
   /* --- Write some data that does not depend on xi, yi, ATMOS group --- */
@@ -258,10 +300,21 @@ void init_hdf5_indata_new(void)
     eabund[i] = atmos.elements[i].abund;
   }
   dims[0] = atmos.Nelem;
+  if (( id_n = H5Dopen2(ncid_atmos, ELEM_NAME,
+                        H5P_DEFAULT)) < 0) HERR(routineName);
   if (( H5LTmake_dataset(ncid_atmos, "element_weight", 1, dims,
                 H5T_NATIVE_DOUBLE, eweight) ) < 0) HERR(routineName);
+  if (( id_tmp = H5Dopen2(ncid_atmos, "element_weight",
+                          H5P_DEFAULT)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(id_tmp, id_n, 0)) < 0) HERR(routineName);
+  if (( H5Dclose(id_tmp) ) < 0) HERR(routineName);
   if (( H5LTmake_dataset(ncid_atmos, "element_abundance", 1, dims,
                 H5T_NATIVE_DOUBLE, eabund) ) < 0) HERR(routineName);
+  if (( id_tmp = H5Dopen2(ncid_atmos, "element_abundance",
+                          H5P_DEFAULT)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(id_tmp, id_n, 0)) < 0) HERR(routineName);
+  if (( H5Dclose(id_tmp) ) < 0) HERR(routineName);
+  if (( H5Dclose(id_n) ) < 0) HERR(routineName);
   /* Not writing element_id for now
   dims[1] = strlen;
   if (( H5LTmake_dataset(ncid_atmos, "element_id", 2, dims,
@@ -271,23 +324,19 @@ void init_hdf5_indata_new(void)
   free(eabund);
 
   dims[0] = geometry.Nrays;
+  if (( id_n = H5Dopen2(ncid_atmos, RAY_NAME,
+                        H5P_DEFAULT)) < 0) HERR(routineName);
   if (( H5LTmake_dataset(ncid_atmos, "muz", 1, dims,
               H5T_NATIVE_DOUBLE, geometry.muz) ) < 0) HERR(routineName);
+  if (( id_tmp = H5Dopen2(ncid_atmos, "muz", H5P_DEFAULT)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(id_tmp, id_n, 0)) < 0) HERR(routineName);
+  if (( H5Dclose(id_tmp) ) < 0) HERR(routineName);
   if (( H5LTmake_dataset(ncid_atmos, "wmu", 1, dims,
               H5T_NATIVE_DOUBLE, geometry.wmu) ) < 0) HERR(routineName);
-
-  x = (double *) malloc(mpi.nx * sizeof(double));
-  y = (double *) malloc(mpi.ny * sizeof(double));
-  for (i=0; i < mpi.nx; i++) x[i] = infile.x[mpi.xnum[i]];
-  for (i=0; i < mpi.ny; i++) y[i] = infile.y[mpi.ynum[i]];
-  dims[0] = mpi.nx;
-  if (( H5LTmake_dataset(ncid_atmos, "x", 1, dims,
-                         H5T_NATIVE_DOUBLE, x) ) < 0) HERR(routineName);
-  dims[0] = mpi.ny;
-  if (( H5LTmake_dataset(ncid_atmos, "y", 1, dims,
-                         H5T_NATIVE_DOUBLE, y) ) < 0) HERR(routineName);
-  free(x);
-  free(y);
+  if (( id_tmp = H5Dopen2(ncid_atmos, "wmu", H5P_DEFAULT)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(id_tmp, id_n, 0)) < 0) HERR(routineName);
+  if (( H5Dclose(id_tmp) ) < 0) HERR(routineName);
+  if (( H5Dclose(id_n) ) < 0) HERR(routineName);
 
   /* attributes */
   if (( H5LTset_attribute_uchar(ncid_atmos, ".", "moving",
@@ -298,14 +347,12 @@ void init_hdf5_indata_new(void)
                                  "K") ) < 0) HERR(routineName);
   if (( H5LTset_attribute_string(ncid_atmos,  "velocity_z", "units",
                                  "m s^-1") ) < 0) HERR(routineName);
-  if (( H5LTset_attribute_string(ncid_atmos,  "height", "units",
+  if (( H5LTset_attribute_string(ncid_atmos,  "height_scale", "units",
                                  "m") ) < 0) HERR(routineName);
   if (( H5LTset_attribute_string(ncid_atmos,  "element_weight", "units",
                                  "atomic_mass_units") ) < 0) HERR(routineName);
-  if (( H5LTset_attribute_string(ncid_atmos,  "x", "units",
-                                 "m") ) < 0) HERR(routineName);
-  if (( H5LTset_attribute_string(ncid_atmos,  "y", "units",
-                                 "m") ) < 0) HERR(routineName);
+  if (( H5Dclose(id_x) ) < 0) HERR(routineName);
+  if (( H5Dclose(id_y) ) < 0) HERR(routineName);
 
   /* --- Definitions for the MPI group --- */
   /* dimensions */
@@ -313,13 +360,38 @@ void init_hdf5_indata_new(void)
                               &mpi.size, 1) ) < 0) HERR(routineName);
   if (( H5LTset_attribute_int(ncid_mpi, ".", "niterations",
                               &NMaxIter, 1) ) < 0) HERR(routineName);
+  /* --- dimension datasets --- */
+  dims[0] = mpi.nx;
+  if (( H5LTmake_dataset(ncid_mpi, X_NAME, 1, dims, H5T_NATIVE_DOUBLE,
+                         geometry.xscale) ) < 0)  HERR(routineName);
+  if (( id_x = H5Dopen2(ncid_mpi, X_NAME, H5P_DEFAULT)) < 0) HERR(routineName);
+  dims[0] = mpi.ny;
+  if (( H5LTmake_dataset(ncid_mpi, Y_NAME, 1, dims, H5T_NATIVE_DOUBLE,
+                         geometry.yscale) ) < 0)  HERR(routineName);
+  if (( id_y = H5Dopen2(ncid_mpi, Y_NAME, H5P_DEFAULT)) < 0) HERR(routineName);
+  dims[0] = NMaxIter;
+  tmp = (unsigned int *) calloc(NMaxIter , sizeof(unsigned int));
+  if (( H5LTmake_dataset(ncid_mpi, IT_NAME, 1, dims, H5T_NATIVE_UINT,
+                         tmp) ) < 0)  HERR(routineName);
+  free(tmp);
+  /* For compatibility with netCDF readers, only use dataset as dimension */
+  if (( H5LTset_attribute_string(ncid_mpi, IT_NAME, "NAME",
+                                 NETCDF_COMPAT) ) < 0) HERR(routineName);
   /* variables*/
   dims[0] = mpi.nx;
   if (( H5LTmake_dataset(ncid_mpi, XNUM_NAME, 1, dims,
                 H5T_NATIVE_INT, mpi.xnum) ) < 0) HERR(routineName);
+  if (( id_tmp = H5Dopen2(ncid_mpi, XNUM_NAME,
+                          H5P_DEFAULT)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(id_tmp, id_x, 0)) < 0) HERR(routineName);
+  if (( H5Dclose(id_tmp) ) < 0) HERR(routineName);
   dims[0] = mpi.ny;
   if (( H5LTmake_dataset(ncid_mpi, YNUM_NAME, 1, dims,
                 H5T_NATIVE_INT, mpi.ynum) ) < 0) HERR(routineName);
+  if (( id_tmp = H5Dopen2(ncid_mpi, YNUM_NAME,
+                          H5P_DEFAULT)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(id_tmp, id_y, 0)) < 0) HERR(routineName);
+  if (( H5Dclose(id_tmp) ) < 0) HERR(routineName);
   dims[0] = mpi.nx;
   dims[1] = mpi.ny;
   if (( file_dspace = H5Screate_simple(2, dims, NULL) ) < 0) HERR(routineName);
@@ -330,16 +402,28 @@ void init_hdf5_indata_new(void)
   if (( H5Pset_fill_time(plist, H5D_FILL_TIME_ALLOC) ) < 0) HERR(routineName);
   if (( io.in_mpi_tm = H5Dcreate(ncid_mpi, TASK_MAP, H5T_NATIVE_LONG,
          file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_mpi_tm, id_x, 0)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_mpi_tm, id_y, 1)) < 0) HERR(routineName);
   if (( io.in_mpi_tn = H5Dcreate(ncid_mpi, TASK_NUMBER, H5T_NATIVE_LONG,
          file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_mpi_tn, id_x, 0)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_mpi_tn, id_y, 1)) < 0) HERR(routineName);
   if (( io.in_mpi_it = H5Dcreate(ncid_mpi, ITER_NAME, H5T_NATIVE_LONG,
          file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_mpi_it, id_x, 0)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_mpi_it, id_y, 1)) < 0) HERR(routineName);
   if (( io.in_mpi_conv = H5Dcreate(ncid_mpi, CONV_NAME, H5T_NATIVE_LONG,
          file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_mpi_conv, id_x, 0)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_mpi_conv, id_y, 1)) < 0) HERR(routineName);
   if (( io.in_mpi_dm = H5Dcreate(ncid_mpi, DM_NAME, H5T_NATIVE_FLOAT,
          file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_mpi_dm, id_x, 0)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_mpi_dm, id_y, 1)) < 0) HERR(routineName);
   if (( io.in_mpi_zc = H5Dcreate(ncid_mpi, ZC_NAME, H5T_NATIVE_INT,
          file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_mpi_zc, id_x, 0)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_mpi_zc, id_y, 1)) < 0) HERR(routineName);
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
   if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
 
@@ -354,6 +438,11 @@ void init_hdf5_indata_new(void)
   if (( H5Pset_fill_time(plist, H5D_FILL_TIME_ALLOC) ) < 0) HERR(routineName);
   if (( io.in_mpi_dmh = H5Dcreate(ncid_mpi, DMH_NAME, H5T_NATIVE_FLOAT,
          file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
+  if (( id_tmp = H5Dopen2(ncid_mpi, IT_NAME, H5P_DEFAULT)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_mpi_dmh, id_x, 0)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_mpi_dmh, id_y, 1)) < 0) HERR(routineName);
+  if (( H5DSattach_scale(io.in_mpi_dmh, id_tmp, 2)) < 0) HERR(routineName);
+  if (( H5Dclose(id_tmp) ) < 0) HERR(routineName);
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
   if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
 
@@ -377,7 +466,9 @@ void init_hdf5_indata_new(void)
             avoid causing problems with pool mode, where these quantities are
             not known from the start.
   */
-
+  if (( H5Dclose(id_x) ) < 0) HERR(routineName);
+  if (( H5Dclose(id_y) ) < 0) HERR(routineName);
+  if (( H5Dclose(id_z) ) < 0) HERR(routineName);
   /* Flush ensures file is created in case of crash */
   if (( H5Fflush(ncid, H5F_SCOPE_LOCAL) ) < 0) HERR(routineName);
   /* --- Copy stuff to the IO data struct --- */
@@ -391,7 +482,7 @@ void init_hdf5_indata_new(void)
 
 /* ------- begin --------------------------   init_hdf5_indata_old.c  --- */
 void init_hdf5_indata_existing(void)
-/* Opens an existing NetCDF input data file, loads structures and ids */
+/* Opens an existing input data file, loads structures and ids */
 {
   const char routineName[] = "init_hdf5_indata_existing";
   int     ncid;
@@ -433,7 +524,7 @@ void init_hdf5_indata_existing(void)
                                 H5P_DEFAULT) ) < 0) HERR(routineName);
   if (( io.in_atmos_vz = H5Dopen(io.in_atmos_ncid, "velocity_z",
                                 H5P_DEFAULT) ) < 0) HERR(routineName);
-  if (( io.in_atmos_z = H5Dopen(io.in_atmos_ncid, "height",
+  if (( io.in_atmos_z = H5Dopen(io.in_atmos_ncid, "height_scale",
                                 H5P_DEFAULT) ) < 0) HERR(routineName);
 
   if (( io.in_mpi_tm = H5Dopen(io.in_mpi_ncid, TASK_MAP,
@@ -457,7 +548,7 @@ void init_hdf5_indata_existing(void)
 
 /* ------- begin --------------------------   close_hdf5_indata.c --- */
 void close_hdf5_indata(void)
-/* Closes the indata netCDF file */
+/* Closes the indata file */
 {
   const char routineName[] = "close_hdf5_indata";
 

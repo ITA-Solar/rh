@@ -37,18 +37,19 @@ long **matrix_long(long Nrow, long Ncol);
 
 extern MPI_data mpi;
 extern InputData input;
-extern char messageStr[];
 extern Input_Atmos_file infile;
+extern Geometry geometry;
+extern char messageStr[];
 
 
 /* ------- begin --------------------------   distribute_jobs.c   --- */
-void distribute_jobs(void) 
+void distribute_jobs(void)
 /* Distributes the work between the available processes */
 {
-  
+
   long *tasks, remain_tasks, i, j;
- 
-  mpi.backgrrecno = 0; 
+
+  mpi.backgrrecno = 0;
 
   /* Sanitise input */
   if ((input.p15d_x0 < 0)) input.p15d_x0 = 0;
@@ -69,32 +70,38 @@ void distribute_jobs(void)
   mpi.xnum = intrange(input.p15d_x0, input.p15d_x1, input.p15d_xst, &mpi.nx);
   mpi.ynum = intrange(input.p15d_y0, input.p15d_y1, input.p15d_yst, &mpi.ny);
 
+  /* Populate x and y scales */
+  geometry.xscale = (double *) malloc(mpi.nx * sizeof(double));
+  geometry.yscale = (double *) malloc(mpi.ny * sizeof(double));
+  for (i=0; i < mpi.nx; i++) geometry.xscale[i] = infile.x[mpi.xnum[i]];
+  for (i=0; i < mpi.ny; i++) geometry.yscale[i] = infile.y[mpi.ynum[i]];
+
   /* Find how many tasks to perform */
   if (input.p15d_rerun) {
     /* If rerun, read convergence info, calculate only for non-converged columns */
     readConvergence();
     remain_tasks = 0;
-    
+
     for (i = 0; i < mpi.nx; i++) {
       for (j = 0; j < mpi.ny; j++) {
        if (mpi.rh_converged[i][j] < 1) remain_tasks++;
       }
     }
-    
+
   } else {
     /* If running first time, use all columns */
     remain_tasks = mpi.nx * mpi.ny;
     mpi.rh_converged = matrix_int(mpi.nx, mpi.ny);
   }
-  
+
   mpi.total_tasks = remain_tasks;
-  
+
   /* Calculate tasks and distribute */
   tasks        = get_tasks(remain_tasks, mpi.size);
   mpi.Ntasks   = tasks[mpi.rank];
   mpi.taskmap  = get_taskmap(remain_tasks, tasks, &mpi.my_start);
   free(tasks);
-  
+
   return;
 }
 /* ------- end   --------------------------   distribute_jobs.c   --- */
@@ -106,7 +113,7 @@ long *get_tasks(long ntotal, int size)
   long i, *tasks;
 
   tasks = (long *) calloc(size, sizeof(long));
-  
+
   if (size > ntotal) {   /* More processes thank tasks, use ntotal processes */
     for (i = 0; i < ntotal; i++)
       tasks[i] = 1;
@@ -118,7 +125,7 @@ long *get_tasks(long ntotal, int size)
       for (i=0; i < ntotal % size; i++) ++tasks[i];
     }
   }
-  
+
   return tasks;
 }
 /* ------- end   --------------------------   get_tasks.c ------- --- */
@@ -148,7 +155,7 @@ long **get_taskmap(long remain_tasks, long *ntasks, long *my_start)
 
   /* distribute tasks */
   k = 0;
-  for (i=0; i < mpi.size; i++) { 
+  for (i=0; i < mpi.size; i++) {
     start[i] = k;
     k += ntasks[i];
   }
@@ -188,7 +195,7 @@ void finish_jobs(void)
 /* Frees from memory stuff used for job control */
 {
 
-  /* Get total number of tasks and convergence statuses */ 
+  /* Get total number of tasks and convergence statuses */
   MPI_Allreduce(MPI_IN_PLACE, &mpi.Ntasks,  1, MPI_LONG, MPI_SUM, mpi.comm);
   MPI_Allreduce(MPI_IN_PLACE, &mpi.ncrash,  1, MPI_LONG, MPI_SUM, mpi.comm);
   MPI_Allreduce(MPI_IN_PLACE, &mpi.nconv,   1, MPI_LONG, MPI_SUM, mpi.comm);
