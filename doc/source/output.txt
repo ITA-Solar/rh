@@ -27,13 +27,13 @@ This file contains the level populations and radiative rates. For each active at
 
 It has the following global attributes:
 
-=========== ==========================--=========
+=========== =====================================
 ``atmosID`` Identifier for the atmosphere file.
 ``rev_id``  Revision identifier.
 ``nx``      Number of points in x dimension
 ``ny``      Number of points in y dimension
 ``nz``      Number of points in height dimension
-=========== ================--===================
+=========== =====================================
 
 Inside each of the atom/molecule groups, the following dimensions can exist:
 
@@ -98,13 +98,13 @@ This file contains data and metadata related to the run. It contains three group
 
 It has the following global attributes:
 
-=========== ==========================--=========
+=========== =====================================
 ``atmosID`` Identifier for the atmosphere file.
 ``rev_id``  Revision identifier.
 ``nx``      Number of points in x dimension
 ``ny``      Number of points in y dimension
 ``nz``      Number of points in height dimension
-=========== ================--===================
+=========== =====================================
 
 The ``input`` group contains only attributes, all options from ``keyword.input``.
 
@@ -192,7 +192,7 @@ It can contain the following variables:
 
 .. tabularcolumns:: |l|l|p{4cm}|
 
-+------------------------+---------------------------------------+------------------------------------------------------------------------------------------------------------------+
++------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
 | Name                   | Dimensions                            | Units                                                       | Description                                        |
 +========================+=======================================+=============================================================+====================================================+
 | ``wavelength``         | ``(wavelength)``                      | nm                                                          |  Wavelength scale.                                 |
@@ -281,7 +281,7 @@ The ``h5repack`` program can be used to copy and modify the parameters of HDF5 f
 Reading output in Python using ``xarray``
 -----------------------------------------
 
-The easiest and fastest way to read the RH 1.5D output files in Python is via the `xarray <http://xarray.pydata.org>`_ package. ``xarray`` can load the output files as a dataset directly, but in the case of the `output_aux.hdf5` and `output_indata.hdf5` one needs to specify which group to read (see above). 
+The easiest and fastest way to read the RH 1.5D output files in Python is via the `xarray <http://xarray.pydata.org>`_ package. ``xarray`` can load the output files as a dataset directly, but in the case of the ``output_aux.hdf5`` and ``output_indata.hdf5`` one needs to specify which group to read (see above). 
 
 Here is a quick example on how to read some output from RH 1.5D with ``xarray``:
 
@@ -340,7 +340,7 @@ Here is a quick example on how to read some output from RH 1.5D with ``xarray``:
 Python routines in `helita`
 ---------------------------
 
-A more complete Python interface to read the output of RH 1.5D is available in the `helita <https://github.com/ITA-Solar/helita>`_ package, in the `helita.sim.rh15d` module. It can also read and write the input files for RH 1.5D, both the atmosphere and wavelength list files. ``helita`` is dependent on several other python packages.
+A more complete Python interface to read the output of RH 1.5D is available in the `helita <https://github.com/ITA-Solar/helita>`_ package, in the ``helita.sim.rh15d`` module. It can also read and write the input files for RH 1.5D, both the atmosphere and wavelength list files. ``helita`` is dependent on several other python packages.
 
 
 Reading output files
