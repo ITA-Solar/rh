@@ -278,16 +278,22 @@ void init_hdf5_indata_new(void)
   if (( H5DSattach_scale(io.in_atmos_T, id_x, 0)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_atmos_T, id_y, 1)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_atmos_T, id_z, 2)) < 0) HERR(routineName);
+  if (( H5LTset_attribute_float(ncid_atmos, "temperature", "_FillValue",
+                                &FILLVALUE, 1) ) < 0) HERR(routineName);
   if (( io.in_atmos_vz = H5Dcreate(ncid_atmos, "velocity_z", H5T_NATIVE_FLOAT,
          file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_atmos_vz, id_x, 0)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_atmos_vz, id_y, 1)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_atmos_vz, id_z, 2)) < 0) HERR(routineName);
+  if (( H5LTset_attribute_float(ncid_atmos, "velocity_z", "_FillValue",
+                                &FILLVALUE, 1) ) < 0) HERR(routineName);
   if (( io.in_atmos_z = H5Dcreate(ncid_atmos, "height_scale", H5T_NATIVE_FLOAT,
          file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_atmos_z, id_x, 0)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_atmos_z, id_y, 1)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_atmos_z, id_z, 2)) < 0) HERR(routineName);
+  if (( H5LTset_attribute_float(ncid_atmos, "height_scale", "_FillValue",
+                                &FILLVALUE, 1) ) < 0) HERR(routineName);
 
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
   if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);

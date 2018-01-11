@@ -263,46 +263,54 @@ void init_hdf5_ray_new(void)
   if (( H5LTset_attribute_string(ncid, INT_NAME, "units",
                            "J s^-1 m^-2 Hz^-1 sr^-1") ) < 0) HERR(routineName);
   if (( H5LTset_attribute_float(ncid, INT_NAME, "_FillValue",
-                                &FILLVALUE) ) < 0) HERR(routineName);
+                                &FILLVALUE, 1) ) < 0) HERR(routineName);
 
 
   if (atmos.Stokes || input.backgr_pol) {
     if (( H5LTset_attribute_string(ncid, STOKES_Q, "units",
                            "J s^-1 m^-2 Hz^-1 sr^-1") ) < 0) HERR(routineName);
     if (( H5LTset_attribute_float(ncid, STOKES_Q, "_FillValue",
-                                  &FILLVALUE) ) < 0) HERR(routineName);
+                                  &FILLVALUE, 1) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_string(ncid, STOKES_U, "units",
                            "J s^-1 m^-2 Hz^-1 sr^-1") ) < 0) HERR(routineName);
     if (( H5LTset_attribute_float(ncid, STOKES_U, "_FillValue",
-                                  &FILLVALUE) ) < 0) HERR(routineName);
+                                  &FILLVALUE, 1) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_string(ncid, STOKES_V, "units",
                            "J s^-1 m^-2 Hz^-1 sr^-1") ) < 0) HERR(routineName);
     if (( H5LTset_attribute_float(ncid, STOKES_V, "_FillValue",
-                                  &FILLVALUE) ) < 0) HERR(routineName);
+                                  &FILLVALUE, 1) ) < 0) HERR(routineName);
   }
 
   if (input.p15d_wtau) {
     if (( H5LTset_attribute_string(ncid, TAU1_NAME, "units",
                                    "m") ) < 0) HERR(routineName);
-    if (( H5LTset_attribute_string(ncid, TAU1_NAME, "description",
+    if (( H5LTset_attribute_string(ncid, TAU1_NAME, DESC_NAME,
                      "Height of optical depth unity") ) < 0) HERR(routineName);
   }
 
   if (write_xtra) {
     if (( H5LTset_attribute_string(ncid, S_NAME, "units",
                           "J s^-1 m^-2 Hz^-1 sr^-1" ) ) < 0) HERR(routineName);
-    if (( H5LTset_attribute_string(ncid, S_NAME, "description",
+    if (( H5LTset_attribute_string(ncid, S_NAME, DESC_NAME,
          "Total source function (line + continuum)" ) ) < 0) HERR(routineName);
+    if (( H5LTset_attribute_float(ncid, S_NAME, "_FillValue",
+                                  &FILLVALUE, 1) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_string(ncid, CHI_NAME, "units",
                                    "m^-1" ) ) < 0) HERR(routineName);
-    if (( H5LTset_attribute_string(ncid, CHI_NAME, "description",
+    if (( H5LTset_attribute_string(ncid, CHI_NAME, DESC_NAME,
               "Total absorption (line + continuum)" ) ) < 0) HERR(routineName);
+    if (( H5LTset_attribute_float(ncid, CHI_NAME, "_FillValue",
+                                  &FILLVALUE, 1) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_string(ncid, "/Jlambda", "units",
                           "J s^-1 m^-2 Hz^-1 sr^-1" ) ) < 0) HERR(routineName);
-    if (( H5LTset_attribute_string(ncid, "/Jlambda", "description",
+    if (( H5LTset_attribute_string(ncid, "/Jlambda", DESC_NAME,
                              "Mean radiation field" ) ) < 0) HERR(routineName);
-    if (( H5LTset_attribute_string(ncid, SCA_C_NAME, "description",
+    if (( H5LTset_attribute_float(ncid, "/Jlambda", "_FillValue",
+                                  &FILLVALUE, 1) ) < 0) HERR(routineName);
+    if (( H5LTset_attribute_string(ncid, SCA_C_NAME, DESC_NAME,
             "Scattering term multiplied by Jlambda" ) ) < 0) HERR(routineName);
+    if (( H5LTset_attribute_float(ncid, SCA_C_NAME, "_FillValue",
+                                  &FILLVALUE, 1) ) < 0) HERR(routineName);
   }
   if (( H5Pclose(plist) ) < 0 ) HERR(routineName);
   if (( H5Dclose(id_x) ) < 0) HERR(routineName);
@@ -559,10 +567,10 @@ void writeRay(void) {
 
       /* Zero S and chi  */
       for (k = 0; k < infile.nz; k++) {
-        chi[k][nspect] = 0.0;
-        S[k][nspect]   = 0.0;
-        sca[k][nspect] = 0.0;
-        Jnu[k][nspect] = 0.0;
+        chi[k][nspect] = FILLVALUE;
+        S[k][nspect]   = FILLVALUE;
+        sca[k][nspect] = FILLVALUE;
+        Jnu[k][nspect] = FILLVALUE;
       }
 
       for (k = 0;  k < atmos.Nspace;  k++) {

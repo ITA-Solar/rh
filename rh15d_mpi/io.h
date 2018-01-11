@@ -33,10 +33,12 @@
 /* Definitions for background_p */
 #define  FILE_EXT ".dat"
 
+/* Default fill value for HDF5 to be same as netCDF default */
+#define FILL           9.96921e+36
 /* Definitions for dimension names */
 #define X_NAME         "x"
 #define Y_NAME         "y"
-#define ZOUT_NAME         "height"
+#define ZOUT_NAME      "height"
 #define WAVE_NAME      "wavelength"
 #define WAVE_SEL_NAME  "wavelength_selected"
 #define LINE_NAME      "line"
@@ -50,6 +52,7 @@
 #define PROC_NAME      "process"
 #define IT_NAME        "iteration"
 #define NETCDF_COMPAT  "This is a netCDF dimension but not a netCDF variable.         2"
+#define DESC_NAME      "long_name"
 
 /* Definitions for the ray file */
 #define RAY_FILE     "output/output_ray.hdf5"

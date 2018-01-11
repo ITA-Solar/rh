@@ -169,6 +169,8 @@ void init_aux_new(void) {
                            tmp) ) < 0)  HERR(routineName);
     free(tmp);
     /* For compatibility with netCDF readers, only use dataset as dimension */
+    if (( H5LTset_attribute_string(ncid_atom, ZOUT_NAME, "NAME",
+                                   NETCDF_COMPAT) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_string(ncid_atom, LEVEL_NAME, "NAME",
                                    NETCDF_COMPAT) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_string(ncid_atom, LINE_NAME, "NAME",
@@ -195,6 +197,8 @@ void init_aux_new(void) {
         if (( H5DSattach_scale(id_tmp, id_x, 1)) < 0) HERR(routineName);
         if (( H5DSattach_scale(id_tmp, id_y, 2)) < 0) HERR(routineName);
         if (( H5DSattach_scale(id_tmp, id_z, 3)) < 0) HERR(routineName);
+        if (( H5LTset_attribute_float(ncid_atom, POP_NAME, "_FillValue",
+                                      &FILLVALUE, 1) ) < 0) HERR(routineName);
         io.aux_atom_pop[i] = id_tmp;
       }
       if (atom->nstar != NULL) {
@@ -205,6 +209,8 @@ void init_aux_new(void) {
         if (( H5DSattach_scale(id_tmp, id_x, 1)) < 0) HERR(routineName);
         if (( H5DSattach_scale(id_tmp, id_y, 2)) < 0) HERR(routineName);
         if (( H5DSattach_scale(id_tmp, id_z, 3)) < 0) HERR(routineName);
+        if (( H5LTset_attribute_float(ncid_atom, POPLTE_NAME, "_FillValue",
+                                      &FILLVALUE, 1) ) < 0) HERR(routineName);
         io.aux_atom_poplte[i] = id_tmp;
       }
       if (( H5Dclose(id_n) ) < 0) HERR(routineName);
@@ -226,6 +232,8 @@ void init_aux_new(void) {
       if (( H5DSattach_scale(id_tmp, id_x, 1)) < 0) HERR(routineName);
       if (( H5DSattach_scale(id_tmp, id_y, 2)) < 0) HERR(routineName);
       if (( H5DSattach_scale(id_tmp, id_z, 3)) < 0) HERR(routineName);
+      if (( H5LTset_attribute_float(ncid_atom, RIJ_L_NAME, "_FillValue",
+                                    &FILLVALUE, 1) ) < 0) HERR(routineName);
       io.aux_atom_RijL[i] = id_tmp;
       if (( id_tmp = H5Dcreate(ncid_atom, RJI_L_NAME, H5T_NATIVE_FLOAT,
                                file_dspace, H5P_DEFAULT, plist,
@@ -234,6 +242,8 @@ void init_aux_new(void) {
       if (( H5DSattach_scale(id_tmp, id_x, 1)) < 0) HERR(routineName);
       if (( H5DSattach_scale(id_tmp, id_y, 2)) < 0) HERR(routineName);
       if (( H5DSattach_scale(id_tmp, id_z, 3)) < 0) HERR(routineName);
+      if (( H5LTset_attribute_float(ncid_atom, RJI_L_NAME, "_FillValue",
+                                    &FILLVALUE, 1) ) < 0) HERR(routineName);
       io.aux_atom_RjiL[i] = id_tmp;
       if (( H5Dclose(id_n) ) < 0) HERR(routineName);
       if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
@@ -249,6 +259,8 @@ void init_aux_new(void) {
       if (( H5DSattach_scale(id_tmp, id_x, 1)) < 0) HERR(routineName);
       if (( H5DSattach_scale(id_tmp, id_y, 2)) < 0) HERR(routineName);
       if (( H5DSattach_scale(id_tmp, id_z, 3)) < 0) HERR(routineName);
+      if (( H5LTset_attribute_float(ncid_atom, RIJ_C_NAME, "_FillValue",
+                                    &FILLVALUE, 1) ) < 0) HERR(routineName);
       io.aux_atom_RijC[i] = id_tmp;
       if (( id_tmp = H5Dcreate(ncid_atom, RJI_C_NAME, H5T_NATIVE_FLOAT,
                                file_dspace, H5P_DEFAULT, plist,
@@ -257,6 +269,8 @@ void init_aux_new(void) {
       if (( H5DSattach_scale(id_tmp, id_x, 1)) < 0) HERR(routineName);
       if (( H5DSattach_scale(id_tmp, id_y, 2)) < 0) HERR(routineName);
       if (( H5DSattach_scale(id_tmp, id_z, 3)) < 0) HERR(routineName);
+      if (( H5LTset_attribute_float(ncid_atom, RJI_C_NAME, "_FillValue",
+                                    &FILLVALUE, 1) ) < 0) HERR(routineName);
       io.aux_atom_RjiC[i] = id_tmp;
       if (( H5Dclose(id_n) ) < 0) HERR(routineName);
       if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
@@ -312,6 +326,8 @@ void init_aux_new(void) {
                            tmp) ) < 0)  HERR(routineName);
     free(tmp);
     /* For compatibility with netCDF readers, only use dataset as dimension */
+    if (( H5LTset_attribute_string(ncid_mol, ZOUT_NAME, "NAME",
+                                   NETCDF_COMPAT) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_string(ncid_mol, VLEVEL_NAME, "NAME",
                                    NETCDF_COMPAT) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_string(ncid_mol, VLINE_NAME, "NAME",

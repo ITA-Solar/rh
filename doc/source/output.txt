@@ -21,64 +21,69 @@ output_aux.hdf5
 
 This file contains the level populations and radiative rates. For each active atom or molecule, it contains different groups called ``atom_XX`` or ``molecule_XX``, where ``XX`` is the identifier for the species (e.g. ``MG``, ``CO``).
 
-The dimensions of the root group are ``nx``, ``ny``, and ``nz``.
 
 .. note::
    The atmosphere dimensions on many of the output files are not necessarily the same as in the atmosphere file. They depend on the number of columns calculated, which are a function of ``X/Y_START/END/STEP``.
 
-There are two global attributes:
+It has the following global attributes:
 
-=========== ===================================
+=========== ==========================--=========
 ``atmosID`` Identifier for the atmosphere file.
 ``rev_id``  Revision identifier.
-=========== ===================================
+``nx``      Number of points in x dimension
+``ny``      Number of points in y dimension
+``nz``      Number of points in height dimension
+=========== ================--===================
 
 Inside each of the atom/molecule groups, the following dimensions can exist:
 
-================== ====================================
-Name               Description
-================== ====================================
-``nlevel``         Number of atomic levels.
-``nline``          Number of atomic transitions
-``ncontinuum``     Number of bound-free transitions.
-``nlevel_vibr``    Number of molecule vibration levels.
-``nline_molecule`` Number of molecular lines.
-``nJ``             Number of rotational states.
-================== ====================================
+==================== ====================================
+Name                 Description
+==================== ====================================
+``x``                Horizontal x dimension.
+``y``                Horizontal y dimension.
+``height``           Vertical dimension.
+``level``            Number of atomic levels.
+``line``             Number of atomic transitions
+``continuum``        Number of bound-free transitions.
+``vibration_level``  Number of molecule vibration levels.
+``molecular_line``   Number of molecular lines.
+``rotational_state`` Number of rotational states.
+==================== ====================================
 
 The atom groups contain the following variables:
-
-.. tabularcolumns:: |l|l|L|
-
-+---------------------+------------------------------+------------------------------------+
-| Name                | Dimensions                   | Description                        |
-+=====================+==============================+====================================+
-| ``populations``     | ``(nlevel, nx, ny, nz)``     | Atomic populations.                |
-+---------------------+------------------------------+------------------------------------+
-| ``populations_LTE`` | ``(nlevel, nx, ny, nz)``     | Atomic LTE populations.            |
-+---------------------+------------------------------+------------------------------------+
-| ``Rij_line``        | ``(nline, nx, ny, nz)``      | Radiative rates out of the line.   |
-+---------------------+------------------------------+------------------------------------+
-| ``Rji_line``        | ``(nline, nx, ny, nz)``      | Radiative rates into the line.     |
-+---------------------+------------------------------+------------------------------------+
-| ``Rij_continuum``   | ``(ncontinuum, nx, ny, nz)`` | Radiative rates out of the         |
-|                     |                              | bf transition.                     |
-+---------------------+------------------------------+------------------------------------+
-| ``Rji_continuum``   | ``(ncontinuum, nx, ny, nz)`` | Radiative rates into the bf        |
-|                     |                              | transition.                        |
-+---------------------+------------------------------+------------------------------------+
-
-The molecule groups contain the following variables:
 
 .. tabularcolumns:: |l|l|L|
 
 +---------------------+-------------------------------+------------------------------------+
 | Name                | Dimensions                    | Description                        |
 +=====================+===============================+====================================+
-| ``populations``     | ``(nlevel_vibr, nx, ny, nz)`` | Molecular populations.             |
+| ``populations``     | ``(level, x, y, height)``     | Atomic populations.                |
 +---------------------+-------------------------------+------------------------------------+
-| ``populations_LTE`` | ``(nlevel_vibr, nx, ny, nz)`` | Molecular LTE populations.         |
+| ``populations_LTE`` | ``(level, x, y, height)``     | Atomic LTE populations.            |
 +---------------------+-------------------------------+------------------------------------+
+| ``Rij_line``        | ``(line, x, y, height)``      | Radiative rates out of the line.   |
++---------------------+-------------------------------+------------------------------------+
+| ``Rji_line``        | ``(line, x, y, height)``      | Radiative rates into the line.     |
++---------------------+-------------------------------+------------------------------------+
+| ``Rij_continuum``   | ``(continuum, x, y, height)`` | Radiative rates out of the         |
+|                     |                               | bf transition.                     |
++---------------------+-------------------------------+------------------------------------+
+| ``Rji_continuum``   | ``(continuum, x, y, height)`` | Radiative rates into the bf        |
+|                     |                               | transition.                        |
++---------------------+-------------------------------+------------------------------------+
+
+The molecule groups contain the following variables:
+
+.. tabularcolumns:: |l|l|L|
+
++---------------------+-------------------------------------+------------------------------------+
+| Name                | Dimensions                          | Description                        |
++=====================+=====================================+====================================+
+| ``populations``     | ``(vibration_level, x, y, height)`` | Molecular populations.             |
++---------------------+-------------------------------------+------------------------------------+
+| ``populations_LTE`` | ``(vibration_level, x, y, height)`` | Molecular LTE populations.         |
++---------------------+-------------------------------------+------------------------------------+
 
 All units are SI.
 
@@ -91,46 +96,45 @@ output_indata.hdf5
 
 This file contains data and metadata related to the run. It contains three groups: ``input`` (mostly settings from ``keyword.input``), ``atmos`` (atmospheric variables), and ``mpi`` (several variables relating to the run).
 
-The dimensions of the root group are ``nx``, ``ny``, ``nz``, and ``strlen`` (used as maximum length for string type variables).
+It has the following global attributes:
 
-There are two global attributes:
-
-=========== ===================================
+=========== ==========================--=========
 ``atmosID`` Identifier for the atmosphere file.
 ``rev_id``  Revision identifier.
-=========== ===================================
+``nx``      Number of points in x dimension
+``ny``      Number of points in y dimension
+``nz``      Number of points in height dimension
+=========== ================--===================
 
 The ``input`` group contains only attributes, all options from ``keyword.input``.
 
-The ``atmos`` groups contains the dimensions ``nhydr``, ``elements`` and ``nrays``. It also contains the following variables:
+The ``atmos`` groups contains the dimensions ``x``, ``y``, ``height``, ``element`` and ``ray``. It also contains the following variables:
 
 .. tabularcolumns:: |l|l|l|p{5.6cm}|
 
 +-----------------------+------------------------------+-----------------+--------------------------------------+
 | Name                  | Dimensions                   | Units           | Description                          |
 +=======================+==============================+=================+======================================+
-| ``temperature``       | ``(nx, ny, nz)``             | K               | Temperatures                         |
+| ``temperature``       | ``(x, y, height)``           | K               | Temperatures                         |
 +-----------------------+------------------------------+-----------------+--------------------------------------+
-| ``velocity_z``        | ``(nx, ny, nz)``             | m s\ :sup:`-1`\ | Vertical velocities                  |
+| ``velocity_z``        | ``(x, y, height)``           | m s\ :sup:`-1`\ | Vertical velocities                  |
 +-----------------------+------------------------------+-----------------+--------------------------------------+
-| ``height``            | ``(nx, ny, nz)``             | m               | Height scale used. Can be different  |
+| ``height_scale``      | ``(x, y, height)``           | m               | Height scale used. Can be different  |
 |                       |                              |                 | for every column when depth refine   |
 |                       |                              |                 | is used.                             |
 +-----------------------+------------------------------+-----------------+--------------------------------------+
-| ``element_weight``    | ``(nelements)``              | a.m.u.          | Atomic weights                       |
+| ``element_weight``    | ``(element)``                | a.m.u.          | Atomic weights                       |
 +-----------------------+------------------------------+-----------------+--------------------------------------+
-| ``element_abundance`` | ``(nelements)``              |                 | Log of element abundances relative   |
+| ``element_abundance`` | ``(element)``                |                 | Log of element abundances relative   |
 |                       |                              |                 | to hydrogen (A(H) = 12).             |
 +-----------------------+------------------------------+-----------------+--------------------------------------+
-| ``element_id``        | ``(nelements, strlen)``      |                 | Element identifiers.                 |
+| ``muz``               | ``(ray)``                    |                 | mu values for each ray.              |
 +-----------------------+------------------------------+-----------------+--------------------------------------+
-| ``muz``               | ``(nrays)``                  |                 | mu values for each ray.              |
+| ``muz``               | ``(ray)``                    |                 | mu weights for each ray.             |
 +-----------------------+------------------------------+-----------------+--------------------------------------+
-| ``muz``               | ``(nrays)``                  |                 | mu weights for each ray.             |
+| ``x``                 | ``(x)``                      | m               | Spatial coordinates along x axis.    |
 +-----------------------+------------------------------+-----------------+--------------------------------------+
-| ``x``                 | ``(nx)``                     | m               | Spatial coordinates along x axis.    |
-+-----------------------+------------------------------+-----------------+--------------------------------------+
-| ``y``                 | ``(ny)``                     | m               | Spatial coordinates along y axis.    |
+| ``y``                 | ``(y)``                      | m               | Spatial coordinates along y axis.    |
 +-----------------------+------------------------------+-----------------+--------------------------------------+
 
 .. note::
@@ -143,10 +147,10 @@ The ``atmos`` group also contains the following attributes:
 ``stokes`` Unsigned int, 1 if stokes output present.
 ========== ===========================================
 
-The ``mpi`` group contains the dimensions ``nprocesses`` (number of processes) and ``niterations`` (maximum value of iterations).
+The ``mpi`` group contains the dimensions ``x``, ``y``, and ``iteration`` (maximum number of iterations).
 
 .. warning::
-   ``niterations`` is currently hardcoded in the code to a maximum of 1500. If you try to run more than 1500 iterations, there will be an error writing to the output.
+   ``iteration`` is currently hardcoded in the code to a maximum of 1500. If you try to run more than 1500 iterations, there will be an error writing to the output.
 
 The ``mpi`` group also contains several variables:
 
@@ -155,34 +159,25 @@ The ``mpi`` group also contains several variables:
 +-----------------------+------------------------------+--------------------------------------------------------+
 | Name                  | Dimensions                   | Description                                            |
 +=======================+==============================+========================================================+
-| ``xnum``              | ``(nx)``                     | Indices of x positions calculated.                     |
+| ``xnum``              | ``(x)``                      | Indices of x positions calculated.                     |
 +-----------------------+------------------------------+--------------------------------------------------------+
-| ``xnum``              | ``(nx)``                     | Indices of x positions calculated.                     |
+| ``xnum``              | ``(x)``                      | Indices of x positions calculated.                     |
 +-----------------------+------------------------------+--------------------------------------------------------+
-| ``task_map``          | ``(nx, ny)``                 | Maps which process ran which column.                   |
+| ``task_map``          | ``(x, y)``                   | Maps which process ran which column.                   |
 +-----------------------+------------------------------+--------------------------------------------------------+
-| ``task_map_number``   | ``(nx, ny)``                 | Maps which task number each column was.                |
+| ``task_map_number``   | ``(x, y)``                   | Maps which task number each column was.                |
 +-----------------------+------------------------------+--------------------------------------------------------+
-| ``iterations``        | ``(nx, ny)``                 | Number of iterations used for each column.             |
+| ``iterations``        | ``(x, y)``                   | Number of iterations used for each column.             |
 +-----------------------+------------------------------+--------------------------------------------------------+
-| ``convergence``       | ``(nx, ny)``                 | Indicates if each column converged or not. Possible    |
+| ``convergence``       | ``(x, y)``                   | Indicates if each column converged or not. Possible    |
 |                       |                              | values are ``1`` (converged), ``0`` (non converged),   |
 |                       |                              | or ``-1`` (crashed).                                   |
 +-----------------------+------------------------------+--------------------------------------------------------+
-| ``delta_max``         | ``(nx, ny)``                 | Final value for ``delta_max`` when iteration finished. |
+| ``delta_max``         | ``(x, y)``                   | Final value for ``delta_max`` when iteration finished. |
 +-----------------------+------------------------------+--------------------------------------------------------+
-| ``delta_max_history`` | ``(nx, ny, niterations)``    | Evolution of ``delta_max``                             |
+| ``delta_max_history`` | ``(x, y, iteration)``        | Evolution of ``delta_max``                             |
 +-----------------------+------------------------------+--------------------------------------------------------+
-| ``ntasks``            | ``(nprocesses)``             | Number of tasks assigned to each process. Does **not** |
-|                       |                              | work in `pool` mode.                                   |
-+-----------------------+------------------------------+--------------------------------------------------------+
-| ``hostname``          | ``(nprocesses, strlen)``     | Hostname of each process.                              |
-+-----------------------+------------------------------+--------------------------------------------------------+
-| ``starting_time``     | ``(nprocesses, strlen)``     | Time when each process started the calculations.       |
-+-----------------------+------------------------------+--------------------------------------------------------+
-| ``finish_time``       | ``(nprocesses, strlen)``     | Time when each process finished the calculations.      |
-+-----------------------+------------------------------+--------------------------------------------------------+
-| ``z_cut``             | ``(nx, ny)``                 | Height index of the temperature cut.                   |
+| ``z_cut``             | ``(x, y)``                   | Height index of the temperature cut.                   |
 +-----------------------+------------------------------+--------------------------------------------------------+
 
 The ``mpi`` group also contains the following attributes: ``x_start``, ``x_end``,  ``x_step``, ``y_start``, ``y_end``,  and ``y_step``, all of which are options from ``keyword.input``.
@@ -191,39 +186,45 @@ The ``mpi`` group also contains the following attributes: ``x_start``, ``x_end``
 output_ray.hdf5
 ---------------
 
-This file contains the synthetic spectra and can also contain extra information such as opacities and the source function. It contains only the root group. Its dimensions are ``nx``, ``ny``, ``nwave``, and eventually ``wavelength_selected``. The latter is only present when ``ray.input`` specifies more than ``0`` wavelengths for detailed output, and it matches ``Nsource``, the number of those wavelengths entered in ``ray.input``.
+This file contains the synthetic spectra and can also contain extra information such as opacities and the source function. It contains only the root group. Its dimensions are ``x``, ``y``, ``wavelength``, and eventually ``wavelength_selected`` and ``height``. The latter two are only present when ``ray.input`` specifies more than ``0`` wavelengths for detailed output, and it matches ``Nsource``, the number of those wavelengths entered in ``ray.input``.
 
 It can contain the following variables:
 
 .. tabularcolumns:: |l|l|p{4cm}|
 
-+------------------------+---------------------------------------+----------------------------------------------------+
-| Name                   | Dimensions                            | Description                                        |
-+========================+=======================================+====================================================+
-| ``wavelength``         | ``(nwave)``                           | Wavelength scale.                                  |
-+------------------------+---------------------------------------+----------------------------------------------------+
-| ``intensity``          | ``(nx, ny, nwave)``                   | Synthetic disk-centre intensity (Stokes I).        |
-+------------------------+---------------------------------------+----------------------------------------------------+
-| ``stokes_Q``           | ``(nx, ny, nwave)``                   | Stokes Q. **Optional.**                            |
-+------------------------+---------------------------------------+----------------------------------------------------+
-| ``stokes_U``           | ``(nx, ny, nwave)``                   | Stokes U. **Optional.**                            |
-+------------------------+---------------------------------------+----------------------------------------------------+
-| ``stokes_V``           | ``(nx, ny, nwave)``                   | Stokes V. **Optional.**                            |
-+------------------------+---------------------------------------+----------------------------------------------------+
-| ``tau_one_height``     | ``(nx, ny, nwave)``                   | Height where optical depth reaches unity, for each |
-|                        |                                       | column. **Optional.**                              |
-+------------------------+---------------------------------------+----------------------------------------------------+
-| ``wavelength_indices`` | ``(wavelength_selected)``             | Indices of wavelengths selected for variables      |
-|                        |                                       | below. **Optional.**                               |
-+------------------------+---------------------------------------+----------------------------------------------------+
-| ``chi``                | ``(nx, ny, nz, wavelength_selected)`` | Total opacity (line and continuum). **Optional.**  |
-+------------------------+---------------------------------------+----------------------------------------------------+
-| ``source_function``    | ``(nx, ny, nz, wavelength_selected)`` | Total opacity (line and continuum). **Optional.**  |
-+------------------------+---------------------------------------+----------------------------------------------------+
-| ``Jlambda``            | ``(nx, ny, nz, wavelength_selected)`` | Angle-averaged radiation field. **Optional.**      |
-+------------------------+---------------------------------------+----------------------------------------------------+
++------------------------+---------------------------------------+------------------------------------------------------------------------------------------------------------------+
+| Name                   | Dimensions                            | Units                                                       | Description                                        |
++========================+=======================================+=============================================================+====================================================+
+| ``wavelength``         | ``(wavelength)``                      | nm                                                          |  Wavelength scale.                                 |
++------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
+| ``intensity``          | ``(x, y, wavelength)``                | W m\ :sup:`-2`\ m\ :sup:`-2`\ Hz\ :sup:`-1`\ sr\ :sup:`-1`\ | Synthetic disk-centre intensity (Stokes I).        |
++------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
+| ``stokes_Q``           | ``(x, y, wavelength)``                | W m\ :sup:`-2`\ m\ :sup:`-2`\ Hz\ :sup:`-1`\ sr\ :sup:`-1`\ | Stokes Q. **Optional.**                            |
++------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
+| ``stokes_U``           | ``(x, y, wavelength)``                | W m\ :sup:`-2`\ m\ :sup:`-2`\ Hz\ :sup:`-1`\ sr\ :sup:`-1`\ | Stokes U. **Optional.**                            |
++------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
+| ``stokes_V``           | ``(x, y, wavelength)``                | W m\ :sup:`-2`\ m\ :sup:`-2`\ Hz\ :sup:`-1`\ sr\ :sup:`-1`\ | Stokes V. **Optional.**                            |
++------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
+| ``tau_one_height``     | ``(x, y, wavelength)``                | m                                                           | Height where optical depth reaches unity, for each |
+|                        |                                       |                                                             | column. **Optional.**                              |
++------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
+| ``wavelength_selected``| ``(wavelength_selected)``             |                                                             | Wavelength scale for the detailed output variables |
+|                        |                                       |                                                             | below. **Optional.**                               |
++------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
+| ``wavelength_indices`` | ``(wavelength_selected)``             |                                                             | Indices of wavelengths selected for variables      |
+|                        |                                       |                                                             | below. **Optional.**                               |
++------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
+| ``chi``                |``(x, y, height, wavelength_selected)``| m\ :sup:`-1`\                                               | Total opacity (line and continuum). **Optional.**  |
++------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
+| ``source_function``    |``(x, y, height, wavelength_selected)``| W m\ :sup:`-2`\ m\ :sup:`-2`\ Hz\ :sup:`-1`\ sr\ :sup:`-1`\ | Total opacity (line and continuum). **Optional.**  |
++------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
+| ``Jlambda``            |``(x, y, height, wavelength_selected)``| W m\ :sup:`-2`\ m\ :sup:`-2`\ Hz\ :sup:`-1`\ sr\ :sup:`-1`\ | Angle-averaged radiation field. **Optional.**      |
++------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
+| ``scattering``         |``(x, y, height, wavelength_selected)``|                                                             | Scattering term multiplied by Jlambda              |
+|                        |                                       |                                                             |  **Optional.**                                     |
++------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
 
-All units are in SI. The ``intensity``, Stokes vector, ``source_function``, ``Jlambda`` are all in J s\ :sup:`-1`\ m\ :sup:`-2`\ Hz\ :sup:`-1`\ sr\ :sup:`-1`\. The ``wavelength`` is in nm, air or vacuum units, depending if ``VACUUM_TO_AIR`` is ``TRUE`` or ``FALSE`` (in ``keyword.input``). ``chi`` is in m\ :sup:`-1`\ and ``tau_one_height`` in m.
+The ``wavelength`` is in nm, air or vacuum units, depending if ``VACUUM_TO_AIR`` is ``TRUE`` or ``FALSE`` (in ``keyword.input``). ``chi`` is in m\ :sup:`-1`\ and ``tau_one_height`` in m.
 
 Despite internally being calculated in double precision, all the output (except the wavelength scale) is written in single precision to save disk space.
 
@@ -231,27 +232,29 @@ The full Stokes vector is only written when in ``keyword.input`` ``STOKES_MODE``
 
 The ``chi``, ``source_function``, and ``Jlambda`` variables depend on the 3D grid and on wavelength. Therefore, for even moderate grid sizes they can take huge amounts of space. If ``nx = ny = nz = 512`` and ``wavelength_selected = 200``, each of these variables will need 100Gb of disk space. For a simulation with a cubic grid of 1024\ :sup:`3`\  points and saving the full output for 1000 wavelength points, ``output_ray.hdf5`` will occupy a whopping 12Tb per snapshot of disk space. To avoid such problems, these large arrays are only written when ``ray.input`` contains ``Nsource > 0``, and for the wavelengths selected.
 
-.. note::
-   As noted above, arrays of ``nz`` will have the first values missing if ``15D_DEPTH_ZCUT`` is used. The variables ``chi``, ``source_function``, and ``Jlambda`` are an exception to this rule. For performance reasons these missing values are not marked with a fill value, but instead they are filled with zeros.
-
 The ``output_ray.hdf5`` file contains the following global attributes:
 
-=================== ====================================================
-``atmosID``         Identifier for the atmosphere file
-``snapshot_number`` Number of simulation snapshot (from atmosphere file)
-``rev_id``          Revision identifier
-``creation_time``   Local time when file was created
-=================== ====================================================
+======================= ========================================================
+``atmosID``             Identifier for the atmosphere file
+``snapshot_number``     Number of simulation snapshot (from atmosphere file)
+``rev_id``              Revision identifier
+``nx``                  Number of points in x dimension
+``ny``                  Number of points in y dimension
+``nz``                  Number of points in height dimension
+``nwave``               Number of wavelength points
+``wavelength_selected`` Number of wavelength points selected for detailed output
+``creation_time``       Local time when file was created
+======================= ========================================================
 
 Reading the output files
 ========================
 
 HDF5 is an open, platform-independent format, and therefore interfaces to many programming languages are available. The `main interface libraries <https://www.hdfgroup.org/HDF5/>`_ are available in C, C++, Fortran, and Java. But there are also interfaces for Python (`h5py <http://www.h5py.org/>`_), `Julia <https://github.com/JuliaIO/HDF5.jl>`_, IDL (from version 6.2), MATLAB , Octave, `Perl <http://search.cpan.org/~chm/PDL-IO-HDF5-0.6501/hdf5.pd>`_, and `R <https://cran.r-project.org/package=h5>`_.
 
-The RH 1.5D output files can be read with standard HDF5 or NetCDF 4 readers: in most cases one needs to specify only the variable or group name. The HDF5 library provides useful command line tools, which can be used to gather information about the RH 1.5D files or extract data. Additionally, there is a more complete set of tools written in Python to read and analyse these files. Interfaces in other languages are also planned.
+The RH 1.5D output format is standard HDF5 but it is also compatible with or NetCDF 4 readers: in most cases one needs to specify only the variable or group name. The HDF5 and NetCDF libraries provide useful command line tools, which can be used to gather information about the RH 1.5D files or extract data. Additionally, there is a more complete set of tools written in Python to read and analyse these files. Interfaces in other languages are also planned.
 
 .. warning::
-   Because of the limitations of different languages, not all interfaces support all HDF5 features. IDL in particular does not support masked arrays. This means that when reading variables with missing data (see :ref:`output-label`), IDL will happily read all the data with no warning or indication of those that have special fill values.
+   Because of the limitations of different languages, not all interfaces support all HDF5 features. IDL in particular does not detect missing data in arrays (fill value or masked). This means that when reading variables with missing data (see :ref:`output-label`), IDL will happily read all the data with no warning or indication of those that have special fill values.
 
 
 Command line tools
@@ -259,7 +262,7 @@ Command line tools
 
 Two useful command line tools that come with HDF5 are `h5dump <https://support.hdfgroup.org/HDF5/doc/RM/Tools.html#Tools-Dump>`_ and `h5repack <https://support.hdfgroup.org/HDF5/doc/RM/Tools.html#Tools-Repack>`_.
 
-As shown above, ``h5dump`` can be used with the ``-H`` option to look at the header of a file: see the dimensions, variables, groups. It can also be used to print a text version of any variable in an HDF5 file (e.g. this can be redirected to a text file). When printing a variable one uses the option ``-v variable``, and the resulting output is the same as in the ``-H`` mode, with the variable printed at the end.
+``h5dump`` can be used with the ``-H`` option to look at the header of a file: see the dimensions, variables, groups. It can also be used to print a text version of any variable in an HDF5 file (e.g. this can be redirected to a text file). When printing a variable (dataset in HDF5) one uses the option ``-d variable``, and the resulting output is the same as in the ``-H`` mode, with the variable printed at the end. The NetCDF `ncdump <https://www.unidata.ucar.edu/software/netcdf/netcdf-4/newdocs/netcdf/ncdump.html>`_ program offers an even clearer look into the file (e.g. used with the ``-h`` option to print out the header).
 
 The ``h5repack`` program can be used to copy and modify the parameters of HDF5 files. It can convert the files between different format versions, compress variables, etc. Of particular importance is the option for rechunking a file. Chunking in HDF5 files can be used to improve performance by changing the disk structures to improve different read patterns. It is analogous to fully or partially transposing the variables along certain dimensions.
 
@@ -275,69 +278,108 @@ The ``h5repack`` program can be used to copy and modify the parameters of HDF5 f
        Description on the advantages of chunking.
 
 
-Python interface
-----------------
+Reading output in Python using ``xarray``
+-----------------------------------------
 
-Python routines to read the input, output, and more are available at ``rh/python/rh15d.py``. They require the `numpy <http://www.numpy.org/>`_ and `h5py <http://www.h5py.org/>`_ (or `netCDF4 <http://code.google.com/p/netcdf4-python/>`_) modules.
+The easiest and fastest way to read the RH 1.5D output files in Python is via the `xarray <http://xarray.pydata.org>`_ package. ``xarray`` can load the output files as a dataset directly, but in the case of the `output_aux.hdf5` and `output_indata.hdf5` one needs to specify which group to read (see above). 
+
+Here is a quick example on how to read some output from RH 1.5D with ``xarray``:
+
+.. code-block:: python
+
+    >>> import xarray
+    >>> ray = xarray.open_dataset("output_ray.hdf5")
+    >>> ray
+    <xarray.Dataset>
+    Dimensions:              (height: 82, wavelength: 902, wavelength_selected: 10, x: 1, y: 1)
+    Coordinates:
+      * wavelength           (wavelength) float64 28.0 31.4 32.8 33.7 34.3 35.3 ...
+      * wavelength_selected  (wavelength_selected) float64 85.1 276.4 278.5
+      * x                    (x) float64 0.0
+      * y                    (y) float64 0.0
+    Dimensions without coordinates: height
+    Data variables:
+        Jlambda              (x, y, height, wavelength_selected) float64 ...
+        chi                  (x, y, height, wavelength_selected) float64 ...
+        intensity            (x, y, wavelength) float64 ...
+        scattering           (x, y, height, wavelength_selected) float64 ...
+        source_function      (x, y, height, wavelength_selected) float64 ...
+        wavelength_indices   (wavelength_selected) int32 ...
+    Attributes:
+        atmosID:              FALC_82_5x5.hdf5 (Wed Jan 10 15:29:28 2018)
+        snapshot_number:      0
+        rev_id:               001d537  Tiago Pereira  2018-01-10 12:34:07 +0100
+        nx:                   1
+        ny:                   1
+        nz:                   82
+        nwave:                902
+        wavelength_selected:  3
+        creation_time:        2018-01-10T16:16:42+0100
+    >>> aux = xarray.open_dataset("output_aux.hdf5", group="atom_MG")
+    >>> aux
+    <xarray.Dataset>
+    Dimensions:          (continuum: 10, height: 82, level: 11, line: 15, x: 1, y: 1)
+    Coordinates:
+      * x                (x) float64 0.0
+      * y                (y) float64 0.0
+    Dimensions without coordinates: continuum, height, level, line
+    Data variables:
+        Rij_continuum    (continuum, x, y, height) float64 ...
+        Rij_line         (line, x, y, height) float64 ...
+        Rji_continuum    (continuum, x, y, height) float64 ...
+        Rji_line         (line, x, y, height) float64 ...
+        populations      (level, x, y, height) float64 ...
+        populations_LTE  (level, x, y, height) float64 ...
+    Attributes:
+        nlevel:      11
+        nline:       15
+        ncontinuum:  10
+
+
+
+Python routines in `helita`
+---------------------------
+
+A more complete Python interface to read the output of RH 1.5D is available in the `helita <https://github.com/ITA-Solar/helita>`_ package, in the `helita.sim.rh15d` module. It can also read and write the input files for RH 1.5D, both the atmosphere and wavelength list files. ``helita`` is dependent on several other python packages.
+
 
 Reading output files
 ^^^^^^^^^^^^^^^^^^^^
 
-The main class to read the output is called ``Rh15dout``. It can be initiated in the following way:
+The main class to read the output is called ``Rh15dout``. It uses ``xarray`` under the hood and populates an object with all the different datasets. It can be initiated in the following way:
 
 .. code-block:: python
 
-    >>> from rh15d import *
+    >>> from helita.sim import rh15d
     >>> rr = rh15d.Rh15dout()
     --- Read ./output_aux.hdf5 file.
     --- Read ./output_indata.hdf5 file.
     --- Read ./output_ray.hdf5 file.
 
-By default, it will look for the three files in the directory specified as main argument (defaults to current directory). Additionally, the methods ``read_aux(infile)``,  ``read_indata(infile)``, and ``read_ray(infile)`` can be used to manually load a file. The variables themselves are not read into memory, but are rather a `memmap object <http://docs.scipy.org/doc/numpy/reference/generated/numpy.memmap.html>`_ (file pointer; only read when needed).
+By default, it will look for the three files in the directory specified as main argument (defaults to current directory). Additionally, the method ``read_group(infile)`` can be used to manually load the ``output_aux.hdf5`` or ``output_indata.hdf5`` and the method and ``read_ray(infile)`` can be used to manually load the ``output_ray.hdf5`` file. The variables themselves are not read into memory, but are rather a `memmap object <http://docs.scipy.org/doc/numpy/reference/generated/numpy.memmap.html>`_ (file pointer; only read when needed) that ``xarray`` opens.
 
-After loading the files, the ``Rh15dout`` instance maps them into different classes. The ``ray`` class contains all the variables that were saved in the ``output_ray.hdf5`` as attributes:
+After loading the files, the ``Rh15dout`` instance loads each file as an ``xarray`` dataset with the base name of each group (e.g. ``ray``, ``atmos``, ``atom_CA``, ``mpi``).The ``ray`` attribute contains the same dataset as shown in the ``xarray`` example above. 
 
-.. code-block:: python
-
-    >>> [a for a in dir(rr.ray) if a[0] != '_']
-    ['intensity',
-     'params',
-     'stokes_Q',
-     'stokes_U',
-     'stokes_V',
-     'chi',
-     'source_function',
-     'scattering',
-     'Jlambda',
-     'tau_one_height',
-     'wavelength',
-     'wavelength_indices']
-    >>> rr.ray.intensity
-    <HDF5 dataset "intensity": shape (256, 256, 1626), type "<f4">
-
-Several of the options from ``output_indata.hdf5``, along with many of the dimensions used, are gathered into a method called ``params``, saved as a dictionary. The ``mpi`` and ``atmos`` groups of ``output_indata.hdf5``, with all their variables are like ``ray``, added into classes with the same name that are methods of the ``Rh15dout`` instance. For example:
+The attributes of each file are still accessible under the attributes of each object, e.g.:
 
 .. code-block:: python
 
-    >>> rr.mpi.convergence
-    <HDF5 dataset "convergence": shape (256, 256), type "<i8">
-    >>> rr.atmos.temperature
-    <HDF5 dataset "temperature": shape (256, 256, 400), type "<f4">
+    >>> rr.ray.creation_time
+    '2018-01-10T16:16:42+0100'
+    >>> rr.atmos.nrays
+    5
+    >>> rr.mpi.nprocesses
+    2048
 
-Likewise, the groups of ``output_aux.hdf5`` are also added as classes that are methods of the main instance:
+With ``xarray`` it is easy to quickly inspect and plot different quantities. For example, to plot the intensity at ``(x, y) = (0, 0)``:
 
-.. code-block:: python
+    >>> rr.ray.intensity[0, 0].plot()
 
-    >>> [a for a in dir(rr.atom_CA) if a[0] != '_']
-    ['Rij_continuum',
-     'Rij_line',
-     'Rji_continuum',
-     'Rji_line',
-     'params',
-     'populations',
-     'populations_LTE']
+Or the intensity at a fixed wavelength:
 
-All the groups and variables are therefore automatically added, so they will adapt to any changes in the output files.
+    >>> rr.ray.intensity.sel(wavelength=279.55, method='nearest').plot()
+
+(This only shows a 2D image if you calculated the intensity from a 3D model, otherwise an histogram or line plot is shown.)
 
 Reading input files
 ^^^^^^^^^^^^^^^^^^^
@@ -346,7 +388,7 @@ The ``HDF5Atmos`` class can be used to read the input atmosphere files.  It can 
 
 .. code-block:: python
 
-      >>> from rh15d import *
+      >>> from helita.sim import rh15d
       >>> atm = rh15d.HDF5Atmos('my_atmos.hdf5')
 
 Inspection of the result reveals the variables, a dictionary called ``param`` with basic data and the properties of the variables:
