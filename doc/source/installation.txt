@@ -5,11 +5,11 @@ Installation
 Getting the code
 ================
 
-The code is available on a git repository, hosted on github: `https://github.com/ita-solar/rh <https://github.com/ita-solar/rh>`_. If you don't have `git <http://git-scm.com/>`_ installed and just want to get started, the easiest way is to download a zip file with the latest revision: `https://github.com/ita-solar/rh/archive/master.zip <https://github.com/ita-solar/rh/archive/master.zip>`_. If you have git installed and would like to be up-to-date with the repository, you can do a git clone:
+The code is available on a git repository, hosted on github: `https://github.com/ita-solar/rh <https://github.com/ita-solar/rh>`_. If you don't have `git <http://git-scm.com/>`_ installed and just want to get started, the easiest way is to download a zip file with the latest revision: `https://github.com/ita-solar/rh/archive/master.zip <https://github.com/ita-solar/rh/archive/master.zip>`_. If you have git installed and would like to be up-to-date with the repository, you can do a git clone::
 
     git clone https://github.com/ita-solar/rh.git
 
-or using SSH (only for contributors):
+or using SSH (only for contributors)::
 
     git clone git@github.com:ita-solar/rh.git
 
@@ -39,22 +39,42 @@ rh/tools         Associate C programs for RH, not tested.
 Dependencies
 ============
 
+HDF5
+----
+
 RH 1.5D makes use of the `HDF5 <http://www.hdfgroup.org/HDF5/>`_ library to read the atmosphere files and write the output.  It is not possible to run the code without this library. RH 1.5D requires HDF5 version 1.8.1 or newer (versions from branch 1.10.x do not currently work).
 
 .. note::
    RH 1.5D previously made use of the netCDF4 library for its output (which in turn also required HDF5). The latest changes mean RH 1.5D needs only HDF5. Because netCDF4 files are also HDF5 files, the output is still readable in the same way as before and input files in netCDF version 4 format can still be read in the same way by RH 1.5D. If you used input atmospheres in netCDF version 3 format, then these will have to be converted to HDF5. It is recommended that new atmosphere files be created in HDF5 only.
 
-Because HDF5 is commonly used in high-performance computing, many supercomputers already have them available. In Hexagon, they can be loaded as::
+Because HDF5 is commonly used in high-performance computing, many supercomputers already have them available. In Fram, they can be loaded as (also loading the intel compilers)::
 
-    module load cray-hdf5-parallel
+    module load HDF5/1.8.18-intel-2017a intel/2017a
 
 in Pleiades::
 
     module load hdf5/1.8.7/gcc/mpt
 
+in Hexagon::
+
+    module load cray-hdf5-parallel
+
 and at ITA's Linux system::
 
-    module load hdf5/Intel/openmpi/1.8.18
+    module load hdf5/Intel/1.8.19
+
+MPI
+---
+
+RH 1.5D is parallelised via MPI, therefore an MPI library is necessary even if running with only one CPU. These are readily available in supercomputers and clusters, but not always in individual workstations. In such cases, users will have to manually install both MPI and HDF5 libraries (HDF5 should be compiled with the MPI library so that the parallel I/O module works). 
+
+If using Linux or MacOS, the easiest way to install both MPI and HDF5 with parallel support is via the `Anaconda <https://www.anaconda.com/download/#macos>`_ Python distribution. Once you install Anaconda (version 3.6 or above), you can install the ``hdf5-parallel`` package, which installs both MPI and HDF5 and has been tested with RH 1.5D::
+
+    conda install -c spectraldns hdf5-parallel
+
+
+.. warning::
+   If you obtain pre-compiled binaries or packages for HDF5, you need to make sure they have parallel support enabled. Most available packages **do not have parallel support**. This includes typical packages from Linux distributions and the ``hdf5`` Anaconda package (but not the above ``hdf5-parallel`` package).
 
 Compilation
 ===========
@@ -86,7 +106,9 @@ After setting the correct compiler, just build the main libraries with ``make`` 
 Program binaries
 ----------------
 
-Go to the ``rh/rh15d_mpi/`` directory and update the Makefile with your compiler and flags. You will need to set ``CC`` to the MPI alias (e.g. ``mpicc``). The path to the HDF5 library needs to be explicitly set in ``HDF5_DIR``. In Hexagon this is already stored in the ``HDF5_DIR`` environment variable.
+Go to the ``rh/rh15d_mpi/`` directory and update the Makefile with your compiler and flags. You will need to set ``CC`` to the MPI alias (e.g. ``mpicc``). The path to the HDF5 library needs to be explicitly set in ``HDF5_DIR``. In Fram and Hexagon this is already stored in the ``HDF5_DIR`` environment variable.
+
+If you are using HDF5 parallel from Anaconda, you need to set ``HDF5_DIR`` to your Anaconda directory plus ``include/`` (e.g. ``~/anaconda/include``).
 
 If your version of HDF5 was not built as a shared binary, you need to link HDF5 and other used libraries directly. Set the ``LDFLAGS`` accordingly, and update the ``LIBS`` variable to contain all the other libraries. For Pleiades, make sure your Makefile contains the following:
 
