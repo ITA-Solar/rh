@@ -9,6 +9,8 @@
 #ifndef __ATMOS_H__
 #define __ATMOS_H__
 
+#include "atom.h"
+
 /* --- Define structure to hold geometry-independent
        atmospheric quantities. --                      -------------- */
 

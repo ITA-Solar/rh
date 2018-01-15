@@ -16,8 +16,8 @@ The structure of the three files is given below.
 
 
 
-output_aux.hdf5
----------------
+``output_aux.hdf5``
+-------------------
 
 This file contains the level populations and radiative rates. For each active atom or molecule, it contains different groups called ``atom_XX`` or ``molecule_XX``, where ``XX`` is the identifier for the species (e.g. ``MG``, ``CO``).
 
@@ -91,8 +91,8 @@ All units are SI.
    In older versions it was possible to specify the keyword ``15D_WRITE_EXTRA`` and get additional output written to ``output_aux.hdf5`` (e.g. a new ``opacity`` group and more rates). While the procedures are still in ``writeAux_p.c``, the functionality is deprecated because other changes in the code were not compatible with this way of writing the output. It is possible that this functionality will return at a later version.
 
 
-output_indata.hdf5
-------------------
+``output_indata.hdf5``
+----------------------
 
 This file contains data and metadata related to the run. It contains three groups: ``input`` (mostly settings from ``keyword.input``), ``atmos`` (atmospheric variables), and ``mpi`` (several variables relating to the run).
 
@@ -183,8 +183,8 @@ The ``mpi`` group also contains several variables:
 The ``mpi`` group also contains the following attributes: ``x_start``, ``x_end``,  ``x_step``, ``y_start``, ``y_end``,  and ``y_step``, all of which are options from ``keyword.input``.
 
 
-output_ray.hdf5
----------------
+``output_ray.hdf5``
+-------------------
 
 This file contains the synthetic spectra and can also contain extra information such as opacities and the source function. It contains only the root group. Its dimensions are ``x``, ``y``, ``wavelength``, and eventually ``wavelength_selected`` and ``height``. The latter two are only present when ``ray.input`` specifies more than ``0`` wavelengths for detailed output, and it matches ``Nsource``, the number of those wavelengths entered in ``ray.input``.
 
@@ -192,37 +192,36 @@ It can contain the following variables:
 
 .. tabularcolumns:: |l|l|p{4cm}|
 
-+------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
-| Name                   | Dimensions                            | Units                                                       | Description                                        |
-+========================+=======================================+=============================================================+====================================================+
-| ``wavelength``         | ``(wavelength)``                      | nm                                                          |  Wavelength scale.                                 |
-+------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
-| ``intensity``          | ``(x, y, wavelength)``                | W m\ :sup:`-2`\ m\ :sup:`-2`\ Hz\ :sup:`-1`\ sr\ :sup:`-1`\ | Synthetic disk-centre intensity (Stokes I).        |
-+------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
-| ``stokes_Q``           | ``(x, y, wavelength)``                | W m\ :sup:`-2`\ m\ :sup:`-2`\ Hz\ :sup:`-1`\ sr\ :sup:`-1`\ | Stokes Q. **Optional.**                            |
-+------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
-| ``stokes_U``           | ``(x, y, wavelength)``                | W m\ :sup:`-2`\ m\ :sup:`-2`\ Hz\ :sup:`-1`\ sr\ :sup:`-1`\ | Stokes U. **Optional.**                            |
-+------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
-| ``stokes_V``           | ``(x, y, wavelength)``                | W m\ :sup:`-2`\ m\ :sup:`-2`\ Hz\ :sup:`-1`\ sr\ :sup:`-1`\ | Stokes V. **Optional.**                            |
-+------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
-| ``tau_one_height``     | ``(x, y, wavelength)``                | m                                                           | Height where optical depth reaches unity, for each |
-|                        |                                       |                                                             | column. **Optional.**                              |
-+------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
-| ``wavelength_selected``| ``(wavelength_selected)``             |                                                             | Wavelength scale for the detailed output variables |
-|                        |                                       |                                                             | below. **Optional.**                               |
-+------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
-| ``wavelength_indices`` | ``(wavelength_selected)``             |                                                             | Indices of wavelengths selected for variables      |
-|                        |                                       |                                                             | below. **Optional.**                               |
-+------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
-| ``chi``                |``(x, y, height, wavelength_selected)``| m\ :sup:`-1`\                                               | Total opacity (line and continuum). **Optional.**  |
-+------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
-| ``source_function``    |``(x, y, height, wavelength_selected)``| W m\ :sup:`-2`\ m\ :sup:`-2`\ Hz\ :sup:`-1`\ sr\ :sup:`-1`\ | Total opacity (line and continuum). **Optional.**  |
-+------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
-| ``Jlambda``            |``(x, y, height, wavelength_selected)``| W m\ :sup:`-2`\ m\ :sup:`-2`\ Hz\ :sup:`-1`\ sr\ :sup:`-1`\ | Angle-averaged radiation field. **Optional.**      |
-+------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
-| ``scattering``         |``(x, y, height, wavelength_selected)``|                                                             | Scattering term multiplied by Jlambda              |
-|                        |                                       |                                                             |  **Optional.**                                     |
-+------------------------+---------------------------------------+-------------------------------------------------------------+----------------------------------------------------+
++------------------------+---------------------------------------+-------------------------------------------------------------+------------------------------------------------------+
+| Name                   | Dimensions                            | Units                                                       | Description                                          |
++========================+=======================================+=============================================================+======================================================+
+| ``wavelength``         | ``(wavelength)``                      | nm                                                          |  Wavelength scale.                                   |
++------------------------+---------------------------------------+-------------------------------------------------------------+------------------------------------------------------+
+| ``intensity``          | ``(x, y, wavelength)``                | W m\ :sup:`-2`\  Hz\ :sup:`-1`\  sr\ :sup:`-1`\             | Synthetic disk-centre intensity (Stokes I).          |
++------------------------+---------------------------------------+-------------------------------------------------------------+------------------------------------------------------+
+| ``stokes_Q``           | ``(x, y, wavelength)``                | W m\ :sup:`-2`\  Hz\ :sup:`-1`\  sr\ :sup:`-1`\             | Stokes Q. **Optional.**                              |
++------------------------+---------------------------------------+-------------------------------------------------------------+------------------------------------------------------+
+| ``stokes_U``           | ``(x, y, wavelength)``                | W m\ :sup:`-2`\  Hz\ :sup:`-1`\  sr\ :sup:`-1`\             | Stokes U. **Optional.**                              |
++------------------------+---------------------------------------+-------------------------------------------------------------+------------------------------------------------------+
+| ``stokes_V``           | ``(x, y, wavelength)``                | W m\ :sup:`-2`\  Hz\ :sup:`-1`\  sr\ :sup:`-1`\             | Stokes V. **Optional.**                              |
++------------------------+---------------------------------------+-------------------------------------------------------------+------------------------------------------------------+
+| ``tau_one_height``     | ``(x, y, wavelength)``                | m                                                           | Height where optical depth reaches unity, for each   |
+|                        |                                       |                                                             | column. **Optional.**                                |
++------------------------+---------------------------------------+-------------------------------------------------------------+------------------------------------------------------+
+| ``wavelength_selected``| ``(wavelength_selected)``             |                                                             | Wavelength scale for the detailed output variables   |
+|                        |                                       |                                                             | below. **Optional.**                                 |
++------------------------+---------------------------------------+-------------------------------------------------------------+------------------------------------------------------+
+| ``wavelength_indices`` | ``(wavelength_selected)``             |                                                             | Indices of wavelengths selected for variables        |
+|                        |                                       |                                                             | below. **Optional.**                                 |
++------------------------+---------------------------------------+-------------------------------------------------------------+------------------------------------------------------+
+| ``chi``                |``(x, y, height, wavelength_selected)``| m\ :sup:`-1`\                                               | Total opacity (line and continuum). **Optional.**    |
++------------------------+---------------------------------------+-------------------------------------------------------------+------------------------------------------------------+
+| ``source_function``    |``(x, y, height, wavelength_selected)``| W m\ :sup:`-2`\ m\ :sup:`-2`\ Hz\ :sup:`-1`\ sr\ :sup:`-1`\ | Total opacity (line and continuum). **Optional.**    |
++------------------------+---------------------------------------+-------------------------------------------------------------+------------------------------------------------------+
+| ``Jlambda``            |``(x, y, height, wavelength_selected)``| W m\ :sup:`-2`\ m\ :sup:`-2`\ Hz\ :sup:`-1`\ sr\ :sup:`-1`\ | Angle-averaged radiation field. **Optional.**        |
++------------------------+---------------------------------------+-------------------------------------------------------------+------------------------------------------------------+
+| ``scattering``         |``(x, y, height, wavelength_selected)``|                                                             | Scattering term multiplied by Jlambda. **Optional.** |
++------------------------+---------------------------------------+-------------------------------------------------------------+------------------------------------------------------+
 
 The ``wavelength`` is in nm, air or vacuum units, depending if ``VACUUM_TO_AIR`` is ``TRUE`` or ``FALSE`` (in ``keyword.input``). ``chi`` is in m\ :sup:`-1`\ and ``tau_one_height`` in m.
 
@@ -337,8 +336,8 @@ Here is a quick example on how to read some output from RH 1.5D with ``xarray``:
 
 
 
-Python routines in `helita`
----------------------------
+Python routines in ``helita``
+-----------------------------
 
 A more complete Python interface to read the output of RH 1.5D is available in the `helita <https://github.com/ITA-Solar/helita>`_ package, in the ``helita.sim.rh15d`` module. It can also read and write the input files for RH 1.5D, both the atmosphere and wavelength list files. ``helita`` is dependent on several other python packages.
 
