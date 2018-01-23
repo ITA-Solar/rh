@@ -544,8 +544,23 @@ Under RH 1.5D ``idl/`` directory is routine named ``read_ncdf_var.pro``. The fun
    POPS            FLOAT     = Array[400, 512, 512, 5]
 
 
-Analysis tools
-==============
+Visualisation and notebooks
+===========================
+
+In Python, the `helita <https://github.com/ITA-Solar/helita>`_ package also contains a visualisation module with widgets that are meant to be used inside the `Jupyter notebook <https://jupyter.org/>`_. To use these, you will need to install not only ``helita`` but also the `Matplotlib Jupyter Extension <https://github.com/matplotlib/jupyter-matplotlib>`_ and the `IPython widgets for Jupyter <https://github.com/jupyter-widgets/ipywidgets>`_. If you have Anaconda, both can be installed with conda:
+
+.. code-block:: 
+
+    conda install -c conda-forge ipywidgets ipympl widgetsnbextension
+
+You can also install them with ``pip`` (check their pages for details).
+
+Currently we have the following Jupyter notebooks for visualisation of RH 1.5D output:
+
+* `Basic output <https://github.com/ITA-Solar/rh/doc/notebooks/BasicOutput.ipynb>`_
+* `Visualisation widgets <https://github.com/ITA-Solar/rh/doc/notebooks/Visualisation.ipynb>`_
+
+To use the above notebooks, you need to have run RH 1.5D and have the output files ready!
 
 .. note::
-   There is no organised package of analysis tools for the output of RH 1.5D. This should be added in the future. The IDL analysis suite of RH **does not work with RH 1.5D**. 
+   The IDL analysis suite of RH **does not work with RH 1.5D**. 
