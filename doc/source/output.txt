@@ -547,18 +547,18 @@ Under RH 1.5D ``idl/`` directory is routine named ``read_ncdf_var.pro``. The fun
 Visualisation and notebooks
 ===========================
 
-In Python, the `helita <https://github.com/ITA-Solar/helita>`_ package also contains a visualisation module with widgets that are meant to be used inside the `Jupyter notebook <https://jupyter.org/>`_. To use these, you will need to install not only ``helita`` but also the `Matplotlib Jupyter Extension <https://github.com/matplotlib/jupyter-matplotlib>`_ and the `IPython widgets for Jupyter <https://github.com/jupyter-widgets/ipywidgets>`_. If you have Anaconda, both can be installed with conda:
-
-.. code-block:: 
+In Python, the `helita <https://github.com/ITA-Solar/helita>`_ package also contains a visualisation module with widgets that are meant to be used inside the `Jupyter notebook <https://jupyter.org/>`_. To use these, you will need to install not only ``helita`` but also the `Matplotlib Jupyter Extension <https://github.com/matplotlib/jupyter-matplotlib>`_ and the `IPython widgets for Jupyter <https://github.com/jupyter-widgets/ipywidgets>`_. If you have Anaconda, both can be installed with conda::
 
     conda install -c conda-forge ipywidgets ipympl widgetsnbextension
+    jupyter nbextension enable --py widgetsnbextension
+
 
 You can also install them with ``pip`` (check their pages for details).
 
 Currently we have the following Jupyter notebooks for visualisation of RH 1.5D output:
 
-* `Basic output <https://github.com/ITA-Solar/rh/doc/notebooks/BasicOutput.ipynb>`_
-* `Visualisation widgets <https://github.com/ITA-Solar/rh/doc/notebooks/Visualisation.ipynb>`_
+* `Basic output <https://github.com/ITA-Solar/rh/blob/master/doc/notebooks/BasicOutput.ipynb>`_
+* `Visualisation widgets <https://github.com/ITA-Solar/rh/blob/master/doc/notebooks/Visualisation.ipynb>`_
 
 To use the above notebooks, you need to have run RH 1.5D and have the output files ready!
 
