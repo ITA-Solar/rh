@@ -216,9 +216,9 @@ It can contain the following variables:
 +------------------------+---------------------------------------+-------------------------------------------------------------+------------------------------------------------------+
 | ``chi``                |``(x, y, height, wavelength_selected)``| m\ :sup:`-1`\                                               | Total opacity (line and continuum). **Optional.**    |
 +------------------------+---------------------------------------+-------------------------------------------------------------+------------------------------------------------------+
-| ``source_function``    |``(x, y, height, wavelength_selected)``| W m\ :sup:`-2`\ m\ :sup:`-2`\ Hz\ :sup:`-1`\ sr\ :sup:`-1`\ | Total opacity (line and continuum). **Optional.**    |
+| ``source_function``    |``(x, y, height, wavelength_selected)``| W m\ :sup:`-2`\  Hz\ :sup:`-1`\  sr\ :sup:`-1`\             | Total opacity (line and continuum). **Optional.**    |
 +------------------------+---------------------------------------+-------------------------------------------------------------+------------------------------------------------------+
-| ``Jlambda``            |``(x, y, height, wavelength_selected)``| W m\ :sup:`-2`\ m\ :sup:`-2`\ Hz\ :sup:`-1`\ sr\ :sup:`-1`\ | Angle-averaged radiation field. **Optional.**        |
+| ``Jlambda``            |``(x, y, height, wavelength_selected)``| W m\ :sup:`-2`\  Hz\ :sup:`-1`\  sr\ :sup:`-1`\             | Angle-averaged radiation field. **Optional.**        |
 +------------------------+---------------------------------------+-------------------------------------------------------------+------------------------------------------------------+
 | ``scattering``         |``(x, y, height, wavelength_selected)``|                                                             | Scattering term multiplied by Jlambda. **Optional.** |
 +------------------------+---------------------------------------+-------------------------------------------------------------+------------------------------------------------------+
@@ -250,10 +250,10 @@ Reading the output files
 
 HDF5 is an open, platform-independent format, and therefore interfaces to many programming languages are available. The `main interface libraries <https://www.hdfgroup.org/HDF5/>`_ are available in C, C++, Fortran, and Java. But there are also interfaces for Python (`h5py <http://www.h5py.org/>`_), `Julia <https://github.com/JuliaIO/HDF5.jl>`_, IDL (from version 6.2), MATLAB , Octave, `Perl <http://search.cpan.org/~chm/PDL-IO-HDF5-0.6501/hdf5.pd>`_, and `R <https://cran.r-project.org/package=h5>`_.
 
-The RH 1.5D output format is standard HDF5 but it is also compatible with or NetCDF 4 readers: in most cases one needs to specify only the variable or group name. The HDF5 and NetCDF libraries provide useful command line tools, which can be used to gather information about the RH 1.5D files or extract data. Additionally, there is a more complete set of tools written in Python to read and analyse these files. Interfaces in other languages are also planned.
+The RH 1.5D output format is standard HDF5 but it is also compatible with NetCDF 4 readers: in most cases one needs to specify only the variable or group name. The HDF5 and NetCDF libraries provide useful command line tools, which can be used to gather information about the RH 1.5D files or extract data. Additionally, there is a more complete set of tools written in Python to read and analyse these files. 
 
 .. warning::
-   Because of the limitations of different languages, not all interfaces support all HDF5 features. IDL in particular does not detect missing data in arrays (fill value or masked). This means that when reading variables with missing data (see :ref:`output-label`), IDL will happily read all the data with no warning or indication of those that have special fill values.
+   Because of the limitations of different languages, not all interfaces support all HDF5 features. Some libraries (e.g. IDL or plain h5py in Python) will not detect missing data in arrays (written with the fill value). In such cases, reading variables with missing data (see :ref:`output-label`), the data are read with no warning or indication of those that have special fill values.
 
 
 Command line tools
@@ -383,50 +383,46 @@ Or the intensity at a fixed wavelength:
 Reading input files
 ^^^^^^^^^^^^^^^^^^^
 
-The ``HDF5Atmos`` class can be used to read the input atmosphere files.  It can be initiated in the following way:
+``xarray`` can be used to read and write the input atmosphere files, e.g.:
 
 .. code-block:: python
 
-      >>> from helita.sim import rh15d
-      >>> atm = rh15d.HDF5Atmos('my_atmos.hdf5')
+    >>> import xarray
+    >>> atmos = xarray.open_dataset('my_atmos.hdf5')
+    >>> atmos
+    <xarray.Dataset>
+    Dimensions:               (depth: 82, nhydr: 6, snapshot_number: 1, x: 5, y: 5)
+    Coordinates:
+      * x                     (x) int64 0 1 2 3 4
+      * y                     (y) int64 0 1 2 3 4
+        z                     (snapshot_number, depth) float32 ...
+      * snapshot_number       (snapshot_number) int32 0
+    Dimensions without coordinates: depth, nhydr
+    Data variables:
+        temperature           (snapshot_number, x, y, depth) float32 ...
+        velocity_z            (snapshot_number, x, y, depth) float32 ...
+        electron_density      (snapshot_number, x, y, depth) float64 ...
+        hydrogen_populations  (snapshot_number, nhydr, x, y, depth) float32 ...
+        velocity_turbulent    (snapshot_number, x, y, depth) float32 ...
+    Attributes:
+        comment:          Created with make_xarray_atmos on 2018-01-25 15:28:10.4...
+        boundary_top:     0
+        boundary_bottom:  1
+        has_B:            0
+        description:      FAL C model with 82 depth points replicated to 5x5 colu...
+        nx:               5
+        ny:               5
+        nz:               82
+        nt:               1
 
-Inspection of the result reveals the variables, a dictionary called ``param`` with basic data and the properties of the variables:
+The amount of detail loaded by ``xarray`` will depend how the atmosphere was written. Older atmosphere files may not have as much verbose attributes or labeled coordinates (especially if written by plain HDF5 with no attaching of dimension scales), but they are still valid. Older netCDF atmospheres should work fine with ``xarray``. It is possible to modify the data with ``xarray``, and saving updated atmosphere is done via the ``to_netcdf()`` method:
 
 .. code-block:: python
 
-      >>> [a for a in dir(atm) if a[0] != '_']
-      ['B_x',
-       'B_y',
-       'B_z',
-       'close',
-       'closed',
-       'electron_density',
-       'file',
-       'hydrogen_populations',
-       'params',
-       'read',
-       'snapshot_number',
-       'temperature',
-       'velocity_z',
-       'write_multi',
-       'write_multi_3d',
-       'x',
-       'y',
-       'z']
-      >>> atm.params     # Contains basic properties
-      {'boundary_bottom': 1,
-       'boundary_top': 0,
-       'description': 'Created with make_hdf5_atmos.on 2017-04-03 17:32:06.831811',
-       'has_B': 1,
-       'nhydr': 6,
-       'nt' : 4,
-       'nx': 512,
-       'ny': 512,
-       'nz': 400}
-      >>> atm.velocity_z
-      <HDF5 dataset "velocity_z": shape (4, 512, 512, 400), type "<f4">
+    >>> atmos.to_netcdf("newfile.hdf5", format='NETCDF4')
 
-This interface is read-only, no modifications to the atmosphere files are possible.
+
+Be sure to use ``format='NETCDF4'`` so that the file is internally HDF5!
 
 
 Writing input files
@@ -436,12 +432,12 @@ In ``rh15d.py`` there is also a function to write the input atmosphere, assuming
 
 .. code-block:: python
 
-      def make_hdf5_atmos(outfile, T, vz, nH, z, x=None, y=None, Bz=None, By=None,
-                    Bx=None, rho=None, ne=None, vx=None, vy=None, desc=None,
-                    snap=None, boundary=[1, 0], comp=None, complev=None,
-                    append=False):
+      def make_xarray_atmos(outfile, T, vz, nH, z, x=None, y=None, Bz=None, By=None,
+                            Bx=None, rho=None, ne=None, vx=None, vy=None, desc=None,
+                            snap=None, boundary=[1, 0], comp=None, complev=None,
+                            append=False):
         """
-        Creates HDF5 input file for RH 1.5D.
+        Creates HDF5 input file for RH 1.5D using xarray.
 
         Parameters
         ----------
@@ -487,19 +483,13 @@ In ``rh15d.py`` there is also a function to write the input atmosphere, assuming
             0: Zero, 1: Thermalised, 2: Reflective.
         append : boolean, optional
             If True, will append to existing file (if any).
-        comp : string, optional
-            Options are: None (default), 'gzip', 'szip', 'lzf'.
-        complev : integer or tuple, optional
-            Compression level. Integer for 'gzip', 2-tuple for szip.
         """
 
-
-Both zlib and szip compression are supported but again this is not recommended.
 
 Writing wavelength files
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Another utility function in ``rh15d.py`` is ``make_wave_file``. It creates an RH wavelength file from a given array of wavelengths. It's usage is documented in its function call:
+Another utility function in ``rh15d.py`` is ``make_wave_file``. It creates an RH wavelength file from a given array of wavelengths. Its usage is documented in its function call:
 
 .. code-block:: python
 
@@ -530,9 +520,9 @@ Another utility function in ``rh15d.py`` is ``make_wave_file``. It creates an RH
 Other languages
 ---------------
 
-While many other languages have interfaces to read HDF5 files, there are no specific routines for reading the output from RH 1.5D. Support for other languages may be added later as demand requires.
+While many other languages have interfaces to read HDF5 files, there are no specific routines for reading the output from RH 1.5D. Support for other languages may be added later.
 
-Under RH 1.5D ``idl/`` directory is routine named ``read_ncdf_var.pro``. The function  ``read_ncdf_var()`` can be used to read variables from an HDF5 or netCDF4 file, e.g.:
+Under the ``idl/`` directory is a routine named ``read_ncdf_var.pro``. The function ``read_ncdf_var()`` can be used to read variables from an HDF5 or netCDF4 file, e.g.:
 
 .. code-block:: fortran
 
@@ -561,6 +551,12 @@ Currently we have the following Jupyter notebooks for visualisation of RH 1.5D o
 * `Visualisation widgets <https://github.com/ITA-Solar/rh/blob/master/doc/notebooks/Visualisation.ipynb>`_
 
 To use the above notebooks, you need to have run RH 1.5D and have the output files ready!
+
+You can also explore the input atmosphere files with the Jupyter widget ``rh15d_vis.InputAtmosphere`` in ``helita``:
+
+
+    >>> from helita.sim import rh15d_vis
+    >>> rh15d_vis.InputAtmosphere('my_atmos.hdf5');
 
 .. note::
    The IDL analysis suite of RH **does not work with RH 1.5D**. 
