@@ -5,17 +5,17 @@
 
 # model file
 
-  ../../Molecules/H2.molecule      PASSIVE    LTE_POPULATIONS
-  ../../Molecules/H2+.molecule     PASSIVE    LTE_POPULATIONS
-  ../../Molecules/C2.molecule      PASSIVE    LTE_POPULATIONS
-  ../../Molecules/N2.molecule      PASSIVE    LTE_POPULATIONS
-  ../../Molecules/O2.molecule      PASSIVE    LTE_POPULATIONS
-  ../../Molecules/CH.molecule      PASSIVE    LTE_POPULATIONS
-  ../../Molecules/CO.molecule      PASSIVE    LTE_POPULATIONS
-  ../../Molecules/CN.molecule      PASSIVE    LTE_POPULATIONS
-  ../../Molecules/NH.molecule      PASSIVE    LTE_POPULATIONS
-  ../../Molecules/NO.molecule      PASSIVE    LTE_POPULATIONS
-  ../../Molecules/OH.molecule      PASSIVE    LTE_POPULATIONS
-  ../../Molecules/H2O.molecule     PASSIVE    LTE_POPULATIONS
+  ../../Molecules_example/H2.molecule      PASSIVE    LTE_POPULATIONS
+  ../../Molecules_example/H2+.molecule     PASSIVE    LTE_POPULATIONS
+  ../../Molecules_example/C2.molecule      PASSIVE    LTE_POPULATIONS
+  ../../Molecules_example/N2.molecule      PASSIVE    LTE_POPULATIONS
+  ../../Molecules_example/O2.molecule      PASSIVE    LTE_POPULATIONS
+  ../../Molecules_example/CH.molecule      PASSIVE    LTE_POPULATIONS
+  ../../Molecules_example/CO.molecule      PASSIVE    LTE_POPULATIONS
+  ../../Molecules_example/CN.molecule      PASSIVE    LTE_POPULATIONS
+  ../../Molecules_example/NH.molecule      PASSIVE    LTE_POPULATIONS
+  ../../Molecules_example/NO.molecule      PASSIVE    LTE_POPULATIONS
+  ../../Molecules_example/OH.molecule      PASSIVE    LTE_POPULATIONS
+  ../../Molecules_example/H2O.molecule     PASSIVE    LTE_POPULATIONS
 
 #end
