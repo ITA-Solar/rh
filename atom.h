@@ -116,12 +116,13 @@ struct rhthread {
 };
 
 struct Atom {
-  char    ID[ATOM_ID_WIDTH+1], **label, *popsinFile, *popsoutFile;
+  char    ID[ATOM_ID_WIDTH+1], **label, *popsinFile, *popsoutFile,
+          atom_file[MAX_LINE_SIZE];
   bool_t  active, NLTEpops;
   enum solution initial_solution;
   int     Nlevel, Nline, Ncont, Nfixed, Nprd, *stage, periodic_table,
           activeindex;
-  long    offset_coll;
+  char   *offset_coll;
   double  abundance, weight, *g, *E, **C, *vbroad, **n, **nstar,
          *ntotal, **Gamma;
   AtomicLine *line;
@@ -130,7 +131,7 @@ struct Atom {
   struct Ng *Ng_n;
   rhthread *rhth;
   pthread_mutex_t Gamma_lock;
-  FILE *fp_input;
+  char *fp_input;
 };
 
 typedef struct {
@@ -194,7 +195,7 @@ void   readMolecularModels(void);
 void   statEquil(Atom *atom, int isum);
 double updatePopulations(int niter);
 
-void CollisionRate(Atom *atom, FILE *atomFile);
+void CollisionRate(Atom *atom, char *atomFile);
 double summers(int i, int j, double nne, Atom *atom);
 void Damping(AtomicLine *line, double *adamp);
 void FixedRate(Atom *atom);
@@ -220,7 +221,7 @@ void getProfiles(void);
 void Profile(AtomicLine *line);
 void readProfile(AtomicLine *line, int lamu, double *phi);
 void writeProfile(AtomicLine *line, int lamu, double *phi);
-void readAtom(Atom *atom, char *atomFileName, bool_t active);
+void readAtom(Atom *atom, bool_t active);
 void readPopulations(Atom *atom);
 void SortLambda(void);
 void Stark(AtomicLine *line, double *GStark);

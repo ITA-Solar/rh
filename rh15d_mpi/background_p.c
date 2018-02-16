@@ -755,7 +755,7 @@ void SetLTEQuantities_p(void)
       /* --- Read the collisional data (in MULTI's GENCOL format).
              After this we can close the input file for the active
              atom. --                                  -------------- */
-      CollisionRate(atom, atom->fp_input);
+      CollisionRate(atom, atom->offset_coll);
 
       /* --- Compute the fixed rates and store in Cij -- ------------ */
       if (atom->Nfixed > 0) FixedRate(atom);

@@ -410,26 +410,38 @@ void init_hdf5_indata_new(void)
          file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_mpi_tm, id_x, 0)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_mpi_tm, id_y, 1)) < 0) HERR(routineName);
+  if (( H5LTset_attribute_float(ncid_mpi, TASK_MAP, "_FillValue",
+                                &FILLVALUE, 1) ) < 0) HERR(routineName);
   if (( io.in_mpi_tn = H5Dcreate(ncid_mpi, TASK_NUMBER, H5T_NATIVE_LONG,
          file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_mpi_tn, id_x, 0)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_mpi_tn, id_y, 1)) < 0) HERR(routineName);
+  if (( H5LTset_attribute_float(ncid_mpi, TASK_NUMBER, "_FillValue",
+                                &FILLVALUE, 1) ) < 0) HERR(routineName);
   if (( io.in_mpi_it = H5Dcreate(ncid_mpi, ITER_NAME, H5T_NATIVE_LONG,
          file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_mpi_it, id_x, 0)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_mpi_it, id_y, 1)) < 0) HERR(routineName);
+  if (( H5LTset_attribute_float(ncid_mpi, ITER_NAME, "_FillValue",
+                                &FILLVALUE, 1) ) < 0) HERR(routineName);
   if (( io.in_mpi_conv = H5Dcreate(ncid_mpi, CONV_NAME, H5T_NATIVE_LONG,
          file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_mpi_conv, id_x, 0)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_mpi_conv, id_y, 1)) < 0) HERR(routineName);
+  if (( H5LTset_attribute_float(ncid_mpi, CONV_NAME, "_FillValue",
+                                &FILLVALUE, 1) ) < 0) HERR(routineName);
   if (( io.in_mpi_dm = H5Dcreate(ncid_mpi, DM_NAME, H5T_NATIVE_FLOAT,
          file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_mpi_dm, id_x, 0)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_mpi_dm, id_y, 1)) < 0) HERR(routineName);
+  if (( H5LTset_attribute_float(ncid_mpi, DM_NAME, "_FillValue",
+                                &FILLVALUE, 1) ) < 0) HERR(routineName);
   if (( io.in_mpi_zc = H5Dcreate(ncid_mpi, ZC_NAME, H5T_NATIVE_INT,
          file_dspace, H5P_DEFAULT, plist, H5P_DEFAULT)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_mpi_zc, id_x, 0)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_mpi_zc, id_y, 1)) < 0) HERR(routineName);
+  if (( H5LTset_attribute_float(ncid_mpi, ZC_NAME, "_FillValue",
+                                &FILLVALUE, 1) ) < 0) HERR(routineName);
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
   if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
 
@@ -448,6 +460,8 @@ void init_hdf5_indata_new(void)
   if (( H5DSattach_scale(io.in_mpi_dmh, id_x, 0)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_mpi_dmh, id_y, 1)) < 0) HERR(routineName);
   if (( H5DSattach_scale(io.in_mpi_dmh, id_tmp, 2)) < 0) HERR(routineName);
+  if (( H5LTset_attribute_float(ncid_mpi, DMH_NAME, "_FillValue",
+                                &FILLVALUE, 1) ) < 0) HERR(routineName);
   if (( H5Dclose(id_tmp) ) < 0) HERR(routineName);
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
   if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);

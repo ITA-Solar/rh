@@ -111,9 +111,13 @@ typedef struct {
 
 int   getLine(FILE *inputFile, char *commentChar, char *line,
 	      bool_t exit_on_EOF);
+int   getLineString(char **inputString, char *commentChar, char *line,
+                    bool_t exit_on_EOF);
 void  parse(int argc, char *argv[], int Noption, Option *theOptions);
 void  readInput();
 void  readValues(FILE *fp_keyword, int Nkeyword, Keyword *theKeywords);
+
+char *readWholeFile(const char *filename);
 
 void  setAngleSet(char *value, void *pointer);
 void  setcharValue(char *value, void *pointer);

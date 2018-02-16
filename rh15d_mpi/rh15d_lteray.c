@@ -56,10 +56,14 @@ int main(int argc, char *argv[])
          checkPoint, *wave_index = NULL;
   double muz;
   Atom *atom;
+  /* to DELETE */
+  const char delete_file[] = "atoms.input";
+  char *delete_in, *delete1;
+  int  ir;
+  /* to DELETE end */
   FILE   *fp_ray;
 
   char inputLine[MAX_LINE_SIZE];
-
 
   /* --- Set up MPI ----------------------             -------------- */
   initParallel(&argc, &argv, run_ray=FALSE);
@@ -72,6 +76,28 @@ int main(int argc, char *argv[])
   mpi.main_logfile     = commandline.logfile;
   commandline.logfile  = mpi.logfile;
   strcpy(mpi.rev_id, REV_ID); /* save revision */
+
+  /* PART TO DELETE */
+  delete_in = readWholeFile(delete_file);
+  //printf("%s\n", delete);
+  /*
+  delete1 = sgets(inputLine, MAX_LINE_SIZE, &delete_in);
+  printf("%s\n", inputLine);
+  delete1 = sgets(inputLine, MAX_LINE_SIZE, &delete_in);
+  printf("%s\n", inputLine);
+  delete1 = sgets(inputLine, MAX_LINE_SIZE, &delete_in);
+  printf("%s\n", inputLine);
+  */
+  getLineString(&delete_in, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
+  Nread = sscanf(inputLine, "%d", &ir);
+  printf("%i\n", ir);
+  getLineString(&delete_in, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
+  printf("%s\n", inputLine);
+  getLineString(&delete_in, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
+  printf("%s\n", inputLine);
+
+  return 0;
+  /* PART TO DELETE */
 
   /* --- Read input data and initialize --             -------------- */
   readInput();

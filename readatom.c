@@ -59,13 +59,14 @@ extern char messageStr[];
 
 /* ------- begin -------------------------- readAtom.c -------------- */
 
-void readAtom(Atom *atom, char *atom_file, bool_t active)
+void readAtom(Atom *atom, bool_t active)
 {
   const char routineName[] = "readAtom";
   register int kr, krp, kf, la, k, n;
 
   char    inputLine[MAX_LINE_SIZE], shapeStr[20], vdWstr[20], nuDepStr[20],
           symmStr[20], optionStr[20], labelStr[MAX_LINE_SIZE];
+  char   *atom_string = atom->fp_input;
   bool_t  Debeye, exit_on_EOF, match;
   int     i, j, Nlevel, Nrad, Nline, Ncont, Nfixed,
           Nspace = atmos.Nspace,
@@ -84,6 +85,7 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
   /* --- Open the data file for current model atom --  -------------- */
 
   initAtom(atom);
+  /*
   if ((atom->fp_input = fopen(atom_file, "r")) == NULL) {
     sprintf(messageStr, "Unable to open input file %s", atom_file);
     Error(ERROR_LEVEL_2, routineName, atom_file);
@@ -92,11 +94,12 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
 	    atom_file, (active) ? "(active)\n\n" : "(passive)\n");
     Error(MESSAGE, routineName, messageStr);
   }
+  */
   atom->active = active;
 
   /* --- Read atom ID and convert to uppercase --     -------------- */
 
-  getLine(atom->fp_input, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
+  getLineString(&atom_string, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
   Nread = sscanf(inputLine, "%2s", atom->ID);
   checkNread(Nread, Nrequired=1, routineName, checkPoint=1);
   for (n = 0;  n < (int) strlen(atom->ID);  n++)
@@ -125,13 +128,13 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
   if (!match) {
     sprintf(messageStr, " No matching element in periodic table for "
 	    " element %s in file %s, or abundance not specified",
-	    atom->ID, atom_file);
+	    atom->ID, atom->atom_file);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
 
   /* --- Get Number of levels, lines fixed transitions, and continua  */
 
-  getLine(atom->fp_input, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
+  getLineString(&atom_string, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
   Nread = sscanf(inputLine, "%d %d %d %d",
 		 &atom->Nlevel, &atom->Nline, &atom->Ncont, &atom->Nfixed);
   checkNread(Nread, Nrequired=4, routineName, checkPoint=2);
@@ -149,7 +152,7 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
 
   for (i = 0;  i < Nlevel;  i++) {
     atom->label[i] = (char *) calloc((ATOM_LABEL_WIDTH+1), sizeof(char));
-    getLine(atom->fp_input, COMMENT_CHAR, inputLine , exit_on_EOF=TRUE);
+    getLineString(&atom_string, COMMENT_CHAR, inputLine , exit_on_EOF=TRUE);
     Nread = sscanf(inputLine, "%lf %lf '%20c' %d",
       &atom->E[i], &atom->g[i], atom->label[i], &atom->stage[i]);
     checkNread(Nread, Nrequired=4, routineName, checkPoint=3);
@@ -159,7 +162,7 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
   if (atom->stage[Nlevel-1] != (atom->stage[Nlevel-2] + 1)) {
     sprintf(messageStr,
 	    "Atomic model %s in file %s does not have overlying continuum",
-	    atom->ID, atom_file);
+	    atom->ID, atom->atom_file);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
 
@@ -198,7 +201,7 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
     line->atom = atom;
     line->isotope_frac = 1.0;
 
-    getLine(atom->fp_input, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
+    getLineString(&atom_string, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
     Nread = sscanf(inputLine,
 		   "%d %d %lf %s %d %s %lf %lf %s %lf %lf %lf %lf %lf %lf %lf",
 		   &j, &i, &f, shapeStr, &line->Nlambda, symmStr,
@@ -243,7 +246,7 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
     if (strstr(shapeStr, "GAUSS")) line->Voigt = FALSE;
 
     if (strstr(shapeStr, "COMPOSIT")) {
-      getLine(atom->fp_input, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
+      getLineString(&atom_string, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
       Nread = sscanf(inputLine, "%d", &line->Ncomponent);
       line->c_shift = (double *) malloc(line->Ncomponent * sizeof(double));
       line->c_fraction =
@@ -251,7 +254,7 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
 
       c_sum = 0.0;
       for (n = 0;  n < line->Ncomponent;  n++) {
-	getLine(atom->fp_input, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
+	getLineString(&atom_string, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
 	Nread = sscanf(inputLine, "%lf %lf",
 		       &line->c_shift[n], &line->c_fraction[n]);
 	c_sum += line->c_fraction[n];
@@ -354,7 +357,7 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
     continuum->atom = atom;
     continuum->isotope_frac = 1.0;
 
-    getLine(atom->fp_input, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
+    getLineString(&atom_string, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
     Nread = sscanf(inputLine, "%d %d %lf %d %s %lf",
 		   &j, &i, &continuum->alpha0, &continuum->Nlambda,
 		   nuDepStr, &lambdamin);
@@ -374,7 +377,7 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
     if (strstr(nuDepStr, "EXPLICIT")) {
       continuum->hydrogenic = FALSE;
       for (la = continuum->Nlambda-1;  la >= 0;  la--) {
-	getLine(atom->fp_input, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
+	getLineString(&atom_string, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
 	Nread = sscanf(inputLine, "%lf %lf",
 		        &continuum->lambda[la], &continuum->alpha[la]);
 	checkNread(Nread, Nrequired=2, routineName, checkPoint=6);
@@ -430,7 +433,7 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
       fixed = atom->ft + kf;
       fixed->atom = atom;
 
-      getLine(atom->fp_input, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
+      getLineString(&atom_string, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
       Nread = sscanf(inputLine, "%d %d %lf %lf %s",
 		     &j, &i, &fixed->strength,
 		     &fixed->Trad, optionStr);
@@ -547,7 +550,7 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
            collisional data in the atomic input file, and allocate
            space for rate coefficients --               ------------- */
 
-    atom->offset_coll = ftell(atom->fp_input);
+    atom->offset_coll = atom_string;
     atom->C = matrix_double(SQ(Nlevel), Nspace);
 
   } else {
@@ -579,7 +582,8 @@ void readAtom(Atom *atom, char *atom_file, bool_t active)
            density has been calculated if necessary). This is done
            in routine SetLTEQuantities in ltepops.c -- -------------- */
 
-    fclose(atom->fp_input);
+    free(atom->fp_input); // Tiago: this should only be free after writing to output!!!
+    //fclose(atom->fp_input);
   }
 
   sprintf(labelStr, "Read %s %2s",
@@ -770,22 +774,20 @@ void readAtomicModels(void)
           popsFile[MAX_LINE_SIZE], inputLine[MAX_LINE_SIZE], *atomID;
   bool_t  active, exit_on_EOF;
   int     Nread, Nrequired, checkPoint;
-  FILE   *fp_atoms;
+  //FILE   *fp_atoms;
+  char   *file_buffer, *fp_atoms, *atom_buffer;
   Atom   *atom;
   Element *element;
 
   getCPU(2, TIME_START, NULL);
 
   /* --- Open input file for atomic models --          -------------- */
+  file_buffer = readWholeFile(input.atoms_input);
+  fp_atoms = file_buffer;
 
-  if ((fp_atoms = fopen(input.atoms_input, "r")) == NULL) {
-    sprintf(messageStr, "Unable to open input file %s",
-	    input.atoms_input);
-    Error(ERROR_LEVEL_2, routineName, messageStr);
-  }
   /* --- Get the number of atomic models to be read -- -------------- */
 
-  getLine(fp_atoms, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
+  getLineString(&fp_atoms, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
   Nread = sscanf(inputLine, "%d", &atmos.Natom);
   checkNread(Nread, Nrequired=1, routineName, checkPoint=1);
 
@@ -795,7 +797,7 @@ void readAtomicModels(void)
 
   for (n = 0;  n < atmos.Natom;  n++) {
 
-    getLine(fp_atoms, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
+    getLineString(&fp_atoms, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
     Nread = sscanf(inputLine, "%s %s %s %s ",
 		   filename, actionKey, popsKey, popsFile);
     checkNread(Nread, Nrequired=3, routineName, checkPoint=2);
@@ -819,9 +821,11 @@ void readAtomicModels(void)
            treated in Non-LTE --                       -------------- */
 
     atom = &atmos.atoms[n];
-    readAtom(atom, filename,
-	     active=(strstr(actionKey, "ACTIVE") ? TRUE : FALSE));
-
+    // Tiago: HERE will put instead of filename, string with the contents of each the file
+    atom->fp_input = readWholeFile(filename);
+    strncpy(atom->atom_file, filename, sizeof(atom->atom_file));
+    atom->atom_file[sizeof(atom->atom_file) - 1] = '\0';  /* terminate string */
+    readAtom(atom, active=(strstr(actionKey, "ACTIVE") ? TRUE : FALSE));
 
     /* --- Set flag for initial soltion --             -------------- */
 
@@ -862,7 +866,7 @@ void readAtomicModels(void)
       strcpy(atom->popsinFile, popsFile);
     }
   }
-  fclose(fp_atoms);
+  free(file_buffer);
 
   /* --- Create an alias to the hydrogen atom structure -- ---------- */
 

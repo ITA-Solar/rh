@@ -7,7 +7,7 @@
        --------------------------                      ----------RH-- */
 
 /* --- Various routines to calculate LTE populations -- ------------- */
- 
+
 #include <math.h>
 #include <stdlib.h>
 
@@ -45,7 +45,7 @@ void LTEpops(Atom *atom, bool_t Debeye)
 
            dE_ion = -Z * (e^2/4PI*EPSILON_0) / D           [J]
                 D = sqrt(EPSILON_0/(2e^2)) * sqrt(kT/ne)   [m]
- 
+
     See: Mihalas (78), pp. 293-295
 
        --                                              -------------- */
@@ -86,7 +86,7 @@ void LTEpops(Atom *atom, bool_t Debeye)
 	dE_kT = (dE - nDebeye[i] * dEion) / (KBOLTZMANN * atmos.T[k]);
       else
 	dE_kT = dE / (KBOLTZMANN * atmos.T[k]);
-      
+
       atom->nstar[i][k] = gi0 * exp(-dE_kT);
       for (m = 1;  m <= dZ;  m++) atom->nstar[i][k] /= cNe_T;
       sum += atom->nstar[i][k];
@@ -229,12 +229,13 @@ void SetLTEQuantities(void)
     LTEpops(atom, Debeye);
 
     if (atom->active) {
-      
+
       /* --- Read the collisional data (in MULTI's GENCOL format).
              After this we can close the input file for the active
              atom. --                                  -------------- */
-
-      CollisionRate(atom, atom->fp_input);
+      // Tiago: this must work with atom as string, must use
+      //        atom->offset_coll, and somehow read the file again! (filename gone)
+      CollisionRate(atom, atom->offset_coll);
 
       /* --- Compute the fixed rates and store in Cij -- ------------ */
 
@@ -243,4 +244,3 @@ void SetLTEQuantities(void)
   }
 }
 /* ------- end ---------------------------- SetLTEQuantities.c ------ */
-
