@@ -87,6 +87,10 @@
 #define HOSTNAME       "hostname"
 #define START_TIME     "starting_time"
 #define FINISH_TIME    "finish_time"
+#define ATOMS_INFILE     "atoms_file"
+#define KEYWORD_INFILE   "keyword_file"
+#define RAY_INFILE       "ray_file"
+#define LINES_INFILE     "lines_file"
 
 
 /* Definitions for the Aux file */

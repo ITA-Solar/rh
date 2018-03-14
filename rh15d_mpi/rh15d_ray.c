@@ -27,6 +27,7 @@ void writeRay(void);
 void close_hdf5_ray(void);
 void calculate_ray(void);
 void writeAtmos_p(void);
+void readSavedInput(void);
 
 /* --- Global variables --                             -------------- */
 
@@ -81,6 +82,8 @@ int main(int argc, char *argv[])
   /* Find out the work load for each process */
   distribute_jobs();
 
+  /* Saved input overrides any current options */
+  if (input.p15d_rerun) readSavedInput();
 
   /* --- Read ray.input --                            --------------- */
   /* --- Read direction cosine for ray --              -------------- */
@@ -126,6 +129,7 @@ int main(int argc, char *argv[])
   readAtmos(0, 0, &atmos, &geometry, &infile);
 
   if (atmos.Stokes) Bproject();
+
 
   readAtomicModels();
   readMolecularModels();

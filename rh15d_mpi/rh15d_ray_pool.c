@@ -30,6 +30,8 @@ void close_hdf5_ray(void);
 void calculate_ray(void);
 void overlord(void);
 void drone(void);
+void readSavedInput(void);
+
 
 /* --- Global variables --                             -------------- */
 
@@ -130,8 +132,11 @@ int main(int argc, char *argv[])
 
   /* Find out the work load for each process, put only one task for pool */
   distribute_jobs();
-  mpi.Ntasks = 1;
 
+  /* Saved input overrides any current options */
+  if (input.p15d_rerun) readSavedInput();
+
+  mpi.Ntasks = 1;
   atmos.moving = TRUE;  /* To prevent moving change from column [0, 0] */
   /* Read first atmosphere column just to get dimensions */
   readAtmos(0, 0, &atmos, &geometry, &infile);

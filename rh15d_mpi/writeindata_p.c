@@ -61,11 +61,14 @@ void init_hdf5_indata_new(void)
   /* This value is harcoded for efficiency.
      Maximum number of iterations ever needed */
   int     NMaxIter = 1500;
-  hid_t   plist, ncid, file_dspace, ncid_input, ncid_atmos, ncid_mpi;
+  int     atom_name_size = 8;
+  hid_t   plist, ncid, file_dspace, ncid_input, ncid_atmos, ncid_mpi, ncid_tmp;
   hid_t   id_x, id_y, id_z, id_n, id_tmp;
   hsize_t dims[4];
-  bool_t   XRD;
-  char    startJ[MAX_LINE_SIZE], StokesMode[MAX_LINE_SIZE], angleSet[MAX_LINE_SIZE];
+  bool_t  XRD;
+  char    startJ[MAX_LINE_SIZE], StokesMode[MAX_LINE_SIZE];
+  char    angleSet[MAX_LINE_SIZE], group_name[ARR_STRLEN], **atom_names;
+  Atom   *atom;
 
   /* Create the file  */
   if (( plist = H5Pcreate(H5P_FILE_ACCESS )) < 0) HERR(routineName);
@@ -123,6 +126,8 @@ void init_hdf5_indata_new(void)
           (unsigned char *) &XRD, 1)) < 0) HERR(routineName);
   if (( H5LTset_attribute_uchar(ncid_input, ".", "Background_polarization",
           (unsigned char *) &input.backgr_pol, 1)) < 0) HERR(routineName);
+  if (( H5LTset_attribute_int(ncid_input, ".", "natoms", &atmos.Natom, 1) ) < 0)
+      HERR(routineName);
 
   switch (input.startJ) {
   case UNKNOWN:
@@ -231,6 +236,30 @@ void init_hdf5_indata_new(void)
                                &input.metallicity, 1) ) < 0) HERR(routineName);
   if (( H5LTset_attribute_double(ncid_input, ".", "Lambda_reference",
                                 &atmos.lambda_ref, 1) ) < 0) HERR(routineName);
+  /* contents of input files as variables */
+  if (( H5LTmake_dataset_string(ncid_input, "atoms_file_contents",
+                          input.atoms_file_contents) ) < 0)  HERR(routineName);
+  free(input.atoms_file_contents);
+  /* Make sub groups for storing contents of atom files */
+  atom_names = matrix_char(atmos.Natom, atom_name_size);
+  for (i=0; i < atmos.Natom; i++) {
+      atom = &atmos.atoms[i];
+      sprintf(group_name, (atom->ID[1] == ' ') ? "atom_%.1s" : "atom_%.2s",
+              atom->ID);
+      strncpy(atom_names[i], group_name, atom_name_size - 1);
+      if (( ncid_tmp = H5Gcreate(ncid_input, group_name, H5P_DEFAULT,
+                            H5P_DEFAULT, H5P_DEFAULT) ) < 0) HERR(routineName);
+      if (( H5LTset_attribute_string(ncid_tmp, ".", "file_name",
+                                     atom->atom_file)) < 0) HERR(routineName);
+      if (( H5LTmake_dataset_string(ncid_tmp, "file_contents",
+                                    atom->fp_input) ) < 0)  HERR(routineName);
+      if (( H5Gclose(ncid_tmp) ) < 0) HERR(routineName);
+  }
+  dims[0] = atmos.Natom;
+  dims[1] = atom_name_size;
+  if (( H5LTmake_dataset(ncid_input, "atom_groups", 2, dims,
+                         H5T_C_S1, atom_names[0]) ) < 0)  HERR(routineName);
+  freeMatrix((void **) atom_names);
 
   /* --- Definitions for the ATMOS group --- */
   /* dimensions */
@@ -571,6 +600,8 @@ void close_hdf5_indata(void)
 /* Closes the indata file */
 {
   const char routineName[] = "close_hdf5_indata";
+  int n;
+  Atom *atom;
 
   /* Close all datasets */
   if (( H5Dclose(io.in_atmos_T) ) < 0) HERR(routineName);
@@ -591,6 +622,18 @@ void close_hdf5_indata(void)
 
   /* Close file */
   if (( H5Fclose(io.in_ncid) ) < 0) HERR(routineName);
+
+  /* Free other resources */
+  if (input.atomic_file_contents != NULL) {  /* For reruns */
+      for (n=0; n < atmos.Natom; n++)
+          free(input.atomic_file_contents[n]);
+      free(input.atomic_file_contents);
+  } else {
+      for (n=0; n < atmos.Natom; n++) {   /* Outside of reruns */
+          atom = &atmos.atoms[n];
+          free(atom->fp_input);
+      }
+  }
   return;
 }
 /* ------- end   --------------------------   close_hdf5_indata.c --- */
@@ -770,9 +813,8 @@ void readConvergence(void) {
   if (( H5LTget_attribute_string(ncid, "/", "atmosID", atmosID) ) < 0)
     HERR(routineName);
   if (!strstr(atmosID, atmos.ID)) {
-    sprintf(messageStr,
-       "Indata file was calculated for different atmosphere (%s) than current",
-	     atmosID);
+    sprintf(messageStr, "Indata file was calculated for different "
+            "atmosphere (%s) than current (%s)", atmosID, atmos.ID);
     Error(WARNING, routineName, messageStr);
     }
   free(atmosID);
@@ -800,3 +842,87 @@ void readConvergence(void) {
   return;
 }
 /* ------- end   -------------------------- readConvergence.c  --- */
+
+/* ------- begin -------------------------- readSavedInput.c  --- */
+void readSavedInput(void) {
+  /* Reads saved input and convergence info for rerun */
+  const char routineName[] = "readSavedInput";
+  char *atmosID, **atom_names;
+  int n, atom_name_size;
+  size_t attr_size, str_size = 0;
+  hid_t ncid, ncid_input, ncid_tmp, plist;
+  hsize_t dims[5];
+  H5T_class_t type_class;
+
+
+  /* --- Open the inputdata file --- */
+  if (( plist = H5Pcreate(H5P_FILE_ACCESS )) < 0) HERR(routineName);
+  if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
+  if (( ncid = H5Fopen(INPUTDATA_FILE, H5F_ACC_RDWR, plist) ) < 0)
+    HERR(routineName);
+  if (( H5Pclose(plist) ) < 0) HERR(routineName);
+
+  /* --- Consistency checks --- */
+  /* Check that atmosID is the same */
+  if (( H5LTget_attribute_info(ncid, "/", "atmosID", NULL, &type_class,
+                               &attr_size) ) < 0) HERR(routineName);
+  atmosID = (char *) malloc(attr_size + 1);
+  if (( H5LTget_attribute_string(ncid, "/", "atmosID", atmosID) ) < 0)
+    HERR(routineName);
+  if (!strstr(atmosID, atmos.ID)) {
+    sprintf(messageStr,  "Indata file was calculated for different "
+           "atmosphere (%s) than current (%s)", atmosID, atmos.ID);
+    Error(WARNING, routineName, messageStr);
+    }
+  free(atmosID);
+
+  /* --- Read input files --- */
+  if (( ncid_input = H5Gopen(ncid, "input", H5P_DEFAULT) ) < 0) HERR(routineName);
+  if (H5LTfind_dataset(ncid_input, "atoms_file_contents")) {
+    /* For H5T_STRING datasets, size of string is saved under last argument */
+    if ((H5LTget_dataset_info(ncid_input, "atoms_file_contents", NULL,
+			                  NULL, &str_size)) < 0) HERR(routineName);
+  } else {
+    sprintf(messageStr, "Could not read atoms file in indata file, "
+	                    "no rerun is possible. Aborting.\n");
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
+  input.atoms_file_contents = (char *) malloc(str_size + 1);
+  if (( H5LTread_dataset_string(ncid_input, "atoms_file_contents",
+                          input.atoms_file_contents) ) < 0) HERR(routineName);
+  if (( H5LTget_attribute_int(ncid_input, ".", "natoms",
+                              &input.Natoms) ) < 0) HERR(routineName);
+  /* Load atom files */
+  if ((H5LTget_dataset_info(ncid_input, "atom_groups", dims, NULL, NULL)) < 0)
+    HERR(routineName);
+  input.Natoms = dims[0];
+  atom_name_size = dims[1];
+  atom_names = matrix_char(input.Natoms, atom_name_size);
+  if (( H5LTread_dataset(ncid_input, "atom_groups", H5T_C_S1,
+                         atom_names[0]) ) < 0) HERR(routineName);
+  input.atomic_file_contents = (char **) malloc(input.Natoms * sizeof(char *));
+  for (n = 0;  n < input.Natoms;  n++) {
+      if (( ncid_tmp = H5Gopen(ncid_input, atom_names[n], H5P_DEFAULT) ) < 0)
+        HERR(routineName);
+      if (H5LTfind_dataset(ncid_tmp, "file_contents")) {
+          /* H5T_STRING datasets: size of string is saved on last argument */
+          if ((H5LTget_dataset_info(ncid_tmp, "file_contents", NULL,
+                                    NULL, &str_size)) < 0) HERR(routineName);
+      } else {
+          sprintf(messageStr, "Could not read atomic file in indata file, "
+                              "no rerun is possible. Aborting.\n");
+          Error(ERROR_LEVEL_2, routineName, messageStr);
+      }
+      input.atomic_file_contents[n] = (char *) malloc(str_size + 1);
+      if (( H5LTread_dataset_string(ncid_tmp, "file_contents",
+                       input.atomic_file_contents[n]) ) < 0) HERR(routineName);
+      if (( H5Gclose(ncid_tmp) ) < 0) HERR(routineName);
+  }
+  freeMatrix((void **) atom_names);
+  if (( H5Gclose(ncid_input) ) < 0) HERR(routineName);
+
+  /* --- Close inputdata file --- */
+  if (( H5Fclose(ncid) ) < 0) HERR(routineName);
+  return;
+}
+/* ------- end   -------------------------- readSavedInput.c  --- */

@@ -42,7 +42,7 @@ void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry,
   struct  stat statBuffer;
   int has_B;
   hid_t plist_id, ncid;
-  hsize_t  dims[5];
+  hsize_t dims[5];
   size_t nn = 0;
   size_t start[] = {0, 0};
   size_t count[] = {1, 1};
@@ -51,7 +51,7 @@ void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry,
   /* --- Open input file for model atmosphere --       -------------- */
   if ((plist_id = H5Pcreate(H5P_FILE_ACCESS)) < 0) HERR(routineName);
   if ((H5Pset_fapl_mpio(plist_id, mpi.comm, mpi.info)) < 0) HERR(routineName);
-  if ((ncid = H5Fopen(input.atmos_input, H5F_ACC_RDWR, plist_id)) < 0)
+  if ((ncid = H5Fopen(input.atmos_input, H5F_ACC_RDONLY, plist_id)) < 0)
     HERR(routineName);
   infile->ncid = (int) ncid;
   if ((H5Pclose(plist_id)) < 0) HERR(routineName); /* plist no longer needed */

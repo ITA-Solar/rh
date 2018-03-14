@@ -98,7 +98,6 @@ void readAtom(Atom *atom, bool_t active)
   atom->active = active;
 
   /* --- Read atom ID and convert to uppercase --     -------------- */
-
   getLineString(&atom_string, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
   Nread = sscanf(inputLine, "%2s", atom->ID);
   checkNread(Nread, Nrequired=1, routineName, checkPoint=1);
@@ -581,9 +580,6 @@ void readAtom(Atom *atom, bool_t active)
            the LTE populations have been calculated (after the electron
            density has been calculated if necessary). This is done
            in routine SetLTEQuantities in ltepops.c -- -------------- */
-
-    free(atom->fp_input); // Tiago: this should only be free after writing to output!!!
-    //fclose(atom->fp_input);
   }
 
   sprintf(labelStr, "Read %s %2s",
@@ -618,7 +614,6 @@ void initAtom(Atom *atom)
   atom->continuum = NULL;
   atom->ft = NULL;
   atom->Ng_n = NULL;
-  atom->fp_input = NULL;
 }
 /* ------- end ---------------------------- initAtom.c -------------- */
 
@@ -774,16 +769,16 @@ void readAtomicModels(void)
           popsFile[MAX_LINE_SIZE], inputLine[MAX_LINE_SIZE], *atomID;
   bool_t  active, exit_on_EOF;
   int     Nread, Nrequired, checkPoint;
-  //FILE   *fp_atoms;
-  char   *file_buffer, *fp_atoms, *atom_buffer;
+  char   *fp_atoms;
   Atom   *atom;
   Element *element;
 
   getCPU(2, TIME_START, NULL);
 
   /* --- Open input file for atomic models --          -------------- */
-  file_buffer = readWholeFile(input.atoms_input);
-  fp_atoms = file_buffer;
+  if (input.atoms_file_contents == NULL)
+    input.atoms_file_contents = readWholeFile(input.atoms_input);
+  fp_atoms = input.atoms_file_contents;
 
   /* --- Get the number of atomic models to be read -- -------------- */
 
@@ -821,8 +816,12 @@ void readAtomicModels(void)
            treated in Non-LTE --                       -------------- */
 
     atom = &atmos.atoms[n];
-    // Tiago: HERE will put instead of filename, string with the contents of each the file
-    atom->fp_input = readWholeFile(filename);
+    /* Either use saved files (rerun only) or read whole file as string  */
+    if (input.atomic_file_contents != NULL) {
+        atom->fp_input = input.atomic_file_contents[n];
+    } else {
+        atom->fp_input = readWholeFile(filename);
+    }
     strncpy(atom->atom_file, filename, sizeof(atom->atom_file));
     atom->atom_file[sizeof(atom->atom_file) - 1] = '\0';  /* terminate string */
     readAtom(atom, active=(strstr(actionKey, "ACTIVE") ? TRUE : FALSE));
@@ -866,7 +865,6 @@ void readAtomicModels(void)
       strcpy(atom->popsinFile, popsFile);
     }
   }
-  free(file_buffer);
 
   /* --- Create an alias to the hydrogen atom structure -- ---------- */
 

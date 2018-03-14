@@ -65,7 +65,7 @@ bool_t StopRequested_p(void);
 void ERR(int ierror, const char *rname);
 void HERR(const char *rname);
 void copyBufVars(bool_t writej);
-void writeOutput(bool_t writej); 
+void writeOutput(bool_t writej);
 
 void Iterate_p(int NmaxIter, double iterLimit);
 double solveSpectrum_p(bool_t eval_operator, bool_t redistribute);

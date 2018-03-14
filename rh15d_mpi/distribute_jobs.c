@@ -138,6 +138,8 @@ long **get_taskmap(long remain_tasks, long *ntasks, long *my_start)
 {
   long i, j, k, *start, **taskmap;
 
+  if (remain_tasks < 1)  /* For cases when there is no work */
+    return NULL;
   taskmap = matrix_long(remain_tasks, (long) 2);
   start   = (long *) malloc(mpi.size * sizeof(long));
 
@@ -203,7 +205,8 @@ void finish_jobs(void)
 
   free(mpi.xnum);
   free(mpi.ynum);
-  freeMatrix((void **) mpi.taskmap);
+  if (mpi.taskmap != NULL)
+    freeMatrix((void **) mpi.taskmap);
 
 }
 /* ------- end   -------------------------- finish_jobs.c ------- --- */

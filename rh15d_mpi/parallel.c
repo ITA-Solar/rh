@@ -52,13 +52,10 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
   MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
   MPI_Get_processor_name(mpi.name, &mpi.namelen);
-
   mpi.comm = MPI_COMM_WORLD;
   mpi.info = MPI_INFO_NULL;
-
   /* Open log files */
   sprintf(logfile, (run_ray) ? RAY_MPILOG_TEMPLATE : MPILOG_TEMPLATE, mpi.rank);
-
   if ((mpi.logfile = fopen(logfile, "w")) == NULL) {
     sprintf(messageStr, "Process %4d: Unable to open log file %s",
 	    mpi.rank, logfile);
@@ -66,12 +63,15 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
   }
   /* _IOFBF for full buffering, _IOLBF for line buffering */
   setvbuf(mpi.logfile, NULL, _IOLBF, BUFSIZ_MPILOG);
-
   mpi.stop    = FALSE;
   mpi.nconv   = 0;
   mpi.nnoconv = 0;
   mpi.ncrash  = 0;
+  mpi.taskmap = NULL;
 
+  /* Initialise input */
+  input.atoms_file_contents = NULL;
+  input.atomic_file_contents = NULL;
   return;
 }
 /* ------- end   --------------------------   initParallel.c --   --- */
@@ -214,16 +214,6 @@ void UpdateAtmosDep(void) {
   /* Now only for active atoms */
   for (nact = 0; nact < atmos.Nactiveatom; nact++) {
     atom = atmos.activeatoms[nact];
-
-
-    // TIAGO: commented below
-    /* Rewind atom files to point just before collisional data
-    if ((ierror = fseek(atom->fp_input, io.atom_file_pos[nact], SEEK_SET))) {
-      sprintf(messageStr, "Unable to rewind atom file for %s", atom->ID);
-      Error(ERROR_LEVEL_2, routineName, messageStr);
-    }
-    */
-
     /* Reallocate some stuff (because of varying Nspace) */
 
     /* Free collision rate array, will be reallocated by calls in Background_p */
@@ -235,7 +225,6 @@ void UpdateAtmosDep(void) {
     /* Allocate Gamma, as iterate released the memory */
     atom->Gamma = matrix_double(SQ(atom->Nlevel), atmos.Nspace);
 
-
     /* Initialise some continuum quantities */
     for (kr = 0; kr < atom->Ncont; kr++) {
       atom->continuum[kr].Rij = (double *) realloc(atom->continuum[kr].Rij,
@@ -243,8 +232,8 @@ void UpdateAtmosDep(void) {
       atom->continuum[kr].Rji = (double *) realloc(atom->continuum[kr].Rji,
 						   atmos.Nspace * sizeof(double));
       for (k = 0;  k < atmos.Nspace;  k++) {
-	atom->continuum[kr].Rij[k] = 0.0;
-	atom->continuum[kr].Rji[k] = 0.0;
+          atom->continuum[kr].Rij[k] = 0.0;
+          atom->continuum[kr].Rji[k] = 0.0;
       }
     }
 
@@ -254,12 +243,12 @@ void UpdateAtmosDep(void) {
       line = &atom->line[kr];
 
       if (line->phi  != NULL) {
-	freeMatrix((void **) line->phi);
-	line->phi = NULL;
+          freeMatrix((void **) line->phi);
+          line->phi = NULL;
       }
       if (line->wphi != NULL) {
-	free(line->wphi);
-	line->wphi = NULL;
+          free(line->wphi);
+          line->wphi = NULL;
       }
 
       if (atmos.moving && line->polarizable && (input.StokesMode >= FIELD_FREE)) {
@@ -293,17 +282,14 @@ void UpdateAtmosDep(void) {
 	  }
 	}
       }
-
-
       /* realloc because of varying Nspace */
       line->Rij = (double *) realloc(line->Rij, atmos.Nspace * sizeof(double));
       line->Rji = (double *) realloc(line->Rji, atmos.Nspace * sizeof(double));
 
       for (k = 0;  k < atmos.Nspace;  k++) {
-	line->Rij[k] = 0.0;
-	line->Rji[k] = 0.0;
+          line->Rij[k] = 0.0;
+          line->Rji[k] = 0.0;
       }
-
 
       if (line->PRD) {
 	if (line->Ng_prd != NULL) {

@@ -98,11 +98,14 @@ typedef struct {
   int    NpescIter;
   /* Tiago, added this for 1.5D version */
   int    p15d_nt, p15d_x0, p15d_x1, p15d_xst, p15d_y0, p15d_y1, p15d_yst;
+  int    Natoms;
   double p15d_tmax;
   bool_t p15d_wxtra, p15d_rerun, p15d_refine, p15d_zcut, p15d_wtau;
   bool_t p15d_wpop, p15d_wrates;
   double iterLimit, PRDiterLimit, metallicity;
-
+  /* Tiago, for saving the input files */
+  char  *atoms_file_contents, *keyword_file_contents, *ray_file_contents;
+  char **atomic_file_contents;
   pthread_attr_t thread_attr;
 } InputData;
 
