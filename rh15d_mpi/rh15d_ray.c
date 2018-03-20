@@ -14,20 +14,15 @@
 #include "parallel.h"
 #include "io.h"
 
-#define COMMENT_CHAR    "#"
-#define RAY_INPUT_FILE  "ray.input"
+//#define COMMENT_CHAR    "#"
+//#define RAY_INPUT_FILE  "ray.input"
 
 #ifndef REV_ID
 #define REV_ID "UNKNOWN"
 #endif
 
 /* --- Function prototypes --                          -------------- */
-void init_hdf5_ray(void);
-void writeRay(void);
-void close_hdf5_ray(void);
-void calculate_ray(void);
-void writeAtmos_p(void);
-void readSavedInput(void);
+
 
 /* --- Global variables --                             -------------- */
 
@@ -52,13 +47,8 @@ const float FILLVALUE = FILL;
 
 int main(int argc, char *argv[])
 {
-  bool_t write_analyze_output, equilibria_only, run_ray, writej, exit_on_EOF;
-  int    niter, i, Nspect, Nread, Nrequired,
-         checkPoint, save_Nrays, *wave_index = NULL;
-  double muz, save_muz, save_mux, save_muy, save_wmu;
-  FILE  *fp_ray;
-
-  char  inputLine[MAX_LINE_SIZE];
+  bool_t write_analyze_output, equilibria_only, run_ray, writej;
+  int    niter;
 
   /* --- Set up MPI ----------------------             -------------- */
   initParallel(&argc, &argv, run_ray=FALSE);
@@ -83,46 +73,12 @@ int main(int argc, char *argv[])
   distribute_jobs();
 
   /* Saved input overrides any current options */
-  if (input.p15d_rerun) readSavedInput();
-
-  /* --- Read ray.input --                            --------------- */
-  /* --- Read direction cosine for ray --              -------------- */
-  if ((fp_ray = fopen(RAY_INPUT_FILE, "r")) == NULL) {
-    sprintf(messageStr, "Unable to open inputfile %s", RAY_INPUT_FILE);
-    Error(ERROR_LEVEL_2, argv[0], messageStr);
+  if (input.p15d_rerun) {
+      readSavedInput();
+  } else {
+      readRayInput();
   }
 
-  getLine(fp_ray, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
-  Nread = sscanf(inputLine, "%lf", &muz);
-  checkNread(Nread, Nrequired=1, argv[0], checkPoint=1);
-
-  if (muz <= 0.0  ||  muz > 1.0) {
-    sprintf(messageStr,
-	    "Value of muz = %f does not lie in interval <0.0, 1.0]\n", muz);
-    Error(ERROR_LEVEL_2, argv[0], messageStr);
-  }
-
-  /* --- read how many points to write detailed S, chi, eta, etc ---- */
-  Nread = fscanf(fp_ray, "%d", &Nspect);
-  checkNread(Nread, 1, argv[0], checkPoint=2);
-  io.ray_nwave_sel = Nspect;
-
-   /* --- Read wavelength indices for which chi and S are to be
-       written out for the specified direction --    -------------- */
-
-  if (Nspect > 0) {
-    io.ray_wave_idx = (int *) malloc(Nspect * sizeof(int));
-    Nread = 0;
-    while (fscanf(fp_ray, "%d", &io.ray_wave_idx[Nread]) != EOF) Nread++;
-    checkNread(Nread, Nspect, argv[0], checkPoint=3);
-    fclose(fp_ray);
-
-    wave_index = io.ray_wave_idx;
-  }
-
-  /* --- Save geometry values to change back after --    ------------ */
-  save_Nrays = atmos.Nrays;   save_wmu = geometry.wmu[0];
-  save_muz = geometry.muz[0]; save_mux = geometry.mux[0]; save_muy = geometry.muy[0];
 
   atmos.moving = TRUE;  /* To prevent moving change from column [0, 0] */
    /* Read first atmosphere column just to get dimensions */
@@ -130,22 +86,10 @@ int main(int argc, char *argv[])
 
   if (atmos.Stokes) Bproject();
 
-
   readAtomicModels();
   readMolecularModels();
-
   SortLambda();
-
-  /* Check if wavelength indices make sense */
-  for (i = 0;  i < Nspect;  i++) {
-    if (wave_index[i] < 0  ||  wave_index[i] >= spectrum.Nspect) {
-	sprintf(messageStr, "Illegal value of wave_index[n]: %4d\n"
-	"Value has to be between 0 and %4d\n",
-	wave_index[i], spectrum.Nspect);
-	Error(ERROR_LEVEL_2, "main", messageStr);
-    }
-  }
-
+  checkValuesRayInput();
   initParallelIO(run_ray=FALSE, writej=FALSE);
   init_hdf5_ray();
 
@@ -236,7 +180,7 @@ int main(int argc, char *argv[])
       /* Redefine geometry just for this ray */
       atmos.Nrays     = 1;
       geometry.Nrays  = 1;
-      geometry.muz[0] = muz;
+      geometry.muz[0] = io.ray_muz;
       geometry.mux[0] = sqrt(1.0 - SQ(geometry.muz[0]));
       geometry.muy[0] = 0.0;
       geometry.wmu[0] = 1.0;
@@ -246,11 +190,11 @@ int main(int argc, char *argv[])
       writeRay();
 
       /* Put back previous values for geometry  */
-      atmos.Nrays     = geometry.Nrays = save_Nrays;
-      geometry.muz[0] = save_muz;
-      geometry.mux[0] = save_mux;
-      geometry.muy[0] = save_muy;
-      geometry.wmu[0] = save_wmu;
+      atmos.Nrays     = geometry.Nrays = geometry.save_Nrays;
+      geometry.muz[0] = geometry.save_muz;
+      geometry.mux[0] = geometry.save_mux;
+      geometry.muy[0] = geometry.save_muy;
+      geometry.wmu[0] = geometry.save_wmu;
       spectrum.updateJ = TRUE;
     }
 

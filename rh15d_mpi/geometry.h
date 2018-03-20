@@ -19,7 +19,8 @@ typedef struct {
   enum     mass_scale  scale;
   enum     boundcond vboundary[2];
   enum     atmos_type atmos_format;
-  int      Ndep, Nrays;
+  int      Ndep, Nrays, save_Nrays;
+  double   save_muz, save_mux, save_muy, save_wmu;
   double  *height, *cmass, *tau_ref, *mux, *muy, *muz, *wmu, *vel,
           *xscale, *yscale, **Itop, **Ibottom;
 } Geometry;

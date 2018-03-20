@@ -13,6 +13,10 @@
 #include <hdf5.h>
 #include <hdf5_hl.h>
 
+/* General definitions */
+#define COMMENT_CHAR    "#"
+#define RAY_INPUT_FILE  "ray.input"
+
 /* Definitions for readj_p */
 #define  J_FILE_TEMPLATE "%s.hdf5"
 
@@ -87,10 +91,11 @@
 #define HOSTNAME       "hostname"
 #define START_TIME     "starting_time"
 #define FINISH_TIME    "finish_time"
-#define ATOMS_INFILE     "atoms_file"
-#define KEYWORD_INFILE   "keyword_file"
-#define RAY_INFILE       "ray_file"
-#define LINES_INFILE     "lines_file"
+#define ATOMS_INFILE   "atoms_file"
+#define KEYWORD_INFILE "keyword_file"
+#define RAY_INFILE     "ray_file"
+#define LINES_INFILE   "lines_file"
+#define INPUT_MU       "ray_mu"
 
 
 /* Definitions for the Aux file */
@@ -155,6 +160,7 @@ typedef struct {
        ray_chi_l_var,     ray_eta_l_var,     ray_chi_c_var,     ray_eta_c_var,
        ray_sca_c_var,     ray_chi_var,       ray_S_var,        *ray_wave_idx,
        ray_tau1_var;
+  double ray_muz;
 } IO_data;
 
 typedef struct {
@@ -164,6 +170,14 @@ typedef struct {
 
 /* Default fill value for HDF5 */
 extern const float FILLVALUE;
+
+void readSavedInput(void);
+void readRayInput(void);
+void checkValuesRayInput(void);
+void init_hdf5_ray(void);
+void writeRay(void);
+void close_hdf5_ray(void);
+void calculate_ray(void);
 
 #endif /* !__IO_H__ */
 

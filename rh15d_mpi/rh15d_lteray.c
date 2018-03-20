@@ -16,9 +16,6 @@
 #include "parallel.h"
 #include "io.h"
 
-#define COMMENT_CHAR    "#"
-#define RAY_INPUT_FILE  "ray.input"
-
 #ifndef REV_ID
 #define REV_ID "UNKNOWN"
 #endif

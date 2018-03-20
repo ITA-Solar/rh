@@ -40,7 +40,7 @@ ONE_D_OBJS = anglequad.o      feautrier.o     formal.o           hydrostat.o   \
              scatter_p.o      initial_p.o     bezier.o           writeAux_p.o  \
              writeindata_p.o  parallel.o      iterate_p.o        ludcmp_p.o    \
              statequil_p.o    accelerate_p.o  redistribute_p.o   multiatmos.o  \
-			 readatmos.o
+			 readatmos.o      readRayInput.o
 
 SUBSTITUTE = pops_xdr.o
 
@@ -167,6 +167,10 @@ readj_p.o:              ../rh.h          ../atom.h        ../atmos.h       \
                         geometry.h       ../inputs.h      ../error.h       \
 	                io.h             readj_p.c
 	$(CC) $(CFLAGS) -Wall -c  -o $@  readj_p.c
+
+readRayInput.o:         ../rh.h          ../atmos.h       ../error.h       \
+	                    ../inputs.h      ../spectrum.h    geometry.h       \
+						io.h
 
 redistribute_p.o:       ../rh.h          ../atmos.h       ../atom.h        \
                         ../spectrum.h    ../accelerate.h  ../error.h       \

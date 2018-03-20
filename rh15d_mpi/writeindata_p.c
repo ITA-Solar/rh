@@ -260,6 +260,16 @@ void init_hdf5_indata_new(void)
   if (( H5LTmake_dataset(ncid_input, "atom_groups", 2, dims,
                          H5T_C_S1, atom_names[0]) ) < 0)  HERR(routineName);
   freeMatrix((void **) atom_names);
+  /* Information from ray.input */
+  if (( H5LTset_attribute_double(ncid_input, ".", INPUT_MU,
+                                 &io.ray_muz, 1) ) < 0) HERR(routineName);
+  if (( H5LTset_attribute_uint(ncid_input, ".", WAVE_SEL,
+                (unsigned int *) &io.ray_nwave_sel, 1) ) < 0) HERR(routineName);
+  if (io.ray_nwave_sel > 0) {
+      dims[0] = io.ray_nwave_sel;
+      if (( H5LTmake_dataset(ncid_input, WAVE_SEL_IDX, 1, dims,
+                   H5T_NATIVE_UINT, io.ray_wave_idx) ) < 0)  HERR(routineName);
+  }
 
   /* --- Definitions for the ATMOS group --- */
   /* dimensions */
@@ -919,9 +929,27 @@ void readSavedInput(void) {
       if (( H5Gclose(ncid_tmp) ) < 0) HERR(routineName);
   }
   freeMatrix((void **) atom_names);
-  if (( H5Gclose(ncid_input) ) < 0) HERR(routineName);
 
-  /* --- Close inputdata file --- */
+  /* Load data from ray.input */
+  if (( H5LTget_attribute_double(ncid_input, ".", INPUT_MU,
+                                 &io.ray_muz) ) < 0) HERR(routineName);
+  if (( H5LTget_attribute_uint(ncid_input, ".", WAVE_SEL,
+                  (unsigned int *) &io.ray_nwave_sel) ) < 0) HERR(routineName);
+  io.ray_wave_idx = NULL;
+  if (io.ray_nwave_sel > 0) {
+      io.ray_wave_idx = (int *) malloc(io.ray_nwave_sel * sizeof(int));
+      if ((H5LTread_dataset_int(ncid_input, WAVE_SEL_IDX, io.ray_wave_idx)) < 0)
+          HERR(routineName);
+  }
+  /* --- Save geometry values to change back after --    ------------ */
+  geometry.save_Nrays = atmos.Nrays;
+  geometry.save_wmu = geometry.wmu[0];
+  geometry.save_muz = geometry.muz[0];
+  geometry.save_mux = geometry.mux[0];
+  geometry.save_muy = geometry.muy[0];
+
+  /* --- Close group and file --- */
+  if (( H5Gclose(ncid_input) ) < 0) HERR(routineName);
   if (( H5Fclose(ncid) ) < 0) HERR(routineName);
   return;
 }

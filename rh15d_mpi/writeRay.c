@@ -417,6 +417,7 @@ void close_hdf5_ray(void) {
     if (( H5Dclose(io.ray_S_var ) ) < 0) HERR(routineName);
     if (( H5Dclose(io.ray_j_var ) ) < 0) HERR(routineName);
     if (( H5Dclose(io.ray_sca_c_var ) ) < 0) HERR(routineName);
+    if (io.ray_wave_idx != NULL) free(io.ray_wave_idx);
   }
   if (( H5Fclose(io.ray_ncid) ) < 0) HERR(routineName);
   return;

@@ -14,8 +14,6 @@
 #include "parallel.h"
 #include "io.h"
 
-#define COMMENT_CHAR    "#"
-#define RAY_INPUT_FILE  "ray.input"
 #define WORKTAG 1
 #define DIETAG 2
 
