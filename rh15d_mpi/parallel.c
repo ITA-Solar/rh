@@ -79,27 +79,16 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
 /* ------- begin --------------------------   initParallelIO.c    --- */
 void initParallelIO(bool_t run_ray, bool_t writej) {
   int    nact, i;
-  Atom  *atom;
 
   init_hdf5_aux();
   init_Background();
   if (!run_ray) {
     init_hdf5_indata();
   }
-
-  /* Get file position of atom files (to re-read collisions) */
-  //io.atom_file_pos = (long *) malloc(atmos.Nactiveatom * sizeof(long));
-
-  // TIAGO: this for loop no longer necessary?
-  for (nact = 0; nact < atmos.Nactiveatom; nact++) {
-    atom = atmos.activeatoms[nact];
-    //io.atom_file_pos[nact] = ftell(atom->fp_input);
-  }
-
+  init_hdf5_ray();
   /* Save StokesMode (before adjustStokesMode changes it...) */
   mpi.StokesMode_save = input.StokesMode;
   mpi.single_log      = FALSE;
-
   /* Allocate some mpi. arrays */
   mpi.niter       = (int *)    calloc(mpi.Ntasks , sizeof(int));
   mpi.convergence = (int *)    calloc(mpi.Ntasks , sizeof(int));
@@ -107,12 +96,10 @@ void initParallelIO(bool_t run_ray, bool_t writej) {
   mpi.dpopsmax    = (double *) calloc(mpi.Ntasks , sizeof(double));
   /* max with 1 is used to make sure array is allocated even with Ntasks = 0 */
   mpi.dpopsmax_hist = matrix_double(MAX(mpi.Ntasks, 1), input.NmaxIter);
-
   mpi.zcut_hist[mpi.task] = mpi.zcut;
 
   /* Fill mpi.niter with ones, to avoid problems with crashes on 1st iteration */
   for (i=0; i < mpi.Ntasks; i++) mpi.niter[i] = 1;
-
   /* buffer quantities for final writes */
   allocBufVars(writej);
 }
@@ -127,6 +114,7 @@ void closeParallelIO(bool_t run_ray, bool_t writej) {
   }
   close_atmos(&atmos, &geometry, &infile);
   close_hdf5_aux();
+  close_hdf5_ray();
 
   //free(io.atom_file_pos);
   free(mpi.niter);
