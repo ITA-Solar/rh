@@ -270,6 +270,15 @@ void init_hdf5_indata_new(void)
       if (( H5LTmake_dataset(ncid_input, WAVE_SEL_IDX, 1, dims,
                    H5T_NATIVE_UINT, io.ray_wave_idx) ) < 0)  HERR(routineName);
   }
+  /* Information from wavetable */
+  if (input.wavetable != NULL) {
+      dims[0] = input.Nxwave;
+      if (( H5LTmake_dataset_double(ncid_input, WAVETABLE, 1, dims,
+                                    input.wavetable) ) < 0)  HERR(routineName);
+      if (( H5LTset_attribute_uint(ncid_input, ".", NXWAVE,
+                                   &input.Nxwave, 1) ) < 0) HERR(routineName);
+      free(input.wavetable);
+  }
 
   /* --- Definitions for the ATMOS group --- */
   /* dimensions */
@@ -600,6 +609,7 @@ void init_hdf5_indata_existing(void)
                                H5P_DEFAULT) ) < 0) HERR(routineName);
   if (( io.in_mpi_zc = H5Dopen(io.in_mpi_ncid, ZC_NAME,
                                H5P_DEFAULT) ) < 0) HERR(routineName);
+  if (input.wavetable != NULL) free(input.wavetable);
   return;
 }
 /* ------- end   --------------------------   init_hdf5_indata_old.c  --- */
@@ -947,6 +957,14 @@ void readSavedInput(void) {
   geometry.save_muz = geometry.muz[0];
   geometry.save_mux = geometry.mux[0];
   geometry.save_muy = geometry.muy[0];
+  /* Data from wavetable */
+  if (H5LTfind_dataset(ncid_input, WAVETABLE)) {
+      if (( H5LTget_attribute_uint(ncid_input, ".", NXWAVE,
+                      (unsigned int *) &input.Nxwave) ) < 0) HERR(routineName);
+      input.wavetable = (double *) malloc(input.Nxwave * sizeof(double));
+      if ((H5LTread_dataset_double(ncid_input, WAVETABLE,
+                                   input.wavetable)) < 0) HERR(routineName);
+  }
 
   /* --- Close group and file --- */
   if (( H5Gclose(ncid_input) ) < 0) HERR(routineName);

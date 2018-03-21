@@ -96,6 +96,8 @@
 #define RAY_INFILE     "ray_file"
 #define LINES_INFILE   "lines_file"
 #define INPUT_MU       "ray_mu"
+#define WAVETABLE      "extra_wavelengths"
+#define NXWAVE         "Nxwave"
 
 
 /* Definitions for the Aux file */

@@ -86,7 +86,6 @@ int main(int argc, char *argv[])
   SortLambda();
   checkValuesRayInput();
   initParallelIO(run_ray=FALSE, writej=FALSE);
-  init_hdf5_ray();
   /*//////////////////////
   ////////////////////////
   //////////////////////*/

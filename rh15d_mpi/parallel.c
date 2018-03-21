@@ -72,6 +72,7 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
   /* Initialise input */
   input.atoms_file_contents = NULL;
   input.atomic_file_contents = NULL;
+  input.wavetable = NULL;
   return;
 }
 /* ------- end   --------------------------   initParallel.c --   --- */
