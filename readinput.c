@@ -118,6 +118,8 @@ void readInput()
      setboolValue},
     {"KURUCZ_DATA", "none", FALSE, KEYWORD_OPTIONAL, &input.KuruczData,
      setcharValue},
+    {"BARKLEM_DATA_DIR", "../../Atoms", FALSE, KEYWORD_OPTIONAL,
+     &input.BarklemDir, setcharValue},
     {"RLK_SCATTER", "FALSE", FALSE, KEYWORD_DEFAULT, &input.rlkscatter,
      setboolValue},
     {"KURUCZ_PF_DATA", "../../Atoms/pf_Kurucz.input", FALSE,
@@ -175,7 +177,7 @@ void readInput()
 
     {"S_INTERPOLATION_STOKES", "DELO_BEZIER3", FALSE, KEYWORD_DEFAULT,
      &input.S_interpolation_stokes, set_S_interpolation_stokes},
-    
+
     {"INTERPOLATE_3D", "LINEAR_3D", FALSE, KEYWORD_DEFAULT,
      &input.interpolate_3D, setInterpolate_3D},
 

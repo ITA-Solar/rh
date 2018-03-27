@@ -777,7 +777,7 @@ void readAtomicModels(void)
 
   /* --- Open input file for atomic models --          -------------- */
   if (input.atoms_file_contents == NULL)
-    input.atoms_file_contents = readWholeFile(input.atoms_input);
+      input.atoms_file_contents = readWholeFile(input.atoms_input);
   fp_atoms = input.atoms_file_contents;
 
   /* --- Get the number of atomic models to be read -- -------------- */
@@ -808,7 +808,7 @@ void readAtomicModels(void)
     for (m = 0;  m < n;  m++) {
       if (strstr(atomID, atmos.atoms[m].ID)) {
 	sprintf(messageStr,
-		"Aready read atomic model for element %s\n", atomID);
+		"Already read atomic model for element %s\n", atomID);
 	Error(ERROR_LEVEL_2, routineName, messageStr);
       }
     }

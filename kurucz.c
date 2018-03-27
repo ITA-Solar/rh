@@ -114,14 +114,16 @@ void readKuruczLines(char *inputFile)
     filename[MAX_LINE_SIZE], Gvalues[18+1], elem_code[7],
          labeli[RLK_LABEL_LENGTH+1], labelj[RLK_LABEL_LENGTH+1],
         *commentChar = COMMENT_CHAR;
-  bool_t swap_levels, determined, useBarklem;
+  bool_t swap_levels, determined, useBarklem, exit_on_EOF;
   int    Nline, Nread, Nrequired, checkPoint, hfs_i, hfs_j, gL_i, gL_j,
-         iso_dl;
+         iso_dl, i;
+  unsigned int line_index;
   double lambda0, Ji, Jj, Grad, GStark, GvdWaals, pti,
          Ei, Ej, gf, lambda_air;
+  size_t length;
   RLK_Line *rlk;
   Barklemstruct bs_SP, bs_PD, bs_DF;
-  FILE  *fp_Kurucz, *fp_linelist;
+  char  *file_string, *fp_Kurucz, *fp_linelist;
 
   if (!strcmp(inputFile, "none")) return;
 
@@ -134,25 +136,52 @@ void readKuruczLines(char *inputFile)
   labeli[RLK_LABEL_LENGTH] = '\0';
   labelj[RLK_LABEL_LENGTH] = '\0';
 
-  if ((fp_Kurucz = fopen(inputFile, "r")) == NULL) {
-    sprintf(messageStr, "Unable to open input file %s", inputFile);
-    Error(ERROR_LEVEL_1, routineName, messageStr);
-    return;
+  /* Use saved or read file */
+  if (input.kurucz_file_contents != NULL) {
+      fp_Kurucz = input.kurucz_file_contents;
+  } else {
+      fp_Kurucz = readWholeFile(inputFile);
   }
+  /* Count line files, save content */
+  Nline = 0;
+  file_string = fp_Kurucz;  /* To avoid rewinding fp_Kurucz */
+  while (getLineString(&file_string, commentChar, listName, FALSE) != EOF) {
+      length = strlen(listName);
+      /* To avoid untraced bug that reads extra lines where there's only one */
+      if (listName[length - 1] != '\n') continue;
+      Nline++;
+  }
+  if (input.kurucz_file_contents == NULL) {  /* Make space for input data */
+    input.kurucz_file_contents = fp_Kurucz;
+    input.kurucz_line_file_contents = (char **) malloc(Nline * sizeof(char *));
+    input.kurucz_line_file_name = (char **) malloc(Nline * sizeof(char *));
+    for (i = 0; i < Nline; i++)
+        input.kurucz_line_file_contents[i] = NULL;
+    input.Nkurucz_files = Nline;
+  }
+
   /* --- Go through each of the linelist files listed in input file - */
-
-  while (getLine(fp_Kurucz, commentChar, listName, FALSE) != EOF) {
+  line_index = 0;
+  for (line_index = 0;  line_index < input.Nkurucz_files;  line_index++) {
+    getLineString(&fp_Kurucz, commentChar, listName, exit_on_EOF=TRUE);
     Nread = sscanf(listName, "%s", filename);
-    if ((fp_linelist = fopen(filename, "r")) == NULL) {
-      sprintf(messageStr, "Unable to open input file %s", filename);
-      Error(ERROR_LEVEL_1, routineName, messageStr);
+    if (input.kurucz_line_file_contents[line_index] != NULL) {
+        fp_linelist = input.kurucz_line_file_contents[line_index];
+    } else {
+        fp_linelist = readWholeFile(filename);
+        input.kurucz_line_file_contents[line_index] = fp_linelist;
+        input.kurucz_line_file_name[line_index] =
+                              (char *) malloc(sizeof(filename) * sizeof(char));
+        strncpy(input.kurucz_line_file_name[line_index],
+                filename, sizeof(filename));
+        input.kurucz_line_file_name[line_index][sizeof(filename) - 1] = '\0';
     }
-    /* --- Count the number of lines in this file --   -------------- */
 
+    /* --- Count the number of lines in this file --   -------------- */
+    file_string = fp_linelist;
     Nline = 0;
-    while (fgets(inputLine, RLK_RECORD_LENGTH+1, fp_linelist) != NULL)
+    while (sgets(inputLine, RLK_RECORD_LENGTH+1, &file_string) != NULL)
       if (*inputLine != *commentChar) Nline++;
-    rewind(fp_linelist);
 
     if (atmos.Nrlk == 0) atmos.rlk_lines = NULL;
     atmos.rlk_lines = (RLK_Line *)
@@ -161,7 +190,7 @@ void readKuruczLines(char *inputFile)
     /* --- Read lines from file --                     -------------- */
 
     rlk = atmos.rlk_lines + atmos.Nrlk;
-    while (fgets(inputLine, RLK_RECORD_LENGTH+1, fp_linelist) != NULL) {
+    while (sgets(inputLine, RLK_RECORD_LENGTH+1, &fp_linelist) != NULL) {
       if (*inputLine != *commentChar) {
 
         initRLK(rlk);
@@ -317,16 +346,11 @@ void readKuruczLines(char *inputFile)
 	rlk++;
       }
     }
-    fclose(fp_linelist);
-
     sprintf(messageStr, "Read %d Kurucz lines from file %s\n",
 	    Nline, listName);
     Error(MESSAGE, routineName, messageStr);
     atmos.Nrlk += Nline;
   }
-
-  fclose(fp_Kurucz);
-
   free_BS(&bs_SP);
   free_BS(&bs_PD);
   free_BS(&bs_DF);

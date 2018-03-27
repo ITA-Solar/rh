@@ -8,7 +8,7 @@
 
 /* --- Sorts wavelengths and determines what transitions are active at
        which wavelength. --                            -------------- */
- 
+
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -64,24 +64,31 @@ void SortLambda()
   result = TRUE;
 
   if (strcmp(input.wavetable_input, "none")) {
-    if ((fp_wavetable = fopen(input.wavetable_input, "r")) == NULL) {
-      sprintf(messageStr, "Unable to open input file %s",
-	      input.wavetable_input);
-      Error(ERROR_LEVEL_2, routineName, messageStr);
-    }
-    xdrstdio_create(&xdrs, fp_wavetable, XDR_DECODE);
+    if (input.wavetable == NULL) {
+        if ((fp_wavetable = fopen(input.wavetable_input, "r")) == NULL) {
+          sprintf(messageStr, "Unable to open input file %s",
+    	      input.wavetable_input);
+          Error(ERROR_LEVEL_2, routineName, messageStr);
+        }
+        xdrstdio_create(&xdrs, fp_wavetable, XDR_DECODE);
 
-    result &= xdr_int(&xdrs, &Nwave);
-    wavetable = (double *) malloc(Nwave * sizeof(double));
-    result &= xdr_vector(&xdrs, (char *) wavetable, Nwave,
-			 sizeof(double), (xdrproc_t) xdr_double);
-    if (!result) {
-      sprintf(messageStr, "Unable to read from input file %s",
-	      input.wavetable_input);
-      Error(ERROR_LEVEL_2, routineName, messageStr);
+        result &= xdr_int(&xdrs, &Nwave);
+        wavetable = (double *) malloc(Nwave * sizeof(double));
+        result &= xdr_vector(&xdrs, (char *) wavetable, Nwave,
+    			 sizeof(double), (xdrproc_t) xdr_double);
+        if (!result) {
+          sprintf(messageStr, "Unable to read from input file %s",
+    	      input.wavetable_input);
+          Error(ERROR_LEVEL_2, routineName, messageStr);
+        }
+        xdr_destroy(&xdrs);
+        fclose(fp_wavetable);
+        input.wavetable = wavetable;
+        input.Nxwave = Nwave;
+    } else {
+        wavetable = input.wavetable;
+        Nwave = input.Nxwave;
     }
-    xdr_destroy(&xdrs);
-    fclose(fp_wavetable);
   } else
     Nwave = 0;
 
@@ -176,7 +183,7 @@ void SortLambda()
       line = &atom->line[kr];
       for (la = 0;  la < line->Nlambda;  la++)
 	spectrum.lambda[nspect++] = line->lambda[la];
-      
+
       if (line->PRD) atmos.NPRDactive++;
     }
   }
@@ -226,7 +233,7 @@ void SortLambda()
     /* --- as->art and as->mrt store the arrays of active
            transitions for each active atom
            and molecule at this wavelength seperately -- ------------ */
- 
+
     if (atmos.Nactiveatom > 0) {
       as->Nactiveatomrt =
 	(int *) malloc(atmos.Nactiveatom * sizeof(int));
@@ -264,7 +271,7 @@ void SortLambda()
 
   for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
     atom = atmos.activeatoms[nact];
- 
+
     /*--- Go through the continua first --             -------------- */
 
     Nred = 0;
@@ -295,7 +302,7 @@ void SortLambda()
 	as->art[nact][as->Nactiveatomrt[nact]].type = ATOMIC_CONTINUUM;
 	as->art[nact][as->Nactiveatomrt[nact]].ptype.continuum = continuum;
 	as->Nactiveatomrt[nact]++;
-	
+
 	if (as->Nactiveatomrt[nact] == N_MAX_OVERLAP) {
 	  sprintf(messageStr,
 		  "\n Too many overlapping transitions (> %d) "
@@ -308,19 +315,19 @@ void SortLambda()
              cross-section if wavelength dependence is hydrogenic,
 	     interpolate if wavelength dependence is given
              explicitly --                             -------------- */
-      
+
       if (continuum->hydrogenic) {
 	free(continuum->lambda);
 	continuum->lambda = spectrum.lambda + continuum->Nblue;
 	continuum->alpha =
 	  (double *) realloc(continuum->alpha,
 			     continuum->Nlambda*sizeof(double));
-	
+
 	Z = atom->stage[continuum->j];
 	n_eff = Z * sqrt(E_RYDBERG /
 			 (atom->E[continuum->j] - atom->E[continuum->i]));
 	gbf_0 = Gaunt_bf(continuum->lambda0, n_eff, Z);
-	
+
 	for (la = 0;  la < continuum->Nlambda;  la++) {
 	  continuum->alpha[la] = continuum->alpha0 *
 	    Gaunt_bf(continuum->lambda[la], n_eff, Z) / gbf_0 *
@@ -329,12 +336,12 @@ void SortLambda()
       } else {
 	alpha_original = continuum->alpha;
 	splineCoef(Nlambda_original, continuum->lambda, alpha_original);
-	
+
 	continuum->alpha =
 	  (double *) malloc(continuum->Nlambda * sizeof(double));
 	splineEval(continuum->Nlambda, spectrum.lambda + continuum->Nblue,
 		   continuum->alpha, hunt=TRUE);
-	
+
 	free(continuum->lambda);
 	continuum->lambda = spectrum.lambda + continuum->Nblue;
 	free(alpha_original);
@@ -399,7 +406,7 @@ void SortLambda()
       Hunt(spectrum.Nspect, spectrum.lambda,
 	   mrt->lambda[mrt->Nlambda-1], &Nred);
       mrt->Nlambda = Nred - mrt->Nblue + 1;
-      
+
       /* --- Repoint to proper position in wavelength array -- ------ */
 
       free(mrt->lambda);
@@ -414,7 +421,7 @@ void SortLambda()
 	   nspect < mrt->Nblue+mrt->Nlambda;  nspect++) {
 	as = &spectrum.as[nspect];
 	nact = molecule->activeindex;
-	
+
 	as->mrt[nact][as->Nactivemolrt[nact]].type = mrt->type;
 	as->mrt[nact][as->Nactivemolrt[nact]].ptype.vrline = mrt;
 	as->Nactivemolrt[nact]++;
@@ -432,7 +439,7 @@ void SortLambda()
 
   for (nspect = 0;  nspect < spectrum.Nspect;  nspect++) {
     as = &spectrum.as[nspect];
- 
+
     /* --- For each wavelength in the spectrum gather the unique set of
            lower and upper levels involved in active atomic transitions at that
            wavelength. These are needed in the calculation of the cross
@@ -468,7 +475,7 @@ void SortLambda()
       for (n = 0;  n < as->Nactiveatomrt[nact];  n++) {
 	unique = TRUE;
 	switch (as->art[nact][n].type) {
-	case ATOMIC_LINE: 
+	case ATOMIC_LINE:
 	  i = as->art[nact][n].ptype.line->i;
 	  j = as->art[nact][n].ptype.line->j;
 	  break;
@@ -488,7 +495,7 @@ void SortLambda()
 	  as->lower_levels[nact][as->Nlower[nact]] = i;
 	  as->Nlower[nact]++;
 	}
- 
+
 	/* --- Then add the upper level if unique --   -------------- */
 
 	unique = TRUE;
@@ -530,7 +537,6 @@ void SortLambda()
       }
     }
   }
-
   getCPU(2, TIME_POLL, "SortLambda");
 }
 /* ------- end ---------------------------- SortLambda.c ------------ */

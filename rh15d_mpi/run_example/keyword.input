@@ -152,6 +152,11 @@
 # type KEYWORD_OPTIONAL
   KURUCZ_PF_DATA = ../../Atoms_example/pf_Kurucz.input
 
+# BARKLEM_DATA_DIR should point to the directory where the Barklem collisional
+# data files are located (e.g Barklem_spdata.dat). Type is KEYWORD_OPTIONAL,
+# default value is ../../Atoms
+# BARKLEM_DATA_DIR = ../../Atoms
+
 # Wether to solve for electron density or not. Possible values:
 # NONE (default), ONCE, ITERATION
 #  SOLVE_NE = ITERATION

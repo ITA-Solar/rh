@@ -34,21 +34,22 @@
 #include "atmos.h"
 #include "constant.h"
 #include "error.h"
+#include "inputs.h"
 
 
-#define BARKLEM_SP_DATA     "../../Atoms/Barklem_spdata.dat"
+#define BARKLEM_SP_DATA     "Barklem_spdata.dat"
 #define BARKLEM_SP_NS       21
 #define BARKLEM_SP_NP       18
 #define BARKLEM_SP_NEFF1    1.0
 #define BARKLEM_SP_NEFF2    1.3
 
-#define BARKLEM_PD_DATA     "../../Atoms/Barklem_pddata.dat"
+#define BARKLEM_PD_DATA     "Barklem_pddata.dat"
 #define BARKLEM_PD_NP       18
 #define BARKLEM_PD_ND       18
 #define BARKLEM_PD_NEFF1    1.3
 #define BARKLEM_PD_NEFF2    2.3
 
-#define BARKLEM_DF_DATA     "../../Atoms/Barklem_dfdata.dat"
+#define BARKLEM_DF_DATA     "Barklem_dfdata.dat"
 #define BARKLEM_DF_ND       18
 #define BARKLEM_DF_NF       18
 #define BARKLEM_DF_NEFF1    2.3
@@ -60,6 +61,7 @@
 /* --- Global variables --                             -------------- */
 
 extern Atmosphere atmos;
+extern InputData input;
 extern char messageStr[];
 
 
@@ -77,7 +79,11 @@ bool_t readBarklemTable(enum Barklemtype type, Barklemstruct *bs)
 
   switch (type) {
   case SP:
-    strcpy(filename, BARKLEM_SP_DATA);
+    if ( snprintf(filename, MAX_LINE_SIZE, "%s/%s", input.BarklemDir,
+                  BARKLEM_SP_DATA) >= MAX_LINE_SIZE ) {
+        sprintf(messageStr, "Barklem file path too large. Aborting.\n");
+        Error(ERROR_LEVEL_2, routineName, messageStr);
+    }
     bs->N1 = BARKLEM_SP_NS;
     bs->N2 = BARKLEM_SP_NP;
 
@@ -86,7 +92,11 @@ bool_t readBarklemTable(enum Barklemtype type, Barklemstruct *bs)
     break;
 
   case PD:
-    strcpy(filename, BARKLEM_PD_DATA);
+    if ( snprintf(filename, MAX_LINE_SIZE, "%s/%s", input.BarklemDir,
+                  BARKLEM_PD_DATA) >= MAX_LINE_SIZE ) {
+        sprintf(messageStr, "Barklem file path too large. Aborting.\n");
+        Error(ERROR_LEVEL_2, routineName, messageStr);
+    }
     bs->N1 = BARKLEM_PD_NP;
     bs->N2 = BARKLEM_PD_ND;
 
@@ -95,7 +105,11 @@ bool_t readBarklemTable(enum Barklemtype type, Barklemstruct *bs)
     break;
 
   case DF:
-    strcpy(filename, BARKLEM_DF_DATA);
+    if ( snprintf(filename, MAX_LINE_SIZE, "%s/%s", input.BarklemDir,
+                  BARKLEM_DF_DATA) >= MAX_LINE_SIZE ) {
+        sprintf(messageStr, "Barklem file path too large. Aborting.\n");
+        Error(ERROR_LEVEL_2, routineName, messageStr);
+    }
     bs->N1 = BARKLEM_DF_ND;
     bs->N2 = BARKLEM_DF_NF;
 

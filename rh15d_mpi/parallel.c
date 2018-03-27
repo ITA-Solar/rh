@@ -72,6 +72,9 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
   /* Initialise input */
   input.atoms_file_contents = NULL;
   input.atomic_file_contents = NULL;
+  input.kurucz_file_contents = NULL;
+  input.kurucz_line_file_contents = NULL;
+  input.Nkurucz_files = 0;
   input.wavetable = NULL;
   return;
 }
@@ -79,7 +82,7 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
 
 /* ------- begin --------------------------   initParallelIO.c    --- */
 void initParallelIO(bool_t run_ray, bool_t writej) {
-  int    nact, i;
+  int i;
 
   init_hdf5_aux();
   init_Background();
@@ -132,7 +135,7 @@ void closeParallelIO(bool_t run_ray, bool_t writej) {
 void UpdateAtmosDep(void) {
 /* Updates the atmos-dependent factors for the atoms and molecules */
   const char routineName[] = "UpdateAtomsDep";
-  int       ierror, nact, k, kr, la, Nlamu;
+  int       nact, k, kr, la, Nlamu;
   double    vtherm;
   Atom     *atom;
   Molecule *molecule;
@@ -678,19 +681,20 @@ void writeOutput(bool_t writej) {
   */
 
   if (mpi.Ntasks == 0) {
-    sprintf(messageStr, "Process %4d: *** NO WORK (more processes than tasks!)\n", mpi.rank);
-    fprintf(mpi.main_logfile, messageStr);
+    sprintf(messageStr, "Process %4d: *** NO WORK (more processes than "
+                        "tasks!)\n", mpi.rank);
+    fprintf(mpi.main_logfile, "%s", messageStr);
     Error(MESSAGE, "main", messageStr);
   } else {
     sprintf(messageStr, "Process %4d: --- START output\n", mpi.rank);
-    fprintf(mpi.main_logfile, messageStr);
+    fprintf(mpi.main_logfile, "%s", messageStr);
     Error(MESSAGE, "main", messageStr);
 
     writeMPI_all();
     writeAux_all();
 
     sprintf(messageStr, "Process %4d: *** END output\n", mpi.rank);
-    fprintf(mpi.main_logfile, messageStr);
+    fprintf(mpi.main_logfile, "%s", messageStr);
     Error(MESSAGE, "main", messageStr);
   }
 

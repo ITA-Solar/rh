@@ -98,6 +98,8 @@
 #define INPUT_MU       "ray_mu"
 #define WAVETABLE      "extra_wavelengths"
 #define NXWAVE         "Nxwave"
+#define NKURUCZ        "Nkurucz_files"
+#define KURUCZ_LINE_FILE  "Kurucz_line_file%i"
 
 
 /* Definitions for the Aux file */

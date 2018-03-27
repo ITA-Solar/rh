@@ -279,6 +279,23 @@ void init_hdf5_indata_new(void)
                                    &input.Nxwave, 1) ) < 0) HERR(routineName);
       free(input.wavetable);
   }
+  /* Information from Kurucz tables */
+  if (( H5LTset_attribute_uint(ncid_input, ".", NKURUCZ,
+            (unsigned int *) &input.Nkurucz_files, 1) ) < 0) HERR(routineName);
+  if (input.Nkurucz_files > 0) {
+      if (( H5LTmake_dataset_string(ncid_input, "kurucz_file_contents",
+              input.kurucz_file_contents)) < 0)  HERR(routineName);
+      for (i=0; i < input.Nkurucz_files; i++) {
+          sprintf(group_name, KURUCZ_LINE_FILE, i);
+          if (( ncid_tmp = H5Gcreate(ncid_input, group_name, H5P_DEFAULT,
+                            H5P_DEFAULT, H5P_DEFAULT) ) < 0) HERR(routineName);
+          if (( H5LTset_attribute_string(ncid_tmp, ".", "file_name",
+                       input.kurucz_line_file_name[i])) < 0) HERR(routineName);
+          if (( H5LTmake_dataset_string(ncid_tmp, "file_contents",
+                  input.kurucz_line_file_contents[i])) < 0)  HERR(routineName);
+          if (( H5Gclose(ncid_tmp) ) < 0) HERR(routineName);
+      }
+  }
 
   /* --- Definitions for the ATMOS group --- */
   /* dimensions */
@@ -654,6 +671,15 @@ void close_hdf5_indata(void)
           free(atom->fp_input);
       }
   }
+  if (input.kurucz_file_contents != NULL)
+      free(input.kurucz_file_contents);
+  if (input.kurucz_line_file_contents != NULL) {
+      for (n = 0;  n < input.Nkurucz_files;  n++) {
+          free(input.kurucz_line_file_contents[n]);
+      }
+      free(input.kurucz_line_file_contents);
+  }
+
   return;
 }
 /* ------- end   --------------------------   close_hdf5_indata.c --- */
@@ -867,7 +893,7 @@ void readConvergence(void) {
 void readSavedInput(void) {
   /* Reads saved input and convergence info for rerun */
   const char routineName[] = "readSavedInput";
-  char *atmosID, **atom_names;
+  char *atmosID, **atom_names, group_name[ARR_STRLEN];
   int n, atom_name_size;
   size_t attr_size, str_size = 0;
   hid_t ncid, ncid_input, ncid_tmp, plist;
@@ -964,6 +990,41 @@ void readSavedInput(void) {
       input.wavetable = (double *) malloc(input.Nxwave * sizeof(double));
       if ((H5LTread_dataset_double(ncid_input, WAVETABLE,
                                    input.wavetable)) < 0) HERR(routineName);
+  }
+  /* Data from Kurucz line file, if existing */
+  if (( H5LTget_attribute_uint(ncid_input, ".", NKURUCZ,
+     (unsigned int *) &input.Nkurucz_files) ) < 0) HERR(routineName);
+  if (input.Nkurucz_files > 0) {
+      if (H5LTfind_dataset(ncid_input, "kurucz_file_contents")) {
+          if ((H5LTget_dataset_info(ncid_input, "kurucz_file_contents", NULL,
+                                    NULL, &str_size)) < 0) HERR(routineName);
+      } else {
+          sprintf(messageStr, "Could not read Kurucz file contents in indata "
+                              "file, no rerun is possible. Aborting.\n");
+          Error(ERROR_LEVEL_2, routineName, messageStr);
+      }
+      input.kurucz_file_contents = (char *) malloc(str_size + 1);
+      if (( H5LTread_dataset_string(ncid_input, "kurucz_file_contents",
+                       input.kurucz_file_contents) ) < 0) HERR(routineName);
+      input.kurucz_line_file_contents = (char **) malloc(input.Nkurucz_files *
+                                                         sizeof(char *));
+      for (n = 0;  n < input.Nkurucz_files;  n++) {
+          sprintf(group_name, KURUCZ_LINE_FILE, n);
+          if (( ncid_tmp = H5Gopen(ncid_input, group_name, H5P_DEFAULT) ) < 0)
+              HERR(routineName);
+          if (H5LTfind_dataset(ncid_tmp, "file_contents")) {
+              if ((H5LTget_dataset_info(ncid_tmp, "file_contents", NULL,
+                                     NULL, &str_size)) < 0) HERR(routineName);
+          } else {
+              sprintf(messageStr, "Could not read Kurucz line file in indata "
+                                  "file, no rerun is possible. Aborting.\n");
+              Error(ERROR_LEVEL_2, routineName, messageStr);
+          }
+          input.kurucz_line_file_contents[n] = (char *) malloc(str_size + 1);
+          if (( H5LTread_dataset_string(ncid_tmp, "file_contents",
+                  input.kurucz_line_file_contents[n]) ) < 0) HERR(routineName);
+          if (( H5Gclose(ncid_tmp) ) < 0) HERR(routineName);
+      }
   }
 
   /* --- Close group and file --- */

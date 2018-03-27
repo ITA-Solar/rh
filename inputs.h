@@ -59,6 +59,7 @@ typedef struct {
          Stokes_input[MAX_VALUE_LENGTH],
          KuruczData[MAX_VALUE_LENGTH],
          pfData[MAX_VALUE_LENGTH],
+         BarklemDir[MAX_VALUE_LENGTH],
          fudgeData[MAX_VALUE_LENGTH],
          atmos_output[MAX_VALUE_LENGTH],
          spectrum_output[MAX_VALUE_LENGTH],
@@ -107,6 +108,9 @@ typedef struct {
   /* Tiago, for saving the input files */
   char  *atoms_file_contents, *keyword_file_contents, *ray_file_contents;
   char **atomic_file_contents;
+  char  *kurucz_file_contents, **kurucz_line_file_contents;
+  char **kurucz_line_file_name;
+  int Nkurucz_files;
   pthread_attr_t thread_attr;
 } InputData;
 
@@ -122,6 +126,7 @@ void  readInput();
 void  readValues(FILE *fp_keyword, int Nkeyword, Keyword *theKeywords);
 
 char *readWholeFile(const char *filename);
+char *sgets(char *str, int num, char **input);
 
 void  setAngleSet(char *value, void *pointer);
 void  setcharValue(char *value, void *pointer);

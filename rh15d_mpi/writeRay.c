@@ -629,10 +629,10 @@ void writeRay(void) {
 /* ------- begin -------------------------- calculate_ray.c --------- */
 void calculate_ray(void) {
   /* performs necessary reallocations and inits, and solves for ray */
-  int i, nact, ierror, mu, k;
-      bool_t analyze_output, equilibria_only, prdh_limit_mem_save;
-      Atom *atom;
-      AtomicLine *line;
+  int i, nact, mu, k;
+  bool_t analyze_output, equilibria_only, prdh_limit_mem_save;
+  Atom *atom;
+  AtomicLine *line;
 
   close_Background();  /* Was opened previously, will be opened here again */
 
