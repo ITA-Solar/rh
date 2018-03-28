@@ -64,7 +64,7 @@ extern char messageStr[];
 
 /* ------- begin -------------------------- readValues.c ------------ */
 
-void readValues(FILE *fp_keyword, int Nkeyword,	Keyword *theKeywords)
+void readValues(char *fp_keyword, int Nkeyword,	Keyword *theKeywords)
 {
   const char routineName[] = "readValues";
   register int n;
@@ -75,8 +75,7 @@ void readValues(FILE *fp_keyword, int Nkeyword,	Keyword *theKeywords)
   int    nread;
 
   /* --- Read input data line-by-line --                ------------- */
-
-  while (getLine(fp_keyword, COMMENT_CHAR, line, exit_on_EOF=FALSE) != EOF) {
+  while (getLineString(&fp_keyword, COMMENT_CHAR, line, exit_on_EOF=FALSE) != EOF) {
     if ((nread = sscanf(line, "%s = %s", keyword, value)) != 2) {
       sprintf(messageStr, "Missing input value for keyword %s", keyword);
       Error(ERROR_LEVEL_2, routineName, messageStr);

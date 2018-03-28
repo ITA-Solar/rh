@@ -123,7 +123,7 @@ int   getLineString(char **inputString, char *commentChar, char *line,
                     bool_t exit_on_EOF);
 void  parse(int argc, char *argv[], int Noption, Option *theOptions);
 void  readInput();
-void  readValues(FILE *fp_keyword, int Nkeyword, Keyword *theKeywords);
+void  readValues(char *fp_keyword, int Nkeyword, Keyword *theKeywords);
 
 char *readWholeFile(const char *filename);
 char *sgets(char *str, int num, char **input);

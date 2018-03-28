@@ -39,13 +39,13 @@ extern char messageStr[];
 
 /* ------- begin -------------------------- readInput.c ------------- */
 
-void readInput()
+void readInput(char *input_string)
 {
   const char routineName[] = "readInput";
   static char atom_input[MAX_VALUE_LENGTH], molecule_input[MAX_VALUE_LENGTH];
 
   int   Nkeyword;
-  FILE *fp_keyword;
+  char *keyword_string;
 
   Keyword theKeywords[] = {
     {"ATMOS_FILE", "", FALSE, KEYWORD_REQUIRED, input.atmos_input,
@@ -245,16 +245,14 @@ void readInput()
   };
   Nkeyword = sizeof(theKeywords) / sizeof(Keyword);
 
-  /* --- Open the input data file --                    ------------- */
-
-  if ((fp_keyword = fopen(commandline.keyword_input, "r")) == NULL) {
-    sprintf(messageStr, "Unable to open inputfile %s",
-	    commandline.keyword_input);
-    Error(ERROR_LEVEL_2, routineName, messageStr);
+  if (input_string == NULL) {  /* Read file from disk */
+      input.keyword_file_contents = readWholeFile(commandline.keyword_input);
+  } else {
+      input.keyword_file_contents = input_string;
   }
+  keyword_string = input.keyword_file_contents;
 
-  readValues(fp_keyword, Nkeyword, theKeywords);
-  fclose(fp_keyword);
+  readValues(keyword_string, Nkeyword, theKeywords);
 
   /* --- Perform some sanity checks --                 -------------- */
 

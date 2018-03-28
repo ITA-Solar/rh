@@ -49,7 +49,8 @@ int main(int argc, char *argv[])
   commandline.logfile  = mpi.logfile;
   strcpy(mpi.rev_id, REV_ID);  /* save revision */
   /* --- Read input data and initialize --             -------------- */
-  readInput();
+  readInput(NULL);
+  if (input.p15d_rerun) readSavedKeywords();
   spectrum.updateJ = TRUE;
   getCPU(1, TIME_START, NULL);
   init_atmos(&atmos, &geometry, &infile);

@@ -237,6 +237,8 @@ void init_hdf5_indata_new(void)
   if (( H5LTset_attribute_double(ncid_input, ".", "Lambda_reference",
                                 &atmos.lambda_ref, 1) ) < 0) HERR(routineName);
   /* contents of input files as variables */
+  if (( H5LTmake_dataset_string(ncid_input, "keyword_file_contents",
+                          input.keyword_file_contents) ) < 0)  HERR(routineName);
   if (( H5LTmake_dataset_string(ncid_input, "atoms_file_contents",
                           input.atoms_file_contents) ) < 0)  HERR(routineName);
   free(input.atoms_file_contents);
@@ -661,6 +663,7 @@ void close_hdf5_indata(void)
   if (( H5Fclose(io.in_ncid) ) < 0) HERR(routineName);
 
   /* Free other resources */
+  if (input.keyword_file_contents != NULL) free(input.keyword_file_contents);
   if (input.atomic_file_contents != NULL) {  /* For reruns */
       for (n=0; n < atmos.Natom; n++)
           free(input.atomic_file_contents[n]);
@@ -829,7 +832,7 @@ void writeMPI_p(int task) {
 }
 /* ------- end   --------------------------   writeMPI_p.c ------- */
 
-/* ------- begin -------------------------- readConvergence.c  --- */
+
 void readConvergence(void) {
   /* This is a self-contained function to read the convergence matrix,
      written by RH. */
@@ -845,7 +848,7 @@ void readConvergence(void) {
   /* --- Open the inputdata file --- */
   if (( plist = H5Pcreate(H5P_FILE_ACCESS )) < 0) HERR(routineName);
   if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
-  if (( ncid = H5Fopen(INPUTDATA_FILE, H5F_ACC_RDWR, plist) ) < 0)
+  if (( ncid = H5Fopen(INPUTDATA_FILE, H5F_ACC_RDONLY, plist) ) < 0)
     HERR(routineName);
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
   /* Get ncid of the MPI group */
@@ -887,9 +890,118 @@ void readConvergence(void) {
   if (( H5Fclose(ncid) ) < 0) HERR(routineName);
   return;
 }
-/* ------- end   -------------------------- readConvergence.c  --- */
 
-/* ------- begin -------------------------- readSavedInput.c  --- */
+
+void readSavedKeywords(void) {
+  /* Reads keyword.input saved into output_indata file */
+  const char routineName[] = "readSavedKeywords";
+  char *atmosID;
+  size_t attr_size, str_size = 0;
+  hid_t ncid, ncid_input, plist;
+  H5T_class_t type_class;
+  bool_t saved_p15d_refine, saved_p15d_zcut, saved_accelerate_mols;
+  int saved_NpescIter, saved_Ngdelay, saved_Ngorder, saved_Ngperiod;
+  int saved_NmaxScatter, saved_NmaxIter, saved_PRD_NmaxIter;
+  int saved_PRD_Ngdelay, saved_PRD_Ngorder, saved_PRD_Ngperiod;
+  enum S_interpol saved_S_interpolation;
+  enum S_interpol_stokes saved_S_interpolation_stokes;
+  double saved_crsw, saved_crsw_ini, saved_prdswitch, saved_prdsw;
+  double saved_p15d_tmax, saved_iterLimit, saved_PRDiterLimit;
+
+  /* --- Open the inputdata file --- */
+  if (( plist = H5Pcreate(H5P_FILE_ACCESS )) < 0) HERR(routineName);
+  if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
+  if (( ncid = H5Fopen(INPUTDATA_FILE, H5F_ACC_RDONLY, plist) ) < 0)
+    HERR(routineName);
+  if (( H5Pclose(plist) ) < 0) HERR(routineName);
+
+  /* --- Consistency checks --- */
+  /* Check that atmosID is the same */
+  if (( H5LTget_attribute_info(ncid, "/", "atmosID", NULL, &type_class,
+                               &attr_size) ) < 0) HERR(routineName);
+  atmosID = (char *) malloc(attr_size + 1);
+  if (( H5LTget_attribute_string(ncid, "/", "atmosID", atmosID) ) < 0)
+    HERR(routineName);
+  if (!strstr(atmosID, atmos.ID)) {
+    sprintf(messageStr,  "Indata file was calculated for different "
+           "atmosphere (%s) than current (%s)", atmosID, atmos.ID);
+    Error(WARNING, routineName, messageStr);
+    }
+  free(atmosID);
+
+  /* --- Read input files --- */
+  if (( ncid_input = H5Gopen(ncid, "input", H5P_DEFAULT) ) < 0) HERR(routineName);
+  if (H5LTfind_dataset(ncid_input, "keyword_file_contents")) {
+    /* For H5T_STRING datasets, size of string is saved under last argument */
+    if ((H5LTget_dataset_info(ncid_input, "keyword_file_contents", NULL,
+			                  NULL, &str_size)) < 0) HERR(routineName);
+  } else {
+    sprintf(messageStr, "Could not read keyword.input file in indata file, "
+	                    "no rerun is possible. Aborting.\n");
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
+  input.keyword_file_contents = (char *) malloc(str_size + 1);
+  if (( H5LTread_dataset_string(ncid_input, "keyword_file_contents",
+                         input.keyword_file_contents) ) < 0) HERR(routineName);
+  /* --- Close inputdata file --- */
+  if (( H5Gclose(ncid_input) ) < 0) HERR(routineName);
+  if (( H5Fclose(ncid) ) < 0) HERR(routineName);
+
+  /* Save keywords that can change in a rerun */
+  saved_p15d_zcut = input.p15d_zcut;
+  saved_p15d_tmax = input.p15d_tmax;
+  saved_p15d_refine = input.p15d_refine;
+  saved_crsw = input.crsw;
+  saved_crsw_ini = input.crsw_ini;
+  saved_prdsw = input.prdsw;
+  saved_prdswitch = input.prdswitch;
+  saved_NpescIter = input.NpescIter;
+  saved_p15d_tmax = input.p15d_tmax;
+  saved_NmaxScatter = input.NmaxScatter;
+  saved_NmaxIter = input.NmaxIter;
+  saved_iterLimit = input.iterLimit;
+  saved_Ngdelay = input.Ngdelay;
+  saved_Ngorder = input.Ngorder;
+  saved_Ngperiod = input.Ngperiod;
+  saved_accelerate_mols = input.accelerate_mols;
+  saved_PRD_NmaxIter = input.PRD_NmaxIter;
+  saved_PRDiterLimit = input.PRDiterLimit;
+  saved_PRD_Ngdelay = input.PRD_Ngdelay;
+  saved_PRD_Ngorder = input.PRD_Ngorder;
+  saved_PRD_Ngperiod = input.PRD_Ngperiod;
+  saved_S_interpolation = input.S_interpolation;
+  saved_S_interpolation_stokes = input.S_interpolation_stokes;
+  /* Overwrite non-changeable keyword options with saved ones */
+  readInput(input.keyword_file_contents);
+  /* Put back changeable keyword options */
+  input.p15d_rerun = TRUE;  /* This is only called for reruns */
+  input.p15d_zcut = saved_p15d_zcut;
+  input.p15d_tmax = saved_p15d_tmax;
+  input.p15d_refine = saved_p15d_refine;
+  input.crsw = saved_crsw;
+  input.crsw_ini = saved_crsw_ini;
+  input.prdsw = saved_prdsw;
+  input.prdswitch = saved_prdswitch;
+  input.NpescIter = saved_NpescIter;
+  input.p15d_tmax = saved_p15d_tmax;
+  input.NmaxScatter = saved_NmaxScatter;
+  input.NmaxIter = saved_NmaxIter;
+  input.iterLimit = saved_iterLimit;
+  input.Ngdelay = saved_Ngdelay;
+  input.Ngorder = saved_Ngorder;
+  input.Ngperiod = saved_Ngperiod;
+  input.accelerate_mols = saved_accelerate_mols;
+  input.PRD_NmaxIter = saved_PRD_NmaxIter;
+  input.PRDiterLimit = saved_PRDiterLimit;
+  input.PRD_Ngdelay = saved_PRD_Ngdelay;
+  input.PRD_Ngorder = saved_PRD_Ngorder;
+  input.PRD_Ngperiod = saved_PRD_Ngperiod;
+  input.S_interpolation = saved_S_interpolation;
+  input.S_interpolation_stokes = saved_S_interpolation_stokes;
+  return;
+}
+
+
 void readSavedInput(void) {
   /* Reads saved input and convergence info for rerun */
   const char routineName[] = "readSavedInput";
@@ -904,7 +1016,7 @@ void readSavedInput(void) {
   /* --- Open the inputdata file --- */
   if (( plist = H5Pcreate(H5P_FILE_ACCESS )) < 0) HERR(routineName);
   if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
-  if (( ncid = H5Fopen(INPUTDATA_FILE, H5F_ACC_RDWR, plist) ) < 0)
+  if (( ncid = H5Fopen(INPUTDATA_FILE, H5F_ACC_RDONLY, plist) ) < 0)
     HERR(routineName);
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
 
@@ -1032,4 +1144,3 @@ void readSavedInput(void) {
   if (( H5Fclose(ncid) ) < 0) HERR(routineName);
   return;
 }
-/* ------- end   -------------------------- readSavedInput.c  --- */

@@ -176,6 +176,7 @@ typedef struct {
 extern const float FILLVALUE;
 
 void readSavedInput(void);
+void readSavedKeywords(void);
 void readRayInput(void);
 void checkValuesRayInput(void);
 void init_hdf5_ray(void);

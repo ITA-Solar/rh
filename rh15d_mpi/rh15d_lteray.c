@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
   strcpy(mpi.rev_id, REV_ID); /* save revision */
 
   /* --- Read input data and initialize --             -------------- */
-  readInput();
+  readInput(NULL);
   spectrum.updateJ = FALSE;
   getCPU(1, TIME_START, NULL);
   init_atmos(&atmos, &geometry, &infile);
