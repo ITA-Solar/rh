@@ -66,7 +66,7 @@ and at ITA's Linux system::
 MPI
 ---
 
-RH 1.5D is parallelised via MPI, therefore an MPI library is necessary even if running with only one CPU. These are readily available in supercomputers and clusters, but not always in individual workstations. In such cases, users will have to manually install both MPI and HDF5 libraries (HDF5 should be compiled with the MPI library so that the parallel I/O module works). 
+RH 1.5D is parallelised via MPI, therefore an MPI library is necessary even if running with only one CPU. These are readily available in supercomputers and clusters, but not always in individual workstations. In such cases, users will have to manually install both MPI and HDF5 libraries (HDF5 should be compiled with the MPI library so that the parallel I/O module works).
 
 If using Linux or MacOS, the easiest way to install both MPI and HDF5 with parallel support is via the `Anaconda <https://www.anaconda.com/download/#macos>`_ Python distribution. Once you install Anaconda (version 3.6 or above), you can install the ``hdf5-parallel`` package, which installs both MPI and HDF5 and has been tested with RH 1.5D::
 
@@ -138,5 +138,3 @@ Once compiled, you can copy or link the binaries to a run directory. This direct
 
 .. warning::
    If the subdirectories ``output`` and ``scratch`` do not exist in the directory where the code is run, the code will crash with an obscure error message.
-
-The run directory can be located anywhere, but it **must** have a directory called ``Atoms`` two levels below (i.e. ``../../Atoms/``) with the ``Barklem_*data.dat`` files. This is because these relative paths are hardcoded in ``barklem.c``. The input files in the run directory must obviously point to existing path names.

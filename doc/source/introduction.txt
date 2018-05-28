@@ -54,6 +54,7 @@ What is new in RH 1.5D
 * Support for more types of collisional excitations
 * Easy re-run of non-converged columns
 * Option for keeping background opacities in memory and not in disk
+* New analysis suite in Python
 
 
 What is not supported in RH 1.5D

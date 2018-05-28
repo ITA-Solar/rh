@@ -25,80 +25,84 @@ The ``keyword.input`` file functions in very much the same manner under RH and R
 
 The new ``keyword.input`` options for the 1.5D version are:
 
+
 .. tabularcolumns:: |l|l|L|
 
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| Name                       | Default value      | Description                                                                    |
-+============================+====================+================================================================================+
-| ``SNAPSHOT``               | ``0``              | Snapshot index from the atmosphere file.                                       |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``X_START``                | ``0``              | Starting column in the x direction. If < 0, will be set to 0.                  |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``X_END``                  | ``-1``             | Ending column in the x direction. If <= 0, will be set to ``NX`` in the        |
-|                            |                    | atmosphere file.                                                               |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``X_STEP``                 | ``1``              | How many columns to sample in the y direction. If < 1, will be set to 1.       |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``Y_START``                | ``0``              | Starting column in the y direction. If < 0, will be set to 0.                  |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``Y_END``                  | ``-1``             | Ending column in the y direction. If <= 0, will be set to ``NY`` in the        |
-|                            |                    | atmosphere file.                                                               |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``Y_STEP``                 | ``1``              | How many columns to sample in the y direction. If < 1, will be set to 1.       |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``15D_WRITE_POPS``         | ``FALSE``          | If ``TRUE``, will write the level populations (including LTE) for each active  |
-|                            |                    | atom to ``output_aux.hdf5``.                                                   |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``15D_WRITE_RRATES``       | ``FALSE``          | If ``TRUE``, will write the radiative rates (lines and continua) for each      |
-|                            |                    | active atom to ``output_aux.hdf5``.                                            |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``15D_WRITE_TAU1``         | ``FALSE``          | If ``TRUE``, will write the height of tau=1 to ``output_ray.hdf5``, for all    |
-|                            |                    | wavelengths (this takes up as much space as the intensity).                    |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``15D_RERUN``              | ``FALSE``          | If ``TRUE``, will rerun for non-converged columns.                             |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``15D_DEPTH_ZCUT``         | ``TRUE``           | If ``TRUE``, will perform a cut in z for points above a threshold temperature  |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``15D_TMAX_CUT``           | ``-1``             | Threshold temperature (in K) over which the above depth cut ids made. If < 0,  |
-|                            |                    | no temperature cut will be made.                                               |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``15D_DEPTH_REFINE``       | ``FALSE``          | If ``TRUE``, will perform an optimisation of the depth scale,                  |
-|                            |                    | based on optical depth, density and temperature gradients.                     |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``BACKGR_IN_MEM``          | ``FALSE``          | If ``TRUE``, will keep background opacity coefficients in memory instead of    |
-|                            |                    | scratch files on disk.                                                         |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``COLLRAD_SWITCH``         | ``0.0``            | Defines if collisional radiative switching is on.                              |
-|                            |                    | If < 0, switching parameter is constant (and equal to ``COLLRAD_SWITCH_INI``). |
-|                            |                    | If = 0, no collisional radiative switching.                                    |
-|                            |                    | If > 0, collisional radiative switching decreases by                           |
-|                            |                    | ``COLLRAD_SWITCH`` per log decade, starting with ``COLLRAD_SWITCH_INI``.       |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``COLLRAD_SWITCH_INIT``    | ``1.0``            | Initial increment for collisional-radiative switching                          |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``LIMIT_MEMORY``           | ``FALSE``          | If ``TRUE``, will not keep several large arrays in memory but rather save them |
-|                            |                    | to scratch files. Not recommended unless memory usage is critical.             |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``N_PESC_ITER``            | ``3``              | Number of escape probability iterations, if any atoms have                     |
-|                            |                    | it as initial solution.                                                        |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``PRD_SWITCH``             | ``0.0``            | If > 0, the PRD effects will be added gradually, converging                    |
-|                            |                    | to the full PRD solution in ``1/sqrt(PRD_SWITCH)`` iterations.                 |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``PRDH_LIMIT_MEM``         | ``FALSE``          | If ``TRUE`` and using ``PRD_ANGLE_APPROX``, will not keep in memory quantities |
-|                            |                    | necessary to calculate the current PRD weights, but rather calculate them      |
-|                            |                    | again. Will affect the performance, so should be used only when necessary.     |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``S_INTERPOLATION``        | ``LINEAR``         | Type of source function interpolation to use in formal solver. Can be          |
-|                            |                    | ``LINEAR``, ``BEZIER``, ``BEZIER3`` or ``CUBIC_HERMITE``.                      |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``S_INTERPOLATION_STOKES`` | ``DELO_PARABOLIC`` | Type of source function interpolation to use in formal solver for polarised    |
-|                            |                    | cases. Can be ``DELO_PARABOLIC`` or ``DELO_BEZIER3`` following [#f1]_ .        |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``VTURB_MULTIPLIER``       | ``1.0``            | Atmospheric ``vturb`` will be multiplied by this value                         |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
-| ``VTURB_ADD``              | ``0.0``            | Value to be added to atmospheric ``vturb``                                     |
-+----------------------------+--------------------+--------------------------------------------------------------------------------+
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| Name                       | Default value      | Description                                                                      |
++============================+====================+==================================================================================+
+| ``SNAPSHOT``               | ``0``              | Snapshot index from the atmosphere file.                                         |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``X_START``                | ``0``              | Starting column in the x direction. If < 0, will be set to 0.                    |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``X_END``                  | ``-1``             | Ending column in the x direction. If <= 0, will be set to ``NX`` in the          |
+|                            |                    | atmosphere file.                                                                 |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``X_STEP``                 | ``1``              | How many columns to sample in the y direction. If < 1, will be set to 1.         |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``Y_START``                | ``0``              | Starting column in the y direction. If < 0, will be set to 0.                    |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``Y_END``                  | ``-1``             | Ending column in the y direction. If <= 0, will be set to ``NY`` in the          |
+|                            |                    | atmosphere file.                                                                 |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``Y_STEP``                 | ``1``              | How many columns to sample in the y direction. If < 1, will be set to 1.         |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``15D_WRITE_POPS``         | ``FALSE``          | If ``TRUE``, will write the level populations (including LTE) for each active    |
+|                            |                    | atom to ``output_aux.hdf5``.                                                     |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``15D_WRITE_RRATES``       | ``FALSE``          | If ``TRUE``, will write the radiative rates (lines and continua) for each        |
+|                            |                    | active atom to ``output_aux.hdf5``.                                              |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``15D_WRITE_TAU1``         | ``FALSE``          | If ``TRUE``, will write the height of tau=1 to ``output_ray.hdf5``, for all      |
+|                            |                    | wavelengths (this takes up as much space as the intensity).                      |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``15D_RERUN``              | ``FALSE``          | If ``TRUE``, will rerun for non-converged columns.                               |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``15D_DEPTH_ZCUT``         | ``TRUE``           | If ``TRUE``, will perform a cut in z for points above a threshold temperature    |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``15D_TMAX_CUT``           | ``-1``             | Threshold temperature (in K) over which the above depth cut ids made. If < 0,    |
+|                            |                    | no temperature cut will be made.                                                 |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``15D_DEPTH_REFINE``       | ``FALSE``          | If ``TRUE``, will perform an optimisation of the depth scale,                    |
+|                            |                    | based on optical depth, density and temperature gradients.                       |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``BACKGR_IN_MEM``          | ``FALSE``          | If ``TRUE``, will keep background opacity coefficients in memory instead of      |
+|                            |                    | scratch files on disk.                                                           |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``BARKLEM_DATA_DIR``       | ``../../Atoms``    | Directory where the ``Barklem_*data.dat`` data files are saved.                  |
+|                            |                    |                                                                                  |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``COLLRAD_SWITCH``         | ``0.0``            | Defines if collisional radiative switching is on.                                |
+|                            |                    | If < 0, switching parameter is constant (and equal to ``COLLRAD_SWITCH_INI``).   |
+|                            |                    | If = 0, no collisional radiative switching.                                      |
+|                            |                    | If > 0, collisional radiative switching decreases by                             |
+|                            |                    | ``COLLRAD_SWITCH`` per log decade, starting with ``COLLRAD_SWITCH_INI``.         |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``COLLRAD_SWITCH_INIT``    | ``1.0``            | Initial increment for collisional-radiative switching                            |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``LIMIT_MEMORY``           | ``FALSE``          | If ``TRUE``, will not keep several large arrays in memory but rather save them   |
+|                            |                    | to scratch files. Not recommended unless memory usage is critical.               |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``N_PESC_ITER``            | ``3``              | Number of escape probability iterations, if any atoms have                       |
+|                            |                    | it as initial solution.                                                          |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``PRD_SWITCH``             | ``0.0``            | If > 0, the PRD effects will be added gradually, converging                      |
+|                            |                    | to the full PRD solution in ``1/sqrt(PRD_SWITCH)`` iterations.                   |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``PRDH_LIMIT_MEM``         | ``FALSE``          | If ``TRUE`` and using ``PRD_ANGLE_APPROX``, will not keep in memory quantities   |
+|                            |                    | necessary to calculate the current PRD weights, but rather calculate them        |
+|                            |                    | again. Will affect the performance, so should be used only when necessary.       |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``S_INTERPOLATION``        | ``LINEAR``         | Type of source function interpolation to use in formal solver. Can be            |
+|                            |                    | ``LINEAR``, ``BEZIER``, ``BEZIER3`` or ``CUBIC_HERMITE``.                        |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``S_INTERPOLATION_STOKES`` | ``DELO_PARABOLIC`` | Type of source function interpolation to use in formal solver for polarised      |
+|                            |                    | cases. Can be ``DELO_PARABOLIC`` or ``DELO_BEZIER3``, see [#f1]_ .               |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``VTURB_MULTIPLIER``       | ``1.0``            | Atmospheric ``vturb`` will be multiplied by this value                           |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``VTURB_ADD``              | ``0.0``            | Value to be added to atmospheric ``vturb``                                       |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
 
 .. [#f1] de la Cruz Rodríguez, J.; Piskunov, N. 2013, ApJ, 764, 33, `ADS link <http://adsabs.harvard.edu/abs/2013ApJ...764...33D>`_.
 
@@ -204,7 +208,7 @@ The atmosphere file can contain the following variables:
 +==========================+=============================+=================+===========================================+
 | ``B_x``                  | ``(nt, nx, ny, nz)``        | T               | Magnetic field x component. **Optional**  |
 +--------------------------+-----------------------------+-----------------+-------------------------------------------+
-| ``B_y``                  | ``(nt, nx, ny, nz)``        | T               | Magnetic field x component. **Optional**  |
+| ``B_y``                  | ``(nt, nx, ny, nz)``        | T               | Magnetic field y component. **Optional**  |
 +--------------------------+-----------------------------+-----------------+-------------------------------------------+
 | ``B_z``                  | ``(nt, nx, ny, nz)``        | T               | Magnetic field z component. **Optional**  |
 +--------------------------+-----------------------------+-----------------+-------------------------------------------+
@@ -224,9 +228,13 @@ The atmosphere file can contain the following variables:
 | ``temperature``          | ``(nt, nx, ny, nz)``        | K               |                                           |
 +--------------------------+-----------------------------+-----------------+-------------------------------------------+
 | ``velocity_z``           | ``(nt, nx, ny, nz)``        | m s\ :sup:`-1`\ | Vertical component of velocity.           |
+|                          |                             |                 | **Positive velocity is upflow.**          |
 +--------------------------+-----------------------------+-----------------+-------------------------------------------+
-| ``z``                    | ``(nt, nz)``                | m               | Height grid. Can be different for each    |
-|                          |                             |                 | snapshot, hence the `nt` dependence.      |
+| ``velocity_turbulent``   | ``(nt, nx, ny, nz)``        | m s\ :sup:`-1`\ | Turbulent velocity (microturbulence).     |
++--------------------------+-----------------------------+-----------------+-------------------------------------------+
+| ``z``                    | ``(nt, nx, ny, nz)`` or     | m               | Height grid. Can vary with column and     |
+|                          | ``(nt, nz)``                |                 | snapshot. First ``nz`` index is **top of  |
+|                          |                             |                 | the atmosphere** (closest to observer).   |
 +--------------------------+-----------------------------+-----------------+-------------------------------------------+
 
 Any other variable in the file will not be used. In addition, the atmosphere file **must** have a global attribute called ``has_B``. This attribute should be 1 when the magnetic field variables are present, and 0 otherwise. Also recommended, but optional, is a global attribute called ``description`` with a brief description of the atmosphere file (e.g. how and from they were generated).

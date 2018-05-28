@@ -28,7 +28,7 @@ The run directory
 =================
 
 .. warning::
-   Before running, make sure you have the sub-directories ``scratch`` and ``output`` in the run directory **and** that two levels below there is an ``Atoms`` directory (``../../Atoms/``).
+   Before running, make sure you have the sub-directories ``scratch`` and ``output`` in the run directory.
 
 The run directory contains the configuration files, the binaries, and the ``scratch`` and ``output`` directories. As the names imply, temporary files will be placed under ``scratch`` and the final output files in ``output``. No files under ``scratch`` will be used after the run is finished (they are not read for re-runs).
 
@@ -53,6 +53,8 @@ It can be run per file (e.g. ``output_ray.hdf5``), or for the whole ``output`` d
 
 Similarly, the ``scratch`` directory can also benefit from Lustre striping. Because most files there are small, it is recommended to use a stripe count of 1 for ``scratch``.
 
+.. warning::
+   You need a parallel filesystem if you are running RH 1.5D across more than one host. Most supercomputers have parallel filesystems, but if you are running in a smaller cluster this may not be the case. RH 1.5D will always run, but the HDF5 writes will not work and the results will be unreadable. NFS is **not** a parallel file system.
 
 Logs and messages
 =================
@@ -76,11 +78,47 @@ In addition to the logs per process saved to ``scratch``, a much smaller log wil
 
 In this example one can see the three possible outputs for a single-column calculation: convergence, non-convergence (meaning the target ``ITER_LIMIT`` was not met in ``N_MAX_ITER`` iterations), or a crash (many reasons). If there are singular matrices or other causes for a column to crash, RH 1.5D will skip that column and proceed to the next work unit. Such cases can be re-run with different parameters. In some cases (e.g. inexistent files) it is not possible to prevent a crash, and RH 1.5D will finish non-gracefully.
 
+Reruns and lack of convergence
+==============================
+
+Dynamic atmospheres often have large gradients in temperature, density, velocity, etc. that cause problems when solving the non-LTE problem. This may lead to some (or all) columns not converging, and is dependent on the input atmosphere, model atoms, and run options. In RH terms, non-converged or "crashed", represent the same problem. In some cases, the iterations diverge strongly (crash), while in others they fail to reach the target limit for convergence in the allocated maximum number of iterations (non-convergence).
+
+The output for atmosphere columns that did not converged or crashed is not saved to disk (a fill value is used instead). The recommended procedure in these cases is to rerun RH with different input options (e.g. less agressive acceleration, a larger number of maximum iterations). A special rerun mode is available to save time calculating again the columns that have already converged. When ``15D_RERUN = TRUE`` in ``keyword.input``, RH will read the output and run again only for the columns that did not converge.
+
+The rerun mode requires all the previous output to be under ``output/``. The user has the possibility of changing options in ``keyword.input`` for the rerun. Not all options can be changed, because this could lead to non-sensical results (e.g. changing the input atmosphere or atom files). Only the following options can be changed in ``keyword.input``:
+
+
+.. list-table:: 
+   :widths: auto
+
+   * - ``15D_RERUN``
+   * - ``15D_DEPTH_CUT``
+   * - ``15D_TMAX_CUT``
+   * - ``15D_DEPTH_REFINE``
+   * - ``N_PESC_ITER``
+   * - ``COLLRAD_SWITCH``
+   * - ``COLLRAD_SWITCH_INIT``
+   * - ``PRD_SWITCH``
+   * - ``NRAYS``
+   * - ``N_MAX_SCATTER``
+   * - ``N_MAX_ITER``
+   * - ``ITER_LIMIT``
+   * - ``NG_DELAY``
+   * - ``NG_ORDER``
+   * - ``NG_PERIOD``
+   * - ``S_INTERPOLATION``
+   * - ``PRD_N_MAX_ITER``
+   * - ``PRD_ITER_LIMIT``
+   * - ``B_STRENGTH_CHAR``
+
+
+All the other options are locked to the values used for the firs run. Likewise, it is not possible to change ``atoms.input``, the atom files, or the line list files. When RH 1.5D is first run, nearly all input options (except the input atmosphere and molecule files) are saved into the output, and in a rerun these are read from the output and not from the original files. This also means that a rerun can be performed even if the original files are no longer available.
+
 
 Helper script
 =============
 
-There is a Python script called ``runtools.py`` designed to make it easier to run RH 1.5D for large projects. It resides in ``rh/python/runtools.py``. It requires `Python <http://www.python.org/>`_ with the `numpy <http://www.numpy.org/>`_ and `h5py <http://www.h5py.org/>`_ (or `netCDF4 <http://code.google.com/p/netcdf4-python/>`_) modules. It was made to run a given RH 1.5D setup over many simulation snapshots, spanning several atmosphere files. It supports a progressive re-run of a given problem, and allows the of use different ``keyword.input`` parameters for different columns, tackling columns harder to converge.
+There is a Python script called ``runtools.py`` designed to make it easier to run RH 1.5D for large projects. It resides in ``rh/python/runtools.py``. It requires `Python <http://www.python.org/>`_ with the `numpy <http://www.numpy.org/>`_ and `h5py <http://www.h5py.org/>`_ (or `netCDF4 <http://code.google.com/p/netcdf4-python/>`_) modules. It was made to run a given RH 1.5D setup over many simulation snapshots, spanning several atmosphere files. It supports a progressive rerun of a given problem, and allows the of use different ``keyword.input`` parameters for different columns, tackling columns harder to converge.
 
 The first part of ``runtools.py`` should be modified for a users's need. It typically contains:
 
