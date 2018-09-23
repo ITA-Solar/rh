@@ -53,7 +53,7 @@ void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry,
   if ((H5Pset_fapl_mpio(plist_id, mpi.comm, mpi.info)) < 0) HERR(routineName);
   if ((ncid = H5Fopen(input.atmos_input, H5F_ACC_RDONLY, plist_id)) < 0)
     HERR(routineName);
-  infile->ncid = (int) ncid;
+  infile->ncid = ncid;
   if ((H5Pclose(plist_id)) < 0) HERR(routineName); /* plist no longer needed */
 
   /* Is magnetic field included? */

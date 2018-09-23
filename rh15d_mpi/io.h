@@ -139,31 +139,32 @@ typedef struct {
   int  spec_ncid,         spec_int_var,      spec_flux_var,     spec_wave_var,
        spec_stokes_u_var, spec_stokes_q_var, spec_stokes_v_var;
   /* for the input data file. Note: this HDF5 file has several groups */
-  int  in_ncid,           in_input_ncid,     in_atmos_ncid,     in_mpi_ncid;
-  int  in_atmos_T,        in_atmos_ne,       in_atmos_vz,       in_atmos_vt,
-       in_atmos_Bx,       in_atmos_By,       in_atmos_Bz,       in_atmos_nh,
-    /* in_atmos_B,        in_atmos_gB,       in_atmos_chiB,     in_atmos_nh, */
-       in_atmos_ew,       in_atmos_ab,       in_atmos_eid,      in_atmos_mu,
-       in_atmos_wmu,      in_atmos_z,        in_atmos_x,        in_atmos_y;
-  int  in_mpi_xnum,       in_mpi_ynum,       in_mpi_tm,         in_mpi_tn,
-       in_mpi_it,         in_mpi_conv,       in_mpi_dm,         in_mpi_dmh,
-       in_mpi_ntsk,       in_mpi_host,       in_mpi_st,         in_mpi_ft,
-       in_mpi_zc;
+  hid_t  in_ncid,           in_input_ncid,     in_atmos_ncid,     in_mpi_ncid;
+  hid_t  in_atmos_T,        in_atmos_ne,       in_atmos_vz,       in_atmos_vt,
+         in_atmos_Bx,       in_atmos_By,       in_atmos_Bz,       in_atmos_nh,
+    /*   in_atmos_B,        in_atmos_gB,       in_atmos_chiB,     in_atmos_nh, */
+         in_atmos_ew,       in_atmos_ab,       in_atmos_eid,      in_atmos_mu,
+         in_atmos_wmu,      in_atmos_z,        in_atmos_x,        in_atmos_y;
+  hid_t  in_mpi_xnum,       in_mpi_ynum,       in_mpi_tm,         in_mpi_tn,
+         in_mpi_it,         in_mpi_conv,       in_mpi_dm,         in_mpi_dmh,
+         in_mpi_ntsk,       in_mpi_host,       in_mpi_st,         in_mpi_ft,
+         in_mpi_zc;
   /* for the aux file */
-  int  aux_ncid,         *aux_atom_ncid,     aux_op_ncid,      *aux_atom_pop,
-      *aux_atom_poplte,  *aux_atom_RijL,    *aux_atom_RjiL,    *aux_atom_RijC,
-      *aux_atom_RjiC,    *aux_atom_coll,    *aux_atom_damp,    *aux_atom_vbroad,
-      *aux_mol_ncid,     *aux_mol_pop,      *aux_mol_poplte,   *aux_mol_E,
-      *aux_mol_vbroad,
-       aux_op_chi_ai,     aux_op_chi_ad,     aux_op_eta_ai,     aux_op_eta_ad;
+  hid_t  aux_ncid,         *aux_atom_ncid,     aux_op_ncid,      *aux_atom_pop,
+        *aux_atom_poplte,  *aux_atom_RijL,    *aux_atom_RjiL,    *aux_atom_RijC,
+        *aux_atom_RjiC,    *aux_atom_coll,    *aux_atom_damp,    *aux_atom_vbroad,
+        *aux_mol_ncid,     *aux_mol_pop,      *aux_mol_poplte,   *aux_mol_E,
+        *aux_mol_vbroad,
+         aux_op_chi_ai,     aux_op_chi_ad,     aux_op_eta_ai,     aux_op_eta_ad;
   /* for atom file positions */
   long *atom_file_pos;
   /* for the ray file */
-  int  ray_ncid,          ray_nwave_sel,     ray_wave_var,      ray_int_var,
-       ray_stokes_q_var,  ray_stokes_u_var,  ray_stokes_v_var,  ray_j_var,
-       ray_chi_l_var,     ray_eta_l_var,     ray_chi_c_var,     ray_eta_c_var,
-       ray_sca_c_var,     ray_chi_var,       ray_S_var,        *ray_wave_idx,
-       ray_tau1_var;
+  hid_t  ray_ncid,          ray_wave_var,      ray_int_var,
+         ray_stokes_q_var,  ray_stokes_u_var,  ray_stokes_v_var,  ray_j_var,
+         ray_chi_l_var,     ray_eta_l_var,     ray_chi_c_var,     ray_eta_c_var,
+         ray_sca_c_var,     ray_chi_var,       ray_S_var,
+         ray_tau1_var;
+  int    ray_nwave_sel, *ray_wave_idx;
   double ray_muz;
 } IO_data;
 

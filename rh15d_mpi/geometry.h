@@ -9,6 +9,9 @@
 #ifndef __GEOMETRY_H__
 #define __GEOMETRY_H__
 
+#include <hdf5.h>
+#include <hdf5_hl.h>
+
 /* --- Define geometric quantities for 1-D plane-parallel version --  */
 enum boundcond  {ZERO, THERMALIZED, IRRADIATED, REFLECTIVE};
 enum mass_scale {GEOMETRIC, COLUMN_MASS, TAU500};
@@ -29,9 +32,9 @@ typedef struct {
 /* For the input atmos file */
 typedef struct {
   char     *file_name;
-  int       ncid,     nx_id,    ny_id,    nz_id,    nhyd_id,     z_varid;
-  int       T_varid,  ne_varid, vz_varid, nh_varid, vturb_varid;
-  int       Bx_varid, By_varid, Bz_varid;
+  hid_t     ncid,     nx_id,    ny_id,    nz_id,    nhyd_id,     z_varid;
+  hid_t     T_varid,  ne_varid, vz_varid, nh_varid, vturb_varid;
+  hid_t     Bx_varid, By_varid, Bz_varid;
   size_t    nx,       ny,       nz,       NHydr;
   double   *x, *y;
 } Input_Atmos_file;

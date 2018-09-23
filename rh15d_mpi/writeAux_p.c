@@ -90,7 +90,7 @@ void init_aux_new(void) {
       HERR(routineName);
   if (( H5LTset_attribute_int(ncid, "/", "ny", &mpi.ny, 1) ) < 0)
       HERR(routineName);
-  if (( H5LTset_attribute_int(ncid, "/", "nz", (int *) &infile.nz, 1 )) < 0)
+  if (( H5LTset_attribute_int(ncid, "/", "nz", &infile.nz, 1 )) < 0)
       HERR(routineName);
   /* attributes */
   if (( H5LTset_attribute_string(ncid, "/", "atmosID", atmos.ID)) < 0)
@@ -99,19 +99,19 @@ void init_aux_new(void) {
     HERR(routineName);
 
   /* Create arrays for multiple-atom/molecule output */
-  io.aux_atom_ncid   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
-  io.aux_mol_ncid    = (int *) malloc(atmos.Nactivemol  * sizeof(int));
+  io.aux_atom_ncid   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
+  io.aux_mol_ncid    = (hid_t *) malloc(atmos.Nactivemol  * sizeof(hid_t));
   if (input.p15d_wpop) {
-      io.aux_atom_pop    = (int *) malloc(atmos.Nactiveatom * sizeof(int));
-      io.aux_atom_poplte = (int *) malloc(atmos.Nactiveatom * sizeof(int));
-      io.aux_mol_pop     = (int *) malloc(atmos.Nactivemol  * sizeof(int));
-      io.aux_mol_poplte  = (int *) malloc(atmos.Nactivemol  * sizeof(int));
+      io.aux_atom_pop    = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
+      io.aux_atom_poplte = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
+      io.aux_mol_pop     = (hid_t *) malloc(atmos.Nactivemol  * sizeof(hid_t));
+      io.aux_mol_poplte  = (hid_t *) malloc(atmos.Nactivemol  * sizeof(hid_t));
   }
   if (input.p15d_wrates) {
-      io.aux_atom_RijL   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
-      io.aux_atom_RjiL   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
-      io.aux_atom_RijC   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
-      io.aux_atom_RjiC   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
+      io.aux_atom_RijL   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
+      io.aux_atom_RjiL   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
+      io.aux_atom_RijC   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
+      io.aux_atom_RjiC   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
   }
 
 
@@ -420,19 +420,19 @@ void init_aux_existing(void) {
   free(atmosID);
 
   /* Create arrays for multiple-atom/molecule output */
-  io.aux_atom_ncid   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
-  io.aux_mol_ncid    = (int *) malloc(atmos.Nactivemol  * sizeof(int));
+  io.aux_atom_ncid   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
+  io.aux_mol_ncid    = (hid_t *) malloc(atmos.Nactivemol  * sizeof(hid_t));
   if (input.p15d_wpop) {
-      io.aux_atom_pop    = (int *) malloc(atmos.Nactiveatom * sizeof(int));
-      io.aux_atom_poplte = (int *) malloc(atmos.Nactiveatom * sizeof(int));
-      io.aux_mol_pop     = (int *) malloc(atmos.Nactivemol  * sizeof(int));
-      io.aux_mol_poplte  = (int *) malloc(atmos.Nactivemol  * sizeof(int));
+      io.aux_atom_pop    = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
+      io.aux_atom_poplte = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
+      io.aux_mol_pop     = (hid_t *) malloc(atmos.Nactivemol  * sizeof(hid_t));
+      io.aux_mol_poplte  = (hid_t *) malloc(atmos.Nactivemol  * sizeof(hid_t));
   }
   if (input.p15d_wrates) {
-      io.aux_atom_RijL   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
-      io.aux_atom_RjiL   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
-      io.aux_atom_RijC   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
-      io.aux_atom_RjiC   = (int *) malloc(atmos.Nactiveatom * sizeof(int));
+      io.aux_atom_RijL   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
+      io.aux_atom_RjiL   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
+      io.aux_atom_RijC   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
+      io.aux_atom_RjiC   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
   }
 
   /* --- Group loop over active ATOMS --- */

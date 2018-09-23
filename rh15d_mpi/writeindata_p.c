@@ -838,9 +838,9 @@ void readConvergence(void) {
      written by RH. */
   const char routineName[] = "readConvergence";
   char *atmosID;
-  int ncid, ncid_mpi, nx, ny;
+  int nx, ny;
   size_t attr_size;
-  hid_t plist;
+  hid_t ncid, ncid_mpi, plist;
   H5T_class_t type_class;
 
   mpi.rh_converged = matrix_int(mpi.nx, mpi.ny);
