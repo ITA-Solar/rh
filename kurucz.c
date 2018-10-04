@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Tue Jul 12 10:57:37 2011 --
+       Last modified: Thu Oct 12 14:52:27 2017 --
 
        --------------------------                      ----------RH-- */
 
@@ -76,10 +76,11 @@ FORMAT(F11.4,F7.3,F6.2,F12.3,F5.2,1X,A10,F12.3,F5.2,1X,A10,
 
 #define COMMENT_CHAR        "#"
 #define RLK_RECORD_LENGTH   160
-#define Q_WING              20.0
+#define Q_WING              100.0
 #define MILLI               1.0E-03
 #define ANGSTROM_TO_NM      0.1
 #define MAX_GAUSS_DOPPLER   7.0
+#define USE_TABULATED_WAVELENGTH 1
 
 
 /* --- Function prototypes --                          -------------- */
@@ -232,7 +233,18 @@ void readKuruczLines(char *inputFile)
 	rlk->gi = 2*Ji + 1;
 	rlk->gj = 2*Jj + 1;
 
-	lambda0 = (HPLANCK * CLIGHT) / (rlk->Ej - rlk->Ei);
+    if (USE_TABULATED_WAVELENGTH) {
+	  /* --- In this case use tabulated wavelength and adjust
+	         upper-level energy --                 -------------- */
+
+	  air_to_vacuum(1, &lambda_air, &lambda0);
+	  lambda0 *= NM_TO_M;
+	  rlk->Ej = rlk->Ei +  (HPLANCK * CLIGHT) / lambda0;
+	} else {
+	  /* --- Else use energy levels to calculate lambda0 -- ----- */
+
+	  lambda0 = (HPLANCK * CLIGHT) / (rlk->Ej - rlk->Ei);
+	}
 	rlk->Aji = C / SQ(lambda0) * POW10(gf) / rlk->gj;
 	rlk->Bji = CUBE(lambda0) / (2.0 * HPLANCK * CLIGHT) * rlk->Aji;
 	rlk->Bij = (rlk->gj / rlk->gi) * rlk->Bji;
@@ -887,6 +899,11 @@ void getUnsoldcross(RLK_Line *rlk)
 
   element = &atmos.elements[rlk->pt_index - 1];
   He = &atmos.elements[1];
+
+  if (rlk->stage > element->Nstage - 1) {
+    rlk->vdwaals = KURUCZ;
+    return;
+  }
 
   Z = rlk->stage + 1;
   deltaR = SQ(E_RYDBERG/(element->ionpot[rlk->stage] - rlk->Ej)) -
