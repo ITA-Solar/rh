@@ -195,7 +195,7 @@ void readMolecule(Molecule *molecule, char *fileName, bool_t active)
 	    fitStr, fileName);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
-  /* --- Charged molecules can only be in KURUCZ_{70,85} format -- -- */
+  /* --- Charged molecules can only be in KURUCZ_{70,85} format -- -- *
 
   if (molecule->charge > 0) {
     if (molecule->fit != KURUCZ_70  &&  molecule->fit != KURUCZ_85) {
@@ -205,7 +205,7 @@ void readMolecule(Molecule *molecule, char *fileName, bool_t active)
       Error(ERROR_LEVEL_2, routineName, messageStr);
     }
   }
-  /* --- Read minimum and maximum formation temperature -- ---------- */
+  * --- Read minimum and maximum formation temperature -- ---------- */
 
   getLine(fp_molecule, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
   Nread = sscanf(inputLine, "%lf %lf", &molecule->Tmin, &molecule->Tmax);
@@ -820,7 +820,7 @@ void readMolecularLines(struct Molecule *molecule, char *line_data)
 
     Nread = sscanf(inputLine+67, "%2d", &isotope);
     switch (isotope) {
-    case 13: mrt->isotope_frac = C13_FRACTION;  break;
+    case 13: mrt->isotope_frac = C_13;  break;
     default: mrt->isotope_frac = 1.0;
     }
 
