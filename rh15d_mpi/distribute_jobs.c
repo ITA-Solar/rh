@@ -84,7 +84,7 @@ void distribute_jobs(void)
 
     for (i = 0; i < mpi.nx; i++) {
       for (j = 0; j < mpi.ny; j++) {
-       if (mpi.rh_converged[i][j] < 1) remain_tasks++;
+       if (mpi.rh_converged[i][j] != 1) remain_tasks++;
       }
     }
 
@@ -147,10 +147,10 @@ long **get_taskmap(long remain_tasks, long *ntasks, long *my_start)
   k = 0;
   for (i=0; i < mpi.nx; i++) {
     for (j=0; j < mpi.ny; j++) {
-      if (mpi.rh_converged[i][j] < 1) {
-	taskmap[k][0] = i;
-	taskmap[k][1] = j;
-	++k;
+      if (mpi.rh_converged[i][j] != 1) {
+	       taskmap[k][0] = i;
+	       taskmap[k][1] = j;
+	       ++k;
       }
     }
   }
