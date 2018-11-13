@@ -18,7 +18,7 @@ else
     CFLAGS += -I../ -I$(HDF5_DIR)/include/ -D'REV_ID="$(REV)"'
 endif
 
-LDFLAGS += -L../ -L$(HDF5_DIR)/lib/ -lrh -lrh_f90 -lhdf5 -lhdf5_hl
+LDFLAGS += -L../ -L$(HDF5_DIR)/lib/ -lrh -lrh_f90 -lhdf5 -lhdf5_hl -lm -lpthread
 
 SRC = accelerate_p.c  \
   	  anglequad.c  \
