@@ -106,7 +106,10 @@ SRC = abundance.c \
 	  writespect_xdr.c \
 	  zeeman.c
 
+SRC_F = hui_.f90 humlicek_.f90
+
 OBJS = $(SRC:.c=.o)
+OBJS_F = $(SRC_F:.f90=.o)
 DEPS = $(wildcard $(patsubst %,$(DEPDIR)/%.d,$(basename $(SRC))))
 LIBS = librh.a librh_f90.a
 
@@ -119,12 +122,13 @@ all: $(LIBS)
 
 librh.a: $(OBJS)
 	$(AR) $(ARFLAGS) $@ $(OBJS)
-	ranlib $@
+	$(RANLIB) $@
 
-# FORTRAN 90 alternatives
-librh_f90.a: librh_f90.a(hui_.o) librh_f90.a(humlicek_.o)
+librh_f90.a: $(OBJS_F)
+	$(AR) $(ARFLAGS) $@ $(OBJS_F)
+	$(RANLIB) $@
 
 clean:
-	rm -f $(OBJS) $(LIBS)
+	rm -f $(OBJS) $(OBJS_F) $(LIBS)
 
 -include $(DEPS)
