@@ -75,7 +75,7 @@ BIN = $(basename $(BIN_OBJ))
 all: $(BIN)
 
 $(BIN): % : $(OBJS) %.o ../librh.a ../librh_f90.a
-	$(LD) -o $@  $(LDFLAGS) $(OBJS) $@.o
+	$(LD) -o $@ $(OBJS) $@.o $(LDFLAGS)
 
 ../librh.a ../librh_f90.a:
 	cd ..; $(MAKE) librh.a  librh_f90.a
