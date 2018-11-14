@@ -6,12 +6,12 @@
 #
 ##     --------------------------                      ----------RH-- ##
 
-include ../makefiles/makefile.$(CPU).$(OS)
+include ../Makefile.config
 
 
 ## --- If no FORTRAN compiler is available remove -lrh_f90 in following
 
-    LIBS = -lrh -lrh_f90 $(ARCHLIBS)
+    LIBS = -lrh -lrh_f90 
 
 
 ## --- Rules for the executables --                    -------------- ##

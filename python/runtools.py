@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os
 import sys
 import time
@@ -8,7 +8,7 @@ atmos_dir = '/mydata'
 seq_file = 'RH_SEQUENCE'
 outsuff = 'output/output_ray_CaII_PRD_s%03i.hdf5'
 mpicmd = 'mpiexec'  # 'aprun'
-bin = './rh15d_ray_pool'
+bin = '../rh15d_ray_pool'
 defkey = 'keyword.save'
 log = 'rh_running.log'
 tm = 40   # timeout in minutes to stop a single run
@@ -34,7 +34,7 @@ def run_sequence(seq_file, atmos_dir='.'):
         try:
             job = getjob(seq_file, fdir=atmos_dir)
             retries = 0
-        except IOError, ee:
+        except IOError as ee:
             print(ee)
             if retries == 3:
                 break
@@ -48,7 +48,7 @@ def run_sequence(seq_file, atmos_dir='.'):
         atmos_file, snaps, snap_nums = job
         nt = len(snaps)
         print('--- ' + os.path.split(atmos_file)[1])
-        for i, n, s in zip(range(nt), snaps, snap_nums):
+        for i, n, s in zip(list(range(nt)), snaps, snap_nums):
             print('     running snapshot %s (%i/%i)' % (s, i + 1, nt))
             run_single(atmos_file, n, snapnum=s)
     print('*** Finished gracefully.')
@@ -148,7 +148,7 @@ def run_timeout(cmd, timeout=0, log='rh_running.log'):
     import shlex
     import time
     print(cmd)
-    logfile = open(log, 'w', 1)
+    logfile = open(log, 'wb', 1)
     args = shlex.split(cmd)   # tokenise args list
     p = subprocess.Popen(args, shell=False, bufsize=0, stdin=None,
                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -242,7 +242,7 @@ def getjob(filename, fdir='.'):
         time.sleep((retries + 1) * 60)
     snaps = get_snaps(result[0])
     if len(result[1]) == 0:
-        selected = range(len(snaps))
+        selected = list(range(len(snaps)))
         selected_snaps = snaps
     else:
         selected = []
@@ -271,18 +271,19 @@ def keywordin_update(infile, outfile, new_values):
         These are given in a dictionary: fvalues = {field: value}.
         Reads from infile and writes into outfile.'''
     out = open(outfile, 'w')
-    for line in file(infile):
-        if line[0] == '#':
-            out.write(line)
-        elif line.find('=') < 0:
-            out.write(line)
-        else:
-            ss = line.split('=')[0]
-            ssv = ss.strip().upper()
-            if ssv in new_values.keys():
-                out.write('%s= %s\n' % (ss, str(new_values[ssv])))
-            else:
+    with open(infile) as fin:
+        for line in fin:
+            if line[0] == '#':
                 out.write(line)
+            elif line.find('=') < 0:
+                out.write(line)
+            else:
+                ss = line.split('=')[0]
+                ssv = ss.strip().upper()
+                if ssv in list(new_values.keys()):
+                    out.write('%s= %s\n' % (ss, str(new_values[ssv])))
+                else:
+                    out.write(line)
     return
 
 if __name__ == '__main__':
