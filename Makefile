@@ -18,7 +18,7 @@ DEPDIR := .d
 $(shell mkdir -p $(DEPDIR) >/dev/null)
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.Td
 
-COMPILE.c = $(CC) $(CFLAGS) $(DEPFLAGS) -D$(CPU) -D$(OS) -c
+COMPILE.c = $(CC) $(CFLAGS) $(DEPFLAGS) -D$(OS) -c
 POSTCOMPILE = @mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d && touch $@
 
 $(DEPDIR)/%.d: ;
