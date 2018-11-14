@@ -572,9 +572,8 @@ void init_hdf5_indata_existing(void)
 /* Opens an existing input data file, loads structures and ids */
 {
   const char routineName[] = "init_hdf5_indata_existing";
-  int     ncid;
   size_t  attr_size;
-  hid_t   plist;
+  hid_t   ncid, plist;
   char   *atmosID;
   H5T_class_t type_class;
 
