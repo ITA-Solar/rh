@@ -7,7 +7,7 @@ What is RH 1.5D
 
 RH 1.5D is a modified version of the RH radiative transfer code that runs through a 3D/2D/1D atmosphere column-by-column, in the same fashion of rhf1d. It was developed as a way to efficiently run RH column-by-column (1.5D) over large atmospheres, simplifying the output and being able to run in supercomputers. It is MPI-parallel and scales well to at least 10,000 processes.
 
-While initially developed as another geometry on the RH tree, the requirements of the parallel version required changes to the RH core tree. Thus, it is more than a `wrapper` over RH and is distributed with a complete modified version of RH (see below for differences from RH distributed by Han Uitenbroek).
+While initially developed as another geometry on the RH tree, the requirements of the parallel version required changes to the RH core tree. Thus, it is more than a `wrapper` over RH and is distributed with a modified version of RH (see below for differences from RH distributed by Han Uitenbroek).
 
 
 Acknowledging RH 1.5D

@@ -199,6 +199,11 @@ The atmosphere files contain all the atmospheric variables necessary for RH 1.5D
 
 While strictly 3D atmosphere files, 2D and 1D snapshots can also be used provided that one or both of ``nx`` and ``ny`` are equal to 1.
 
+.. note::
+   The atmosphere variables must be written to the file in a particular way. They should be written in a *height grid* (meaning the top of the atmosphere has a larger value of ``z``), and must *start from the top* (meaning that the first height index of the arrays must be the **TOP** of the atmosphere). Failure to follow these two rules can either lead to RH aborting a run, or worse, getting wrong results without a clear error message.
+
+
+
 The atmosphere file can contain the following variables:
 
 .. tabularcolumns:: |l|l|l|L|
