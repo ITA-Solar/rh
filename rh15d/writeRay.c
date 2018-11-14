@@ -89,7 +89,7 @@ void init_hdf5_ray_new(void)
       HERR(routineName);
   if (( H5LTset_attribute_int(ncid, "/", "ny", &mpi.ny, 1) ) < 0)
       HERR(routineName);
-  if (( H5LTset_attribute_int(ncid, "/", "nz", &infile.nz, 1 )) < 0)
+  if (( H5LTset_attribute_int(ncid, "/", "nz", (int *) &infile.nz, 1 )) < 0)
       HERR(routineName);
   if (( H5LTset_attribute_int(ncid, "/", "nwave", &spectrum.Nspect, 1)) < 0)
       HERR(routineName);
@@ -334,10 +334,9 @@ void init_hdf5_ray_existing(void)
 /* Opens an existing ray file */
 {
   const char routineName[] = "init_hdf5_ray_existing";
-  int     ncid;
   bool_t  write_xtra;
   size_t  attr_size;
-  hid_t   plist;
+  hid_t   ncid, plist;
   char   *atmosID;
   H5T_class_t type_class;
 
@@ -429,7 +428,7 @@ void close_hdf5_ray(void) {
 void writeRay(void) {
   /* Writes ray data to file. */
   const char routineName[] = "writeRay";
-  int        idx, ncid, k, l, nspect;
+  int        idx, k, l, nspect;
   double    *J;
   float    **chi, **S, **sca, *tau_one, tau_cur, tau_prev, tmp, *chi_tmp;
   float    **Jnu;
@@ -438,7 +437,7 @@ void writeRay(void) {
   hsize_t    dims[4];
   bool_t     write_xtra, crosscoupling, to_obs, initialize,prdh_limit_mem_save;
   ActiveSet *as;
-  hid_t      file_dataspace, mem_dataspace;
+  hid_t      ncid, file_dataspace, mem_dataspace;
 
   write_xtra = (io.ray_nwave_sel > 0);
   ncid = io.ray_ncid;

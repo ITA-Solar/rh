@@ -90,7 +90,7 @@ void init_aux_new(void) {
       HERR(routineName);
   if (( H5LTset_attribute_int(ncid, "/", "ny", &mpi.ny, 1) ) < 0)
       HERR(routineName);
-  if (( H5LTset_attribute_int(ncid, "/", "nz", &infile.nz, 1 )) < 0)
+  if (( H5LTset_attribute_int(ncid, "/", "nz", (int *) &infile.nz, 1 )) < 0)
       HERR(routineName);
   /* attributes */
   if (( H5LTset_attribute_string(ncid, "/", "atmosID", atmos.ID)) < 0)
@@ -389,9 +389,9 @@ void init_aux_new(void) {
 /* ------- begin --------------------   init_aux_existing.c   --- */
 void init_aux_existing(void) {
   const char routineName[] = "init_aux_existing";
-  int     ncid, ncid_atom, ncid_mol, i, nlevel, nline, ncont;
+  int     i, nlevel, nline, ncont;
   size_t  attr_size;
-  hid_t   plist;
+  hid_t   ncid, ncid_atom, ncid_mol, plist;
   H5T_class_t type_class;
   char    group_name[ARR_STRLEN], *atmosID;
   Atom   *atom;
