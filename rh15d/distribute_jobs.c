@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -46,8 +47,9 @@ extern char messageStr[];
 void distribute_jobs(void)
 /* Distributes the work between the available processes */
 {
-
+  const char routineName[] = "distribute_jobs";
   long *tasks, remain_tasks, i, j;
+  bool_t abort = FALSE;
 
   mpi.backgrrecno = 0;
 
@@ -55,8 +57,28 @@ void distribute_jobs(void)
   if ((input.p15d_x0 < 0)) input.p15d_x0 = 0;
   if ((input.p15d_y0 < 0)) input.p15d_y0 = 0;
 
-  if ((input.p15d_x0 > input.p15d_x1)) input.p15d_x0 = input.p15d_x1;
-  if ((input.p15d_y0 > input.p15d_y1)) input.p15d_y0 = input.p15d_y1;
+  if ((input.p15d_x0 > input.p15d_x1)) {
+      sprintf(messageStr, "\n X_START larger than X_END.");
+      abort = TRUE;
+  }
+  if ((input.p15d_y0 > input.p15d_y1)) {
+      sprintf(messageStr + strlen(messageStr),
+              "\n Y_START larger than Y_END.");
+      abort = TRUE;
+  }
+
+  if ((input.p15d_x0 >= infile.nx)) {
+      sprintf(messageStr + strlen(messageStr),
+              "\n X_START larger than NX points in atmosphere.");
+      abort = TRUE;
+  }
+  if ((input.p15d_y0 >= infile.ny)) {
+      sprintf(messageStr + strlen(messageStr),
+              "\n Y_START larger than NY points in atmosphere.");
+      abort = TRUE;
+  }
+  if (abort) Error(ERROR_LEVEL_2, routineName, messageStr);
+
 
   if ((input.p15d_x1 <= 0) || (input.p15d_x1 > infile.nx))
     input.p15d_x1 = infile.nx;
