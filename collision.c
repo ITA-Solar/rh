@@ -55,6 +55,9 @@
          SHULL82   -->  Coefficients for collisional ionization, radiative
                         recombination, and dielectronic recombination following
                         Shull & van Steenberg (1982, ApJS, 48, 95)
+         SUMMERS   -->  Scaling factor for density-dependent dielectronic recombination
+                        according to Summers (1974). Default is 0, use 1 for
+                        full Summers coefficients.
 
          END   -->  End of input data
          ----------------------------------------------------
