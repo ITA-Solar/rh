@@ -47,7 +47,7 @@ RH 1.5D makes use of the `HDF5 <http://www.hdfgroup.org/HDF5/>`_ library to read
 
 Because HDF5 is commonly used in high-performance computing, many supercomputers already have them available. In Fram, they can be loaded as (also loading the intel compilers)::
 
-    module load HDF5/1.8.18-intel-2018a intel/2018a
+    module load HDF5/1.8.19-intel-2018a intel/2018a
 
 in Pleiades::
 
