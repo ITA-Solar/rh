@@ -146,6 +146,8 @@ The ``atmos`` groups contains the dimensions ``x``, ``y``, ``height``, ``element
 +-----------------------+------------------------------+-----------------+--------------------------------------+
 | ``velocity_z``        | ``(x, y, height)``           | m s\ :sup:`-1`\ | Vertical velocities                  |
 +-----------------------+------------------------------+-----------------+--------------------------------------+
+| ``electron_density``  | ``(x, y, height)``           | m s\ :sup:`-3`\ | Electron densities                   |
++-----------------------+------------------------------+-----------------+--------------------------------------+
 | ``height_scale``      | ``(x, y, height)``           | m               | Height scale used. Can be different  |
 |                       |                              |                 | for every column when depth refine   |
 |                       |                              |                 | is used.                             |
