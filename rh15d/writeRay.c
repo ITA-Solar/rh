@@ -251,58 +251,58 @@ void init_hdf5_ray_new(void)
 
   /*  units and fill value  */
   if (( H5LTset_attribute_string(ncid, X_NAME, "units",
-                                 "m") ) < 0) HERR(routineName);
+                                 UNIT_LENGTH) ) < 0) HERR(routineName);
   if (( H5LTset_attribute_string(ncid, Y_NAME, "units",
-                                 "m") ) < 0) HERR(routineName);
+                                 UNIT_LENGTH) ) < 0) HERR(routineName);
   if (( H5LTset_attribute_string(ncid, ZOUT_NAME, "units",
-                                 "m") ) < 0) HERR(routineName);
+                                 UNIT_LENGTH) ) < 0) HERR(routineName);
   if (( H5LTset_attribute_string(ncid, WAVE_NAME, "units",
-                                 "nm") ) < 0) HERR(routineName);
+                                 UNIT_WAVE) ) < 0) HERR(routineName);
   if (write_xtra) if (( H5LTset_attribute_string(ncid, WAVE_SEL_NAME, "units",
-                                                 "nm") ) < 0) HERR(routineName);
+                                           UNIT_WAVE) ) < 0) HERR(routineName);
   if (( H5LTset_attribute_string(ncid, INT_NAME, "units",
-                           "J s^-1 m^-2 Hz^-1 sr^-1") ) < 0) HERR(routineName);
+                                 UNIT_INTENSITY) ) < 0) HERR(routineName);
   if (( H5LTset_attribute_float(ncid, INT_NAME, "_FillValue",
                                 &FILLVALUE, 1) ) < 0) HERR(routineName);
 
 
   if (atmos.Stokes || input.backgr_pol) {
     if (( H5LTset_attribute_string(ncid, STOKES_Q, "units",
-                           "J s^-1 m^-2 Hz^-1 sr^-1") ) < 0) HERR(routineName);
+                                   UNIT_INTENSITY) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_float(ncid, STOKES_Q, "_FillValue",
                                   &FILLVALUE, 1) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_string(ncid, STOKES_U, "units",
-                           "J s^-1 m^-2 Hz^-1 sr^-1") ) < 0) HERR(routineName);
+                                   UNIT_INTENSITY) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_float(ncid, STOKES_U, "_FillValue",
                                   &FILLVALUE, 1) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_string(ncid, STOKES_V, "units",
-                           "J s^-1 m^-2 Hz^-1 sr^-1") ) < 0) HERR(routineName);
+                                   UNIT_INTENSITY) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_float(ncid, STOKES_V, "_FillValue",
                                   &FILLVALUE, 1) ) < 0) HERR(routineName);
   }
 
   if (input.p15d_wtau) {
     if (( H5LTset_attribute_string(ncid, TAU1_NAME, "units",
-                                   "m") ) < 0) HERR(routineName);
+                                   UNIT_LENGTH) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_string(ncid, TAU1_NAME, DESC_NAME,
                      "Height of optical depth unity") ) < 0) HERR(routineName);
   }
 
   if (write_xtra) {
     if (( H5LTset_attribute_string(ncid, S_NAME, "units",
-                          "J s^-1 m^-2 Hz^-1 sr^-1" ) ) < 0) HERR(routineName);
+                                   UNIT_INTENSITY ) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_string(ncid, S_NAME, DESC_NAME,
          "Total source function (line + continuum)" ) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_float(ncid, S_NAME, "_FillValue",
                                   &FILLVALUE, 1) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_string(ncid, CHI_NAME, "units",
-                                   "m^-1" ) ) < 0) HERR(routineName);
+                                   UNIT_PER_LENGTH ) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_string(ncid, CHI_NAME, DESC_NAME,
               "Total absorption (line + continuum)" ) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_float(ncid, CHI_NAME, "_FillValue",
                                   &FILLVALUE, 1) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_string(ncid, "/Jlambda", "units",
-                          "J s^-1 m^-2 Hz^-1 sr^-1" ) ) < 0) HERR(routineName);
+                                   UNIT_INTENSITY ) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_string(ncid, "/Jlambda", DESC_NAME,
                              "Mean radiation field" ) ) < 0) HERR(routineName);
     if (( H5LTset_attribute_float(ncid, "/Jlambda", "_FillValue",

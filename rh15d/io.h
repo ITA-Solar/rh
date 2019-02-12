@@ -27,6 +27,7 @@
 #define  NE_NAME    "electron_density"
 #define  NH_NAME    "hydrogen_populations"
 #define  Z_NAME     "z"
+#define  ZH_NAME    "height_scale"
 #define  BX_NAME    "B_x"
 #define  BY_NAME    "B_y"
 #define  BZ_NAME    "B_z"
@@ -57,6 +58,13 @@
 #define IT_NAME        "iteration"
 #define NETCDF_COMPAT  "This is a netCDF dimension but not a netCDF variable.         2"
 #define DESC_NAME      "long_name"
+/* Definitions for unit names, consistent with astropy.units */
+#define UNIT_LENGTH     "m"
+#define UNIT_WAVE       "nm"
+#define UNIT_PER_VOLUME "1 / m3"
+#define UNIT_TEMP       "K"
+#define UNIT_AMU        "u"
+#define UNIT_INTENSITY  "W / (Hz m2 sr)"
 
 /* Definitions for the ray file */
 #define RAY_FILE     "output/output_ray.hdf5"
