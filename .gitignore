@@ -2,6 +2,7 @@
 *.o
 *.ko
 *.pyc
+*.d
 
 # Libraries
 *.lib
@@ -36,8 +37,9 @@
 
 # Directories
 Atoms
-rh15d_mpi/run/
-rh15d_mpi/run_t*/
+rh15d/run/
+rh15d/run?/
+rh15d/run_t*/
 rhf1d/run/
 rhsc2d/run/
 rhsc3d/run/
