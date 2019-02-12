@@ -60,6 +60,8 @@
 #define DESC_NAME      "long_name"
 /* Definitions for unit names, consistent with astropy.units */
 #define UNIT_LENGTH     "m"
+#define UNIT_PER_LENGTH "1 / m"
+#define UNIT_VELOCITY   "m / s"
 #define UNIT_WAVE       "nm"
 #define UNIT_PER_VOLUME "1 / m3"
 #define UNIT_TEMP       "K"
