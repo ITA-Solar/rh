@@ -35,7 +35,7 @@
          CE        -->  Collisional de-excitation of neutrals by electrons
          CI        -->  Collisional ionisation by electrons
          CP        -->  Collisional de-excitation by protons
-         CR        -->  Collisional de-excitation by electrons
+         CR        -->  Collisional recombination (Added by Hsiao-hsuan, RECO in MULTI)
 
          CH0       -->  Charge exchange of ion with neutral hydrogen
          CH+       -->  Charge exchange of neutral with protons
@@ -50,8 +50,8 @@
                         Arnaud & Rothenflug (1985, ApJS 60)
          BURGESS   -->  Collisional ionisation from excited states following
                         Burgess & Chidichimo (1983, MNRAS 203, 1269)
-         BADNELL   -->  Dielectronic recombination following the Badnell
-                        recipe [citation needed]
+         BADNELL   -->  Dielectronic recombination following
+                        Badnell (2006, A&A, 447, 389)
          SHULL82   -->  Coefficients for collisional ionization, radiative
                         recombination, and dielectronic recombination following
                         Shull & van Steenberg (1982, ApJS, 48, 95)
@@ -510,7 +510,7 @@ void CollisionRate(struct Atom *atom, char *fp_atom)
       T = (double *) realloc(T, Nitem*sizeof(double));
       for (n = 0, nitem = 0;  n < Nitem;  n++) {
         if ((pointer = strtok(NULL, " ")) == NULL) break;
-	nitem += sscanf(pointer, "%lf", T+n);
+        nitem += sscanf(pointer, "%lf", T+n);
       }
     } else if (!strcmp(keyword, "OMEGA") || !strcmp(keyword, "CE") ||
 	       !strcmp(keyword, "CI")    || !strcmp(keyword, "CP") ||
@@ -525,7 +525,7 @@ void CollisionRate(struct Atom *atom, char *fp_atom)
 
       for (n = 0, nitem = 0;  n < Nitem;  n++) {
         if ((pointer = strtok(NULL, " ")) == NULL) break;
-	nitem += sscanf(pointer, "%lf", coeff+n);
+        nitem += sscanf(pointer, "%lf", coeff+n);
       }
       /* --- Transitions i -> j are stored at index ji, transitions
 	     j -> i are stored under ij. --            -------------- */
@@ -545,7 +545,7 @@ void CollisionRate(struct Atom *atom, char *fp_atom)
 
       for (n = 0, nitem = 0;  n < Nitem;  n++) {
         if ((pointer = strtok(NULL, " ")) == NULL) break;
-	nitem += sscanf(pointer, "%lf", coeff+n);
+        nitem += sscanf(pointer, "%lf", coeff+n);
       }
 
       i  = MIN(i1, i2);
@@ -578,7 +578,7 @@ void CollisionRate(struct Atom *atom, char *fp_atom)
 
       for (n = 0, nitem = 0;  n < Nitem;  n++) {
         if ((pointer = strtok(NULL, " ")) == NULL) break;
-	nitem += sscanf(pointer, "%lf", coeff+n);
+        nitem += sscanf(pointer, "%lf", coeff+n);
       }
 
       i  = MIN(i1, i2);
@@ -601,15 +601,15 @@ void CollisionRate(struct Atom *atom, char *fp_atom)
       badi  = matrix_double(Nrow, Ncoef);
 
       for (m = 0, nitem = 0;  m < Nrow;  m++) {
-	status = getLineString(&fp_atom, COMMENT_CHAR, inputLine,
-			 exit_on_EOF=FALSE);
+	    status = getLineString(&fp_atom, COMMENT_CHAR, inputLine,
+                               exit_on_EOF=FALSE);
 
         badi[m][0] = atof(strtok(inputLine, " "));
         nitem++;
-	for (n = 1;  n < Ncoef;  n++) {
-	  if ((pointer = strtok(NULL, " ")) == NULL) break;
-	  nitem += sscanf(pointer, "%lf", badi[m]+n);
-	}
+    	for (n = 1;  n < Ncoef;  n++) {
+    	  if ((pointer = strtok(NULL, " ")) == NULL) break;
+    	  nitem += sscanf(pointer, "%lf", badi[m]+n);
+    	}
       }
 
       i  = MIN(i1, i2);
@@ -647,15 +647,15 @@ void CollisionRate(struct Atom *atom, char *fp_atom)
       cdi = matrix_double(Nrow, MSHELL);
 
       for (m = 0, nitem = 0;  m < Nrow;  m++) {
-	status = getLineString(&fp_atom, COMMENT_CHAR, inputLine,
-                           exit_on_EOF=FALSE);
+	    status = getLineString(&fp_atom, COMMENT_CHAR, inputLine,
+                               exit_on_EOF=FALSE);
 
         cdi[m][0] = atof(strtok(inputLine, " "));
         nitem++;
-	for (n = 1;  n < MSHELL;  n++) {
-	  if ((pointer = strtok(NULL, " ")) == NULL) break;
-	  nitem += sscanf(pointer, "%lf", cdi[m]+n);
-	}
+    	for (n = 1;  n < MSHELL;  n++) {
+    	  if ((pointer = strtok(NULL, " ")) == NULL) break;
+    	  nitem += sscanf(pointer, "%lf", cdi[m]+n);
+    	}
       }
 
       i  = MIN(i1, i2);
@@ -683,12 +683,11 @@ void CollisionRate(struct Atom *atom, char *fp_atom)
 	!strcmp(keyword, "CH0")   || !strcmp(keyword, "CH+")||
 	!strcmp(keyword, "CH")    || !strcmp(keyword, "CR") ) {
 
-      if (Nitem > 2) {
-	splineCoef(Nitem, T, coeff);
-	splineEval(Nspace, atmos.T, C, hunt=TRUE);
-      } else
-	Linear(Nitem, T, coeff, Nspace, atmos.T, C, hunt=TRUE);
-    }
+       if (Nitem > 2) {
+         splineCoef(Nitem, T, coeff);
+    	 splineEval(Nspace, atmos.T, C, hunt=TRUE);
+       } else Linear(Nitem, T, coeff, Nspace, atmos.T, C, hunt=TRUE);
+   }
 
     if (!strcmp(keyword, "OMEGA")) {
 
