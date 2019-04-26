@@ -67,7 +67,6 @@ bool_t determinate(char *label, double g, int *n, double *S, int *L,
   *S = (multiplicity - 1) / 2.0;
 
   /* --- Orbital quantum number --                     -------------- */
-
   *L = getOrbital(orbit[0]);
 
   /* --- Total angular momentum --                     -------------- */
@@ -126,7 +125,7 @@ double effectiveLande(AtomicLine *line)
     g_l = Lande(S_l, L_l, J_l);
     g_u = Lande(S_u, L_u, J_u);
 
-    return 0.5*(g_u + g_l) + 0.25*(g_u - g_l) * 
+    return 0.5*(g_u + g_l) + 0.25*(g_u - g_l) *
       (J_u*(J_u + 1.0) - J_l*(J_l + 1.0));
   } else
     return 0.0;
@@ -195,7 +194,7 @@ double ZeemanStrength(double Ju, double Mu, double Jl, double Ml)
   default:
     sprintf(messageStr, "Invalid dJ: %d", dJ);
     Error(ERROR_LEVEL_2, routineName, messageStr);
-  }   
+  }
   return s;
 }
 /* ------- end ---------------------------- ZeemanStrength.c -------- */
@@ -218,7 +217,7 @@ ZeemanMultiplet* Zeeman(AtomicLine *line)
          of q = [-1, 0, 1].
 
          Convention:
- 
+
           -- q = +1 corresponds to a redshifted \sigma profile
 	     (zm->shift > 0). This redshifted profile has
              right-handed circular polarization when the
@@ -284,7 +283,7 @@ ZeemanMultiplet* Zeeman(AtomicLine *line)
 	  zm->q[n]        = (int) (Ml - Mu);
 	  zm->shift[n]    = gLl*Ml - gLu*Mu;
           zm->strength[n] = ZeemanStrength(Ju, Mu, Jl, Ml);
-	  
+
 	  norm[zm->q[n]+1] += zm->strength[n];
           n++;
 	}
@@ -332,7 +331,7 @@ void adjustStokesMode()
 
 	  /* --- First free up the space used in field-free
                  calculation --                        -------------- */
-	  
+
 	  if (!input.limit_memory) freeMatrix((void **) line->phi);
 	  free(line->wphi);
 
@@ -373,20 +372,21 @@ int getOrbital(char orbit)
   case 'G': L = 4;  break;
   case 'H': L = 5;  break;
   case 'I': L = 6;  break;
-  case 'J': L = 7;  break;
-  case 'K': L = 8;  break;
-  case 'L': L = 9;  break;
-  case 'M': L = 10; break;
-  case 'N': L = 11;  break;
-  case 'O': L = 12;  break;
-  case 'Q': L = 13;  break;
-  case 'R': L = 14;  break;
-  case 'T': L = 15;  break;
-  case 'U': L = 16;  break;
-  case 'V': L = 17;  break;
-  case 'W': L = 18;  break;
-  case 'X': L = 19;  break;
-  default: 
+  case 'K': L = 7;  break;
+  case 'L': L = 8;  break;
+  case 'M': L = 9;  break;
+  case 'N': L = 10;  break;
+  case 'O': L = 11;  break;
+  case 'Q': L = 12;  break;
+  case 'R': L = 13;  break;
+  case 'T': L = 14;  break;
+  case 'U': L = 15;  break;
+  case 'V': L = 16;  break;
+  case 'W': L = 17;  break;
+  case 'X': L = 18;  break;
+  case 'Y': L = 19;  break;
+  case 'Z': L = 20;  break;
+  default:
     sprintf(messageStr, "Invalid orbital: %c", orbit);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
