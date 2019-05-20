@@ -122,7 +122,7 @@ int   getLine(FILE *inputFile, char *commentChar, char *line,
 int   getLineString(char **inputString, char *commentChar, char *line,
                     bool_t exit_on_EOF);
 void  parse(int argc, char *argv[], int Noption, Option *theOptions);
-void  readInput();
+void  readInput(char *input_string);
 void  readValues(char *fp_keyword, int Nkeyword, Keyword *theKeywords);
 
 char *readWholeFile(const char *filename);
