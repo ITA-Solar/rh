@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
   getCPU(0, TIME_START, NULL);
   SetFPEtraps();
 
-  readInput();
+  readInput(NULL);
   spectrum.updateJ = TRUE;
 
   getCPU(1, TIME_START, NULL);

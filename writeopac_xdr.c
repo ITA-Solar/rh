@@ -71,7 +71,7 @@ void writeOpacity(void)
   xdrstdio_create(&xdrs, fp_out, XDR_ENCODE);
 
   if (atmos.moving || atmos.Stokes ||
-      (atmos.NPRDactive > 0 && input.PRD_angle_dep == PRD_ANGLE_DEP))
+      (atmos.NPRDactive > 0 && input.PRD_angle_dep != PRD_ANGLE_INDEP))
     Nrecord = atmos.Nrays*spectrum.Nspect;
   else
     Nrecord = spectrum.Nspect;

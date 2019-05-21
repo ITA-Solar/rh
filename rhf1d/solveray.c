@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
 
   /* --- Read input data and initialize --             -------------- */
 
-  readInput();
+  readInput(NULL);
   spectrum.updateJ = FALSE;
 
   /* --- Read input data for atmosphere --             -------------- */
