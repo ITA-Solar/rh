@@ -486,12 +486,14 @@ void CollisionRate(struct Atom *atom, char *fp_atom)
   C0 = ((E_RYDBERG/sqrt(M_ELECTRON)) * PI*SQ(RBOHR)) *
     sqrt(8.0/(PI*KBOLTZMANN));
 
+  if (atom->C)
+    freeMatrix((void**)atom->C);
   atom->C = matrix_double(SQ(Nlevel), Nspace);
-  for (ij = 0;  ij < SQ(Nlevel);  ij++) {
-    for (k = 0;  k < Nspace;  k++) {
-      atom->C[ij][k] = 0.0;
-    }
-  }
+  // for (ij = 0;  ij < SQ(Nlevel);  ij++) {
+  //   for (k = 0;  k < Nspace;  k++) {
+  //     atom->C[ij][k] = 0.0;
+  //   }
+  // }
 
   //fgetpos(fp_atom, &collpos); //Tiago: not needed now
 

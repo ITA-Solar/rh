@@ -71,13 +71,14 @@ void Profile(AtomicLine *line)
 
   char    filename[MAX_LINE_SIZE];
   int     lamu, Nlamu, NrecStokes;
-  double *adamp = NULL, **v, **v_los, *vB, *sv, *vbroad, Larmor, H, F,
-          wlamu, vk, phi_pi, phi_sm, phi_sp, phi_delta, phi_sigma,
-          psi_pi, psi_sm, psi_sp, psi_delta, psi_sigma, sign, sin2_gamma,
-         *phi, *phi_Q, *phi_U, *phi_V, *psi_Q, *psi_U, *psi_V;
+  double *adamp = NULL, **v = NULL, **v_los = NULL, *vB = NULL, *sv = NULL, 
+         *vbroad = NULL, Larmor, H, F, wlamu, vk, phi_pi, phi_sm, phi_sp, 
+         phi_delta, phi_sigma, psi_pi, psi_sm, psi_sp, psi_delta, psi_sigma, 
+         sign, sin2_gamma, *phi = NULL, *phi_Q = NULL, *phi_U = NULL, 
+         *phi_V = NULL, *psi_Q = NULL, *psi_U = NULL, *psi_V = NULL;
 
   Atom *atom = line->atom;
-  ZeemanMultiplet *zm;
+  ZeemanMultiplet *zm = NULL;
 
   if (!line->Voigt) {
     sprintf(messageStr,
@@ -361,8 +362,9 @@ void Profile(AtomicLine *line)
   free(adamp);
   if (input.limit_memory) free(phi);
 
-  if (line->polarizable && (input.StokesMode > FIELD_FREE)) {
-    freeZeeman(zm);
+  if (atmos.moving || (line->polarizable && (input.StokesMode > FIELD_FREE))) {
+    if (zm)
+      freeZeeman(zm);
     free(zm);
     free(vB);
     free(sv);
