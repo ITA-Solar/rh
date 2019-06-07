@@ -183,8 +183,8 @@ static void fast_ncoeff(int la, InterpBounds* bounds)
           }
           else
           {
-            sprintf(messageStr, "Lower bound found for lambda_prv too big");
-            Error(ERROR_LEVEL_2, routineName, messageStr);
+            bounds->lowerBracket1[lamuk] = 0;
+            bounds->upperBracket1[lamuk] = 0;
           }
         }
         else
@@ -210,8 +210,8 @@ static void fast_ncoeff(int la, InterpBounds* bounds)
           }
           else
           {
-            sprintf(messageStr, "Lower bound found for lambda_gas too big");
-            Error(ERROR_LEVEL_2, routineName, messageStr);
+            bounds->lowerBracket2[lamuk] = 0;
+            bounds->upperBracket2[lamuk] = 0;
           }
         }
         else
