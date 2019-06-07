@@ -57,6 +57,249 @@ extern char messageStr[];
 
 extern enum Topology topology;
 
+// Returns the index for which target is the exclusive lower 
+// bound of the array a with length n, i.e. a[result:] > target
+static int lower_bound_exclusive(double* a, int n, double target)
+{
+  int low = 0;
+  int high = n;
+  int mid;
+
+  while (low != high)
+  {
+    mid = (low + high) / 2;
+    if (a[mid] <= target)
+    {
+      low = mid + 1;
+    }
+    else
+    {
+      high = mid;
+    }
+  }
+  return low;
+}
+
+// Returns the index for which target is the inclusive upper 
+// bound of the array a with length n, i.e. a[:result+1] <= target
+static int upper_bound_inclusive(double* a, int n, double target)
+{
+  int lower = lower_bound_exclusive(a, n, target);
+  return lower - 1;
+}
+
+// Returns the index for which target is the inclusive lower 
+// bound of the array a with length n, i.e. a[result:] >= target
+static int lower_bound_inclusive(double* a, int n, double target)
+{
+  int low = 0;
+  int high = n;
+  int mid;
+
+  while (low != high)
+  {
+    mid = (low + high) / 2;
+    if (a[mid] >= target)
+    {
+      high = mid;
+    }
+    else
+    {
+      low = mid + 1;
+    }
+  }
+  return low;
+}
+
+// Returns the index for which target is the exclusive upper 
+// bound of the array a with length n, i.e. a[:result+1] < target
+static int upper_bound_exclusive(double* a, int n, double target)
+{
+  int low = 0;
+  int high = n;
+  int mid;
+
+  while (low != high)
+  {
+    mid = (low + high) / 2;
+    if (a[mid] <= target)
+    {
+      low = mid + 1;
+    }
+    else
+    {
+      high = mid;
+    }
+  }
+  return low;
+}
+
+typedef struct InterpBounds
+{
+  int* lowerBracket1;
+  int* lowerBracket2;
+  int* upperBracket1;
+  int* upperBracket2;
+} InterpBounds;
+
+static void fast_ncoeff(int la, InterpBounds* bounds)
+{
+  const char routineName[] = "fast_ncoeff";
+  double sign, fac, lambda_prv, lambda_gas, lambda_nxt;
+  int mu, to_obs, k, lamuk, ncoef, prvIdx, nxtIdx, low, high;
+  double *lambda = spectrum.lambda;
+  for (mu = 0; mu < atmos.Nrays; ++mu)
+  {
+    for (to_obs = 0; to_obs <= 1; ++to_obs)
+    {
+      sign = (to_obs) ? 1.0 : -1.0;
+
+      for (k = 0; k < atmos.Nspace; ++k)
+      {
+        lamuk = la * (atmos.Nrays * 2 * atmos.Nspace) + 
+                    mu * (2 * atmos.Nspace) + to_obs * (atmos.Nspace) + k;
+        ncoef = 0;
+
+        fac = (1.0 + spectrum.v_los[mu][k] * sign / CLIGHT);
+        prvIdx = MAX(la - 1, 0);
+        nxtIdx = MIN(la + 1, spectrum.Nspect - 1);
+        lambda_prv = lambda[prvIdx] * fac;
+        lambda_gas = lambda[la] * fac;
+        lambda_nxt = lambda[nxtIdx] * fac;
+
+        // We know the order of these 3 must be preserved, they are multiplied by the same factor, and the array is monotonic
+
+        if (prvIdx != la)
+        {
+          // Find points for which > lambda_prv and <= lambda_gas
+          low = lower_bound_exclusive(lambda, spectrum.Nspect, lambda_prv);
+          if (low < spectrum.Nspect)
+          {
+            high = upper_bound_inclusive(&lambda[low], spectrum.Nspect-low, lambda_gas);
+            high += low;
+            ncoef += (high - low) + 1;
+            bounds->lowerBracket1[lamuk] = low;
+            bounds->upperBracket1[lamuk] = high + 1;
+          }
+          else
+          {
+            sprintf(messageStr, "Lower bound found for lambda_prv too big");
+            Error(ERROR_LEVEL_2, routineName, messageStr);
+          }
+        }
+        else
+        {
+          // Find number of points for which lambda <= lambda_gas
+          high = upper_bound_inclusive(lambda, spectrum.Nspect, lambda_gas);
+          ncoef += high + 1;
+          bounds->lowerBracket1[lamuk] = 0;
+          bounds->upperBracket1[lamuk] = high + 1;
+        }
+
+        if (la != nxtIdx)
+        {
+          // Find points for which > lambda_gas and < lambda_nxt
+          low = lower_bound_exclusive(lambda, spectrum.Nspect, lambda_gas);
+          if (low < spectrum.Nspect)
+          {
+            high = upper_bound_exclusive(&lambda[low], spectrum.Nspect - low, lambda_nxt);
+            high += low;
+            ncoef += (high - low) - 1;
+            bounds->lowerBracket2[lamuk] = low;
+            bounds->upperBracket2[lamuk] = high - 1;
+          }
+          else
+          {
+            sprintf(messageStr, "Lower bound found for lambda_gas too big");
+            Error(ERROR_LEVEL_2, routineName, messageStr);
+          }
+        }
+        else
+        {
+          // Find number of points for which lambda >= lambda_gas
+          low = lower_bound_inclusive(lambda, spectrum.Nspect, lambda_gas);
+          ncoef += (spectrum.Nspect - low);
+          bounds->lowerBracket2[lamuk] = low;
+          bounds->upperBracket2[lamuk] = spectrum.Nspect;
+        }
+        spectrum.nc[lamuk] = ncoef;
+        if (lamuk != 0)
+          spectrum.nc[lamuk] += spectrum.nc[lamuk-1];
+      }
+    }
+  }
+}
+
+void fast_prdh_coeffs(int la, InterpBounds* bounds)
+{
+  int mu, to_obs, k, lamuk, prvIdx, nxtIdx, idx, lc;
+  double sign, fac, lambda_prv, lambda_gas, lambda_nxt, dl;
+  double* lambda = spectrum.lambda;
+  for (mu = 0; mu < atmos.Nrays; ++mu)
+  {
+    for (to_obs = 0; to_obs <= 1; ++to_obs)
+    {
+      sign = to_obs ? 1.0 : -1.0;
+      for (k = 0; k < atmos.Nspace; ++k)
+      {
+        lamuk = la * (atmos.Nrays * 2 * atmos.Nspace) +
+                    mu * (2 * atmos.Nspace) + to_obs * atmos.Nspace + k;
+        lc = (lamuk == 0) ? 0 : spectrum.nc[lamuk - 1];
+        fac = (1.0 + spectrum.v_los[mu][k] * sign / CLIGHT);
+        prvIdx = MAX(la - 1, 0);
+        nxtIdx = MIN(la + 1, spectrum.Nspect - 1);
+        lambda_prv = lambda[prvIdx] * fac;
+        lambda_gas = lambda[la] * fac;
+        lambda_nxt = lambda[nxtIdx] * fac;
+
+        if (prvIdx != la)
+        {
+          dl = lambda_gas - lambda_prv;
+          for (idx = bounds->lowerBracket1[lamuk]; 
+               idx < bounds->upperBracket1[lamuk]; 
+               ++idx)
+          {
+            spectrum.iprdh[lc] = idx;
+            spectrum.cprdh[lc++] = (lambda[idx] - lambda_prv) / dl;
+          }
+        }
+        else
+        {
+          for (idx = bounds->lowerBracket1[lamuk]; 
+               idx < bounds->upperBracket1[lamuk]; 
+               ++idx)
+          {
+            spectrum.iprdh[lc] = idx;
+            spectrum.cprdh[lc++] = 1.0;
+          }
+        }
+
+        if (la != nxtIdx)
+        {
+          dl = lambda_nxt - lambda_gas;
+          for (idx = bounds->lowerBracket2[lamuk]; 
+               idx < bounds->upperBracket2[lamuk]; 
+               ++idx)
+          {
+            spectrum.iprdh[lc] = idx;
+            spectrum.cprdh[lc++] = (lambda[idx] - lambda_gas) / dl;
+          }
+        }
+        else
+        {
+          for (idx = bounds->lowerBracket2[lamuk]; 
+               idx < bounds->upperBracket2[lamuk]; 
+               ++idx)
+          {
+            spectrum.iprdh[lc] = idx;
+            spectrum.cprdh[lc++] = 1.0;
+          }
+        }
+      }
+    }
+  }
+}
+
 
 /* ------- begin -------------------------- initSolution.c ---------- */
 
@@ -175,65 +418,18 @@ void initSolution(Atom *atom, Molecule *molecule)
       /* --- keeps track of where to get indices and interpolation
              coefficients in spectrum.iprhh and spectrum.cprdh --- */
       spectrum.nc=  (int *) malloc( 2*atmos.Nrays*spectrum.Nspect*atmos.Nspace * sizeof(int));
+      InterpBounds bounds;
+      bounds.lowerBracket1 = (int *)malloc(2 * atmos.Nrays * spectrum.Nspect *
+                              atmos.Nspace * sizeof(int));
+      bounds.lowerBracket2 = (int *)malloc(2 * atmos.Nrays * spectrum.Nspect *
+                              atmos.Nspace * sizeof(int));
+      bounds.upperBracket1 = (int *)malloc(2 * atmos.Nrays * spectrum.Nspect *
+                              atmos.Nspace * sizeof(int));
+      bounds.upperBracket2 = (int *)malloc(2 * atmos.Nrays * spectrum.Nspect *
+                              atmos.Nspace * sizeof(int));
 
       for (la = 0;  la < spectrum.Nspect;  la++) {
-	for (mu = 0;  mu < atmos.Nrays;  mu++) {
-	  for (to_obs = 0;  to_obs <= 1;  to_obs++) {
-
-	    sign = (to_obs) ? 1.0 : -1.0;
-
-	    for (k = 0;  k < atmos.Nspace;  k++) {
-
-	      lamuk = la * (atmos.Nrays*2*atmos.Nspace)
-		+ mu     * (2*atmos.Nspace)
-		+ to_obs * (atmos.Nspace)
-		+ k ;
-
-	      ncoef=0;
-
-	      // previous, current and next wavelength shifted to gas rest frame
-	      fac = (1.+spectrum.v_los[mu][k]*sign/CLIGHT);
-	      lambda_prv = lambda[ MAX(la-1,0)                 ]*fac;
-	      lambda_gas = lambda[ la                          ]*fac;
-	      lambda_nxt = lambda[ MIN(la+1,spectrum.Nspect-1) ]*fac;
-
-	      // do lambda_prv and lambda_gas bracket lambda points?
-	      if (lambda_prv !=  lambda_gas) {
-		dl= lambda_gas - lambda_prv;
-		for (idx = 0; idx < spectrum.Nspect ; idx++) {
-		  if (lambda[idx] > lambda_prv && lambda[idx] <= lambda_gas) ncoef=ncoef+1;
-		}
-	      } else {
-		// edge case, use constant extrapolation for lambda[idx]<lambda gas
-		for (idx = 0; idx < spectrum.Nspect ; idx++) {
-		  if (lambda[idx] <=  lambda_gas) ncoef=ncoef+1;
-		}
-	      }
-
-	      // do lambda_gas and lambda_nxt bracket lambda points?
-	      if (lambda_gas != lambda_nxt) {
-		dl= lambda_nxt - lambda_gas;
-		for (idx = 0; idx < spectrum.Nspect ; idx++) {
-		  if (lambda[idx] > lambda_gas && lambda[idx] < lambda_nxt) ncoef=ncoef+1;
-		}
-	      } else {
-		// edge case, use constant extrapolation for lambda[idx]>lambda gas
-		for (idx = 0; idx < spectrum.Nspect ; idx++) {
-		  if (lambda[idx] >=  lambda_gas) ncoef=ncoef+1;
-		}
-	      }
-
-	      /* --- number of point this lambda contributes to is
-	 	 computed as a difference --- */
-	      if (lamuk == 0) {
-		spectrum.nc[lamuk] = ncoef;
-	      } else {
-		spectrum.nc[lamuk]=spectrum.nc[lamuk-1]+ncoef;
-	      }
-
-	    } // k
-	  } // to_obs
-	} // mu
+        fast_ncoeff(la, &bounds);
       } // la
 
       /* --- now we know the number of interpolation coefficients,
@@ -247,76 +443,13 @@ void initSolution(Atom *atom, Molecule *molecule)
             to lambda array and the corresponding interpolation
             coefficients                                          --- */
       for (la = 0;  la < spectrum.Nspect;  la++) {
-	for (mu = 0;  mu < atmos.Nrays;  mu++) {
-	  for (to_obs = 0;  to_obs <= 1;  to_obs++) {
-
-	    sign = (to_obs) ? 1.0 : -1.0;
-
-	    for (k = 0;  k < atmos.Nspace;  k++) {
-
-	      lamuk = la * (atmos.Nrays*2*atmos.Nspace)
-		+ mu     * (2*atmos.Nspace)
-		+ to_obs * (atmos.Nspace)
-		+ k ;
-
-	      // starting index for storage for this lamuk point
-	      lc = (lamuk==0) ? 0 : spectrum.nc[lamuk-1];
-
-	      // previous, current and next wavelength shifted to gas rest frame
-	      fac = (1.+spectrum.v_los[mu][k]*sign/CLIGHT);
-	      lambda_prv = lambda[ MAX(la-1,0)                 ]*fac;
-	      lambda_gas = lambda[ la                          ]*fac;
-	      lambda_nxt = lambda[ MIN(la+1,spectrum.Nspect-1) ]*fac;
-
-	      // do lambda_prv and lambda_gas bracket lambda points?
-	      if (lambda_prv !=  lambda_gas) {
-		dl= lambda_gas - lambda_prv;
-		for (idx = 0; idx < spectrum.Nspect ; idx++) {
-		  if (lambda[idx] > lambda_prv && lambda[idx] <= lambda_gas) {
-		    // bracketed point found
-		    spectrum.iprdh[lc]=idx;
-		    spectrum.cprdh[lc]=(lambda[idx]-lambda_prv)/dl;
-		    lc++;
-		  }
-		}
-	      } else {
-		// edge case, use constant extrapolation for lambda[idx]<lambda gas
-		for (idx = 0; idx < spectrum.Nspect ; idx++) {
-		  if (lambda[idx] <=  lambda_gas)  {
-		    spectrum.iprdh[lc]=idx;
-		    spectrum.cprdh[lc]=1.0;
-		    lc++;
-		  }
-		}
-	      }
-
-	      // do lambda_gas and lambda_nxt bracket lambda points?
-	      if (lambda_gas != lambda_nxt) {
-		dl= lambda_nxt - lambda_gas;
-		for (idx = 0; idx < spectrum.Nspect ; idx++) {
-		  if (lambda[idx] > lambda_gas && lambda[idx] < lambda_nxt) {
-		    // bracketed point found
-		    spectrum.iprdh[lc]=idx;
-		    spectrum.cprdh[lc]=1.0 - (lambda[idx]-lambda_gas)/dl;
-		    lc++;
-		  }
-		}
-	      } else {
-		// edge case, use constant extrapolation for lambda[idx]>lambda gas
-		for (idx = 0; idx < spectrum.Nspect ; idx++) {
-		  if (lambda[idx] >=  lambda_gas)  {
-		    spectrum.iprdh[lc]=idx;
-		    spectrum.cprdh[lc]=1.0;
-		    lc++;
-		  }
-		}
-	      }
-
-	    } // k
-	  } // to_obs
-	} // mu
+        fast_prdh_coeffs(la, &bounds);
       } // la
 
+      free(bounds.lowerBracket1);
+      free(bounds.lowerBracket2);
+      free(bounds.upperBracket1);
+      free(bounds.upperBracket2);
     }  //input.prdh_limit_mem if switch
   } // PRD_ANGLE_APPROX if switch
 
