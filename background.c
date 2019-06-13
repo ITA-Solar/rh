@@ -295,6 +295,10 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
          a wavelength overlaps with a Bound-Bound transition in the
          background, or whether it is polarized --     -------------- */
 
+  if (atmos.backgrflags)
+  {
+    free(atmos.backgrflags);
+  }
   atmos.backgrflags = (flags *) malloc(spectrum.Nspect * sizeof(flags));
   for (nspect = 0;  nspect < spectrum.Nspect;  nspect++) {
     atmos.backgrflags[nspect].hasline = FALSE;
@@ -306,6 +310,10 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
 
   backgrrecno = 0;
 
+  if (atmos.backgrrecno)
+  {
+    free(atmos.backgrrecno);
+  }
   if (atmos.moving || atmos.Stokes) {
     atmos.backgrrecno =
       (long *) malloc(2*spectrum.Nspect*atmos.Nrays * sizeof(long));
@@ -654,7 +662,7 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
 	freeMolecule(&atmos.molecules[n]);
   }
 
-  if (strcmp(input.KuruczData, "none")) {
+  if (strcmp(input.KuruczData, "none") && input.solve_ne < ITERATION) {
     free(atmos.Tpf);  atmos.Tpf = NULL;
     for (n = 0;  n < atmos.Nelem;  n++) {
       free(atmos.elements[n].ionpot);
