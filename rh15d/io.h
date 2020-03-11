@@ -121,6 +121,8 @@
 #define RJI_L_NAME  "Rji_line"
 #define RIJ_C_NAME  "Rij_continuum"
 #define RJI_C_NAME  "Rji_continuum"
+#define CIJ_L_NAME  "Cij_line"
+#define CJI_L_NAME  "Cji_line"
 #define EM_NAME     "energy_matrix"
 #define COLL_NAME   "collision_rates"
 #define DAMP_NAME   "damping"
@@ -162,7 +164,7 @@ typedef struct {
   /* for the aux file */
   hid_t  aux_ncid,         *aux_atom_ncid,     aux_op_ncid,      *aux_atom_pop,
         *aux_atom_poplte,  *aux_atom_RijL,    *aux_atom_RjiL,    *aux_atom_RijC,
-        *aux_atom_RjiC,    *aux_atom_coll,    *aux_atom_damp,    *aux_atom_vbroad,
+        *aux_atom_RjiC,    *aux_atom_CijL,    *aux_atom_CjiL,    *aux_atom_vbroad,
         *aux_mol_ncid,     *aux_mol_pop,      *aux_mol_poplte,   *aux_mol_E,
         *aux_mol_vbroad,
          aux_op_chi_ai,     aux_op_chi_ad,     aux_op_eta_ai,     aux_op_eta_ad;
@@ -179,7 +181,7 @@ typedef struct {
 } IO_data;
 
 typedef struct {
-  double  **n, **nstar, **nv, **nvstar, **RijL, **RjiL, **RijC, **RjiC;
+  double  **n, **nstar, **nv, **nvstar, **RijL, **RjiL, **RijC, **RjiC, **CijL, **CjiL;
   float   *J,  *J20;
 } IO_buffer;
 
