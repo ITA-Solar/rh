@@ -267,7 +267,7 @@ void init_aux_new(void) {
       if (( H5DSattach_scale(id_tmp, id_x, 1)) < 0) HERR(routineName);
       if (( H5DSattach_scale(id_tmp, id_y, 2)) < 0) HERR(routineName);
       if (( H5DSattach_scale(id_tmp, id_z, 3)) < 0) HERR(routineName);
-      if (( H5LTset_attribute_float(ncid_atom, CJI_L_NAME, "_FillValue",
+      if (( H5LTset_attribute_float(ncid_atom, CIJ_L_NAME, "_FillValue",
                                     &FILLVALUE, 1) ) < 0) HERR(routineName);
       io.aux_atom_CijL[i] = id_tmp;
       if (( H5Dclose(id_n) ) < 0) HERR(routineName);
