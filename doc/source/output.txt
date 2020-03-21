@@ -133,7 +133,7 @@ The ``input`` group contains all the input files (except atmosphere and molecula
     * - ``kurucz_file contents``
       - Contents of ``kurucz.input`` saved into a string, only if used
 
-The ``input`` group also has other groups inside. If Kurucz line lists are used, it contains groups called ``Kurucz_line_file0``, ..., ``Kurucz_line_fileN``, where N-1 is the total number of line list files. The other groups are all atom files (``PASSIVE`` and ``ACTIVE``), and they take the names of ``atom_XX``, where ``XX`` is the element name (for a list of these, see the variable ``atom_groups`` above). Inside all of these groups (Kurucz and atom) there is one variable, called ```file_contents``, which contains the file saved intro a string and an attribute, called ``file_name``, which contains the file name and path. These input options and files are read instead of the original files when doing a rerun.
+The ``input`` group also has other groups inside. If Kurucz line lists are used, it contains groups called ``Kurucz_line_file0``, ..., ``Kurucz_line_fileN``, where N-1 is the total number of line list files. The other groups are all atom files (``PASSIVE`` and ``ACTIVE``), and they take the names of ``atom_XX``, where ``XX`` is the element name (for a list of these, see the variable ``atom_groups`` above). Inside all of these groups (Kurucz and atom) there is one variable, called ``file_contents``, which contains the file saved intro a string and an attribute, called ``file_name``, which contains the file name and path. These input options and files are read instead of the original files when doing a rerun.
 
 The ``atmos`` groups contains the dimensions ``x``, ``y``, ``height``, ``element`` and ``ray``. It also contains the following variables:
 
