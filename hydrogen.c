@@ -264,21 +264,79 @@ double Gaunt_bf(double lambda, double n_eff, int charge)
 /* ------- begin -------------------------- Gaunt_ff.c -------------- */
 
 double Gaunt_ff(double lambda, int charge, double T)
+/* interpolation in table taken from Kurucz (1970, SAO Special Report no. 309), page 77, which is a fit to 
+   figures 3-5 of Karzas and Latter (1961, ApJ Suppl 6, 167) 
+   interpolation routine taken from ART
+   Note that there is extrapolation outside the range of lg(gamma2) (T outside [1570,1.57e8K]) or
+   outside range of lg(U) (for lambda=3.2mm for T>49 kK). This should be OK for reasonable
+   extrapolation distances (and better than setting to constant end value or zero). Interpolation
+   tested against table in Gustafsson (1973) with results within 1% */
+{
+  static const double Z4LOG[6]={0.,1.20412,1.90849,2.40824,2.79588,3.11261},
+                A[12][11]={
+     {5.53,5.49,5.46,5.43,5.40,5.25,5.00,4.69,4.48,4.16,3.85},
+     {4.91,4.87,4.84,4.80,4.77,4.63,4.40,4.13,3.87,3.52,3.27},
+     {4.29,4.25,4.22,4.18,4.15,4.02,3.80,3.57,3.27,2.98,2.70},
+     {3.64,3.61,3.59,3.56,3.54,3.41,3.22,2.97,2.70,2.45,2.20},
+     {3.00,2.98,2.97,2.95,2.94,2.81,2.65,2.44,2.21,2.01,1.81},
+     {2.41,2.41,2.41,2.41,2.41,2.32,2.19,2.02,1.84,1.67,1.50},
+     {1.87,1.89,1.91,1.93,1.95,1.90,1.80,1.68,1.52,1.41,1.30},
+     {1.33,1.39,1.44,1.49,1.55,1.56,1.51,1.42,1.33,1.25,1.17},
+     {0.90,0.95,1.00,1.08,1.17,1.30,1.32,1.30,1.20,1.15,1.11},
+     {0.55,0.58,0.62,0.70,0.85,1.01,1.15,1.18,1.15,1.11,1.08},
+     {0.33,0.36,0.39,0.46,0.59,0.76,0.97,1.09,1.13,1.10,1.08},
+     {0.19,0.21,0.24,0.28,0.38,0.53,0.76,0.96,1.08,1.09,1.09}};
+  double GAMLOG, HVKTLG, P, Q, CLFF, TLOG, FREQLG;
+  int IGAM, IHVKT, NZ;
+
+  NZ=charge;
+  FREQLG=log(CLIGHT*1.e9/lambda);
+  TLOG=log(T);
+  
+
+/*  GAMLOG=log10(158000*Z*Z/T)*2 */
+
+  GAMLOG=10.39638-TLOG/1.15129+Z4LOG[NZ-1];
+  IGAM=(int)(GAMLOG+7.);
+  if(IGAM>10) IGAM=10;
+  if(IGAM<1) IGAM=1;
+
+/*  HVKTLG=2*log10(HVKT) */
+
+  HVKTLG=(FREQLG-TLOG)/1.15129-20.63764;
+  IHVKT=(int)(HVKTLG+9.);
+  if(IHVKT>11) IHVKT=11;
+  if(IHVKT<1) IHVKT=1;
+  P=GAMLOG-(IGAM-7);
+  Q=HVKTLG-(IHVKT-9);
+  CLFF=(1.-P)*((1.-Q)*A[IHVKT-1][IGAM-1]+Q*A[IHVKT][IGAM-1])+
+       P*((1.-Q)*A[IHVKT-1][IGAM]+Q*A[IHVKT][IGAM]);
+  return CLFF;
+}
+
+double Gaunt_ff_Seaton(double lambda, int charge, double T)
 {
   /* --- M. J. Seaton (1960), Rep. Prog. Phys. 23, 313
 
    Note: There is a problem with this expansion at higher temperatures
          (T > 3.0E4 and longer wavelengths (lambda > 2000 nm). Set to
          1.0 when the value goes below 1.0 --          -------------- */
+  /* added formula from Dulk (1985ARA+A__23__169D) for lambda > 2000 nm. Only
+     the expression for T<2e5 is used here. For T<1e5 this expression is 
+     within 10% of Karzas & Latter used in Multi. Mats Carlsson */
 
   double x, x3, y, gIII;
 
+  if (lambda < 2000.) {
   x  = ((HPLANCK * CLIGHT)/(lambda * NM_TO_M)) / (E_RYDBERG * SQ(charge));
   x3 = pow(x, 0.33333333);
   y  = (2.0 * lambda * NM_TO_M * KBOLTZMANN*T) / (HPLANCK*CLIGHT);
 
   gIII = 1.0 + 0.1728*x3 * (1.0 + y) -
                0.0496*SQ(x3) * (1.0 + (1.0 + y)*0.33333333*y);
+  } else {
+    gIII = sqrt(3.)/PI*(18.2 +3./2.*log(T)-log(CLIGHT/(lambda * NM_TO_M)));
+  }
   return (gIII > 1.0) ? gIII : 1.0;
 }
 /* ------- end ---------------------------- Gaunt_ff.c -------------- */
