@@ -81,9 +81,10 @@ void initSolution_alloc(void) {
     /* --- If we do background polarization we need space for the
            anisotropy --                               -------------- */
 
-    if (input.backgr_pol)
-    if (spectrum.J20 != NULL) freeMatrix((void **) spectrum.J20);
+    if (input.backgr_pol){
+      if (spectrum.J20 != NULL) freeMatrix((void **) spectrum.J20);
       spectrum.J20 = matrix_double(spectrum.Nspect, atmos.Nspace);
+    }
   }
 
  /* --- For the PRD angle approximation  we need to store J in

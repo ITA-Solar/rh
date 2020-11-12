@@ -41,6 +41,8 @@ int main(int argc, char *argv[])
 
   /* --- Set up MPI ----------------------             -------------- */
   initParallel(&argc, &argv, run_ray=FALSE);
+  memset(&spectrum,0,sizeof(spectrum));
+
   setOptions(argc, argv);
   getCPU(0, TIME_START, NULL);
   SetFPEtraps();
