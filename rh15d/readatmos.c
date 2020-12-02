@@ -27,6 +27,68 @@ extern InputData input;
 extern char messageStr[];
 
 
+
+// ---------------------------------------------------------------------- //
+
+void smooth(int const N, double *d, int wsize)
+{
+  /* --- 
+
+     Smooth (inplace) array *d of size N with a top-hat
+     PSF of width wsize;
+     
+     wsize will be forced to be an odd number.
+     
+     The first and final point remain untouched in order to 
+     keep the limits in tau and temp correct
+
+     Modifications:
+          2020-01-02, JdlCR: Added!
+
+     --- */
+  
+  if((wsize/2)*2 == wsize) wsize += 1;
+  if(wsize <= 1) return;
+  
+  int register ii, kk, jj;
+  int const N1  = N-1;
+  int const w2  = wsize / 2;
+  int const Nw2 = N+w2;
+  int j0=0, j1=0;
+  double *d_orig = NULL, sum = 0;
+  
+  
+  // --- copy original data --- //
+  
+  d_orig = (double*)calloc(N+2*w2, sizeof(double));
+  memcpy(&d_orig[w2], d, N*sizeof(double));
+  
+  
+  // --- pad with edge value --- //
+  
+  for(ii=0; ii<w2; ++ii){
+    d_orig[ii]      = d[0];
+    d_orig[ii+Nw2]  = d[N1]; 
+  }
+  
+  // --- Smooth in place --- //
+
+  for(kk = w2+1; kk < (Nw2-1); ++kk){
+    j0 = kk-w2;
+    j1 = kk+w2;
+    
+    sum = 0;
+    for(jj=j0; jj<=j1; ++jj)
+      sum += d_orig[jj];
+    
+    d[kk-w2] = sum / (j1-j0+1); 
+  }
+  
+  free((void*)d_orig);
+}
+
+// ---------------------------------------------------------------------- //
+
 void init_atmos(Atmosphere *atmos, Geometry *geometry, Input_Atmos_file *infile) {
     /* Finds out what kind of atmosphere is supplied, calls appropriate routines */
     const char routineName[] = "init_atmos";
@@ -175,14 +237,20 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
   /* Performs depth refinement to optimise for gradients in temperature,
      density and optical depth. In the same fashion as multi23's ipol_dscal
      (in fact, shamelessly copied).
+
+     2020-12-02, JdlCR: include also gradients in Vz as large Vlos jumps can induce
+                        severe errors in the calculation of Jmean. Also, allow smoothing 
+                        gradients with a simple top-hat filter.
+
   */
   bool_t nhm_flag, hunt;
   long    i, k, k0=0, k1=0;
   size_t  bufsize;
-  double  CI, PhiHmin, *chi, *eta, *tau, tdiv, rdiv, taudiv, *aind, *xpt;
+  double  CI, PhiHmin, *chi, *eta, *tau, tdiv, rdiv, vdiv, taudiv, *aind, *xpt;
   double *new_height, *buf;
   const double taumax = 100.0, lg1 = log10(1.1);
-
+  const double vel_scale = 1.E-3 / 0.5; // the scaling norm is 0.5 km/s. 
+    
   if (Tmax < 0) Tmax = 1.e20; /* No zcut if Tmax is negative */
   chi = (double *) malloc(atmos->Nspace * sizeof(double));
   eta = (double *) malloc(atmos->Nspace * sizeof(double));
@@ -194,7 +262,7 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
   bufsize = atmos->Nspace * sizeof(double);
   nhm_flag = FALSE;
   CI = (HPLANCK/(2.0*PI*M_ELECTRON)) * (HPLANCK/KBOLTZMANN);
-  k1 = atmos->Nspace;
+  k1 = atmos->Nspace-1;
   /* --- Calculate tau500 scale from H-bf opacity alone. --- */
   /* First, build nHmin because ChemicalEquilibrium has not been called yet.
      Unless H level pops are given in hdf5 file, all H is assumed neutral.  */
@@ -226,12 +294,19 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
   for (k = k0+1; k <= k1; k++) {
     tdiv = fabs(log10(atmos->T[k]) - log10(atmos->T[k-1]))/lg1;
     /* rho is not available, so nH[0] used instead */
-    rdiv = fabs(log10(atmos->nH[0][k]) - log10(atmos->nH[0][k-1]))/lg1;
+    rdiv   = fabs(log10(atmos->nH[0][k]) - log10(atmos->nH[0][k-1]))/lg1;
     taudiv = fabs(log10(tau[k]) - log10(tau[k-1]))/0.1;
-    aind[k] = aind[k-1] + MAX(MAX(tdiv,rdiv),taudiv);
+    vdiv   = fabs(geometry->vel[k] - geometry->vel[k-1]) * vel_scale; // JdlCRL: added Vdiv
+    aind[k] = aind[k-1] + MAX(MAX(MAX(tdiv,rdiv),taudiv), vdiv);
   }
 
-  for (k = 1; k <= k1; k++)
+
+  // --- JdlCR: allow smoothing gradients --- //
+  
+  smooth((int)(k1-k0+1), &aind[k0], input.wsize);
+
+  
+  for (k = k0; k <= k1; k++)
     aind[k] *= (atmos->Nspace-1)/aind[k1];
 
   /* --- Create new height scale --- */

@@ -112,6 +112,8 @@ typedef struct {
   char **kurucz_line_file_name;
   int Nkurucz_files;
   pthread_attr_t thread_attr;
+  // --- JdlCR, added a keyword to allow smoothing gradients in depth-optimization --- //
+  int wsize;
 } InputData;
 
 

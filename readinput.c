@@ -240,8 +240,8 @@ void readInput(char *input_string)
     {"15D_WRITE_TAU1", "FALSE",  FALSE, KEYWORD_OPTIONAL, &input.p15d_wtau,
      setboolValue},
     {"15D_WRITE_EXTRA",    "TRUE",  FALSE, KEYWORD_OPTIONAL, &input.p15d_wxtra,
-     setboolValue}
-
+     setboolValue},
+    {"15D_SMOOTH_OPTIMIZED_GRADIENTS", "0", FALSE, KEYWORD_OPTIONAL, &input.wsize, setintValue}
   };
   Nkeyword = sizeof(theKeywords) / sizeof(Keyword);
 
