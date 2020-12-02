@@ -13,11 +13,11 @@
   SNAPSHOT = 0
 
   X_START = 0
-  X_END   = 1 
+  X_END   = 0 
   X_STEP  = 1 
 
   Y_START = 0
-  Y_END   = 1
+  Y_END   = 0
   Y_STEP  = 1 
   
 # Runs only for non-converged columns (assumes output files already exist)
@@ -29,10 +29,11 @@
 # Cut the atmosphere above a certain TMAX?
   15D_DEPTH_ZCUT = TRUE
   15D_TMAX_CUT = 30000.
-
+  
 # Perform depth optimisation for each column (interpolates height scale)?
   15D_DEPTH_REFINE = FALSE
-
+  15D_SMOOTH_OPTIMIZED_GRADIENTS = 5
+  
 # Write level populations? (NLTE and LTE)
   15D_WRITE_POPS = FALSE
 
