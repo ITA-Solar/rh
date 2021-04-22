@@ -60,6 +60,8 @@ void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry,
   mdc_config.evictions_enabled = false;
   mdc_config.incr_mode = H5C_incr__off;
   mdc_config.decr_mode = H5C_decr__off;
+  mdc_config.flash_incr_mode = H5C_flash_incr__off;
+
   H5Pset_mdc_config(ncid, &mdc_config);
   //
   infile->ncid = ncid;
