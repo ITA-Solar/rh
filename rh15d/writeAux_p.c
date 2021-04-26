@@ -300,16 +300,6 @@ void init_aux_new(void) {
           if (( H5LTset_attribute_float(ncid_atom, RJI_C_NAME, "_FillValue",
                                         &FILLVALUE, 1) ) < 0) HERR(routineName);
           io.aux_atom_RjiC[i] = id_tmp;
-          if (( id_tmp = H5Dcreate(ncid_atom, CJI_C_NAME, H5T_NATIVE_FLOAT,
-                                file_dspace, H5P_DEFAULT, plist,
-                                H5P_DEFAULT)) < 0) HERR(routineName);
-          if (( H5DSattach_scale(id_tmp, id_n, 0)) < 0) HERR(routineName);
-          if (( H5DSattach_scale(id_tmp, id_x, 1)) < 0) HERR(routineName);
-          if (( H5DSattach_scale(id_tmp, id_y, 2)) < 0) HERR(routineName);
-          if (( H5DSattach_scale(id_tmp, id_z, 3)) < 0) HERR(routineName);
-          if (( H5LTset_attribute_float(ncid_atom, CJI_C_NAME, "_FillValue",
-                                        &FILLVALUE, 1) ) < 0) HERR(routineName);
-          io.aux_atom_CjiC[i] = id_tmp;
           if (( id_tmp = H5Dcreate(ncid_atom, CIJ_C_NAME, H5T_NATIVE_FLOAT,
                                   file_dspace, H5P_DEFAULT, plist,
                                   H5P_DEFAULT)) < 0) HERR(routineName);
@@ -320,6 +310,17 @@ void init_aux_new(void) {
           if (( H5LTset_attribute_float(ncid_atom, CIJ_C_NAME, "_FillValue",
                                         &FILLVALUE, 1) ) < 0) HERR(routineName);
           io.aux_atom_CijC[i] = id_tmp;
+          if (( id_tmp = H5Dcreate(ncid_atom, CJI_C_NAME, H5T_NATIVE_FLOAT,
+                                file_dspace, H5P_DEFAULT, plist,
+                                H5P_DEFAULT)) < 0) HERR(routineName);
+          if (( H5DSattach_scale(id_tmp, id_n, 0)) < 0) HERR(routineName);
+          if (( H5DSattach_scale(id_tmp, id_x, 1)) < 0) HERR(routineName);
+          if (( H5DSattach_scale(id_tmp, id_y, 2)) < 0) HERR(routineName);
+          if (( H5DSattach_scale(id_tmp, id_z, 3)) < 0) HERR(routineName);
+          if (( H5LTset_attribute_float(ncid_atom, CJI_C_NAME, "_FillValue",
+                                        &FILLVALUE, 1) ) < 0) HERR(routineName);
+          io.aux_atom_CjiC[i] = id_tmp;
+
           if (( H5Dclose(id_n) ) < 0) HERR(routineName);
           if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
       }
