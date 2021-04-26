@@ -51,19 +51,19 @@ void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry,
   /* --- Open input file for model atmosphere --       -------------- */
   if ((plist_id = H5Pcreate(H5P_FILE_ACCESS)) < 0) HERR(routineName);
   if ((H5Pset_fapl_mpio(plist_id, mpi.comm, mpi.info)) < 0) HERR(routineName);
-  if ((ncid = H5Fopen(input.atmos_input, H5F_ACC_RDONLY, plist_id)) < 0)
-    HERR(routineName);
   // M.Sz Disable metadata cache eviction
   H5AC_cache_config_t mdc_config;
   mdc_config.version = H5AC__CURR_CACHE_CONFIG_VERSION;
-  if ((H5Pget_mdc_config(ncid, &mdc_config)) < 0) HERR(routineName);
+  if ((H5Pget_mdc_config(plist_id, &mdc_config)) < 0) HERR(routineName);
   mdc_config.evictions_enabled = false;
   mdc_config.incr_mode = H5C_incr__off;
   mdc_config.decr_mode = H5C_decr__off;
   mdc_config.flash_incr_mode = H5C_flash_incr__off;
-
-  H5Pset_mdc_config(ncid, &mdc_config);
-  //
+  H5Pset_mdc_config(plist_id, &mdc_config);
+  // M.Sz: end
+  
+  if ((ncid = H5Fopen(input.atmos_input, H5F_ACC_RDONLY, plist_id)) < 0)
+    HERR(routineName);
   infile->ncid = ncid;
   if ((H5Pclose(plist_id)) < 0) HERR(routineName); /* plist no longer needed */
 
