@@ -638,6 +638,28 @@ void close_hdf5_aux(void)
 
   /* Close file */
   if (( H5Fclose(io.aux_ncid) ) < 0) HERR(routineName);
+
+  /* Free memory */
+  free(io.aux_atom_ncid);
+  free(io.aux_mol_ncid);
+  if (input.p15d_wpop) {
+    free(io.aux_atom_pop);
+    free(io.aux_atom_poplte);
+    free(io.aux_mol_pop);
+    free(io.aux_mol_poplte);
+  }
+  if (input.p15d_wrates) {
+    free(io.aux_atom_RijL);
+    free(io.aux_atom_RjiL);
+    free(io.aux_atom_CijL);
+    free(io.aux_atom_CjiL);
+    free(io.aux_atom_RijC);
+    free(io.aux_atom_RjiC);
+    free(io.aux_atom_CijC);
+    free(io.aux_atom_CjiC);
+    }
+  }
+
   return;
 }
 /* ------- end   --------------------------   close_hdf5_aux.c --- */
