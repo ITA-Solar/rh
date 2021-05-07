@@ -657,7 +657,6 @@ void close_hdf5_aux(void)
     free(io.aux_atom_RjiC);
     free(io.aux_atom_CijC);
     free(io.aux_atom_CjiC);
-    }
   }
 
   return;
