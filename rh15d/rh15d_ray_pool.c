@@ -46,10 +46,12 @@ const float FILLVALUE = FILL;  /* Default fill value for HDF5 */
 
 int main(int argc, char *argv[])
 {
-  bool_t run_ray, writej;
+  bool_t run_ray = FALSE, writej = FALSE;
 
   /* --- Set up MPI ----------------------             -------------- */
   initParallel(&argc, &argv, run_ray=FALSE);
+  memset(&spectrum,0,sizeof(spectrum));
+  
   mpi.size -= 1;  /* Remove overlord from count, as it is not doing work */
   setOptions(argc, argv);
   getCPU(0, TIME_START, NULL);
