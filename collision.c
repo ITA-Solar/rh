@@ -471,7 +471,7 @@ void CollisionRate(struct Atom *atom, char *fp_atom)
           labelStr[MAX_LINE_SIZE];
   bool_t  hunt, exit_on_EOF;
   int     nitem, i1, i2, i, j, ij, ji, Nlevel = atom->Nlevel, Nitem,
-          status;
+    status;
   long    Nspace = atmos.Nspace;
   fpos_t  collpos;
   double  dE, C0, *T, *coeff, *C, Cdown, Cup, gij, *np, xj, fac, fxj;
@@ -671,7 +671,8 @@ void CollisionRate(struct Atom *atom, char *fp_atom)
       Error(ERROR_LEVEL_2, routineName, messageStr);
     }
     /* --- Spline interpolation in temperature T for all spatial
-           locations. Linear if only 2 interpolation points given - - */
+           locations. Linear if only 2 interpolation points given - -
+           Spline interpolation in log values to avoid negative numbers */
 
     if (!strcmp(keyword, "OMEGA") || !strcmp(keyword, "CE") ||
 	!strcmp(keyword, "CI")    || !strcmp(keyword, "CP") ||
@@ -679,8 +680,14 @@ void CollisionRate(struct Atom *atom, char *fp_atom)
 	!strcmp(keyword, "CH")    || !strcmp(keyword, "CR") ) {
 
        if (Nitem > 2) {
+	 for (ii = 0; ii < Nitem; ii++) {
+           coeff[ii]=log(coeff[ii]);
+         }
          splineCoef(Nitem, T, coeff);
-    	 splineEval(Nspace, atmos.T, C, hunt=TRUE);
+         splineEval(Nspace, atmos.T, C, hunt=TRUE);
+         for (ii = 0; ii < Nspace; ii++) {
+           C[ii]=exp(C[ii]);
+         }
        } else Linear(Nitem, T, coeff, Nspace, atmos.T, C, hunt=TRUE);
    }
 

@@ -519,6 +519,12 @@ void copyBufVars(bool_t writej) {
 	     (void *) continuum->Rij, atmos.Nspace * sizeof(double));
       memcpy((void *) &iobuf.RjiC[nact][ind*atom->Ncont + kr*atmos.Nspace],
 	     (void *) continuum->Rji, atmos.Nspace * sizeof(double));
+      ij = continuum->j * atom->Nlevel + continuum->i;
+      memcpy((void *) &iobuf.CijC[nact][ind*atom->Ncont + kr*atmos.Nspace],
+	     (void *) atom->C[ij], atmos.Nspace * sizeof(double));
+      ji = continuum->i * atom->Nlevel + continuum->j;
+      memcpy((void *) &iobuf.CjiC[nact][ind*atom->Ncont + kr*atmos.Nspace],
+	     (void *) atom->C[ji], atmos.Nspace * sizeof(double));
     }
 
   }
@@ -575,6 +581,8 @@ void allocBufVars(bool_t writej) {
     iobuf.RjiC  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
     iobuf.CijL  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
     iobuf.CjiL  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
+    iobuf.CijC  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
+    iobuf.CjiC  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
   }
 
   if (atmos.Nactivemol > 0) {
@@ -623,7 +631,14 @@ void allocBufVars(bool_t writej) {
     iobuf.CjiL[nact] = (double *) malloc(RLsize);
     if (iobuf.CjiL[nact] == NULL)
       Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
+  
+    iobuf.CijC[nact] = (double *) malloc(RCsize);
+    if (iobuf.CijC[nact] == NULL)
+      Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
 
+    iobuf.CjiC[nact] = (double *) malloc(RCsize);
+    if (iobuf.CjiC[nact] == NULL)
+      Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
   }
 
   /* --- Loop over active MOLECULES --- */
@@ -662,6 +677,8 @@ void freeBufVars(bool_t writej) {
     free(iobuf.RjiC[nact]);
     free(iobuf.CijL[nact]);
     free(iobuf.CjiL[nact]);
+    free(iobuf.CijC[nact]);
+    free(iobuf.CjiC[nact]);
   }
 
   free(iobuf.n);
@@ -672,6 +689,8 @@ void freeBufVars(bool_t writej) {
   free(iobuf.RjiC);
   free(iobuf.CijL);
   free(iobuf.CjiL);
+  free(iobuf.CijC);
+  free(iobuf.CjiC);
 
   /* Loop over active MOLECULES */
   for (nact = 0;  nact < atmos.Nactivemol;  nact++) {
