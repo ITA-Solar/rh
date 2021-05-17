@@ -25,6 +25,10 @@
 #define FAIL -1
 #define MULTI_COMMENT_CHAR  "*"
 
+#ifndef COLLECTIVE_PREAD
+#define COLLECTIVE_PREAD 1
+#endif
+
 /* --- Function prototypes --                          -------------- */
 
 /* --- Global variables --                             -------------- */
@@ -53,15 +57,13 @@ void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry,
   if ((H5Pset_fapl_mpio(plist_id, mpi.comm, mpi.info)) < 0) HERR(routineName);
   // M.Sz Disable metadata cache eviction
   // sets the data transfer property list
-  if ((H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE)) <0) HERR(routineName);
-  // H5AC_cache_config_t mdc_config;
-  // mdc_config.version = H5AC__CURR_CACHE_CONFIG_VERSION;
-  // if ((H5Pget_mdc_config(plist_id, &mdc_config)) < 0) HERR(routineName);
-  // mdc_config.evictions_enabled = false;
-  // mdc_config.incr_mode = H5C_incr__off;
-  // mdc_config.decr_mode = H5C_decr__off;
-  // mdc_config.flash_incr_mode = H5C_flash_incr__off;
-  // H5Pset_mdc_config(plist_id, &mdc_config);
+  H5AC_cache_config_t mdc_config;
+  if ((H5Pget_mdc_config(plist_id, &mdc_config)) < 0) HERR(routineName);
+  mdc_config.evictions_enabled = false;
+  mdc_config.incr_mode = H5C_incr__off;
+  mdc_config.decr_mode = H5C_decr__off;
+  mdc_config.flash_incr_mode = H5C_flash_incr__off;
+  H5Pset_mdc_config(plist_id, &mdc_config);
   // M.Sz: end
   
   if ((ncid = H5Fopen(input.atmos_input, H5F_ACC_RDONLY, plist_id)) < 0)
@@ -220,12 +222,23 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   hsize_t     count_nh[] = {1, 1, 1, 1, 1};
   hsize_t    dims_memory[2];
   hid_t      ncid, dataspace_id, memspace_id;
+  hid_t      plist_id;
   int        ierror, i, j;
   bool_t     old_moving;
   double    *Bx, *By, *Bz;
 
   ncid = infile->ncid;
   atmos->Nspace = geometry->Ndep = infile->nz;
+
+  /* Set collective read */
+
+  if (COLLECTIVE_PREAD) {
+    if ((plist_id = H5Pcreate(H5P_DATASET_XFER)) < 0) HERR(routineName);
+    if ((H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE)) <0) HERR(routineName);
+  } else {
+    plist_id = H5P_DEFAULT;
+  }
+
 
   /* read full T column, to see where to zcut */
   /* Memory dataspace */
@@ -242,7 +255,7 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   if ((H5Sselect_hyperslab(dataspace_id, H5S_SELECT_SET, start,
                                NULL, count, NULL)) < 0) HERR(routineName);
   if ((H5Dread(infile->T_varid, H5T_NATIVE_DOUBLE, memspace_id, dataspace_id,
-	      H5P_DEFAULT, atmos->T)) < 0) HERR(routineName);
+	      plist_id, atmos->T)) < 0) HERR(routineName);
   if (( H5Sclose(dataspace_id) ) < 0) HERR(routineName);
   if (( H5Sclose(memspace_id) ) < 0) HERR(routineName);
   /* Finds z value for Tmax cut, redefines Nspace, reallocates arrays */
@@ -270,7 +283,7 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   ierror = H5Sselect_hyperslab(dataspace_id, H5S_SELECT_SET, start,
                                NULL, count, NULL);
   if ((ierror = H5Dread(infile->z_varid, H5T_NATIVE_DOUBLE, memspace_id,
-		        dataspace_id, H5P_DEFAULT, geometry->height)) < 0)
+		        dataspace_id, plist_id, geometry->height)) < 0)
     HERR(routineName);
   if (( H5Sclose(dataspace_id) ) < 0) HERR(routineName);
   /* redefine dataspace for 4-D variables */
@@ -283,17 +296,17 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
                                NULL, count, NULL)) < 0) HERR(routineName);
    /* read variables */
   if ((ierror = H5Dread(infile->T_varid, H5T_NATIVE_DOUBLE, memspace_id,
-	          dataspace_id, H5P_DEFAULT, atmos->T)) < 0) HERR(routineName);
+	          dataspace_id, plist_id, atmos->T)) < 0) HERR(routineName);
   if (input.solve_ne == NONE) {
       if ((ierror = H5Dread(infile->ne_varid, H5T_NATIVE_DOUBLE, memspace_id,
-      	          dataspace_id, H5P_DEFAULT, atmos->ne)) < 0) HERR(routineName);
+      	          dataspace_id, plist_id, atmos->ne)) < 0) HERR(routineName);
   }
   if ((ierror = H5Dread(infile->vz_varid, H5T_NATIVE_DOUBLE, memspace_id,
 	     dataspace_id, H5P_DEFAULT, geometry->vel)) < 0) HERR(routineName);
   /* vturb, if available */
   if (infile->vturb_varid != -1) {
     ierror = H5Dread(infile->vturb_varid, H5T_NATIVE_DOUBLE, memspace_id,
-		   dataspace_id, H5P_DEFAULT, atmos->vturb);
+		   dataspace_id, plist_id, atmos->vturb);
   }
   /* Read magnetic field */
   if (atmos->Stokes) {
@@ -302,11 +315,11 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
     Bz = (double *) malloc(atmos->Nspace * sizeof(double));
     /* Read in cartesian coordinates */
     ierror = H5Dread(infile->Bx_varid, H5T_NATIVE_DOUBLE, memspace_id,
-		   dataspace_id, H5P_DEFAULT, Bx);
+		   dataspace_id, plist_id, Bx);
     ierror = H5Dread(infile->By_varid, H5T_NATIVE_DOUBLE, memspace_id,
-		   dataspace_id, H5P_DEFAULT, By);
+		   dataspace_id, plist_id, By);
     ierror = H5Dread(infile->Bz_varid, H5T_NATIVE_DOUBLE, memspace_id,
-		   dataspace_id, H5P_DEFAULT, Bz);
+		   dataspace_id, plist_id, Bz);
     /* Convert to spherical coordinates */
     for (j = 0; j < atmos->Nspace; j++) {
       atmos->B[j]       = sqrt(SQ(Bx[j]) + SQ(By[j]) + SQ(Bz[j]));
@@ -339,7 +352,7 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   dims_memory[1] = atmos->Nspace;
   memspace_id = H5Screate_simple(2, dims_memory, NULL);
   ierror = H5Dread(infile->nh_varid, H5T_NATIVE_DOUBLE,
-		   memspace_id, dataspace_id, H5P_DEFAULT, atmos->nH[0]);
+		   memspace_id, dataspace_id, plist_id, atmos->nH[0]);
   if (( H5Sclose(dataspace_id) ) < 0) HERR(routineName);
   if (( H5Sclose(memspace_id) ) < 0) HERR(routineName);
   /* Depth grid refinement */

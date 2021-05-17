@@ -79,7 +79,6 @@ void init_aux_new(void) {
   /* Create the file  */
   if (( plist = H5Pcreate(H5P_FILE_ACCESS) ) < 0) HERR(routineName);
   if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
-  if (( H5Pset_dxpl_mpio(plist, H5FD_MPIO_COLLECTIVE)) <0) HERR(routineName);
   if (( ncid = H5Fcreate(AUX_FILE, H5F_ACC_TRUNC, H5P_DEFAULT,
                          plist) ) < 0) HERR(routineName);
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
@@ -446,7 +445,6 @@ void init_aux_existing(void) {
   /* Open the file with parallel MPI-IO access */
   if (( plist = H5Pcreate(H5P_FILE_ACCESS )) < 0) HERR(routineName);
   if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
-  if (( H5Pset_dxpl_mpio(plist, H5FD_MPIO_COLLECTIVE)) <0) HERR(routineName);
   if (( ncid = H5Fopen(AUX_FILE, H5F_ACC_RDWR, plist) ) < 0)
     HERR(routineName);
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
