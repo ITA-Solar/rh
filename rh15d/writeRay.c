@@ -73,6 +73,7 @@ void init_hdf5_ray_new(void)
   /* Create the file with parallel MPI-IO access */
   if (( plist = H5Pcreate(H5P_FILE_ACCESS )) < 0) HERR(routineName);
   if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
+  if (( H5Pset_dxpl_mpio(plist, H5FD_MPIO_COLLECTIVE)) <0) HERR(routineName);
   if (( ncid = H5Fcreate(RAY_FILE, H5F_ACC_TRUNC, H5P_DEFAULT, plist) ) < 0)
     HERR(routineName);
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
@@ -345,6 +346,7 @@ void init_hdf5_ray_existing(void)
   /* Open the file with parallel MPI-IO access */
   if (( plist = H5Pcreate(H5P_FILE_ACCESS )) < 0) HERR(routineName);
   if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
+  if (( H5Pset_dxpl_mpio(plist, H5FD_MPIO_COLLECTIVE)) <0) HERR(routineName);
   if (( ncid = H5Fopen(RAY_FILE, H5F_ACC_RDWR, plist) ) < 0) HERR(routineName);
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
 
