@@ -58,6 +58,7 @@ void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry,
   // M.Sz Disable metadata cache eviction
   // sets the data transfer property list
   H5AC_cache_config_t mdc_config;
+  mdc_config.version = H5AC__CURR_CACHE_CONFIG_VERSION;
   if ((H5Pget_mdc_config(plist_id, &mdc_config)) < 0) HERR(routineName);
   mdc_config.evictions_enabled = false;
   mdc_config.incr_mode = H5C_incr__off;
