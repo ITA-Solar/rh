@@ -438,9 +438,19 @@ void writeRay(void) {
   bool_t     write_xtra, crosscoupling, to_obs, initialize,prdh_limit_mem_save;
   ActiveSet *as;
   hid_t      ncid, file_dataspace, mem_dataspace;
+  hid_t      plist_id;
 
   write_xtra = (io.ray_nwave_sel > 0);
   ncid = io.ray_ncid;
+
+  /* Set collective write */
+
+  if (COLLECTIVE_IO_W) {
+    if ((plist_id = H5Pcreate(H5P_DATASET_XFER)) < 0) HERR(routineName);
+    if ((H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE)) <0) HERR(routineName);
+  } else {
+    plist_id = H5P_DEFAULT;
+  }
 
   /* Memory dataspace */
   dims[0] = spectrum.Nspect;
@@ -456,7 +466,7 @@ void writeRay(void) {
 
   /* Write intensity */
   if (( H5Dwrite(io.ray_int_var, H5T_NATIVE_DOUBLE, mem_dataspace,
-          file_dataspace, H5P_DEFAULT, spectrum.I[0]) ) < 0) HERR(routineName);
+          file_dataspace, plist_id, spectrum.I[0]) ) < 0) HERR(routineName);
 
   /* Calculate height of tau=1 and write to file*/
   if (input.p15d_wtau) {
@@ -510,7 +520,7 @@ void writeRay(void) {
     }
     /* Write to file */
     if (( H5Dwrite(io.ray_tau1_var, H5T_NATIVE_FLOAT, mem_dataspace,
-                 file_dataspace, H5P_DEFAULT, tau_one) ) < 0) HERR(routineName);
+                 file_dataspace, plist_id, tau_one) ) < 0) HERR(routineName);
     /* set back PRD input option */
     if (input.PRD_angle_dep == PRD_ANGLE_APPROX && atmos.NPRDactive > 0)
       input.prdh_limit_mem = prdh_limit_mem_save ;
@@ -519,13 +529,13 @@ void writeRay(void) {
 
   if (atmos.Stokes || input.backgr_pol) { /* Write rest of Stokes vector */
     if (( H5Dwrite(io.ray_stokes_q_var, H5T_NATIVE_DOUBLE, mem_dataspace,
-                   file_dataspace, H5P_DEFAULT,
+                   file_dataspace, plist_id,
                    spectrum.Stokes_Q[0]) ) < 0) HERR(routineName);
     if (( H5Dwrite(io.ray_stokes_u_var, H5T_NATIVE_DOUBLE, mem_dataspace,
-                   file_dataspace, H5P_DEFAULT,
+                   file_dataspace, plist_id,
                    spectrum.Stokes_U[0]) ) < 0) HERR(routineName);
     if (( H5Dwrite(io.ray_stokes_v_var, H5T_NATIVE_DOUBLE, mem_dataspace,
-                   file_dataspace, H5P_DEFAULT,
+                   file_dataspace, plist_id,
                    spectrum.Stokes_V[0]) ) < 0) HERR(routineName);
   }
   /* release dataspace resources */
@@ -603,13 +613,13 @@ void writeRay(void) {
     if (( H5Sselect_hyperslab(file_dataspace, H5S_SELECT_SET, offset,
                               NULL, count, NULL) ) < 0) HERR(routineName);
     if (( H5Dwrite(io.ray_chi_var, H5T_NATIVE_FLOAT, mem_dataspace,
-                 file_dataspace, H5P_DEFAULT, chi[0]) ) < 0) HERR(routineName);
+                 file_dataspace, plist_id, chi[0]) ) < 0) HERR(routineName);
     if (( H5Dwrite(io.ray_S_var, H5T_NATIVE_FLOAT, mem_dataspace,
-                 file_dataspace, H5P_DEFAULT, S[0]) ) < 0) HERR(routineName);
+                 file_dataspace, plist_id, S[0]) ) < 0) HERR(routineName);
     if (( H5Dwrite(io.ray_j_var, H5T_NATIVE_FLOAT, mem_dataspace,
-                 file_dataspace, H5P_DEFAULT, Jnu[0]) ) < 0) HERR(routineName);
+                 file_dataspace, plist_id, Jnu[0]) ) < 0) HERR(routineName);
     if (( H5Dwrite(io.ray_sca_c_var, H5T_NATIVE_FLOAT, mem_dataspace,
-                 file_dataspace, H5P_DEFAULT, sca[0]) ) < 0) HERR(routineName);
+                 file_dataspace, plist_id, sca[0]) ) < 0) HERR(routineName);
     freeMatrix((void **) chi);
     freeMatrix((void **) S);
     freeMatrix((void **) Jnu);
