@@ -147,8 +147,8 @@
 
 /* Tunning for parallel i/o */
 #define COLLECTIVE_IO_R 1
-#define COLLECTIVE_IO_W 0
-#define IO_CACHE_EVICTION 0
+#define COLLECTIVE_IO_W 1
+#define IO_CACHE_EVICTION 1
 
 /* For keeping the HDF5 file and variable IDs */
 typedef struct {
