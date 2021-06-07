@@ -509,7 +509,7 @@ void PiecewiseStokesBezier3(int nspect, int mu, bool_t to_obs,
       
       dsdn = fabs(z[k+dk] - z[k]) * imu;
       
-      if(fabs(k-k_end)>1){
+      if(abs(k-k_end)>1){
 	dsdn2=fabs(z[k+2*dk] - z[k+dk]) * imu;
 	dchi_dn = cent_deriv(dsdn,dsdn2,chi1[k],chi1[k+dk],chi1[k+2*dk]);       
       } else dchi_dn=(chi1[k+dk]-chi1[k])/dsdn;
@@ -749,7 +749,7 @@ void Piecewise_Bezier3(int nspect, int mu, bool_t to_obs,
       
       /* dchi/ds at downwind point */
       
-      if (fabs(k-k_end)>1) {
+      if (abs(k-k_end)>1) {
 	dsdn2=fabs(z[k+2*dk] - z[k+dk]) * zmu;
 	dchi_dn = cent_deriv(dsdn,dsdn2,chi1[k],chi1[k+dk],chi1[k+2*dk]);       
       } else {
