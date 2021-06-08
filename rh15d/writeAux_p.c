@@ -676,7 +676,7 @@ void writeAux_all(void) {
   int        nact, task;
   long       ind = 0;
 
-  if (COLLECTIVE_IO_W) {
+  if (COLLECTIVE_IO_W && mpi.isbalanced) {
     if ((plist_id = H5Pcreate(H5P_DATASET_XFER)) < 0) HERR(routineName);
     if ((H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE)) <0) HERR(routineName);
   } else {
@@ -689,7 +689,7 @@ void writeAux_all(void) {
     ind = 0;   /* Index of each task inside variables */
     for (task = 0; task < mpi.Ntasks; task++) {
       /* If there was a crash, no data were written into buffer variables */
-      if (mpi.convergence[task] < 0) continue;
+      // if (mpi.convergence[task] < 0) continue;
       /* Memory dataspace */
       dims[0] = atom->Nlevel;
       dims[1] = infile.nz - mpi.zcut_hist[task];
@@ -782,7 +782,7 @@ void writeAux_all(void) {
     ind = 0;   /* Index of each task inside variables */
     for (task = 0; task < mpi.Ntasks; task++) {
       /* If there was a crash, no data were written into buffer variables */
-      if (mpi.convergence[task] < 0) continue;
+      // if (mpi.convergence[task] < 0) continue;
       if (input.p15d_wpop) {
         /* Memory dataspace */
         dims[0] = molecule->Nv;
@@ -833,7 +833,7 @@ void writeAux_p(void) {
   AtomicLine      *line;
   AtomicContinuum *continuum;
 
-  if (COLLECTIVE_IO_W) {
+  if (COLLECTIVE_IO_W && mpi.isbalanced) {
     if ((plist_id = H5Pcreate(H5P_DATASET_XFER)) < 0) HERR(routineName);
     if ((H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE)) <0) HERR(routineName);
   } else {
@@ -968,7 +968,7 @@ void readPopulations(Atom *atom) {
   hid_t ncid, file_dspace, mem_dspace, pop_var;
   hid_t      plist_id;
 
-  if (COLLECTIVE_IO_W) {
+  if (COLLECTIVE_IO_W && mpi.isbalanced) {
     if ((plist_id = H5Pcreate(H5P_DATASET_XFER)) < 0) HERR(routineName);
     if ((H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE)) <0) HERR(routineName);
   } else {

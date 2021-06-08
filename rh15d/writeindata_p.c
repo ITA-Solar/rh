@@ -757,7 +757,7 @@ void writeMPI_all(void) {
 
   /* Set collective read */
 
-  if (COLLECTIVE_IO_W) {
+  if (COLLECTIVE_IO_W && mpi.isbalanced) {
     if ((plist_id = H5Pcreate(H5P_DATASET_XFER)) < 0) HERR(routineName);
     if ((H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE)) <0) HERR(routineName);
   } else {
@@ -824,7 +824,7 @@ void writeMPI_p(int task) {
 
   /* Set collective read */
 
-  if (COLLECTIVE_IO_W) {
+  if (COLLECTIVE_IO_W && mpi.isbalanced) {
     if ((plist_id = H5Pcreate(H5P_DATASET_XFER)) < 0) HERR(routineName);
     if ((H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE)) <0) HERR(routineName);
   } else {
