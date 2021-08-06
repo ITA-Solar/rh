@@ -49,7 +49,7 @@ SRC = accelerate_p.c  \
 	  writeRay.c  \
 	  writeindata_p.c
 
-BIN_SRC = rh15d_ray.c rh15d_ray_pool.c rh15d_lteray.c
+BIN_SRC = rh15d_ray.c rh15d_ray_pool.c rh15d_lteray.c rh15d_ray_pool_IO_bench.c
 OBJS = $(SRC:.c=.o)
 BIN_OBJ = $(BIN_SRC:.c=.o)
 
