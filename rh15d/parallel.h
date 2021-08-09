@@ -13,7 +13,7 @@
 
 typedef struct {
   char     name[MPI_MAX_PROCESSOR_NAME], rev_id[MAX_LINE_SIZE];
-  bool_t   single_log, stop, isfirst;
+  bool_t   single_log, stop, isfirst,isbalanced;
   int      nx, ny;
   int      size, rank, namelen, ix, iy, *xnum, *ynum, *niter, zcut, ndims_z;
   int     *zcut_hist, **rh_converged, StokesMode_save, *convergence, snap_number;

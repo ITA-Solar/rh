@@ -49,6 +49,7 @@ void distribute_jobs(void)
 {
   const char routineName[] = "distribute_jobs";
   long *tasks, remain_tasks, i, j;
+  long minNtasks, maxNtasks;
   bool_t abort = FALSE;
 
   mpi.backgrrecno = 0;
@@ -119,10 +120,28 @@ void distribute_jobs(void)
   mpi.total_tasks = remain_tasks;
 
   /* Calculate tasks and distribute */
-  tasks        = get_tasks(remain_tasks, mpi.size);
-  mpi.Ntasks   = tasks[mpi.rank];
-  mpi.taskmap  = get_taskmap(remain_tasks, tasks, &mpi.my_start);
+  tasks       = get_tasks(remain_tasks, mpi.size);
+  mpi.Ntasks  = tasks[mpi.rank];
+  minNtasks   = mpi.Ntasks;
+  maxNtasks   = mpi.Ntasks;
+  mpi.taskmap = get_taskmap(remain_tasks, tasks, &mpi.my_start);
   free(tasks);
+
+  /* Find max Ntask per processor*/
+  for (size_t i = 0; i < mpi.size; ++i) {
+    if (minNtasks >= tasks[i]) {
+      minNtasks = tasks[i];
+    }
+    if (maxNtasks <= tasks[i]) {
+      maxNtasks = tasks[i];
+    }
+  }
+
+  if (minNtasks == maxNtasks) {
+    mpi.isbalanced = true;
+  } else {
+    mpi.isbalanced = false;
+  }
 
   return;
 }

@@ -753,6 +753,18 @@ void writeMPI_all(void) {
   hsize_t  count[] = {1, 1, 1, 1};
   hsize_t  dims[4];
   hid_t    file_dspace, mem_dspace;
+  hid_t    plist_id;
+
+  /* Set collective read */
+
+  if (COLLECTIVE_IO_W && mpi.isbalanced) {
+    if ((plist_id = H5Pcreate(H5P_DATASET_XFER)) < 0) HERR(routineName);
+    if ((H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE)) <0) HERR(routineName);
+  } else {
+    plist_id = H5P_DEFAULT;
+  }
+
+  sprintf(messageStr, "Process %4d: *** Start writeMPI_all\n", mpi.rank);
 
   /* Write single values of Ntasks, one value at a time */
   dims[0] = 1;
@@ -766,16 +778,18 @@ void writeMPI_all(void) {
     if (( H5Sselect_hyperslab(file_dspace, H5S_SELECT_SET, offset,
                               NULL, count, NULL) ) < 0) HERR(routineName);
     if (( H5Dwrite(io.in_mpi_it, H5T_NATIVE_INT, mem_dspace, file_dspace,
-                   H5P_DEFAULT, &mpi.niter[task]) ) < 0) HERR(routineName);
+                   plist_id, &mpi.niter[task]) ) < 0) HERR(routineName);
     if (( H5Dwrite(io.in_mpi_conv, H5T_NATIVE_INT, mem_dspace, file_dspace,
-                H5P_DEFAULT, &mpi.convergence[task]) ) < 0) HERR(routineName);
+                plist_id, &mpi.convergence[task]) ) < 0) HERR(routineName);
     if (( H5Dwrite(io.in_mpi_zc, H5T_NATIVE_INT, mem_dspace, file_dspace,
-                  H5P_DEFAULT, &mpi.zcut_hist[task]) ) < 0) HERR(routineName);
+                  plist_id, &mpi.zcut_hist[task]) ) < 0) HERR(routineName);
     if (( H5Dwrite(io.in_mpi_dm, H5T_NATIVE_DOUBLE, mem_dspace, file_dspace,
-                   H5P_DEFAULT, &mpi.dpopsmax[task]) ) < 0) HERR(routineName);
+                   plist_id, &mpi.dpopsmax[task]) ) < 0) HERR(routineName);
     if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
   }
   if (( H5Sclose(mem_dspace) ) < 0) HERR(routineName);
+
+  sprintf(messageStr, "Process %4d: *** end writeMPI_all 1/2\n", mpi.rank);
 
   /* Write array with multiple values */
   for (task = 0; task < mpi.Ntasks; task++) {
@@ -789,7 +803,7 @@ void writeMPI_all(void) {
     if (( H5Sselect_hyperslab(file_dspace, H5S_SELECT_SET, offset,
                               NULL, count, NULL) ) < 0) HERR(routineName);
     if (( H5Dwrite(io.in_mpi_dmh, H5T_NATIVE_DOUBLE, mem_dspace, file_dspace,
-               H5P_DEFAULT, mpi.dpopsmax_hist[task]) ) < 0) HERR(routineName);
+               plist_id, mpi.dpopsmax_hist[task]) ) < 0) HERR(routineName);
     if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
     if (( H5Sclose(mem_dspace) ) < 0) HERR(routineName);
   }
@@ -806,6 +820,17 @@ void writeMPI_p(int task) {
   hsize_t  count[] = {1, 1, 1, 1};
   hsize_t  dims[4];
   hid_t    file_dspace, mem_dspace;
+  hid_t    plist_id;
+
+  /* Set collective read */
+
+  if (COLLECTIVE_IO_W && mpi.isbalanced) {
+    if ((plist_id = H5Pcreate(H5P_DATASET_XFER)) < 0) HERR(routineName);
+    if ((H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE)) <0) HERR(routineName);
+  } else {
+    plist_id = H5P_DEFAULT;
+  }
+
 
   dims[0] = 1;
   if (( mem_dspace = H5Screate_simple(1, dims, NULL) ) < 0) HERR(routineName);
@@ -815,17 +840,17 @@ void writeMPI_p(int task) {
   if (( H5Sselect_hyperslab(file_dspace, H5S_SELECT_SET, offset,
                             NULL, count, NULL) ) < 0) HERR(routineName);
   if (( H5Dwrite(io.in_mpi_tm, H5T_NATIVE_INT, mem_dspace, file_dspace,
-                   H5P_DEFAULT, &mpi.rank) ) < 0) HERR(routineName);
+                   plist_id, &mpi.rank) ) < 0) HERR(routineName);
   if (( H5Dwrite(io.in_mpi_tn, H5T_NATIVE_INT, mem_dspace, file_dspace,
-                   H5P_DEFAULT, &task) ) < 0) HERR(routineName);
+                   plist_id, &task) ) < 0) HERR(routineName);
   if (( H5Dwrite(io.in_mpi_it, H5T_NATIVE_INT, mem_dspace, file_dspace,
-                   H5P_DEFAULT, &mpi.niter[0]) ) < 0) HERR(routineName);
+                   plist_id, &mpi.niter[0]) ) < 0) HERR(routineName);
   if (( H5Dwrite(io.in_mpi_conv, H5T_NATIVE_INT, mem_dspace, file_dspace,
-                   H5P_DEFAULT, &mpi.convergence[0]) ) < 0) HERR(routineName);
+                   plist_id, &mpi.convergence[0]) ) < 0) HERR(routineName);
   if (( H5Dwrite(io.in_mpi_zc, H5T_NATIVE_INT, mem_dspace, file_dspace,
-                   H5P_DEFAULT, &mpi.zcut_hist[0]) ) < 0) HERR(routineName);
+                   plist_id, &mpi.zcut_hist[0]) ) < 0) HERR(routineName);
   if (( H5Dwrite(io.in_mpi_dm, H5T_NATIVE_DOUBLE, mem_dspace, file_dspace,
-                   H5P_DEFAULT, &mpi.dpopsmax[0]) ) < 0) HERR(routineName);
+                   plist_id, &mpi.dpopsmax[0]) ) < 0) HERR(routineName);
   if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
   if (( H5Sclose(mem_dspace) ) < 0) HERR(routineName);
 
@@ -838,7 +863,7 @@ void writeMPI_p(int task) {
   if (( H5Sselect_hyperslab(file_dspace, H5S_SELECT_SET, offset,
                             NULL, count, NULL) ) < 0) HERR(routineName);
   if (( H5Dwrite(io.in_mpi_dmh, H5T_NATIVE_DOUBLE, mem_dspace, file_dspace,
-                 H5P_DEFAULT, mpi.dpopsmax_hist[0]) ) < 0) HERR(routineName);
+                 plist_id, mpi.dpopsmax_hist[0]) ) < 0) HERR(routineName);
   if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
   if (( H5Sclose(mem_dspace) ) < 0) HERR(routineName);
   return;

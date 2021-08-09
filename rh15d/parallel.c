@@ -729,9 +729,10 @@ void writeOutput(bool_t writej) {
     sprintf(messageStr, "Process %4d: --- START output\n", mpi.rank);
     fprintf(mpi.main_logfile, "%s", messageStr);
     Error(MESSAGE, "main", messageStr);
-
     writeMPI_all();
+    sprintf(messageStr, "Process %4d: *** END MPI-output\n", mpi.rank);
     writeAux_all();
+    sprintf(messageStr, "Process %4d: *** END Aux-all-output\n", mpi.rank);
 
     sprintf(messageStr, "Process %4d: *** END output\n", mpi.rank);
     fprintf(mpi.main_logfile, "%s", messageStr);

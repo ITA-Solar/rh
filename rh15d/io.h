@@ -145,6 +145,11 @@
 /* Log files buffer size (in bytes) */
 #define BUFSIZ_MPILOG  52428800
 
+/* Tunning for parallel i/o */
+#define COLLECTIVE_IO_R 1
+#define COLLECTIVE_IO_W 1
+#define IO_CACHE_EVICTION 1
+
 /* For keeping the HDF5 file and variable IDs */
 typedef struct {
   /* for the J file */
