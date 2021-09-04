@@ -25,7 +25,7 @@
 void overlord(void);
 void drone(void);
 
-
+void ReadEmisTab(Atmosphere *atmos, Spectrum *spectrum, Geometry *geometry);
 /* --- Global variables --                             -------------- */
 enum Topology topology = ONE_D_PLANE;
 Atmosphere atmos;
@@ -212,6 +212,16 @@ void drone(void) {
                   &infile);
         /* Update quantities that depend on atmosphere and initialise others */
         UpdateAtmosDep();
+        
+        /* --- Read the emissivity table and compute the irradiating spectrum --- */
+        /*if (input.Irrad_Itop) {
+            ReadEmisTab(&atmos, &spectrum, &geometry);
+           }
+        */
+        if (geometry.vboundary[TOP] == 4) {
+            ReadEmisTab(&atmos, &spectrum, &geometry);
+           }
+     
         /* --- Calculate background opacities --             ------------- */
         Background_p(write_analyze_output=TRUE, equilibria_only=FALSE);
         getProfiles();

@@ -93,7 +93,11 @@ void   Linear(int Ntable, double *xtable, double *ytable,
 double BiLinear(int Na, double *a_table, double a,
 		int Nb, double *b_table, double b,
 		double **f, bool_t hunt);
-
+void TrilinearInterp(int nX, int nY, int nZ,
+                     double *grid, double *xarr, double *yarr, double *zarr,
+                     int x0, int y0, int z0,
+                     double xp, double yp, double zp,
+                     double *p);
 void  splineCoef(int Ntable, double *xtable, double *ytable);
 void  splineEval(int N, double *x, double *y, bool_t hunt);
 void  exp_splineCoef(int Ntable, double *xtable, double *ytable,

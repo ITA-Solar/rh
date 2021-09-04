@@ -3,7 +3,11 @@
        Version:       rh2.0, 1-D plane-parallel
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
        Last modified: Mon Feb 23 16:18:46 2004 --
-
+                      Fri 3rd Sept 2021 Graham S. Kerr
+                              * Added the case IRRADIATED_INTP for
+                                coronal irradiation. This was done in 
+                                2019 for my own version of rhf1d, but now
+                                merging with github 1.5D RH
        --------------------------                      ----------RH-- */
 
 /* --- Piecewise integration of the coupled Stokes transfer equations.
@@ -24,6 +28,7 @@
        --                                              -------------- */
 
 #include <math.h>
+#include <string.h>    // memcpy, memset
 
 #include "rh.h"
 #include "atom.h"
@@ -31,7 +36,7 @@
 #include "geometry.h"
 #include "spectrum.h"
 #include "parallel.h"
-
+#include "error.h"
 
 /* --- Function prototypes --                          -------------- */
 
@@ -42,7 +47,7 @@ extern Geometry geometry;
 extern Atmosphere atmos;
 extern Spectrum spectrum;
 extern MPI_data mpi;
-
+extern char messageStr[];
 
 /* ------- begin -------------------------- PiecewiseStokes.c ------- */
 
@@ -94,6 +99,9 @@ void PiecewiseStokes(int nspect, int mu, bool_t to_obs,
       for (n = 0;  n < 4;  n++) I_upw[n] = 0.0;
       break;
     case IRRADIATED:
+      I_upw[0] = geometry.Itop[nspect][mu];
+      for (n = 1;  n < 4;  n++) I_upw[n] = 0.0;
+    case IRRADIATED_INTP:
       I_upw[0] = geometry.Itop[nspect][mu];
       for (n = 1;  n < 4;  n++) I_upw[n] = 0.0;
     }

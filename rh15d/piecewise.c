@@ -3,7 +3,11 @@
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
        Last modified: Tue Dec 26 10:13:01 2006 --
-
+                      Fri 3rd Sept 2021 Graham S. Kerr
+                              * Added the case IRRADIATED_INTP for
+                                coronal irradiation. This was done in 
+                                2019 for my own version of rhf1d, but now
+                                merging with github 1.5D RH
        --------------------------                      ----------RH-- */
 
 /* --- Piecewise quadratic integration of transfer equation in
@@ -36,7 +40,7 @@
 extern Geometry geometry;
 extern Atmosphere atmos;
 extern Spectrum spectrum;
-
+extern char messageStr[];
 void har_mean_deriv(double* wprime,double dsup,double dsdn,
 		    double chiup,double chic,double chidn)
 {
@@ -109,6 +113,9 @@ void Piecewise_1D(int nspect, int mu, bool_t to_obs,
       I_upw = Bnu[0] - (Bnu[1] - Bnu[0]) / dtau_uw;
       break;
     case IRRADIATED:
+      I_upw = geometry.Itop[nspect][mu];
+    case IRRADIATED_INTP:
+      //I_upw = 0.0;
       I_upw = geometry.Itop[nspect][mu];
     }
   }
@@ -226,6 +233,9 @@ void Piecewise_Hermite_1D(int nspect, int mu, bool_t to_obs,
       I_upw = Bnu[0] - (Bnu[1] - Bnu[0]) / dtau_uw;
       break;
     case IRRADIATED:
+      I_upw = geometry.Itop[nspect][mu];
+    case IRRADIATED_INTP:
+      //I_upw = 0.0;
       I_upw = geometry.Itop[nspect][mu];
     }
   }
@@ -368,6 +378,9 @@ void PieceBezier_1D(int nspect, int mu, bool_t to_obs,
       I_uw = Bnu[0] - (Bnu[1] - Bnu[0]) / dtau_uw;
       break;
     case IRRADIATED:
+      I_uw = geometry.Itop[nspect][mu];
+      break;
+    case IRRADIATED_INTP:
       I_uw = geometry.Itop[nspect][mu];
       break;
     }

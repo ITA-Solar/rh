@@ -3,7 +3,6 @@
        Version:       rh2.0, 1-D plane-parallel
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
        Last modified: Wed Jul 24 13:00:16 2013 --
-
        --------------------------                      ----------RH-- */
 
 /* --- Reads input data for and defines keywords for 1-D
@@ -60,7 +59,7 @@ void readInput(char *input_string)
     {"EDDINGTON", "FALSE", FALSE, KEYWORD_OPTIONAL, &input.Eddington,
      setboolValue},
     {"ATMOS_ITOP", "none", FALSE, KEYWORD_OPTIONAL, input.Itop, setcharValue},
-
+    
     {"WAVETABLE", "none", FALSE, KEYWORD_OPTIONAL, input.wavetable_input,
      setcharValue},
     {"ATOMS_FILE",  "", FALSE, KEYWORD_REQUIRED, input.atoms_input,

@@ -9,7 +9,7 @@
 
    Modifications:
            2017-03-12, JdlCR: Created!
-
+           2021-09-03, GSK: added IRRADIATED_INTP case
    ----------------------------------------------------------------------- */
 
 
@@ -433,6 +433,10 @@ void PiecewiseStokesBezier3(int nspect, int mu, bool_t to_obs,
       I_upw[0] = geometry.Ibottom[nspect][mu];
       for (n = 1;  n < 4;  n++) I_upw[n] = 0.0;
       break;
+    case IRRADIATED_INTP:
+      sprintf(messageStr, "Boundary condition not implemented: %d",
+              geometry.vboundary[BOTTOM]);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
     case REFLECTIVE:
       sprintf(messageStr, "Boundary condition not implemented: %d",
 	      geometry.vboundary[BOTTOM]);
@@ -447,6 +451,18 @@ void PiecewiseStokesBezier3(int nspect, int mu, bool_t to_obs,
       I_upw[0] = geometry.Itop[nspect][mu];
       for (n = 1;  n < 4;  n++) I_upw[n] = 0.0;
       break;
+    case IRRADIATED_INTP:
+      I_upw[0] = geometry.Itop[nspect][mu];
+      for (n = 1;  n < 4;  n++) I_upw[n] = 0.0;
+      break;
+    case REFLECTIVE:
+      sprintf(messageStr, "Boundary condition not implemented: %d",
+              geometry.vboundary[TOP]);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
+    case THERMALIZED:
+      sprintf(messageStr, "Boundary condition not implemented: %d",
+              geometry.vboundary[TOP]);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
     default:
       sprintf(messageStr, "Boundary condition not implemented: %d",
 	      geometry.vboundary[TOP]);
@@ -687,6 +703,10 @@ void Piecewise_Bezier3(int nspect, int mu, bool_t to_obs,
       break;
     case IRRADIATED:
       I_upw = geometry.Ibottom[nspect][mu];
+    case IRRADIATED_INTP:
+      sprintf(messageStr, "Boundary condition not implemented: %d",
+              geometry.vboundary[BOTTOM]);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
     case REFLECTIVE:
       sprintf(messageStr, "Boundary condition not implemented: %d",
 	      geometry.vboundary[BOTTOM]);
@@ -703,9 +723,11 @@ void Piecewise_Bezier3(int nspect, int mu, bool_t to_obs,
       break;
     case IRRADIATED:
       I_upw = geometry.Itop[nspect][mu];
+    case IRRADIATED_INTP:
+      I_upw = geometry.Itop[nspect][mu];
     case REFLECTIVE:
       sprintf(messageStr, "Boundary condition not implemented: %d",
-	      geometry.vboundary[BOTTOM]);
+	      geometry.vboundary[TOP]);
       Error(ERROR_LEVEL_2, routineName, messageStr);
     }
   }

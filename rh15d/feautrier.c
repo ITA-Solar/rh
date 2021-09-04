@@ -3,6 +3,11 @@
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
        Last modified: Fri Nov  3 09:04:22 2000 --
+                      Fri 3rd Sept 2021 Graham S. Kerr
+                              * Added the case IRRADIATED_INTP for
+                               coronal irradiation. This was done 
+                               on my own rhf1d copy in 2019, but 
+                               now adding to RH15D 
 
        --------------------------                      ----------RH-- */
 
@@ -95,6 +100,9 @@ double Feautrier(int nspect, int mu, double *chi, double *S,
     r0 = 0.0;
     h0 = geometry.Itop[nspect][mu];
     break;
+  case IRRADIATED_INTP:
+    r0 = 0.0;
+    h0 = geometry.Itop[nspect][mu];
   case REFLECTIVE:
     r0 = 1.0;
     h0 = 0.0;
@@ -122,6 +130,10 @@ double Feautrier(int nspect, int mu, double *chi, double *S,
     rN = 0.0;
     hN = geometry.Ibottom[nspect][mu];
     break;
+  case IRRADIATED_INTP:
+      sprintf(messageStr, "Boundary condition not implemented: %d",
+              geometry.vboundary[BOTTOM]);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
   case REFLECTIVE:
     rN = 1.0;
     hN = 0.0;

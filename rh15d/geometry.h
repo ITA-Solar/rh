@@ -3,6 +3,13 @@
        Version:       rh2.0, 1-D plane-parallel
        Author:        Tiago Pereira (tiago.pereira@nasa.gov)
        Last modified: Tue Nov 23 22:09:58 2010 --
+                       Graham S. Kerr: Fri Sept 3rd 2021.
+                       Added IRRADIATED_INTP keyword. This will allow
+                       the user to provide a grid of emissivities as 
+                       functions of temperature, electron density, and
+                       wavelength that is interpolated in each grid 
+                       cell, summed to provide intensity, and injected
+                       at the top boundary. 
 
        --------------------------                      ----------RH-- */
 
@@ -13,7 +20,7 @@
 #include <hdf5_hl.h>
 
 /* --- Define geometric quantities for 1-D plane-parallel version --  */
-enum boundcond  {ZERO, THERMALIZED, IRRADIATED, REFLECTIVE};
+enum boundcond  {ZERO, THERMALIZED, IRRADIATED, REFLECTIVE, IRRADIATED_INTP};
 enum mass_scale {GEOMETRIC, COLUMN_MASS, TAU500};
 enum atmos_type {HDF5, MULTI};
 enum vertical   {TOP=0, BOTTOM};

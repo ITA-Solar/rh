@@ -104,7 +104,9 @@ SRC = abundance.c \
 	  writemolec_xdr.c \
 	  writeopac_xdr.c \
 	  writespect_xdr.c \
-	  zeeman.c
+	  zeeman.c \
+          trilinear_interp.c \
+          linspace.c
 
 SRC_F = hui_.f90 humlicek_.f90
 
