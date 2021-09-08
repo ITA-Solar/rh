@@ -1,0 +1,21 @@
+# Nmetal
+    14
+
+# Metals
+#  model file             ACTIVE/PASSIVE  INITIAL_SOLUTION   population file
+
+  ../../Atoms/H_6.atom        ACTIVE      LTE_POPULATIONS   pops.H.out
+  ../../Atoms/C.atom          PASSIVE     LTE_POPULATIONS   pops.C.out
+  ../../Atoms/OI_fine.atom    ACTIVE      ZERO_RADIATION    pops.O.out
+  ../../Atoms/Si.atom	      PASSIVE     LTE_POPULATIONS   pops.SI.out
+  ../../Atoms/Al.atom	      PASSIVE     LTE_POPULATIONS  
+  ../../Atoms/CaII.atom       ACTIVE      LTE_POPULATIONS   pops.CA.out
+  ../../Atoms/Fe_JB.atom      ACTIVE      LTE_POPULATIONS   pops.FE.out
+  ../../Atoms/He.atom         PASSIVE     LTE_POPULATIONS   pops.HE.out
+#  ../../Atoms/He_10830_d3.atom ACTIVE     LTE_POPULATIONS   pops.HE.out
+  ../../Atoms/MgII-11.atom    ACTIVE      ZERO_RADIATION     pops.MG.out
+  ../../Atoms/N.atom	      PASSIVE     LTE_POPULATIONS  
+  ../../Atoms/Na.atom         PASSIVE     LTE_POPULATIONS   pops.NA.out
+  ../../Atoms/S.atom	      PASSIVE     LTE_POPULATIONS  
+  ../../Atoms/BaII_CRD.atom   PASSIVE     ZERO_RADIATION    pops.BA.out
+  ../../Atoms/NiI.atom        PASSIVE     LTE_POPULATIONS     pops.NI.out

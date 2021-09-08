@@ -36,7 +36,7 @@
 *.orig
 
 # Directories
-Atoms
+#Atoms
 rh15d/run/
 rh15d/run?/
 rh15d/run_t*/

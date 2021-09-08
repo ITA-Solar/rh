@@ -1,0 +1,119 @@
+# Solar abundances from N. Grevesse and E. Anders (1991), 
+# in "Solar Interior and Atmosphere", Univ. Ariz. Press.,
+# eds. Cox, Livingston, and Matthews, p. 1227
+#
+# Abundances for elements heavier than NI are taken from the Atlas 9
+# code of R. L. Kurucz
+#
+## With the Asplund et al C and O abundances CH (G band) and
+## CN (388.3 nm) fit better in (radiation-) hydrodynamic models.
+#
+# Han Uitenbroek
+# Last modified: Mon Oct 12 11:19:05 2009 --
+#  
+  H   12.00
+  HE  10.93
+  LI   1.05
+  BE   1.38
+  B    2.70
+#  C    8.60  # original
+  C    8.43  ## Asplund et al 2005, A&A, 431, 693-705
+  N    7.83
+#  O    8.93  # original
+  O    8.69  ## Asplund et al 2004, A&A, 417, 751
+  F    4.56
+  NE   7.93
+  NA   6.24 
+#-#  NA   6.73  ## Value needed for small Na I atom
+  MG   7.60
+  AL   6.45
+  SI   7.51
+  P    5.41
+  S    7.12
+  CL   5.50
+  AR   6.40
+  K    5.03
+  CA   6.34
+  SC   3.15
+  TI   4.95
+  V    3.93
+  CR   5.64
+  MN   5.43
+#  FE   7.67  #original
+  FE   7.50  ## Asplund et al 2000, A&A, 359, 743
+  CO   4.99
+  NI   6.22
+#
+  CU   4.19
+  ZN   4.56
+  GA   3.04
+  GE   3.65
+  AS   2.37
+  SE   3.35
+  BR   2.63
+  KR   3.25
+  RB   2.52
+  SR   2.87
+  Y    2.21
+  ZR   2.58
+  NB   1.88
+  MO   1.92
+  TC  -7.96
+  RU   1.84
+  RH   1.12
+  PD   1.69
+  AG   0.94
+  CD   1.86
+  IN   1.66
+  SN   2.00
+  SB   1.00
+  TE   2.24
+  I    1.51
+  XE   2.23
+  CS   1.12
+  BA   2.13
+  LA   1.22
+  CE   1.55
+  PR   0.71
+  ND   1.50
+  PM  -7.96
+  SM   1.00
+  EU   0.51
+  GD   1.12
+  TB  -0.10
+  DY   1.10
+  HO   0.26
+  ER   0.93
+  TM   0.00
+  YB   1.08
+  LU   0.76
+  HF   0.88
+  TA   0.13
+  W    1.11
+  RE   0.27
+  OS   1.45
+  IR   1.35
+  PT   1.80
+  AU   1.01
+  HG   1.09
+  TL   0.90
+  PB   1.85
+  BI   0.71
+  PO  -7.96
+  AT  -7.96
+  RN  -7.96
+  FR  -7.96
+  RA  -7.96
+  AC  -7.96
+  TH   0.12
+  PA  -7.96
+  U   -0.47
+  NP  -7.96
+  PU  -7.96
+  AM  -7.96
+  CM  -7.96
+  BK  -7.96
+  CF  -7.96
+  ES  -7.96
+#
+# End
