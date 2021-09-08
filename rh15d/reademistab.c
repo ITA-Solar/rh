@@ -81,69 +81,27 @@ if ((fp = fopen("../emiss_grid.dat", "r")) == NULL) {
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
 
-  printf("\n Reading Emistab file and calcualting Irradiation...\n");
+  printf("\n Reading Emistab file and calculating Irradiation...\n");
+  
+  /* Read the file */
   result=fread(&(nlambda), sizeof(int), 1, fp);
-//  printf("\n");
-//  printf("\nIn ReadEmisTab...");
-//  printf("\n    ---read nlambda: %d",nlambda);
 
   result=fread(&(n_temp), sizeof(int), 1, fp);
-//  printf("\n");
-//  printf("\nIn ReadEmisTab...");
-//  printf("\n    ---read n_temp: %d",n_temp);
 
   result=fread(&(n_dens), sizeof(int), 1, fp);
-//  printf("\n");
-//  printf("\nIn ReadEmisTab...");
-//  printf("\n    ---read n_dens: %d",n_dens);
 
   lambda = malloc(sizeof(double)*nlambda);
   result=fread(lambda, sizeof(double), nlambda, fp);
-//  printf("\n");
-//  printf("\nIn ReadEmisTab...");
-//  printf("\n    ---read lambda: ");
   
-//  mwl = malloc(sizeof(double)*nlambda-1);
-//  result=fread(mwl, sizeof(double), nlambda-1, fp);
-//  printf("\n");
-//  printf("\nIn ReadEmisTab...");
-//  printf("\n    ---read mwl: ");
-
-//  dlam = malloc(sizeof(double)*nlambda);
-//  result=fread(dlam, sizeof(double), nlambda, fp);
-//  printf("\n");
-//  printf("\nIn ReadEmisTab...");
-//  printf("\n    ---read dlam: ");
-
   temper = malloc(sizeof(double)*n_temp);
   result=fread(temper, sizeof(double), n_temp, fp);
-//  printf("\n");
-//  printf("\nIn ReadEmisTab...");
-//  printf("\n    ---read temper: ");
-  
-//   for (k = 0;  k < n_temp;  k++) { 
-//       printf("\n %.6f",temper[k]);
-//       }
   
   edens = malloc(sizeof(double)*n_dens);
   result=fread(edens, sizeof(double), n_dens, fp);
-//  printf("\n");
-//  printf("\nIn ReadEmisTab...");
-//  printf("\n    ---read edens: ");
  
-//   for (k = 0;  k < n_dens;  k++) {   
-//       printf("\n %.6f",edens[k]);
-//       }
-
-
   emiss_grid = malloc(sizeof(double)*n_temp*n_dens*nlambda);
   result=fread(emiss_grid, sizeof(double), n_temp*n_dens*nlambda, fp);
-//  printf("\n");
-//  printf("\nIn ReadEmisTab...");
-//  printf("\n    ---read emiss_grid: ");
-//  Can access an element i [temp], j [dens], k [wavelength] by :
-//  emiss_grid[i + j*n_temp + k*n_temp*n_dens]   
-  /* Close the file */
+  
   fclose(fp);
 
   /* Creat the array to hold the intensity to inject */
@@ -190,8 +148,6 @@ if ((fp = fopen("../emiss_grid.dat", "r")) == NULL) {
      } else {
          Hunt(n_temp, temper, atmos->T[k], &tind);
          Hunt(n_dens, edens, atmos->ne[k]/1.0E06, &dind);
-//         printf("\nTemp is %.10f K, hunt found tind = %d, which is temper[tind] = %.10f K",atmos->T[k],tind, temper[tind]);
-//         printf("\nedens is %.10f cm^-3, hunt found dind = %d, which is edens[dind] = %.10f cm^-3",atmos->ne[k]/1.0E06,dind, edens[dind]);
          for (i = 0; i<Nspect; i++){
              if (spectrum->lambda[i]*10.0 < lambda[0] || spectrum->lambda[i]*10.0 > lambda[nlambda-1]) {
                  emiss_intpl[i+ k*Nspect]= 0.0;
@@ -218,18 +174,10 @@ if ((fp = fopen("../emiss_grid.dat", "r")) == NULL) {
                            new_wave[j] = leftedge + j*c;
                         new_wave[Npoints-1] = rightedge;
                          
-      //                  printf("\n step size %.10f",c);
-      //                  printf("\n cell center = %.10f",spectrum->lambda[i]*10.0);
-      //                  printf("\n leftedge = %.10f",leftedge);
-      //                  printf("\n rightedge = %.10f",rightedge);
-      //                  printf("\n Npoints = %d",Npoints);
-      //                  printf("\n new_wave = :");
                   
                         for (j = 0; j < Npoints; j++){
-      //                      printf("\n     j = %d, wave = %.10f",j,new_wave[j]); 
                         //Peform the interpolation of wavelength, density and temperature
                             Hunt(nlambda-1, lambda, new_wave[j], &wind);
-      //                      printf("\n wind = %d", wind);
                             TrilinearInterp(n_temp, n_dens, nlambda,
                                             emiss_grid, temper, edens, lambda, 
                                             tind, dind, wind,
@@ -237,23 +185,16 @@ if ((fp = fopen("../emiss_grid.dat", "r")) == NULL) {
                                             &p);
                            // new_emiss[j] = p*ERG_TO_JOULE / CUBE(CM_TO_M) * SQ(new_wave[j]) / CLIGHT / 1.0E10 / 2.0/ PI * fabs(geometry->height[k]-geometry->height[k+1]);
                               new_emiss[j] = p;
-     //                         printf("\nnew_emiss[%d] = %.15f",j,new_emiss[j]); 
                          }
-                        // exit(0);
                         //Perform an integration over wavelength to get total intensity in the bin
                         //then divide by wavelength to get avg int
                         tot_int = 0.0;
                         avg_int = 0.0;
                         tot_int = trapezoidal(new_wave, new_emiss, Npoints);
-    //                    printf("\n i = %d, wave = %.15f", i,spectrum->lambda[i]*10.0);
-    //                    printf("\n        tot_int = %.15f",tot_int);
                         avg_int = tot_int/(rightedge-leftedge);
-    //                    printf("\n        avg_int = %.15f",avg_int);
                         emiss_intpl[i+ k*Nspect] = avg_int * ERG_TO_JOULE / CUBE(CM_TO_M) * SQ(spectrum->lambda[i]*10.0) / CLIGHT / 1.0E10 / 2.0/ PI * fabs(geometry->height[k]-geometry->height[k+1]);   
-  //                      printf("\n        in SI =  %.15f",emiss_intpl[i+Nspect]);
                         free(new_emiss);
                         free(new_wave);
-//                        exit(0);
                      } else {
                           Hunt(nlambda-1, lambda, spectrum->lambda[i]*10.0, &wind);
                           TrilinearInterp(n_temp, n_dens, nlambda, 
@@ -261,9 +202,6 @@ if ((fp = fopen("../emiss_grid.dat", "r")) == NULL) {
                                        tind, dind, wind, 
                                        atmos->T[k], atmos->ne[k]/1.0E06, spectrum->lambda[i]*10.0,
                                        &p);
-//               if (k == 1){
-//                printf("\nWave ind %d is %.10f A, hunt found wind = %d, which is lambda[wind] = %.10f A",i,spectrum->lambda[i]*10.0,wind,lambda[wind]);
-//                }   
                   // Add to the array and convert to SI units, and turn into per steradian 
                   // erg/s/cm^3/ang -> J/s/m^2/sr/Hz */ 
                          emiss_intpl[i+ k*Nspect] = p * ERG_TO_JOULE / CUBE(CM_TO_M) * SQ(spectrum->lambda[i]*10.0) / CLIGHT / 1.0E10 / 2.0/ PI * fabs(geometry->height[k]-geometry->height[k+1]) ;
@@ -275,7 +213,6 @@ if ((fp = fopen("../emiss_grid.dat", "r")) == NULL) {
 
 
 /* Sum the intensities through height */ 
-/*printf("\nNspect = %d",Nspect);*/
  for (i = 0; i<Nspect; i++){
     int_summed[i] = 0.0;
     }
@@ -286,11 +223,6 @@ if ((fp = fopen("../emiss_grid.dat", "r")) == NULL) {
          //int_summed[i] = 1e10*ERG_TO_JOULE/CUBE(CM_TO_M) * SQ(spectrum->lambda[i]*10.0)/ CLIGHT / 1.0E10 / 2.0/ PI * fabs(geometry->height[k]-geometry->height[k+1]) ;
      }
  } 
-      /*printf("\nint_summed[147] = %.20f",int_summed[147]);*/   
-// for (k = 80; k<81; k++){
-//      printf("\nWave [147] (%0.25f) is %.25f at k = %d, which is T =%.12f and ne = %.12f",spectrum->lambda[147]*10,emiss_intpl[813 + Nspect*k],k,atmos->T[k], atmos->ne[k]/1.0E06);
-//      printf("\nHeight [80] is %.25f at k = %d, and Height [81] is %.25f at k = %d", geometry->height[k], k, geometry->height[k+1], k+1);
-//   }
  
 /* Place the intensity into the Itop variable, to be used in the rest of RH */
   geometry->Itop = matrix_double(Nspect, Nrays);
