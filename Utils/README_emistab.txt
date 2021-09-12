@@ -47,6 +47,8 @@ Note that if you want to run these codes yourself you may have to increase the s
 
 The c routines have been successfully compiled and run on Linux systems, but I ran into trouble compiling with the latest version of Mac OS X, which I have not yet spent the time to fix. 
 
+*** I couldn't upload these to github due to file size, so the github version is missing those. You can make them all via the codes in the Utils folder.
+
 
 _____
 Running RH15D with emis_grid.dat
