@@ -76,7 +76,7 @@ void ReadEmisTab(Atmosphere *atmos, Spectrum *spectrum, Geometry *geometry)
 
   dlambda = 1.0;
 
-if ((fp = fopen("../emiss_grid.dat", "r")) == NULL) {
+if ((fp = fopen("../Atmos/emiss_grid.dat", "r")) == NULL) {
     sprintf(messageStr, "Unable to open input file %s", "emiss_grid.dat");
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }

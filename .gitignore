@@ -45,3 +45,6 @@ rhsc2d/run/
 rhsc3d/run/
 rhsphere/run/
 
+Utils/chianti_gofnt.sav
+Utils/emiss_grid.dat.no_H_He_1.0Ares_0to10000A_aspl09
+Utils/emiss_grid.dat.no_H_He_standardRHactive_1.0Ares_0to10000A_aspl09
