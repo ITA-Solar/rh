@@ -60,6 +60,7 @@ extern MPI_data mpi;
 extern enum Topology topology;
 Geometry geometry;
 Input_Pops_file infilepop;
+Input_Atmos_file infile;
 
 
 /* ------- begin -------------------------- initSolution_alloc.c ---- */
@@ -628,16 +629,27 @@ void initSolution_p(void)
       break;
   
     case FIXED_POPS_FROM_FILE:
-      printf("\nThe atom is: %s",atom->ID);
-      init_popsin(&atmos, &geometry,
-                  &infilepop, &atom);
+      printf("\nThe atom is: %s\n",atom->ID);
       readPopsin(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry,
-                  &infilepop, &atom);
+                  &infile, atom);
        
        printf("\nThe population of level 1 is \n\n");
          for(k=0;k<atmos.Nspace;k++) {
           printf("\n .... %lf\n\n", atom->n[0][k]);
           }
+       printf("\nThe population of level 2 is \n\n");
+         for(k=0;k<atmos.Nspace;k++) {
+          printf("\n .... %lf\n\n", atom->n[1][k]);
+          }
+       printf("\nThe population of level 3 is \n\n");
+         for(k=0;k<atmos.Nspace;k++) {
+          printf("\n .... %lf\n\n", atom->n[2][k]);
+          }
+       printf("\nThe population of level 4 is \n\n");
+         for(k=0;k<atmos.Nspace;k++) {
+          printf("\n .... %lf\n\n", atom->n[3][k]);
+          }
+
     break;
     
     default:;

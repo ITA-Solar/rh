@@ -193,6 +193,10 @@ void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry,
   atmos->chi_b = NULL;
   atmos->eta_b = NULL;
   atmos->sca_b = NULL;
+
+  infile->H_popsin_varid = -1;
+  infile->He_popsin_varid = -1;
+  infile->Ca_popsin_varid = -1;
 }
 /* ------- end ---------------------------- init_hdf5_atmos  -------- */
 
@@ -383,6 +387,10 @@ void close_hdf5_atmos(Atmosphere *atmos, Geometry *geometry,
     ierror = H5Dclose(infile->Bz_varid);
   }
   if (infile->vturb_varid != -1) ierror = H5Dclose(infile->vturb_varid);
+  if (infile->H_popsin_varid != -1) ierror = H5Dclose(infile->H_popsin_varid);
+  if (infile->He_popsin_varid != -1) ierror = H5Dclose(infile->He_popsin_varid);
+  if (infile->Ca_popsin_varid != -1) ierror = H5Dclose(infile->Ca_popsin_varid);
+
   ierror = H5Fclose(infile->ncid);
   /* Free stuff */
   free(atmos->T);
