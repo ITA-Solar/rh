@@ -1,17 +1,17 @@
-________________
-________________
+----------------------------------
+----------------------------------
 EMISTAB README
-________________
-________________
+----------------------------------
+----------------------------------
 
 Graham Kerr
 Sept 2021
 
 graham.s.kerr@nasa.gov; grahamkerr.astro@gmail.com
 
-________
+----------------------------------
 Summary
-________
+----------------------------------
 
 This is an alternative implementation of the mechanism to allow for an irradiating spectrum to be included as a boundary condition in the solution of the radiative transfer equation. This is particularly important for transitions such as He I 10830. 
 
@@ -22,9 +22,9 @@ It should be possible to add additional intensity to the spectrum if required, b
 Here the modifications to RH15D are described, along with a description of how to create the required look up table.
 
 
-_____
+----------------------------------
 Generating emis_grid.dat
-_____
+----------------------------------
 
 Emissivities are tabulated on a wavelength, temperature, and electron density grid, generated using data from the CHIANTI database. 
 
@@ -47,12 +47,13 @@ Note that if you want to run these codes yourself you may have to increase the s
 
 The c routines have been successfully compiled and run on Linux systems, but I ran into trouble compiling with the latest version of Mac OS X, which I have not yet spent the time to fix. 
 
-*** I couldn't upload these to github due to file size, so the github version is missing those. You can make them all via the codes in the Utils folder.
+*** I couldn't upload thes
+e to github due to file size, so the github version is missing those. You can make them all via the codes in the Utils folder.
 
 
-_____
+----------------------------------
 Running RH15D with emis_grid.dat
-_____
+----------------------------------
 
 RH 1.5D has been modified to include IRRADIATED_INTP as a boundadry condition. This will trigger the calling of reademistab.c, which will read emis_grid.dat, interpolate as required, and produce the spectrum on a grid appropriate to the active atom set. 
 
@@ -62,13 +63,109 @@ The emis_grad.dat file should be located in the directory containing the atmosph
 
 
 
-
-________
+----------------------------------
 TO DO
-________
+----------------------------------
 
 ** Improve documentation of IDL routines
 ** Create python versions (is there a CHINATI python version yet?)
 ** Tidy up reademistab_rh.pro
 ** Port to rhf1d... I already have this on my own version but the switches are different. Just need to figure out a cleaner way to include the switches. 
-** Make it possible to specfify the location of emis_grid.dat, e.g. from the keyword.input file. 
+
+
+--------
+inputs.h
+--------
+
+-- Added a path to the shared filename of the emis_grid.dat file:
+   
+            	emistab_file[MAX_VALUE_LENGTH]
+
+-------
+readinput.c
+-------
+
+-- Added reading of pop_file:
+			   
+			   {"EMISTAB_FILE", "../Atmos/emis_grid.dat", FALSE, KEYWORD_OPTIONAL, input.emistab_file,
+			     setcharValue},
+
+---------
+bezier.c (RH15D)
+---------
+
+-- Added IRRADIATED_INTP case in various locations, including setting the upper boundary consition:
+				case IRRADIATED_INTP:
+				      I_upw[0] = geometry.Itop[nspect][mu];
+				      for (n = 1;  n < 4;  n++) I_upw[n] = 0.0;
+				      break;
+
+
+---------
+feautrier.c (RH15D)
+---------
+
+-- Added IRRADIATED_INTP case in various locations, including setting the upper boundary condition:
+
+				case IRRADIATED_INTP:
+				    r0 = 0.0;
+				    h0 = geometry.Itop[nspect][mu];
+
+-----------
+piecewise.c (RH15D)
+-----------
+
+-- Added IRRADIATED_INTP case in various locations, including setting the upper boundary condition:
+
+				case IRRADIATED_INTP:
+				      //I_upw = 0.0;
+				      I_upw = geometry.Itop[nspect][mu];
+
+-----------
+piecestokes.c (RH15D)
+-----------
+
+-- Added IRRADIATED_INTP case in various locations, including setting the upper boundary condition:
+
+				case IRRADIATED_INTP:
+				      I_upw[0] = geometry.Itop[nspect][mu];
+				      for (n = 1;  n < 4;  n++) I_upw[n] = 0.0;
+
+----------
+trapezoidal.c (RH15D) 
+---------- 
+
+-- Added this script which performs trapezoidal rule integration
+
+---------
+linspace.c 
+---------
+
+-- Added this script which makes a linearly spaced array between two points over n steps
+
+---------
+trilinear_interp.c 
+---------
+
+-- Added this script which performs a trilinear interpolation
+
+---------
+reademistab.c
+---------
+
+-- Reads the table of emissivities and performs a trilinear interpolation 
+to obtain the emissivity in each grid cell for each of the wavelengths 
+in the active set. Integrating through height then yeilds the intensity 
+that can be passed for a downward directed radiation source.
+
+-----------------
+rh15d_ray_pool.c
+-----------------
+
+-- Added condition to call reademistab and set irradiating spectrum as upper boundary condition:
+
+            void ReadEmisTab(Atmosphere *atmos, Spectrum *spectrum, Geometry *geometry);
+
+			if (geometry.vboundary[TOP] == 4) {
+		            ReadEmisTab(&atmos, &spectrum, &geometry);
+		           }

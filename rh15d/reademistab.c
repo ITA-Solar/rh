@@ -1,6 +1,6 @@
 /* ------- file: -------------------------- reademistab.c ---------------------
  *  
- *           Version:       rh2.0
+ *           Version:      rh_ita
  *           Author:       Graham S. Kerr 
  *                         (graham.s.kerr@nasa.gov ; grahamkerr.astro@gmail.com)
  *                                
@@ -54,7 +54,7 @@
 extern double trapezoidal(double *x, double *y, int n);
 
 /* --- Global variables --                             -------------- */
-
+extern InputData input;
 extern char messageStr[];
 
 /* ------- begin ---------------------------------------ReadEmisTab.c ----- */
@@ -74,13 +74,18 @@ void ReadEmisTab(Atmosphere *atmos, Spectrum *spectrum, Geometry *geometry)
   unsigned int Ndep = geometry->Ndep;
   unsigned int Nrays = geometry->Nrays;
 
-  dlambda = 1.0;
 
-if ((fp = fopen("../Atmos/emiss_grid.dat", "r")) == NULL) {
+  printf("\n>>>> The file in input.emistab_file is %s\n",input.emistab_file);
+
+//if ((fp = fopen("../Atmos/emiss_grid.dat", "r")) == NULL) {
+ //   sprintf(messageStr, "Unable to open input file %s", "emiss_grid.dat");
+  //  Error(ERROR_LEVEL_2, routineName, messageStr);
+  //}
+
+if ((fp = fopen(input.emistab_file, "r")) == NULL) {
     sprintf(messageStr, "Unable to open input file %s", "emiss_grid.dat");
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
-
   printf("\n Reading Emistab file and calculating Irradiation...\n");
   
   /* Read the file */
@@ -104,11 +109,12 @@ if ((fp = fopen("../Atmos/emiss_grid.dat", "r")) == NULL) {
   
   fclose(fp);
 
-  /* Creat the array to hold the intensity to inject */
+  /* Create the array to hold the intensity to inject */
   emiss_intpl = malloc(sizeof(double)*Nspect*Ndep);
   int_summed = malloc(sizeof(double)*Nspect);
   wavel = malloc(sizeof(double)*Nspect);
 
+  dlambda = lambda[2]-lambda[1];
 
 /* Loop through the height grid, and if the temperature or density is outwith
  * the bounds of temper or edens, then dont do anything.

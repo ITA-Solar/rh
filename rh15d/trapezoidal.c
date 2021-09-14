@@ -1,3 +1,16 @@
+/* ------- file: -------------------------- trapezoidal.c ------------------
+ *
+ *        Version:        rh_ita
+ *        Author:         Graham S. Kerr (graham.s.kerr@nasa.gov; gskerr89@gmail.com)
+ *        First modified: Mon May 20th 2019  --
+ *
+ * -----------------------------------------                     ----------RH-- */
+
+/* --- Perform a trapezoidal integration
+ *
+ * ---------------------------------------------------------------------------- */
+
+
 #include<stdio.h>
 #include<math.h>
 

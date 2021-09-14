@@ -47,13 +47,6 @@ typedef struct {
   double   *x, *y;
 } Input_Atmos_file;
 
-/* For the input pop file */
-typedef struct {
-  char     *file_name;
-  hid_t    p_ncid, pnx_id, pny_id, pnz_id;
-  hid_t    popsin_varid;
-  size_t   pnx, pny, pnz;
-} Input_Pops_file; 
  
 /* For the background stuff */
 typedef struct {

@@ -1,3 +1,15 @@
+/* ------- file: -------------------------- linspace.c ------------------
+ *
+ *        Version:        rh_ita 
+ *        Author:         Graham S. Kerr (graham.s.kerr@nasa.gov; gskerr89@gmail.com)
+ *        First modified: Mon May 20th 2019  --
+ *
+ * -----------------------------------------                     ----------RH-- */
+
+/* --- Produce a linearly spaced array between a and b in with n steps
+ *
+ * ---------------------------------------------------------------------------- */
+
 double* linspace(double a, double b, int n, double u[])
 {
     double c;

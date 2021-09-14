@@ -59,7 +59,6 @@ extern char messageStr[];
 extern MPI_data mpi;
 extern enum Topology topology;
 Geometry geometry;
-Input_Pops_file infilepop;
 Input_Atmos_file infile;
 
 

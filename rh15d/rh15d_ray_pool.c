@@ -34,7 +34,6 @@ Spectrum spectrum;
 ProgramStats stats;
 InputData input;
 Input_Atmos_file infile;
-Input_Pops_file infilepop;
 CommandLine commandline;
 char messageStr[MAX_MESSAGE_LENGTH];
 BackgroundData bgdat;
@@ -91,6 +90,8 @@ int main(int argc, char *argv[])
   SortLambda();
   checkValuesRayInput();
   initParallelIO(run_ray=FALSE, writej=FALSE);
+
+  
   /*//////////////////////
   ////////////////////////
   //////////////////////*/

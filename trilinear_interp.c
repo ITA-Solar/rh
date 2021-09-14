@@ -1,6 +1,6 @@
 /* ------- file: -------------------------- trilinear_interp.c ------------------
  *
- *        Version:        rh2.0
+ *        Version:        rh_ita
  *        Author:         Graham S. Kerr (graham.s.kerr@nasa.gov; gskerr89@gmail.com)
  *        First modified: Mon May 20th 2019  --
  *
