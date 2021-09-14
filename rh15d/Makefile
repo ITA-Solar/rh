@@ -48,8 +48,10 @@ SRC = accelerate_p.c  \
 	  writeAux_p.c  \
 	  writeRay.c  \
 	  writeindata_p.c \
-          reademistab.o \
-          trapezoidal.o
+          reademistab.c \
+          trapezoidal.c \
+          readpopsin.c \
+          hdf5popsin.c
 
 BIN_SRC = rh15d_ray.c rh15d_ray_pool.c rh15d_lteray.c
 OBJS = $(SRC:.c=.o)

@@ -590,7 +590,7 @@ void initSolution(Atom *atom, Molecule *molecule)
     case OLD_POPULATIONS:
       readPopulations(atom);
       break;
-
+    
     default:;
     break;
     }

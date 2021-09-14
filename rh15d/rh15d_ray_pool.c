@@ -34,6 +34,7 @@ Spectrum spectrum;
 ProgramStats stats;
 InputData input;
 Input_Atmos_file infile;
+Input_Pops_file infilepop;
 CommandLine commandline;
 char messageStr[MAX_MESSAGE_LENGTH];
 BackgroundData bgdat;
@@ -67,6 +68,7 @@ int main(int argc, char *argv[])
   strcpy(mpi.rev_id, REV_ID); /* save revision */
   /* --- Read input data and initialize --             -------------- */
   readInput(NULL);
+  
   if (input.p15d_rerun) readSavedKeywords();
   spectrum.updateJ = TRUE;
   getCPU(1, TIME_START, NULL);

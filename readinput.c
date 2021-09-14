@@ -51,7 +51,6 @@ void readInput(char *input_string)
      setcharValue},
     {"ABUND_FILE", "", FALSE, KEYWORD_REQUIRED, input.abund_input,
      setcharValue},
-
     {"NRAYS",     "0", FALSE, KEYWORD_OPTIONAL, &atmos.Nrays, setintValue},
     {"ANGLE_SET", "NO_SET", FALSE, KEYWORD_OPTIONAL, &atmos.angleSet,
      setAngleSet},
@@ -191,6 +190,8 @@ void readInput(char *input_string)
      &input.allow_passive_bb, setboolValue},
 
     /* --- 1.5D version related inputs go here --     --------------- */
+    {"POPSIN_FILE", "none", FALSE, KEYWORD_OPTIONAL, input.popsin_file,
+     setcharValue},
     {"SNAPSHOT", "0", FALSE, KEYWORD_OPTIONAL, &input.p15d_nt,
      setintValue},
     {"X_START", "0", FALSE, KEYWORD_OPTIONAL, &input.p15d_x0,

@@ -46,7 +46,14 @@ typedef struct {
   double   *x, *y;
 } Input_Atmos_file;
 
-
+/* For the input pop file */
+typedef struct {
+  char     *file_name;
+  hid_t    p_ncid, pnx_id, pny_id, pnz_id;
+  hid_t    popsin_varid;
+  size_t   pnx, pny, pnz;
+} Input_Pops_file; 
+ 
 /* For the background stuff */
 typedef struct {
   bool_t    do_fudge;
@@ -83,6 +90,18 @@ void convertScales(Atmosphere *atmos, Geometry *geometry);
 void setTcut(Atmosphere *atmos, Geometry *geometry, double Tmax);
 void realloc_ndep(Atmosphere *atmos, Geometry *geometry);
 void depth_refine(Atmosphere *atmos, Geometry *geometry, double tmax);
+
+void init_popsin_hdf5(Atmosphere *atmos, Geometry *geometry,
+    Input_Pops_file *infilepop, Atom *atom);
+void readPopsin_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
+                Input_Pops_file *infilepop, Atom *atom);
+void closePopsin_hdf5(Atmosphere *atmos, Geometry *geometry,
+                      Input_Pops_file *infilepop, Atom *atom);
+void init_popsin(Atmosphere *atmos, Geometry *geometry, Input_Pops_file *infilepop, Atom *atom);
+void readPopsin(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
+                Input_Pops_file *infilepop, Atom *atom);
+void closePopsin(Atmosphere *atmos, Geometry *geometry,
+                 Input_Pops_file *infilepop, Atom *atom);
 
 /* --- Formal solution related --                      -------------- */
 double Feautrier(int nspect, int mu, double *chi, double *S,

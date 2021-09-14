@@ -836,6 +836,8 @@ void readAtomicModels(void)
       atom->initial_solution = ZERO_RADIATION;
     } else if (strstr(popsKey, "ESCAPE_PROBABILITY")) {
       atom->initial_solution = ESCAPE_PROBABILITY;
+    } else if (strstr(popsKey, "FIXED_POPS_FROM_FILE")) {
+      atom->initial_solution = FIXED_POPS_FROM_FILE;
     }
     /* --- If popsKey is not recognized --             -------------- */
 

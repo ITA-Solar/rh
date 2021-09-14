@@ -89,6 +89,9 @@ typedef struct {
   int    isum, Ngdelay, Ngorder, Ngperiod, NmaxIter,
          PRD_NmaxIter, PRD_Ngdelay, PRD_Ngorder, PRD_Ngperiod,
          NmaxScatter, Nthreads;
+  /* Graham Kerr added for reading hdf5 pops input */
+  char   popsin_file[MAX_VALUE_LENGTH];
+
   /* Tiago, for collisional-radiative switching */
   double crsw, crsw_ini;
   /* Tiago, for PRD switching */

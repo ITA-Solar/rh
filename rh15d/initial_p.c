@@ -41,6 +41,7 @@
 #include "error.h"
 #include "inputs.h"
 #include "parallel.h"
+#include "geometry.h"
 
 #define IMU_FILE_TEMPLATE "scratch/Imu_p%d.dat"
 
@@ -57,6 +58,8 @@ extern CommandLine commandline;
 extern char messageStr[];
 extern MPI_data mpi;
 extern enum Topology topology;
+Geometry geometry;
+Input_Pops_file infilepop;
 
 
 /* ------- begin -------------------------- initSolution_alloc.c ---- */
@@ -623,7 +626,20 @@ void initSolution_p(void)
     case OLD_POPULATIONS:
       readPopulations(atom);
       break;
-
+  
+    case FIXED_POPS_FROM_FILE:
+      printf("\nThe atom is: %s",atom->ID);
+      init_popsin(&atmos, &geometry,
+                  &infilepop, &atom);
+      readPopsin(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry,
+                  &infilepop, &atom);
+       
+       printf("\nThe population of level 1 is \n\n");
+         for(k=0;k<atmos.Nspace;k++) {
+          printf("\n .... %lf\n\n", atom->n[0][k]);
+          }
+    break;
+    
     default:;
     break;
     }

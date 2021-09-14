@@ -35,6 +35,10 @@
 #define  BBOT_NAME  "boundary_bottom"
 #define  BTOP_NAME  "boundary_top"
 
+/* Definitions for readpopulations_hd5f */
+/* Added by Graham Kerr */
+#define POPSIN_NAME "popsin"
+
 /* Definitions for background_p */
 #define  FILE_EXT ".dat"
 
