@@ -91,18 +91,11 @@ void convertScales(Atmosphere *atmos, Geometry *geometry);
 void setTcut(Atmosphere *atmos, Geometry *geometry, double Tmax);
 void realloc_ndep(Atmosphere *atmos, Geometry *geometry);
 void depth_refine(Atmosphere *atmos, Geometry *geometry, double tmax);
-
-void init_popsin_hdf5(Atmosphere *atmos, Geometry *geometry,
-    Input_Pops_file *infilepop, Atom *atom);
 void readPopsin_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
                 Input_Atmos_file *infile, Atom *atom);
-void closePopsin_hdf5(Atmosphere *atmos, Geometry *geometry,
-                      Input_Pops_file *infilepop, Atom *atom);
-void init_popsin(Atmosphere *atmos, Geometry *geometry, Input_Pops_file *infilepop, Atom *atom);
 void readPopsin(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
                 Input_Atmos_file *infile, Atom *atom);
-void closePopsin(Atmosphere *atmos, Geometry *geometry,
-                 Input_Pops_file *infilepop, Atom *atom);
+
 
 /* --- Formal solution related --                      -------------- */
 double Feautrier(int nspect, int mu, double *chi, double *S,

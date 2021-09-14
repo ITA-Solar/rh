@@ -85,13 +85,23 @@ void statEquil(Atom *atom, int isum)
       Gamma_k[i][i] = -GamDiag;
     }
     /* --- Close homogeneous set with particle conservation-- ------- */
+    int dosolvelineq = 1;
+    if (atom->initial_solution == FIXED_POPS_FROM_FILE) {
+       dosolvelineq = 0;
+    } else {
+       /* printf("\n Running standard version version..."); */
+        n_k[i_eliminate] = atom -> ntotal[k];
+        for (j = 0;  j < Nlevel;  j++) Gamma_k[i_eliminate][j] = 1.0;
+    }
 
-    n_k[i_eliminate] = atom->ntotal[k];
-    for (j = 0;  j < Nlevel;  j++) Gamma_k[i_eliminate][j] = 1.0;
 
     /* --- Solve for new population numbers at location k -- -------- */
+    if (dosolvelineq){
 
-    SolveLinearEq(Nlevel, Gamma_k, n_k, TRUE);
+       SolveLinearEq(Nlevel, Gamma_k, n_k, TRUE);
+
+    }
+
     for (i = 0;  i < Nlevel;  i++) atom->n[i][k] = n_k[i];
   }
 
