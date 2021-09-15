@@ -86,7 +86,7 @@ if ((fp = fopen(input.emistab_file, "r")) == NULL) {
     sprintf(messageStr, "Unable to open input file %s", "emiss_grid.dat");
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
-  printf("\n Reading Emistab file and calculating Irradiation...\n");
+  printf("\n\n>>> Reading Emistab file and calculating Irradiation\n");
   
   /* Read the file */
   result=fread(&(nlambda), sizeof(int), 1, fp);

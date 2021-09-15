@@ -117,6 +117,8 @@ void closeParallelIO(bool_t run_ray, bool_t writej) {
     close_hdf5_indata();
   }
   close_atmos(&atmos, &geometry, &infile);
+  
+  // printf("\n\nMADE IT HERE closeparallelio...");
   close_hdf5_aux();
   close_hdf5_ray();
 

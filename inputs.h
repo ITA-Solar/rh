@@ -91,7 +91,7 @@ typedef struct {
          NmaxScatter, Nthreads;
   /* Graham Kerr added for reading hdf5 pops input */
   char   emistab_file[MAX_VALUE_LENGTH];
-
+ 
   /* Tiago, for collisional-radiative switching */
   double crsw, crsw_ini;
   /* Tiago, for PRD switching */

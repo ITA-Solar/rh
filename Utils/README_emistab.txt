@@ -59,7 +59,7 @@ RH 1.5D has been modified to include IRRADIATED_INTP as a boundadry condition. T
 
 In order to use this boundary condition the top boundary should be set to a value of '4' in the input atmosphere. This is the boundary_top variable. 
 
-The emis_grad.dat file should be located in the directory containing the atmosphere file (usually ../Atmos). Note that this is hardcoded in as a relative path, so if you are not running with Atmos located ../ then you should change reademistab.dat to point to the correct location. 
+The emis_grad.dat file is by default located in the directory containing the atmosphere file ( ../Atmos). You can use the emistab_file = ' ' in the keyword.input to change this location.
 
 
 

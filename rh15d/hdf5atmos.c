@@ -197,6 +197,8 @@ void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry,
   infile->H_popsin_varid = -1;
   infile->He_popsin_varid = -1;
   infile->Ca_popsin_varid = -1;
+  infile->He_Cnt_varid = -1;
+
 }
 /* ------- end ---------------------------- init_hdf5_atmos  -------- */
 
@@ -390,6 +392,10 @@ void close_hdf5_atmos(Atmosphere *atmos, Geometry *geometry,
   if (infile->H_popsin_varid != -1) ierror = H5Dclose(infile->H_popsin_varid);
   if (infile->He_popsin_varid != -1) ierror = H5Dclose(infile->He_popsin_varid);
   if (infile->Ca_popsin_varid != -1) ierror = H5Dclose(infile->Ca_popsin_varid);
+  if (infile->He_Cnt_varid != -1){ 
+        ierror = H5Dclose(infile->He_Cnt_varid);
+        printf(">>> IN close_hdf5_atmos... closing He_Cnt_varid");
+  }
 
   ierror = H5Fclose(infile->ncid);
   /* Free stuff */

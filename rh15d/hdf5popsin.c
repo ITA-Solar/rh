@@ -42,26 +42,22 @@ void readPopsin_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   hsize_t     start_pop[] = {0, 0, 0, 0, 0};
   hsize_t     count_pop[] = {1, 1, 1, 1, 1};
   hsize_t    dims_memory[2];
-  // hid_t      p_ncid, dataspace_id, memspace_id;
   hid_t      ncid, dataspace_id, memspace_id;
 
   int        ierror, i, j;
-  bool_t     old_moving;
 
   ncid = infile->ncid;
   /* Memory dataspace */
   dims_memory[0] = infile->nz;
   if ((memspace_id = H5Screate_simple(1, dims_memory, NULL)) < 0)
     HERR(routineName);
-  /* read nH, all at once */
   start_pop[0] = input.p15d_nt; count_pop[0] = 1;
   start_pop[1] = 0;             count_pop[1] = atom->Nlevel;
   start_pop[2] = (size_t) xi;   count_pop[2] = 1;
   start_pop[3] = (size_t) yi;   count_pop[3] = 1;
   start_pop[4] = mpi.zcut;      count_pop[4] = atmos->Nspace;
 
-  // #define POPSIN_NAME atom->ID+"_pops"
-  // #define POPSIN_NAME "popsin"
+
 
   if (strcmp(atom->ID,"H") == 0){
       if (H5LTfind_dataset(ncid, H_POPSIN_NAME)) {

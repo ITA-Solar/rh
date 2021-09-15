@@ -1,8 +1,8 @@
 # Mg II model optimised for the lines observed by IRIS
   MG
 
-# Nlevel  Nline   Ncont   Nfixed
-   11      15      10       0
+# Nlevel  Nline   Ncont   Nfixed   Cnt?
+   11      15      10       0      0
 
 #   E[cm^-1]    g           label[20]         stage    levelNo
 #                     '|----|----|----|----'

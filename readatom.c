@@ -68,7 +68,7 @@ void readAtom(Atom *atom, bool_t active)
           symmStr[20], optionStr[20], labelStr[MAX_LINE_SIZE];
   char   *atom_string = atom->fp_input;
   bool_t  Debeye, exit_on_EOF, match;
-  int     i, j, Nlevel, Nrad, Nline, Ncont, Nfixed,
+  int     i, j, Nlevel, Nrad, Nline, Ncont, Nfixed, NCnt,
           Nspace = atmos.Nspace,
           Nread, Nrequired, checkPoint, L, nq, status;
   double  f, C, lambda0, lambdamin, vtherm, S, Ju, Jl,
@@ -134,12 +134,15 @@ void readAtom(Atom *atom, bool_t active)
   /* --- Get Number of levels, lines fixed transitions, and continua  */
 
   getLineString(&atom_string, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
-  Nread = sscanf(inputLine, "%d %d %d %d",
-		 &atom->Nlevel, &atom->Nline, &atom->Ncont, &atom->Nfixed);
-  checkNread(Nread, Nrequired=4, routineName, checkPoint=2);
+  Nread = sscanf(inputLine, "%d %d %d %d %d",
+		 &atom->Nlevel, &atom->Nline, &atom->Ncont, &atom->Nfixed, &atom->NCnt);
+  checkNread(Nread, Nrequired=5, routineName, checkPoint=2);
   Nlevel = atom->Nlevel;
   Nline  = atom->Nline;  Ncont  = atom->Ncont;  Nrad = Nline + Ncont;
   Nfixed = atom->Nfixed;
+  NCnt = atom->NCnt;
+  
+  // printf("\n\natom->ID %s; atom->Nct = %d\n",atom->ID, atom->NCnt);
 
   atom->E = (double *) malloc(Nlevel * sizeof(double));
   atom->g = (double *) malloc(Nlevel * sizeof(double));

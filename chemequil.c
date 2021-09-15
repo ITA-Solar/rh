@@ -365,7 +365,6 @@ void ChemicalEquilibrium(int NmaxIter, double iterLimit)
       Error(MESSAGE, routineName, messageStr);
     }
   }
-
   /* --- Clean up --                                   -------------- */
 
   free(f);     free(n);     free(a);

@@ -120,10 +120,12 @@ struct Atom {
           atom_file[MAX_LINE_SIZE];
   bool_t  active, NLTEpops;
   enum solution initial_solution;
-  int     Nlevel, Nline, Ncont, Nfixed, Nprd, *stage, periodic_table,
+  int     Nlevel, Nline, Ncont, Nfixed, NCnt, Nprd, *stage, periodic_table,
           activeindex;
   char   *offset_coll;
-  double  abundance, weight, *g, *E, **C, *vbroad, **n, **nstar,
+//  double  abundance, weight, *g, *E, **C, **Cnt, *vbroad, **n, **nstar,
+//         *ntotal, **Gamma;
+ double  abundance, weight, *g, *E, **C, *vbroad, **n, **nstar,
          *ntotal, **Gamma;
   AtomicLine *line;
   AtomicContinuum *continuum;

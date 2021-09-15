@@ -1,7 +1,7 @@
 # <<One-line atomic model description>>
 HE
-#  Nlevel Nline Ncont Nfixed
-    33   103    32     0
+#  Nlevel Nline Ncont Nfixed  Cnt?
+    33   103    32     0      1
 #   E[cm^-1]    g           label[20]         stage   levelNo
 #                     '|----|----|----|----'
        0.000    1.00  'HE I 1S2 1SE 0      '   0     0

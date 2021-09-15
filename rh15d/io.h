@@ -41,6 +41,8 @@
 #define He_POPSIN_NAME "He_popsin"
 #define Ca_POPSIN_NAME "Ca_popsin"
 
+#define He_CNT_NAME "He_Cnt"
+
 /* Definitions for background_p */
 #define  FILE_EXT ".dat"
 

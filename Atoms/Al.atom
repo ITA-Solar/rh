@@ -4,9 +4,9 @@
 
   AL
 
-# Nlevel  Nline   Ncont   Nfixed
+# Nlevel  Nline   Ncont   Nfixed  Cnt?
 #   18      20      17        0
-   18      19      17        0
+   18      19      17        0    0
 
 # Energy levels from C. E. Moore, NSRDS-NBS 35/Vol I
 

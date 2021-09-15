@@ -3,8 +3,8 @@
 
   NA
 
-# Nlevel  Nline   Ncont   Nfixed
-    16     12       8        0
+# Nlevel  Nline   Ncont   Nfixed   Cnt
+    16     12       8        0     0
 
 # Energy levels from C. E. Moore, NSRDS-NBS 35/Vol I
 
