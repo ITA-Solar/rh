@@ -80,7 +80,6 @@
 #include "error.h"
 #include "inputs.h"
 #include "statistics.h"
-#include "inputs.h"
 
 #define COMMENT_CHAR "#"
 #define min( a, b ) ( ((a) < (b)) ? (a) : (b) )
@@ -952,8 +951,6 @@ void CollisionRate(struct Atom *atom, char *fp_atom)
     sprintf(messageStr, "Reached end of datafile before all data was read");
     Error(ERROR_LEVEL_1, routineName, messageStr);
   }
-
-
   /* --- Clean up --                                   -------------- */
 
   free(C);

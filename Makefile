@@ -32,8 +32,8 @@ SRC = abundance.c \
 	  broad.c \
 	  brs_xdr.c \
 	  chemequil.c \
-          collision.c \
 	  cocollisions.c \
+          collision.c \
 	  complex.c \
 	  cubeconvol.c \
 	  duplicate.c \
