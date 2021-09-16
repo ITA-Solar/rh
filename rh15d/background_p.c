@@ -126,8 +126,8 @@ void SetLTEQuantities_p(void);
 void loadBackground(int la, int mu, bool_t to_obs);
 void storeBackground(int la, int mu, bool_t to_obs,
 		     double *chi_c, double *eta_c, double *sca_c);
-void readCnt_hdf5_alt(int xi, int yi, Atmosphere *atmos,
-                Input_Atmos_file *infile);
+// void readCnt_hdf5_alt(int xi, int yi, Atmosphere *atmos,
+//                 Input_Atmos_file *infile);
 /* --- Global variables --                             -------------- */
 
 extern Atmosphere atmos;
@@ -223,7 +223,7 @@ void close_Background(void)
 
 void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
 {
-  const char routineName[] = "Background_p";
+  const char routineName[] = "c";
   register int k, nspect, mu, to_obs;
 
   static int ne_iter = 0;
@@ -247,8 +247,8 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
     ne_iter++;
   }
   SetLTEQuantities_p();
-  readCnt_hdf5_alt(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos,
-                    &infile);
+  // readCnt_hdf5_alt(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos,
+  //                   &infile);
 
   if (input.NonICE)
     readMolecules(MOLECULAR_CONCENTRATION_FILE);

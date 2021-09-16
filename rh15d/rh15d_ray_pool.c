@@ -26,6 +26,8 @@ void overlord(void);
 void drone(void);
 
 void ReadEmisTab(Atmosphere *atmos, Spectrum *spectrum, Geometry *geometry);
+void readCnt_hdf5_alt(int xi, int yi, Atmosphere *atmos,
+                Input_Atmos_file *infile);
 /* --- Global variables --                             -------------- */
 enum Topology topology = ONE_D_PLANE;
 Atmosphere atmos;
@@ -217,16 +219,16 @@ void drone(void) {
         UpdateAtmosDep();
         
         /* --- Read the emissivity table and compute the irradiating spectrum --- */
-        /*if (input.Irrad_Itop) {
-            ReadEmisTab(&atmos, &spectrum, &geometry);
-           }
-        */
+        /* --- Added by Graham Kerr                                           --- */
         if (geometry.vboundary[TOP] == 4) {
             ReadEmisTab(&atmos, &spectrum, &geometry);
            }
      
         /* --- Calculate background opacities --             ------------- */
         Background_p(write_analyze_output=TRUE, equilibria_only=FALSE);
+        readCnt_hdf5_alt(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos,
+                         &infile);
+        printf("\n\n>>> Ran readCnt_hdf5_alt in ray_pool\n\n");
         getProfiles();
         initSolution_p();
         initScatter();

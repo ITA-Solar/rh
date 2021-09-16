@@ -1,14 +1,13 @@
-/* ------- file: -------------------------- statequil.c -------------
 
+  
+/* ------- file: -------------------------- statequil.c -------------
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
        Last modified: Wed Apr  1 14:09:35 2009 --
-
        --------------------------                      ----------RH-- */
 
 /* --- Solves equations of statistical equilibrium with given rate
        matrix Gamma[Nlevel*Nlevel][Nspace].
-
        isum defines the row of the statistical equilibrium equations
        that is to be eliminated to enforce particle conservation. If
        set to -1 then at each spatial location the row with the largest
@@ -59,17 +58,17 @@ void statEquil(Atom *atom, int isum)
     for (i = 0, ij = 0;  i < Nlevel;  i++) {
       n_k[i] = atom->n[i][k];
       for (j = 0;  j < Nlevel;  j++, ij++)
-	Gamma_k[i][j] = atom->Gamma[ij][k];
+  Gamma_k[i][j] = atom->Gamma[ij][k];
     }
 
     if (isum == -1) {
       i_eliminate  = 0;
       nmax_k = 0.0;
       for (i = 0;  i < Nlevel;  i++) {
-	if (n_k[i] > nmax_k) {
-	  nmax_k = n_k[i];
-	  i_eliminate = i;
-	}
+  if (n_k[i] > nmax_k) {
+    nmax_k = n_k[i];
+    i_eliminate = i;
+  }
       }
     } else
       i_eliminate = isum;
@@ -85,14 +84,15 @@ void statEquil(Atom *atom, int isum)
       Gamma_k[i][i] = -GamDiag;
     }
     /* --- Close homogeneous set with particle conservation-- ------- */
-        n_k[i_eliminate] = atom -> ntotal[k];
-        for (j = 0;  j < Nlevel;  j++) Gamma_k[i_eliminate][j] = 1.0;
 
+    n_k[i_eliminate] = atom->ntotal[k];
+    for (j = 0;  j < Nlevel;  j++) Gamma_k[i_eliminate][j] = 1.0;
 
     /* --- Solve for new population numbers at location k -- -------- */
-       SolveLinearEq(Nlevel, Gamma_k, n_k, TRUE);
 
+    SolveLinearEq(Nlevel, Gamma_k, n_k, TRUE);
     for (i = 0;  i < Nlevel;  i++) atom->n[i][k] = n_k[i];
+  }
 
   free(n_k);
   freeMatrix((void **) Gamma_k);
@@ -124,32 +124,32 @@ void statEquilMolecule(struct Molecule *molecule, int isum)
   for (k = 0;  k < atmos.Nspace;  k++) {
     if (molecule->n[k] > 0.0) {
       for (vi = 0, vij = 0;  vi < Nlevel;  vi++) {
-	n_k[vi] = molecule->nv[vi][k];
-	for (vj = 0;  vj < Nlevel;  vj++, vij++)
-	  Gamma_k[vi][vj] = molecule->Gamma[vij][k];
+  n_k[vi] = molecule->nv[vi][k];
+  for (vj = 0;  vj < Nlevel;  vj++, vij++)
+    Gamma_k[vi][vj] = molecule->Gamma[vij][k];
       }
 
       if (isum == -1) {
-	i_eliminate  = 0;
-	nmax_k = 0.0;
-	for (vi = 0;  vi < Nlevel;  vi++) {
-	  if (n_k[vi] > nmax_k) {
-	    nmax_k = n_k[vi];
-	    i_eliminate = vi;
-	  }
-	}
+  i_eliminate  = 0;
+  nmax_k = 0.0;
+  for (vi = 0;  vi < Nlevel;  vi++) {
+    if (n_k[vi] > nmax_k) {
+      nmax_k = n_k[vi];
+      i_eliminate = vi;
+    }
+  }
       } else
-	i_eliminate = isum;
+  i_eliminate = isum;
 
       /* --- For each column i sum over rows to get diagonal elements */
 
        for (vi = 0;  vi < Nlevel;  vi++) {
-	GamDiag = 0.0;
-	Gamma_k[vi][vi] = 0.0;
-	n_k[vi] = 0.0;
+  GamDiag = 0.0;
+  Gamma_k[vi][vi] = 0.0;
+  n_k[vi] = 0.0;
 
-	for (vj = 0;  vj < Nlevel;  vj++) GamDiag += Gamma_k[vj][vi];
-	Gamma_k[vi][vi] = -GamDiag;
+  for (vj = 0;  vj < Nlevel;  vj++) GamDiag += Gamma_k[vj][vi];
+  Gamma_k[vi][vi] = -GamDiag;
       }
       /* --- Close homogeneous set with particle conservation ------- */
 
