@@ -26,8 +26,8 @@ void overlord(void);
 void drone(void);
 
 void ReadEmisTab(Atmosphere *atmos, Spectrum *spectrum, Geometry *geometry);
-void readCnt_hdf5_alt(int xi, int yi, Atmosphere *atmos,
-                Input_Atmos_file *infile);
+// void readCnt_hdf5_alt(int xi, int yi, Atmosphere *atmos,
+//                 Input_Atmos_file *infile);
 /* --- Global variables --                             -------------- */
 enum Topology topology = ONE_D_PLANE;
 Atmosphere atmos;
@@ -226,8 +226,11 @@ void drone(void) {
      
         /* --- Calculate background opacities --             ------------- */
         Background_p(write_analyze_output=TRUE, equilibria_only=FALSE);
-        readCnt_hdf5_alt(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos,
-                         &infile);
+       /// readCnt_hdf5_alt(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos,
+       ///                  &infile);
+        // readCntin(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry,
+        //                  &infile);
+        readCnt_hdf5_alt(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy]);
         printf("\n\n>>> Ran readCnt_hdf5_alt in ray_pool\n\n");
         getProfiles();
         initSolution_p();

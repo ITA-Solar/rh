@@ -28,7 +28,7 @@ TO DO
 -------
 
 * include the rhf1d version (should be rather straightforward)
-* improve doc of routines in rh
+* improve doc of routines in
 
 -------
 rh.h

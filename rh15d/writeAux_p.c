@@ -424,6 +424,7 @@ void init_aux_new(void) {
   if (( H5Dclose(id_z) ) < 0) HERR(routineName);
   } /* end active MOLECULES loop */
   io.aux_ncid = ncid;   /* Copy stuff to the IO data struct */
+  
   if (( H5Pclose(plist) ) < 0) HERR(routineName);  /* Free hdf5 resources */
   /* Flush ensures file is created in case of crash */
   if (( H5Fflush(ncid, H5F_SCOPE_LOCAL) ) < 0) HERR(routineName);
@@ -595,6 +596,7 @@ void init_aux_existing(void) {
     }
   } /* end active MOLECULES loop */
 
+
   return;
 }
 /* ------- end   ---------------------   init_aux_existing.c   --- */
@@ -606,7 +608,7 @@ void close_hdf5_aux(void)
   const char routineName[] = "close_hdf5_aux";
   Atom   *atom;
   int i;
-
+  
   /* Close all datasets and groups */
   for (i=0; i < atmos.Nactiveatom; i++) {
     atom = atmos.activeatoms[i];
@@ -628,6 +630,7 @@ void close_hdf5_aux(void)
     }
     if (( H5Gclose(io.aux_atom_ncid[i]) ) < 0) HERR(routineName);
   }
+
   for (i=0; i < atmos.Nactivemol; i++) {
     if (input.p15d_wpop) {
       if (( H5Dclose(io.aux_mol_pop[i]) ) < 0) HERR(routineName);
@@ -636,9 +639,10 @@ void close_hdf5_aux(void)
     if (( H5Gclose(io.aux_mol_ncid[i]) ) < 0) HERR(routineName);
   }
 
+ 
   /* Close file */
   if (( H5Fclose(io.aux_ncid) ) < 0) HERR(routineName);
-
+  
   /* Free memory */
   free(io.aux_atom_ncid);
   free(io.aux_mol_ncid);

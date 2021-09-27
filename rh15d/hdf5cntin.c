@@ -21,7 +21,6 @@
 #include "inputs.h"
 #include "parallel.h"
 #include "io.h"
-#include "atom.h"
 
 #define FAIL -1
 #define MULTI_COMMENT_CHAR  "*"

@@ -87,11 +87,14 @@ void realloc_ndep(Atmosphere *atmos, Geometry *geometry);
 void depth_refine(Atmosphere *atmos, Geometry *geometry, double tmax);
 void readPopsin_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
                 Input_Atmos_file *infile, Atom *atom);
-void readCnt_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
-                Input_Atmos_file *infile, Atom *atom);
+// void readCnt_hdf5_alt(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
+//                 Input_Atmos_file *infile);
+void readCnt_hdf5_alt(int xi, int yi);
 void readPopsin(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
                 Input_Atmos_file *infile, Atom *atom);
-
+// void readCntin(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
+//                 Input_Atmos_file *infile);
+void readCntin(int xi, int yi);
 
 /* --- Formal solution related --                      -------------- */
 double Feautrier(int nspect, int mu, double *chi, double *S,

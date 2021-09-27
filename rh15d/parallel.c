@@ -118,15 +118,21 @@ void closeParallelIO(bool_t run_ray, bool_t writej) {
   }
   close_atmos(&atmos, &geometry, &infile);
   
-  // printf("\n\nMADE IT HERE closeparallelio...");
+  ///printf("\n\nMADE IT HERE closeparallelio... mark1\n\n");
   close_hdf5_aux();
+  // printf("\n\nMADE IT HERE closeparallelio... mark2");
   close_hdf5_ray();
+  // printf("\n\nMADE IT HERE closeparallelio... mark3");
 
   //free(io.atom_file_pos);
   free(mpi.niter);
+  // printf("\n\nMADE IT HERE closeparallelio... mark4");
   free(mpi.dpopsmax);
+  // printf("\n\nMADE IT HERE closeparallelio... mark5");
   free(mpi.convergence);
+  // printf("\n\nMADE IT HERE closeparallelio... mark6");
   freeMatrix((void **) mpi.dpopsmax_hist);
+  // printf("\n\nMADE IT HERE closeparallelio... mark7");
 
   /* Free buffer variables */
   freeBufVars(writej);
