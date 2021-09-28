@@ -628,7 +628,7 @@ void initSolution_p(void)
       break;
   
     case FIXED_POPS_FROM_FILE:
-      printf("\nThe atom is: %s\n",atom->ID);
+      printf("\n\n>>>> Atom %s is using FIXED_POPS_FROM_FILE",atom->ID);
       readPopsin(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry,
                   &infile, atom);
        

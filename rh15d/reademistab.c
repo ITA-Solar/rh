@@ -75,7 +75,7 @@ void ReadEmisTab(Atmosphere *atmos, Spectrum *spectrum, Geometry *geometry)
   unsigned int Nrays = geometry->Nrays;
 
 
-  printf("\n>>>> The file in input.emistab_file is %s\n",input.emistab_file);
+  // printf("\n>>>> The file in input.emistab_file is %s\n",input.emistab_file);
 
 //if ((fp = fopen("../Atmos/emiss_grid.dat", "r")) == NULL) {
  //   sprintf(messageStr, "Unable to open input file %s", "emiss_grid.dat");
@@ -86,7 +86,7 @@ if ((fp = fopen(input.emistab_file, "r")) == NULL) {
     sprintf(messageStr, "Unable to open input file %s", "emiss_grid.dat");
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
-  printf("\n\n>>> Reading Emistab file and calculating Irradiation\n");
+  printf("\n\n>>>> Reading Emistab file ('%s') and calculating Irradiation",input.emistab_file);
   
   /* Read the file */
   result=fread(&(nlambda), sizeof(int), 1, fp);
