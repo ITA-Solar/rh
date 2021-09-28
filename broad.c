@@ -200,8 +200,8 @@ void Stark(AtomicLine *line, double *GStark)
            .http://stark-b.obspm.fr [August 27, 2018]. Observatory of Paris, LERMA
            and Astronomical Observatory of Belgrade */
 
-    if (strcmp(atom->ID,"MG") == 0) {
-        if (atom->E[line->j]*CM_TO_M/(HPLANCK * CLIGHT) > 35000.00 && atom->E[line->j]*CM_TO_M/(HPLANCK * CLIGHT) < 36000.00) { 
+    if (strcmp(atom->ID,"MG") == 0 && atom->stage[line->i] == 1) {
+        if ((atom->E[line->j]-atom->E[line->i])*CM_TO_M/(HPLANCK * CLIGHT) > 35000.00 && (atom->E[line->j]-atom->E[line->i])*CM_TO_M/(HPLANCK * CLIGHT) < 36000.00) { 
           for (k = 0;  k < atmos.Nspace;  k++) {
                gstark_aa = pow(10,(aa_0 + aa_1*log10(atmos.T[k]) + aa_2*(pow(log10(atmos.T[k]),2))) )*atmos.ne[k]/1.0e21 / 1e10;
                GStark[k] = 2 * PI * CLIGHT * gstark_aa / pow(2798.7/1e10,2);
@@ -210,7 +210,7 @@ void Stark(AtomicLine *line, double *GStark)
               }
             }
       else{
-        if (atom->E[line->j]*CM_TO_M/(HPLANCK * CLIGHT) > 71000.00 && atom->E[line->j]*CM_TO_M/(HPLANCK * CLIGHT) < 72000.00) { 
+        if ((atom->E[line->j]-atom->E[line->i])*CM_TO_M/(HPLANCK * CLIGHT) > 71000.00 && (atom->E[line->j]-atom->E[line->i])*CM_TO_M/(HPLANCK * CLIGHT) < 72000.00) { 
           for (k = 0;  k < atmos.Nspace;  k++) {
             gstark_aa = pow(10,(ab_0 + ab_1*log10(atmos.T[k]) + ab_2*(pow(log10(atmos.T[k]),2))) )*atmos.ne[k]/1.0e21 / 1e10;
             GStark[k] = 2 * PI * CLIGHT * gstark_aa / pow(2796.3/1e10,2);
@@ -219,7 +219,7 @@ void Stark(AtomicLine *line, double *GStark)
           }          
         }
       }
-    } else{
+    }  else{
     
 
 
