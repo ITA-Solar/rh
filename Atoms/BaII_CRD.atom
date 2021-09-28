@@ -2,7 +2,7 @@
   BA
 
 # Nlevel  Nline   Ncont   Nfixed  Cnt
-    6       5       0        5    0
+    6       5       0        5     0    
 
 #   E[cm^-1]    g           label[20]         stage   levelNo
 #                     '|----|----|----|----'

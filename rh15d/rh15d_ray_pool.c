@@ -230,8 +230,8 @@ void drone(void) {
        ///                  &infile);
         // readCntin(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry,
         //                  &infile);
-        readCnt_hdf5_alt(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy]);
-        printf("\n\n>>> Ran readCnt_hdf5_alt in ray_pool\n\n");
+        // readCnt_hdf5_alt(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy]);
+        // printf("\n\n>>> Ran readCnt_hdf5_alt in ray_pool\n\n");
         getProfiles();
         initSolution_p();
         initScatter();

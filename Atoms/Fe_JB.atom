@@ -22,7 +22,7 @@
 Fe
  
 #   Nlevel  Nline   Ncont   Nfixed   Cnt
-      17      13      9       7      0
+      17      13      9       7      0      
  
 #  E[cm^-1]      g           label[20]           stage    levelNo
 #                        |----|----|----|----

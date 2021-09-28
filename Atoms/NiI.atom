@@ -9,7 +9,7 @@
 # Adapted for RH code, H. Uitenbroek, Jun 19 2001
 #
 # Nlevel  Nline   Ncont   Nfixed   Cnt?
-   25      83      19        0      0
+   25      83      19        0     0      
 
 #   E[cm^-1]    g           label[20]         stage   levelNo
 #                     '|----|----|----|----'

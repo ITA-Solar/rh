@@ -123,8 +123,6 @@ struct Atom {
   int     Nlevel, Nline, Ncont, Nfixed, NCnt, Nprd, *stage, periodic_table,
           activeindex;
   char   *offset_coll;
-//  double  abundance, weight, *g, *E, **C, **Cnt, *vbroad, **n, **nstar,
-//         *ntotal, **Gamma;
  double  abundance, weight, *g, *E, **C, *vbroad, **n, **nstar,
          *ntotal, **Gamma;
   AtomicLine *line;

@@ -52,7 +52,6 @@ SRC = accelerate_p.c  \
           trapezoidal.c \
           readpopsin.c \
           hdf5popsin.c \
-          readcntin.c \
           hdf5cntin_alt.c
 BIN_SRC = rh15d_ray.c rh15d_ray_pool.c rh15d_lteray.c
 OBJS = $(SRC:.c=.o)

@@ -2,7 +2,7 @@
   C
 
 # Nlevel  Nline   Ncont   Nfixed Cnt?
-    9       5       6        0   0
+    9       5       6        0    0   
 
 #   E[cm^-1]    g           label[20]         stage   levelNo
 #                     '|----|----|----|----'

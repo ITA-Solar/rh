@@ -247,8 +247,6 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
     ne_iter++;
   }
   SetLTEQuantities_p();
-  // readCnt_hdf5_alt(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos,
-  //                   &infile);
 
   if (input.NonICE)
     readMolecules(MOLECULAR_CONCENTRATION_FILE);
@@ -763,6 +761,11 @@ void SetLTEQuantities_p(void)
 
       /* --- Compute the fixed rates and store in Cij -- ------------ */
       if (atom->Nfixed > 0) FixedRate(atom);
+
+      // if (atom->NCnt == 1) {
+      //       readCnt_hdf5_alt(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy],atom);
+      //       printf("\n\n>>> Ran readCnt_hdf5_alt in Background_p\n\n");
+      //     }
     }
   }
 }

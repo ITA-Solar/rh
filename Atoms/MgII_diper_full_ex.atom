@@ -1,8 +1,8 @@
 # <<One-line atomic model description>>
   MG
 
-# Nlevel  Nline   Ncont   Nfixed
-   22      34      19        0
+# Nlevel  Nline   Ncont   Nfixed  Cnt?
+   22      34      19        0     0
 
 #   E[cm^-1]    g           label[20]         stage   levelNo
 #                     '|----|----|----|----'
