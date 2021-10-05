@@ -238,6 +238,10 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
     setTcut(atmos, geometry, input.p15d_tmax);
   } else {
     mpi.zcut = 0;
+    /*Free vturb in order to avoid successive addition of vturb_add. 
+      This is done in realloc_ndep (called by setTcut) if 15D_DEFINE_ZCUT = TRUE*/
+    free(atmos->vturb);
+    atmos->vturb  = (double *) calloc(atmos->Nspace , sizeof(double));
   }
 
   /* Memory dataspace, redefine for Nspace */
