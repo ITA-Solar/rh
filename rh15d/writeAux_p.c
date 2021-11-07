@@ -112,10 +112,6 @@ void init_aux_new(void) {
       io.aux_atom_RjiL   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
       io.aux_atom_RijC   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
       io.aux_atom_RjiC   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
-      io.aux_atom_CijL   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
-      io.aux_atom_CjiL   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
-      io.aux_atom_CijC   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
-      io.aux_atom_CjiC   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
   }
   if (input.p15d_wcrates) {
       io.aux_atom_Cij    = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
@@ -255,26 +251,6 @@ void init_aux_new(void) {
       if (( H5LTset_attribute_float(ncid_atom, RJI_L_NAME, "_FillValue",
                                     &FILLVALUE, 1) ) < 0) HERR(routineName);
       io.aux_atom_RjiL[i] = id_tmp;
-      if (( id_tmp = H5Dcreate(ncid_atom, CIJ_L_NAME, H5T_NATIVE_FLOAT,
-                               file_dspace, H5P_DEFAULT, plist,
-                               H5P_DEFAULT)) < 0) HERR(routineName);
-      if (( H5DSattach_scale(id_tmp, id_n, 0)) < 0) HERR(routineName);
-      if (( H5DSattach_scale(id_tmp, id_x, 1)) < 0) HERR(routineName);
-      if (( H5DSattach_scale(id_tmp, id_y, 2)) < 0) HERR(routineName);
-      if (( H5DSattach_scale(id_tmp, id_z, 3)) < 0) HERR(routineName);
-      if (( H5LTset_attribute_float(ncid_atom, CIJ_L_NAME, "_FillValue",
-                                    &FILLVALUE, 1) ) < 0) HERR(routineName);
-      io.aux_atom_CijL[i] = id_tmp;
-      if (( id_tmp = H5Dcreate(ncid_atom, CJI_L_NAME, H5T_NATIVE_FLOAT,
-                               file_dspace, H5P_DEFAULT, plist,
-                               H5P_DEFAULT)) < 0) HERR(routineName);
-      if (( H5DSattach_scale(id_tmp, id_n, 0)) < 0) HERR(routineName);
-      if (( H5DSattach_scale(id_tmp, id_x, 1)) < 0) HERR(routineName);
-      if (( H5DSattach_scale(id_tmp, id_y, 2)) < 0) HERR(routineName);
-      if (( H5DSattach_scale(id_tmp, id_z, 3)) < 0) HERR(routineName);
-      if (( H5LTset_attribute_float(ncid_atom, CJI_L_NAME, "_FillValue",
-                                    &FILLVALUE, 1) ) < 0) HERR(routineName);
-      io.aux_atom_CjiL[i] = id_tmp;
       if (( H5Dclose(id_n) ) < 0) HERR(routineName);
       if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
       if (atom->Ncont > 0) {
@@ -303,27 +279,6 @@ void init_aux_new(void) {
           if (( H5LTset_attribute_float(ncid_atom, RJI_C_NAME, "_FillValue",
                                         &FILLVALUE, 1) ) < 0) HERR(routineName);
           io.aux_atom_RjiC[i] = id_tmp;
-          if (( id_tmp = H5Dcreate(ncid_atom, CIJ_C_NAME, H5T_NATIVE_FLOAT,
-                                  file_dspace, H5P_DEFAULT, plist,
-                                  H5P_DEFAULT)) < 0) HERR(routineName);
-          if (( H5DSattach_scale(id_tmp, id_n, 0)) < 0) HERR(routineName);
-          if (( H5DSattach_scale(id_tmp, id_x, 1)) < 0) HERR(routineName);
-          if (( H5DSattach_scale(id_tmp, id_y, 2)) < 0) HERR(routineName);
-          if (( H5DSattach_scale(id_tmp, id_z, 3)) < 0) HERR(routineName);
-          if (( H5LTset_attribute_float(ncid_atom, CIJ_C_NAME, "_FillValue",
-                                        &FILLVALUE, 1) ) < 0) HERR(routineName);
-          io.aux_atom_CijC[i] = id_tmp;
-          if (( id_tmp = H5Dcreate(ncid_atom, CJI_C_NAME, H5T_NATIVE_FLOAT,
-                                file_dspace, H5P_DEFAULT, plist,
-                                H5P_DEFAULT)) < 0) HERR(routineName);
-          if (( H5DSattach_scale(id_tmp, id_n, 0)) < 0) HERR(routineName);
-          if (( H5DSattach_scale(id_tmp, id_x, 1)) < 0) HERR(routineName);
-          if (( H5DSattach_scale(id_tmp, id_y, 2)) < 0) HERR(routineName);
-          if (( H5DSattach_scale(id_tmp, id_z, 3)) < 0) HERR(routineName);
-          if (( H5LTset_attribute_float(ncid_atom, CJI_C_NAME, "_FillValue",
-                                        &FILLVALUE, 1) ) < 0) HERR(routineName);
-          io.aux_atom_CjiC[i] = id_tmp;
-
           if (( H5Dclose(id_n) ) < 0) HERR(routineName);
           if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
       }
@@ -505,10 +460,6 @@ void init_aux_existing(void) {
       io.aux_atom_RjiL   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
       io.aux_atom_RijC   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
       io.aux_atom_RjiC   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
-      io.aux_atom_CijL   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
-      io.aux_atom_CjiL   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
-      io.aux_atom_CijC   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
-      io.aux_atom_CjiC   = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
   }
   if (input.p15d_wcrates) {
       io.aux_atom_Cij    = (hid_t *) malloc(atmos.Nactiveatom * sizeof(hid_t));
@@ -561,18 +512,10 @@ void init_aux_existing(void) {
                                          H5P_DEFAULT) )  < 0) HERR(routineName);
       if (( io.aux_atom_RjiL[i] = H5Dopen(ncid_atom, RJI_L_NAME,
                                          H5P_DEFAULT) )  < 0) HERR(routineName);
-      if (( io.aux_atom_CijL[i] = H5Dopen(ncid_atom, CIJ_L_NAME,
-                                         H5P_DEFAULT) )  < 0) HERR(routineName);
-      if (( io.aux_atom_CjiL[i] = H5Dopen(ncid_atom, CJI_L_NAME,
-                                         H5P_DEFAULT) )  < 0) HERR(routineName);
       if (atom->Ncont > 0) {
           if (( io.aux_atom_RijC[i] = H5Dopen(ncid_atom, RIJ_C_NAME,
                                          H5P_DEFAULT) )  < 0) HERR(routineName);
           if (( io.aux_atom_RjiC[i] = H5Dopen(ncid_atom, RJI_C_NAME,
-                                         H5P_DEFAULT) )  < 0) HERR(routineName);
-          if (( io.aux_atom_CijC[i] = H5Dopen(ncid_atom, CIJ_C_NAME,
-                                         H5P_DEFAULT) )  < 0) HERR(routineName);
-          if (( io.aux_atom_CjiC[i] = H5Dopen(ncid_atom, CJI_C_NAME,
                                          H5P_DEFAULT) )  < 0) HERR(routineName);
       }
     }
@@ -650,13 +593,9 @@ void close_hdf5_aux(void)
     if (input.p15d_wrates) {
       if (( H5Dclose(io.aux_atom_RijL[i]) ) < 0) HERR(routineName);
       if (( H5Dclose(io.aux_atom_RjiL[i]) ) < 0) HERR(routineName);
-      if (( H5Dclose(io.aux_atom_CijL[i]) ) < 0) HERR(routineName);
-      if (( H5Dclose(io.aux_atom_CjiL[i]) ) < 0) HERR(routineName);
       if (atom->Ncont > 0) {
           if (( H5Dclose(io.aux_atom_RijC[i]) ) < 0) HERR(routineName);
           if (( H5Dclose(io.aux_atom_RjiC[i]) ) < 0) HERR(routineName);
-          if (( H5Dclose(io.aux_atom_CijC[i]) ) < 0) HERR(routineName);
-          if (( H5Dclose(io.aux_atom_CjiC[i]) ) < 0) HERR(routineName);
       }
     }
     if (input.p15d_wcrates) {
@@ -687,12 +626,8 @@ void close_hdf5_aux(void)
   if (input.p15d_wrates) {
     free(io.aux_atom_RijL);
     free(io.aux_atom_RjiL);
-    free(io.aux_atom_CijL);
-    free(io.aux_atom_CjiL);
     free(io.aux_atom_RijC);
     free(io.aux_atom_RjiC);
-    free(io.aux_atom_CijC);
-    free(io.aux_atom_CjiC);
   }
   if (input.p15d_wcrates) {
     free(io.aux_atom_Cij);
@@ -766,12 +701,6 @@ void writeAux_all(void) {
         if (( H5Dwrite(io.aux_atom_RjiL[nact], H5T_NATIVE_DOUBLE,
                  mem_dspace, file_dspace, H5P_DEFAULT,
                  &iobuf.RjiL[nact][ind * atom->Nline]) ) < 0) HERR(routineName);
-        if (( H5Dwrite(io.aux_atom_CijL[nact], H5T_NATIVE_DOUBLE,
-                 mem_dspace, file_dspace, H5P_DEFAULT,
-                 &iobuf.CijL[nact][ind * atom->Nline]) ) < 0) HERR(routineName);
-        if (( H5Dwrite(io.aux_atom_CjiL[nact], H5T_NATIVE_DOUBLE,
-                 mem_dspace, file_dspace, H5P_DEFAULT,
-                 &iobuf.CjiL[nact][ind * atom->Nline]) ) < 0) HERR(routineName);
         /* release dataspace resources */
         if (( H5Sclose(mem_dspace) ) < 0) HERR(routineName);
         if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
@@ -792,12 +721,6 @@ void writeAux_all(void) {
             if (( H5Dwrite(io.aux_atom_RjiC[nact], H5T_NATIVE_DOUBLE,
                  mem_dspace, file_dspace, H5P_DEFAULT,
                  &iobuf.RjiC[nact][ind * atom->Ncont]) ) < 0) HERR(routineName);
-            if (( H5Dwrite(io.aux_atom_CijC[nact], H5T_NATIVE_DOUBLE,
-                 mem_dspace, file_dspace, H5P_DEFAULT,
-                 &iobuf.CijC[nact][ind * atom->Ncont]) ) < 0) HERR(routineName);
-            if (( H5Dwrite(io.aux_atom_CjiC[nact], H5T_NATIVE_DOUBLE,
-                 mem_dspace, file_dspace, H5P_DEFAULT,
-                 &iobuf.CjiC[nact][ind * atom->Ncont]) ) < 0) HERR(routineName);
             /* release dataspace resources */
             if (( H5Sclose(mem_dspace) ) < 0) HERR(routineName);
             if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
@@ -853,7 +776,7 @@ void writeAux_all(void) {
 void writeAux_p(void) {
   /* this will write: populations, radrates, coll, damping */
   const char routineName[] = "writeAux_p";
-  int      nact, kr, ji, ij, i, j, k, idx;
+  int      nact, kr, i, j, k, idx;
   hsize_t  offset[] = {0, 0, 0, 0, 0};
   hsize_t  count[] = {1, 1, 1, 1, 1};
   hsize_t  dims[5];
@@ -910,12 +833,6 @@ void writeAux_p(void) {
                   file_dspace, H5P_DEFAULT, line->Rij) ) < 0) HERR(routineName);
           if (( H5Dwrite(io.aux_atom_RjiL[nact], H5T_NATIVE_DOUBLE, mem_dspace,
                   file_dspace, H5P_DEFAULT, line->Rji) ) < 0) HERR(routineName);
-          ij = line->j * atom->Nlevel + line->i;
-          if (( H5Dwrite(io.aux_atom_CijL[nact], H5T_NATIVE_DOUBLE, mem_dspace,
-                  file_dspace, H5P_DEFAULT, atom->C[ij]) ) < 0) HERR(routineName);
-          ji = line->i * atom->Nlevel + line->j;
-          if (( H5Dwrite(io.aux_atom_CjiL[nact], H5T_NATIVE_DOUBLE, mem_dspace,
-                  file_dspace, H5P_DEFAULT, atom->C[ji]) ) < 0) HERR(routineName);
       }
       for (kr=0; kr < atom->Ncont; kr++) {
           offset[0] = kr;
@@ -926,18 +843,13 @@ void writeAux_p(void) {
              file_dspace, H5P_DEFAULT, continuum->Rij) ) < 0) HERR(routineName);
           if (( H5Dwrite(io.aux_atom_RjiC[nact], H5T_NATIVE_DOUBLE, mem_dspace,
              file_dspace, H5P_DEFAULT, continuum->Rji) ) < 0) HERR(routineName);
-          ij = continuum->j * atom->Nlevel + continuum->i;
-          if (( H5Dwrite(io.aux_atom_CijC[nact], H5T_NATIVE_DOUBLE, mem_dspace,
-             file_dspace, H5P_DEFAULT, atom->C[ij]) ) < 0) HERR(routineName);
-          ji = continuum->i * atom->Nlevel + continuum->j;
-          if (( H5Dwrite(io.aux_atom_CjiC[nact], H5T_NATIVE_DOUBLE, mem_dspace,
-             file_dspace, H5P_DEFAULT, atom->C[ji]) ) < 0) HERR(routineName);
       }
       if (( H5Sclose(mem_dspace) ) < 0) HERR(routineName);
       if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
     }
     if (input.p15d_wcrates) {
       /* Write collisional rates */
+      /* Copy data to better-aligned memory structure */
       coll_rates = (double *) calloc(SQ(atom->Nlevel) * atmos.Nspace, sizeof(double));
       for (i=0; i < atom->Nlevel; i++) {
         for (j=0; j < atom->Nlevel; j++) {

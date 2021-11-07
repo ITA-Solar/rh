@@ -465,7 +465,7 @@ void copyBufVars(bool_t writej) {
 /* Copies output variables to buffer arrays, to be written only at the end */
   const  char routineName[] = "copyBufVars";
   static long ind = 0;
-  int         i, ij, ji, ndep, nspect, nact, kr;
+  int         i, ndep, nspect, nact, kr;
   Atom       *atom;
   Molecule   *molecule;
   AtomicLine      *line;
@@ -496,20 +496,13 @@ void copyBufVars(bool_t writej) {
     memcpy((void *) &iobuf.nstar[nact][ind*atom->Nlevel], (void *) atom->nstar[0],
 	   atom->Nlevel * atmos.Nspace * sizeof(double));
 
-    /* Rij, Rji, Cij, Cji for lines */
+    /* Rij, Rji for lines */
     for (kr=0; kr < atom->Nline; kr++) {
       line = &atom->line[kr];
       memcpy((void *) &iobuf.RijL[nact][ind*atom->Nline + kr*atmos.Nspace],
 	     (void *) line->Rij, atmos.Nspace * sizeof(double));
       memcpy((void *) &iobuf.RjiL[nact][ind*atom->Nline + kr*atmos.Nspace],
 	     (void *) line->Rji, atmos.Nspace * sizeof(double));
-      /* Convention for output, Cij means transition i -> j */
-      ij = line->j * atom->Nlevel + line->i;
-      memcpy((void *) &iobuf.CijL[nact][ind*atom->Nline + kr*atmos.Nspace],
-	     (void *) atom->C[ij], atmos.Nspace * sizeof(double));
-      ji = line->i * atom->Nlevel + line->j;
-      memcpy((void *) &iobuf.CjiL[nact][ind*atom->Nline + kr*atmos.Nspace],
-	     (void *) atom->C[ji], atmos.Nspace * sizeof(double));
     }
 
     /* Rij, Rji for continua */
@@ -519,12 +512,6 @@ void copyBufVars(bool_t writej) {
 	     (void *) continuum->Rij, atmos.Nspace * sizeof(double));
       memcpy((void *) &iobuf.RjiC[nact][ind*atom->Ncont + kr*atmos.Nspace],
 	     (void *) continuum->Rji, atmos.Nspace * sizeof(double));
-      ij = continuum->j * atom->Nlevel + continuum->i;
-      memcpy((void *) &iobuf.CijC[nact][ind*atom->Ncont + kr*atmos.Nspace],
-	     (void *) atom->C[ij], atmos.Nspace * sizeof(double));
-      ji = continuum->i * atom->Nlevel + continuum->j;
-      memcpy((void *) &iobuf.CjiC[nact][ind*atom->Ncont + kr*atmos.Nspace],
-	     (void *) atom->C[ji], atmos.Nspace * sizeof(double));
     }
 
   }
@@ -579,10 +566,6 @@ void allocBufVars(bool_t writej) {
     iobuf.RjiL  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
     iobuf.RijC  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
     iobuf.RjiC  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
-    iobuf.CijL  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
-    iobuf.CjiL  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
-    iobuf.CijC  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
-    iobuf.CjiC  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
   }
 
   if (atmos.Nactivemol > 0) {
@@ -623,22 +606,6 @@ void allocBufVars(bool_t writej) {
     iobuf.RjiC[nact] = (double *) malloc(RCsize);
     if (iobuf.RjiC[nact] == NULL)
       Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
-
-    iobuf.CijL[nact] = (double *) malloc(RLsize);
-    if (iobuf.CijL[nact] == NULL)
-      Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
-
-    iobuf.CjiL[nact] = (double *) malloc(RLsize);
-    if (iobuf.CjiL[nact] == NULL)
-      Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
-  
-    iobuf.CijC[nact] = (double *) malloc(RCsize);
-    if (iobuf.CijC[nact] == NULL)
-      Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
-
-    iobuf.CjiC[nact] = (double *) malloc(RCsize);
-    if (iobuf.CjiC[nact] == NULL)
-      Error(ERROR_LEVEL_2, routineName, "Out of memory\n");
   }
 
   /* --- Loop over active MOLECULES --- */
@@ -675,10 +642,6 @@ void freeBufVars(bool_t writej) {
     free(iobuf.RjiL[nact]);
     free(iobuf.RijC[nact]);
     free(iobuf.RjiC[nact]);
-    free(iobuf.CijL[nact]);
-    free(iobuf.CjiL[nact]);
-    free(iobuf.CijC[nact]);
-    free(iobuf.CjiC[nact]);
   }
 
   free(iobuf.n);
@@ -687,10 +650,6 @@ void freeBufVars(bool_t writej) {
   free(iobuf.RjiL);
   free(iobuf.RijC);
   free(iobuf.RjiC);
-  free(iobuf.CijL);
-  free(iobuf.CjiL);
-  free(iobuf.CijC);
-  free(iobuf.CjiC);
 
   /* Loop over active MOLECULES */
   for (nact = 0;  nact < atmos.Nactivemol;  nact++) {
