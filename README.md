@@ -1,7 +1,7 @@
 RH 1.5D
 =======
 
-[![DOI](https://zenodo.org/badge/16921006.svg)](https://zenodo.org/badge/latestdoi/16921006)
+[![Documentation Status](https://readthedocs.org/projects/rh15d/badge/?version=latest)](https://rh15d.readthedocs.io/en/latest/?badge=latest) [![DOI](https://zenodo.org/badge/16921006.svg)](https://zenodo.org/badge/latestdoi/16921006)
 
 RH 1.5D is an open source, massively-parallel radiative transfer code for spectral synthesis in stellar atmospheres. It is a modified version of the [RH code by Han Uitenbroek](http://www4.nso.edu/staff/uitenbr/rh.html).
 

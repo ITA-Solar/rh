@@ -53,6 +53,9 @@ The new ``keyword.input`` options for the 1.5D version are:
 | ``15D_WRITE_RRATES``       | ``FALSE``          | If ``TRUE``, will write the radiative rates (lines and continua) for each        |
 |                            |                    | active atom to ``output_aux.hdf5``.                                              |
 +----------------------------+--------------------+----------------------------------------------------------------------------------+
+| ``15D_WRITE_CRATES``       | ``FALSE``          | If ``TRUE``, will write the collisional rates  for each  active atom to          |
+|                            |                    | ``output_aux.hdf5``.                                                             |
++----------------------------+--------------------+----------------------------------------------------------------------------------+
 | ``15D_WRITE_TAU1``         | ``FALSE``          | If ``TRUE``, will write the height of tau=1 to ``output_ray.hdf5``, for all      |
 |                            |                    | wavelengths (this takes up as much space as the intensity).                      |
 +----------------------------+--------------------+----------------------------------------------------------------------------------+
