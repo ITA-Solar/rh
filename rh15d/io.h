@@ -168,7 +168,7 @@ typedef struct {
         *aux_atom_poplte,  *aux_atom_RijL,    *aux_atom_RjiL,    *aux_atom_RijC,
         *aux_atom_RjiC,    *aux_atom_CijL,    *aux_atom_CjiL,    *aux_atom_CijC,
         *aux_atom_CjiC,    *aux_atom_vbroad,  *aux_mol_ncid,     *aux_mol_pop,
-        *aux_mol_poplte,   *aux_mol_E,        *aux_mol_vbroad,
+        *aux_mol_poplte,   *aux_mol_E,        *aux_mol_vbroad,   *aux_atom_Cij,
          aux_op_chi_ai,     aux_op_chi_ad,     aux_op_eta_ai,     aux_op_eta_ad;
   /* for atom file positions */
   long *atom_file_pos;
