@@ -800,6 +800,8 @@ void writeAux_p(void) {
     offset[2] = mpi.iy;
     offset[3] = mpi.zcut;
     count[0] = atom->Nlevel;
+    count[1] = 1;
+    count[2] = 1;
     count[3] = atmos.Nspace;
     if (input.p15d_wpop) {
       if (( mem_dspace = H5Screate_simple(2, dims, NULL) ) < 0)
