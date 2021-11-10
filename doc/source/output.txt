@@ -64,23 +64,26 @@ The atom groups can contain the following optional variables:
 
 .. tabularcolumns:: |l|l|L|
 
-+---------------------+-------------------------------+------------------------------------+
-| Name                | Dimensions                    | Description                        |
-+=====================+===============================+====================================+
-| ``populations``     | ``(level, x, y, height)``     | Atomic populations.                |
-+---------------------+-------------------------------+------------------------------------+
-| ``populations_LTE`` | ``(level, x, y, height)``     | Atomic LTE populations.            |
-+---------------------+-------------------------------+------------------------------------+
-| ``Rij_line``        | ``(line, x, y, height)``      | Radiative rates out of the line.   |
-+---------------------+-------------------------------+------------------------------------+
-| ``Rji_line``        | ``(line, x, y, height)``      | Radiative rates into the line.     |
-+---------------------+-------------------------------+------------------------------------+
-| ``Rij_continuum``   | ``(continuum, x, y, height)`` | Radiative rates out of the         |
-|                     |                               | bf transition.                     |
-+---------------------+-------------------------------+------------------------------------+
-| ``Rji_continuum``   | ``(continuum, x, y, height)`` | Radiative rates into the bf        |
-|                     |                               | transition.                        |
-+---------------------+-------------------------------+------------------------------------+
++---------------------+---------------------------------+--------------------------------------+
+| Name                | Dimensions                      | Description                          |
++=====================+=================================+======================================+
+| ``populations``     | ``(level, x, y, height)``       | Atomic populations.                  |
++---------------------+---------------------------------+--------------------------------------+
+| ``populations_LTE`` | ``(level, x, y, height)``       | Atomic LTE populations.              |
++---------------------+---------------------------------+--------------------------------------+
+| ``Rij_line``        | ``(line, x, y, height)``        | Radiative rates out of the line.     |
++---------------------+---------------------------------+--------------------------------------+
+| ``Rji_line``        | ``(line, x, y, height)``        | Radiative rates into the line.       |
++---------------------+---------------------------------+--------------------------------------+
+| ``Rij_continuum``   | ``(continuum, x, y, height)``   | Radiative rates out of the           |
+|                     |                                 | bf transition.                       |
++---------------------+---------------------------------+--------------------------------------+
+| ``Rji_continuum``   | ``(continuum, x, y, height)``   | Radiative rates into the bf          |
+|                     |                                 | transition.                          |
++---------------------+---------------------------------+--------------------------------------+
+| ``collision_rates`` | ``(level, level, x, y, height)``| Collisional rates. Convention: first |
+|                     |                                 | index is upper level.                |
++---------------------+---------------------------------+--------------------------------------+
 
 The molecule groups can contain the following optional variables:
 

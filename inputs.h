@@ -102,7 +102,7 @@ typedef struct {
   int    Natoms;
   double p15d_tmax;
   bool_t p15d_wxtra, p15d_rerun, p15d_refine, p15d_zcut, p15d_wtau;
-  bool_t p15d_wpop, p15d_wrates;
+  bool_t p15d_wpop, p15d_wrates, p15d_wcrates;
   double iterLimit, PRDiterLimit, metallicity, *wavetable;
   unsigned int Nxwave;
   /* Tiago, for saving the input files */
