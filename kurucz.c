@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Thu Oct 12 14:52:27 2017 --
+       Last modified: Fri May 28 16:02:49 2021 --
 
        --------------------------                      ----------RH-- */
 
@@ -82,18 +82,22 @@ FORMAT(F11.4,F7.3,F6.2,F12.3,F5.2,1X,A10,F12.3,F5.2,1X,A10,
 #define MAX_GAUSS_DOPPLER   7.0
 #define USE_TABULATED_WAVELENGTH 1
 
+#define RLK_LABEL_LENGTH  10
+
 
 /* --- Function prototypes --                          -------------- */
 
-double           RLKProfile(RLK_Line *rlk, int k, int mu, bool_t to_obs,
-			    double lambda,
-			    double *phi_Q, double *phi_U, double *phi_V,
-			    double *psi_Q, double *psi_U, double *psi_V);
-ZeemanMultiplet* RLKZeeman(RLK_Line *rlk);
-void             initRLK(RLK_Line *rlk);
-bool_t           RLKdeterminate(char *labeli, char *labelj, RLK_Line *rlk);
-void             getUnsoldcross(RLK_Line *rlk);
-void             free_BS(Barklemstruct *bs);
+double RLKProfile(RLK_Line *rlk, int k, int mu, bool_t to_obs,
+		  double lambda,
+		  double *phi_Q, double *phi_U, double *phi_V,
+		  double *psi_Q, double *psi_U, double *psi_V);
+void   RLKZeeman(RLK_Line *rlk);
+double RLKLande(RLK_level* level);
+void   initRLK(RLK_Line *rlk);
+bool_t RLKdet_level(char* label, RLK_level *level);
+double getJK_K(char c);
+void   getUnsoldcross(RLK_Line *rlk);
+void   free_BS(Barklemstruct *bs);
 
 
 /* --- Global variables --                             -------------- */
@@ -112,14 +116,14 @@ void readKuruczLines(char *inputFile)
                              (Q_ELECTRON/M_ELECTRON) / CLIGHT;
 
   char   inputLine[RLK_RECORD_LENGTH+1], listName[MAX_LINE_SIZE],
-    filename[MAX_LINE_SIZE], Gvalues[18+1], elem_code[7],
+         filename[MAX_LINE_SIZE], Gvalues[18+1], elem_code[7],
          labeli[RLK_LABEL_LENGTH+1], labelj[RLK_LABEL_LENGTH+1],
         *commentChar = COMMENT_CHAR;
   bool_t swap_levels, determined, useBarklem, exit_on_EOF;
   int    Nline, Nread, Nrequired, checkPoint, hfs_i, hfs_j, gL_i, gL_j,
-         iso_dl, i;
+         iso_dl, Li, Lj, i;
   unsigned int line_index;
-  double lambda0, Ji, Jj, Grad, GStark, GvdWaals, pti,
+  double lambda0, Ji, Jj, Grad, GStark, GvdWaals,
          Ei, Ej, gf, lambda_air;
   size_t length;
   RLK_Line *rlk;
@@ -139,18 +143,18 @@ void readKuruczLines(char *inputFile)
 
   /* Use saved or read file */
   if (input.kurucz_file_contents != NULL) {
-      fp_Kurucz = input.kurucz_file_contents;
+    fp_Kurucz = input.kurucz_file_contents;
   } else {
-      fp_Kurucz = readWholeFile(inputFile);
+    fp_Kurucz = readWholeFile(inputFile);
   }
   /* Count line files, save content */
   Nline = 0;
   file_string = fp_Kurucz;  /* To avoid rewinding fp_Kurucz */
   while (getLineString(&file_string, commentChar, listName, FALSE) != EOF) {
-      length = strlen(listName);
-      /* To avoid untraced bug that reads extra lines where there's only one */
-      if (listName[length - 1] != '\n') continue;
-      Nline++;
+    length = strlen(listName);
+    /* To avoid untraced bug that reads extra lines where there's only one */
+    if (listName[length - 1] != '\n') continue;
+    Nline++;
   }
   if (input.kurucz_file_contents == NULL) {  /* Make space for input data */
     input.kurucz_file_contents = fp_Kurucz;
@@ -186,7 +190,7 @@ void readKuruczLines(char *inputFile)
 
     if (atmos.Nrlk == 0) atmos.rlk_lines = NULL;
     atmos.rlk_lines = (RLK_Line *)
-      realloc(atmos.rlk_lines, (Nline + atmos.Nrlk) * sizeof(RLK_Line));
+        realloc(atmos.rlk_lines, (Nline + atmos.Nrlk) * sizeof(RLK_Line));
 
     /* --- Read lines from file --                     -------------- */
 
@@ -196,168 +200,151 @@ void readKuruczLines(char *inputFile)
 
         initRLK(rlk);
 
-	Nread = sscanf(inputLine, "%lf %lf %s %lf",
-		       &lambda_air, &gf, (char *) &elem_code, &Ei);
+        Nread = sscanf(inputLine, "%lf %lf %s %lf",
+                       &lambda_air, &gf, (char *) &elem_code, &Ei);
 
         /* --- Ionization stage and periodic table index -- --------- */
 
         sscanf(elem_code, "%d.%d", &rlk->pt_index, &rlk->stage);
 
-	Nread += sscanf(inputLine+53, "%lf", &Ej);
+        Nread += sscanf(inputLine+53, "%lf", &Ej);
 
-	Ei = fabs(Ei) * (HPLANCK * CLIGHT) / CM_TO_M;
-	Ej = fabs(Ej) * (HPLANCK * CLIGHT) / CM_TO_M;
+        Ei = fabs(Ei) * (HPLANCK * CLIGHT) / CM_TO_M;
+        Ej = fabs(Ej) * (HPLANCK * CLIGHT) / CM_TO_M;
 
-	/* --- Beware: the Kurucz linelist has upper and lower levels
-	       of a transition in random order. Therefore, we have to
+        /* --- Beware: the Kurucz linelist has upper and lower levels
+               of a transition in random order. Therefore, we have to
                check for the lowest energy of the two and use that as
                lower level --                          -------------- */
 
-	if (Ej < Ei) {
-	  swap_levels = TRUE;
-	  rlk->Ei = Ej;
-	  rlk->Ej = Ei;
-	  strncpy(labeli, inputLine+69, RLK_LABEL_LENGTH);
-	  strncpy(labelj, inputLine+41, RLK_LABEL_LENGTH);
-	} else {
-	  swap_levels = FALSE;
-	  rlk->Ei = Ei;
-          rlk->Ej = Ej;
-	  strncpy(labeli, inputLine+41, RLK_LABEL_LENGTH);
-	  strncpy(labelj, inputLine+69, RLK_LABEL_LENGTH);
-	}
+        if (Ej < Ei) {
+          swap_levels = TRUE; 
+          rlk->level_i.E = Ej;
+          rlk->level_j.E = Ei;
+          strncpy(labeli, inputLine+69, RLK_LABEL_LENGTH);
+          strncpy(labelj, inputLine+41, RLK_LABEL_LENGTH);
+        } else {
+          swap_levels = FALSE;
+          rlk->level_i.E = Ei;
+                rlk->level_j.E = Ej;
+          strncpy(labeli, inputLine+41, RLK_LABEL_LENGTH);
+          strncpy(labelj, inputLine+69, RLK_LABEL_LENGTH);
+        }
 
-	Nread += sscanf(inputLine+35, "%lf", &Ji);
-	Nread += sscanf(inputLine+63, "%lf", &Jj);
-	if (swap_levels) SWAPDOUBLE(Ji, Jj);
-	rlk->gi = 2*Ji + 1;
-	rlk->gj = 2*Jj + 1;
+        Nread += sscanf(inputLine+35, "%lf", &Ji);
+        Nread += sscanf(inputLine+63, "%lf", &Jj);
+        if (swap_levels) SWAPDOUBLE(Ji, Jj);
+        
+        rlk->level_i.J = Ji;
+        rlk->level_i.g = 2*Ji + 1;
+        rlk->level_j.J = Jj;
+        rlk->level_j.g = 2*Jj + 1;
 
-    if (USE_TABULATED_WAVELENGTH) {
-	  /* --- In this case use tabulated wavelength and adjust
-	         upper-level energy --                 -------------- */
+        if (USE_TABULATED_WAVELENGTH) {
+          
+          /* --- In this case use tabulated wavelength and adjust 
+                upper-level energy --                 -------------- */
 
-	  air_to_vacuum(1, &lambda_air, &lambda0);
-	  lambda0 *= NM_TO_M;
-	  rlk->Ej = rlk->Ei +  (HPLANCK * CLIGHT) / lambda0;
-	} else {
-	  /* --- Else use energy levels to calculate lambda0 -- ----- */
+          air_to_vacuum(1, &lambda_air, &lambda0);
+          lambda0 *= NM_TO_M;
+          rlk->level_j.E = rlk->level_i.E +  (HPLANCK * CLIGHT) / lambda0;
+        } else {
+          /* --- Else use energy levels to calculate lambda0 -- ----- */
+          
+          lambda0 = (HPLANCK * CLIGHT) / (rlk->level_j.E - rlk->level_i.E);
+        }
+        rlk->Aji = C / SQ(lambda0) * POW10(gf) / rlk->level_j.g;
+        rlk->Bji = CUBE(lambda0) / (2.0 * HPLANCK * CLIGHT) * rlk->Aji;
+        rlk->Bij = (rlk->level_j.g / rlk->level_i.g) * rlk->Bji;
 
-	  lambda0 = (HPLANCK * CLIGHT) / (rlk->Ej - rlk->Ei);
-	}
-	rlk->Aji = C / SQ(lambda0) * POW10(gf) / rlk->gj;
-	rlk->Bji = CUBE(lambda0) / (2.0 * HPLANCK * CLIGHT) * rlk->Aji;
-	rlk->Bij = (rlk->gj / rlk->gi) * rlk->Bji;
+              /* --- Store in nm --                          -------------- */
+              rlk->lambda0 = lambda0 / NM_TO_M;
 
-        /* --- Store in nm --                          -------------- */
+              determined = (RLKdet_level(labeli, &rlk->level_i) &&
+                RLKdet_level(labelj, &rlk->level_j));
+              rlk->polarizable = (atmos.Stokes && determined);
 
-	rlk->lambda0 = lambda0 / NM_TO_M;
+              /* --- Line broadening --                      -------------- */
 
-	/* --- Get quantum numbers for angular momentum and spin -- - */
+        strncpy(Gvalues, inputLine+79, 18);
+        Nread += sscanf(Gvalues, "%lf %lf %lf", &Grad, &GStark, &GvdWaals);
 
-        determined = RLKdeterminate(labeli, labelj, rlk);
-        rlk->polarizable = (atmos.Stokes && determined);
+        if (GStark != 0.0) 
+          rlk->GStark = POW10(GStark) * CUBE(CM_TO_M);
+        else
+          rlk->GStark = 0.0;
 
-        /* --- Line broadening --                      -------------- */
+        if (GvdWaals != 0.0)
+          rlk->GvdWaals = POW10(GvdWaals) * CUBE(CM_TO_M);
+        else
+          rlk->GvdWaals = 0.0;
 
-	strncpy(Gvalues, inputLine+79, 18);
-	Nread += sscanf(Gvalues, "%lf %lf %lf", &Grad, &GStark, &GvdWaals);
+              /* --- If possible use Barklem formalism --    -------------- */
 
-	if (GStark != 0.0)
-	  rlk->GStark = POW10(GStark) * CUBE(CM_TO_M);
-	else
-	  rlk->GStark = 0.0;
-
-	if (GvdWaals != 0.0)
-	  rlk->GvdWaals = POW10(GvdWaals) * CUBE(CM_TO_M);
-	else
-	  rlk->GvdWaals = 0.0;
-
-        /* --- If possible use Barklem formalism --    -------------- */
-
-	useBarklem = FALSE;
-	if (determined) {
-	  if ((rlk->Li == S_ORBIT && rlk->Lj == P_ORBIT) ||
-              (rlk->Li == P_ORBIT && rlk->Lj == S_ORBIT)) {
-	    useBarklem = getBarklemcross(&bs_SP, rlk);
-	  } else if ((rlk->Li == P_ORBIT && rlk->Lj == D_ORBIT) ||
-		     (rlk->Li == D_ORBIT && rlk->Lj == P_ORBIT)) {
-	    useBarklem = getBarklemcross(&bs_PD, rlk);
-	  } else if ((rlk->Li == D_ORBIT && rlk->Lj == F_ORBIT) ||
-		     (rlk->Li == F_ORBIT && rlk->Lj == D_ORBIT)) {
-	    useBarklem = getBarklemcross(&bs_DF, rlk);
-	  }
-	}
-	/* --- Else use good old Unsoeld --            -------------- */
+        useBarklem = FALSE;
+        if (determined &&
+            rlk->level_i.cpl == LS_COUPLING &&
+            rlk->level_j.cpl == LS_COUPLING) {
+        
+          Li = rlk->level_i.L;
+          Lj = rlk->level_j.L;
+          
+          if ((Li == S_ORBIT && Lj == P_ORBIT) ||
+                    (Li == P_ORBIT && Lj == S_ORBIT)) {
+            useBarklem = getBarklemcross(&bs_SP, rlk);
+          } else if ((Li == P_ORBIT && Lj == D_ORBIT) ||
+              (Li == D_ORBIT && Lj == P_ORBIT)) {
+            useBarklem = getBarklemcross(&bs_PD, rlk);
+          } else if ((Li == D_ORBIT && Lj == F_ORBIT) ||
+              (Li == F_ORBIT && Lj == D_ORBIT)) {
+            useBarklem = getBarklemcross(&bs_DF, rlk);
+          }
+        }
+        /* --- Else use good old Unsoeld --            -------------- */
 
         if (!useBarklem) {
-	  getUnsoldcross(rlk);
-	}
-	/* --- Radiative broadening --                 -------------- */
+          getUnsoldcross(rlk);
+        }
+        /* --- Radiative broadening --                 -------------- */
 
-	if (Grad != 0.0) {
-	  rlk->Grad = POW10(Grad);
-	} else {
+        if (Grad != 0.0) {
+          rlk->Grad = POW10(Grad);
+        } else {
 
-	  /* --- Just take the Einstein Aji value, but only if either
-                 Stark or vd Waals broadening is in effect -- ------- */
+          /* --- Just take the Einstein Aji value--    -------------- */     
 
-	  if (GStark != 0.0  || GvdWaals != 0.0)
-	    rlk->Grad = rlk->Aji;
-	  else {
-	    rlk->Grad = 0.0;
+          rlk->Grad = rlk->Aji;
+        }
+        /* --- Isotope and hyperfine fractions and slpittings -- ---- */
 
-            /* --- In this case the line is not polarizable because
-                   there is no way to determine its damping -- ------ */
+        Nread += sscanf(inputLine+106, "%d", &rlk->isotope);
+        Nread += sscanf(inputLine+108, "%lf", &rlk->isotope_frac);
+        rlk->isotope_frac = POW10(rlk->isotope_frac);
+        Nread += sscanf(inputLine+117, "%lf", &rlk->hyperfine_frac);
+        rlk->hyperfine_frac = POW10(rlk->hyperfine_frac);
+        Nread += sscanf(inputLine+123, "%5d%5d", &hfs_i, &hfs_j);
+        rlk->level_i.hfs = ((double) hfs_i) * MILLI * KBOLTZMANN;
+        rlk->level_j.hfs = ((double) hfs_j) * MILLI * KBOLTZMANN;
 
-	    rlk->polarizable = FALSE;
-	  }
-	}
-	/* --- Isotope and hyperfine fractions and slpittings -- ---- */
+        /* --- Effective Lande factors --              -------------- */
 
-	Nread += sscanf(inputLine+106, "%d", &rlk->isotope);
-	Nread += sscanf(inputLine+108, "%lf", &rlk->isotope_frac);
-	rlk->isotope_frac = POW10(rlk->isotope_frac);
-	Nread += sscanf(inputLine+117, "%lf", &rlk->hyperfine_frac);
-	rlk->hyperfine_frac = POW10(rlk->hyperfine_frac);
-	Nread += sscanf(inputLine+123, "%5d%5d", &hfs_i, &hfs_j);
-	rlk->hfs_i = ((double) hfs_i) * MILLI * KBOLTZMANN;
-	rlk->hfs_j = ((double) hfs_j) * MILLI * KBOLTZMANN;
+        Nread += sscanf(inputLine+143, "%5d%5d", &gL_i, &gL_j);
+        rlk->level_i.gL = gL_i * MILLI;
+        rlk->level_j.gL = gL_j * MILLI;
+        if (swap_levels) {
+          SWAPDOUBLE(rlk->level_i.hfs, rlk->level_j.hfs);
+          SWAPDOUBLE(rlk->level_i.gL, rlk->level_j.gL);
+        }
 
-	/* --- Effective Lande factors --              -------------- */
+        /*      Nread += sscanf(inputLine+154, "%d", &iso_dl); */
+        iso_dl = 0;
+        rlk->iso_dl = iso_dl * MILLI * ANGSTROM_TO_NM;
 
-	Nread += sscanf(inputLine+143, "%5d%5d", &gL_i, &gL_j);
-	rlk->gL_i = gL_i * MILLI;
-	rlk->gL_j = gL_j * MILLI;
-	if (swap_levels) {
-	  SWAPDOUBLE(rlk->hfs_i, rlk->hfs_j);
-	  SWAPDOUBLE(rlk->gL_i, rlk->gL_j);
-	}
-
-	/*      Nread += sscanf(inputLine+154, "%d", &iso_dl); */
-	iso_dl = 0;
-	rlk->iso_dl = iso_dl * MILLI * ANGSTROM_TO_NM;
-
-	checkNread(Nread, Nrequired=17, routineName, checkPoint=1);
-	/*
-	printf("  Line: %f (vacuum), %f (air)\n"
-	       " gi, gj: %f, %f\n"
-	       " Ei, Ej: %e, %e\n"
-	       " Aji: %e\n"
-               " Grad, GStark, GvdWaals: %e, %e, %e\n"
-               " VdWaals: %d\n"
-	       " hyperfine_frac, isotope_frac: %f, %f\n"
-	       " cross, alpha: %e, %e\n\n",
-	       rlk->lambda0, lambda_air,
-	       rlk->gi, rlk->gj, rlk->Ei, rlk->Ej, rlk->Aji,
-	       rlk->Grad, rlk->GStark, rlk->GvdWaals,
-               rlk->vdwaals,
-	       rlk->hyperfine_frac, rlk->isotope_frac,
-	       rlk->cross, rlk->alpha);
-	*/
-	rlk++;
+        checkNread(Nread, Nrequired=17, routineName, checkPoint=1);
+        rlk++;
       }
     }
+  
     sprintf(messageStr, "Read %d Kurucz lines from file %s\n",
 	    Nline, listName);
     Error(MESSAGE, routineName, messageStr);
@@ -454,7 +441,7 @@ flags rlk_opacity(double lambda, int nspect, int mu, bool_t to_obs,
 
   bool_t contributes, hunt;
   int    Nwhite, Nblue, Nred, NrecStokes;
-  double dlamb_wing, *pf, dlamb_char, hc_la, ni_gi, nj_gj, lambda0, kT,
+  double dlamb_wing, *pf, dlamb_char, hc_la, ni_gi, nj_gj, kT,
          Bijhc_4PI, twohnu3_c2, hc, fourPI, hc_4PI,
         *eta_Q, *eta_U, *eta_V, eta_l,
         *chi_Q, *chi_U, *chi_V, chi_l, *chip_Q, *chip_U, *chip_V,
@@ -549,103 +536,104 @@ flags rlk_opacity(double lambda, int nspect, int mu, bool_t to_obs,
 	     stage, and if abundance is set --         -------------- */
 
       if ((rlk->stage < element->Nstage - 1) && element->abundance_set) {
-	contributes = TRUE;
-	if ((metal = element->model) != NULL) {
+	      contributes = TRUE;
+	      if ((metal = element->model) != NULL) {
 
           /* --- If an explicit atomic model is present check that we
 	         do not already account for this line in this way - - */
 
-	  for (kr = 0;  kr < metal->Nline;  kr++) {
-	    line = metal->line + kr;
-	    dlamb_wing = line->lambda0 * line->qwing *
-	      (atmos.vmicro_char / CLIGHT);
-	    if (fabs(lambda - line->lambda0) <= dlamb_wing &&
-		metal->stage[line->i] == rlk->stage) {
-	      contributes = FALSE;
-	      break;
-	    }
-	  }
-	}
+          for (kr = 0;  kr < metal->Nline;  kr++) {
+            line = metal->line + kr;
+            dlamb_wing = line->lambda0 * line->qwing *
+              (atmos.vmicro_char / CLIGHT);
+            if (fabs(lambda - line->lambda0) <= dlamb_wing &&
+                metal->stage[line->i] == rlk->stage) {
+              contributes = FALSE;
+              break;
+            }
+          }
+        }
       } else
-	contributes = FALSE;
+      contributes = FALSE;
 
       /* --- Get opacity from line --                  -------------- */
 
       if (contributes) {
-	hc_la      = (HPLANCK * CLIGHT) / (rlk->lambda0 * NM_TO_M);
-	Bijhc_4PI  = hc_4PI * rlk->Bij * rlk->isotope_frac *
-	  rlk->hyperfine_frac * rlk->gi;
-	twohnu3_c2 = rlk->Aji / rlk->Bji;
+        hc_la      = (HPLANCK * CLIGHT) / (rlk->lambda0 * NM_TO_M);
+        Bijhc_4PI  = hc_4PI * rlk->Bij * rlk->isotope_frac *
+          rlk->hyperfine_frac * rlk->level_i.g;
+        twohnu3_c2 = rlk->Aji / rlk->Bji;
 
-	if (input.rlkscatter) {
-	  if (rlk->stage == 0) {
-	    x  = 0.68;
-	    C3 = C / (C2_atom * SQ(rlk->lambda0 * NM_TO_M));
-	  } else {
-	    x  = 0.0;
-	    C3 = C / (C2_ion * SQ(rlk->lambda0 * NM_TO_M));
-	  }
+        if (input.rlkscatter) {
+          if (rlk->stage == 0) {
+            x  = 0.68;
+            C3 = C / (C2_atom * SQ(rlk->lambda0 * NM_TO_M));
+          } else {
+            x  = 0.0;
+            C3 = C / (C2_ion * SQ(rlk->lambda0 * NM_TO_M));
+          }
 
-	  dE = rlk->Ej - rlk->Ei;
-	}
+          dE = rlk->level_j.E - rlk->level_i.E;
+        }
         /* --- Set flag that line is present at this wavelength -- -- */
 
-	backgrflags.hasline = TRUE;
-	if (rlk->polarizable) {
-	  backgrflags.ispolarized = TRUE;
-	  if (rlk->zm == NULL) rlk->zm = RLKZeeman(rlk);
-	}
+        backgrflags.hasline = TRUE;
+        if (rlk->polarizable) {
+          backgrflags.ispolarized = TRUE;
+          if (rlk->zm == NULL) RLKZeeman(rlk);
+        }
 
         if (element->n == NULL) {
-	  element->n = matrix_double(element->Nstage, atmos.Nspace);
-	  LTEpops_elem(element);
-	}
+          element->n = matrix_double(element->Nstage, atmos.Nspace);
+          LTEpops_elem(element);
+      	}
         Linear(atmos.Npf, atmos.Tpf, element->pf[rlk->stage],
-	       atmos.Nspace, atmos.T, pf, hunt=TRUE);
+	             atmos.Nspace, atmos.T, pf, hunt=TRUE);
 
-	for (k = 0;  k < atmos.Nspace;  k++) {
-	  phi = RLKProfile(rlk, k, mu, to_obs, lambda,
-			   &phi_Q, &phi_U, &phi_V,
-			   &psi_Q, &psi_U, &psi_V);
+        for (k = 0;  k < atmos.Nspace;  k++) {
+          phi = RLKProfile(rlk, k, mu, to_obs, lambda,
+              &phi_Q, &phi_U, &phi_V,
+              &psi_Q, &psi_U, &psi_V);
 
-	  if (phi){
-	    kT    = 1.0 / (KBOLTZMANN * atmos.T[k]);
-	    ni_gi = element->n[rlk->stage][k] * exp(-rlk->Ei*kT - pf[k]);
+          if (phi){
+            kT    = 1.0 / (KBOLTZMANN * atmos.T[k]);
+            ni_gi = element->n[rlk->stage][k] *
+              exp(-rlk->level_i.E * kT - pf[k]);
             nj_gj = ni_gi * exp(-hc_la * kT);
 
-	    chi_l = Bijhc_4PI * (ni_gi - nj_gj);
-	    eta_l = Bijhc_4PI * twohnu3_c2 * nj_gj;
+            chi_l = Bijhc_4PI * (ni_gi - nj_gj);
+            eta_l = Bijhc_4PI * twohnu3_c2 * nj_gj;
 
-	    if (input.rlkscatter) {
-	      epsilon = 1.0 / (1.0 + C3 * pow(atmos.T[k], 1.5) /
-			       (atmos.ne[k] *
-				pow(KBOLTZMANN * atmos.T[k] / dE, 1 + x)));
+            if (input.rlkscatter) {
+              epsilon = 1.0 / (1.0 + C3 * pow(atmos.T[k], 1.5) /
+                  (atmos.ne[k] *
+                  pow(KBOLTZMANN * atmos.T[k] / dE, 1 + x)));
 
               scatt[k] += (1.0 - epsilon) * chi_l * phi;
-	      chi_l    *= epsilon;
+              chi_l    *= epsilon;
               eta_l    *= epsilon;
-	    }
+            }
 
-	    chi[k] += chi_l * phi;
-	    eta[k] += eta_l * phi;
+            chi[k] += chi_l * phi;
+            eta[k] += eta_l * phi;
 
-	    if (rlk->zm != NULL && rlk->Grad) {
-	      chi_Q[k] += chi_l * phi_Q;
-	      chi_U[k] += chi_l * phi_U;
-	      chi_V[k] += chi_l * phi_V;
+            if (rlk->zm != NULL && rlk->Grad) {
+              chi_Q[k] += chi_l * phi_Q;
+              chi_U[k] += chi_l * phi_U;
+              chi_V[k] += chi_l * phi_V;
 
-	      eta_Q[k] += eta_l * phi_Q;
-	      eta_U[k] += eta_l * phi_U;
-	      eta_V[k] += eta_l * phi_V;
+              eta_Q[k] += eta_l * phi_Q;
+              eta_U[k] += eta_l * phi_U;
+              eta_V[k] += eta_l * phi_V;
 
-	      if (input.magneto_optical) {
-		chip_Q[k] += chi_l * psi_Q;
-		chip_U[k] += chi_l * psi_U;
-		chip_V[k] += chi_l * psi_V;
+              if (input.magneto_optical) {
+                chip_Q[k] += chi_l * psi_Q;
+                chip_U[k] += chi_l * psi_U;
+                chip_V[k] += chi_l * psi_V;
+	            }
+	          }
+	        }
 	      }
-	    }
-	  }
-	}
       }
     }
   }
@@ -721,16 +709,16 @@ double RLKProfile(RLK_Line *rlk, int k, int mu, bool_t to_obs,
 
       switch (rlk->zm->q[nz]) {
       case -1:
-	phi_sm += rlk->zm->strength[nz] * H;
-	psi_sm += rlk->zm->strength[nz] * F;
-	break;
+        phi_sm += rlk->zm->strength[nz] * H;
+        psi_sm += rlk->zm->strength[nz] * F;
+        break;
       case  0:
-	phi_pi += rlk->zm->strength[nz] * H;
-	psi_pi += rlk->zm->strength[nz] * F;
-	break;
+        phi_pi += rlk->zm->strength[nz] * H;
+        psi_pi += rlk->zm->strength[nz] * F;
+        break;
       case  1:
-	phi_sp += rlk->zm->strength[nz] * H;
-	psi_sp += rlk->zm->strength[nz] * F;
+        phi_sp += rlk->zm->strength[nz] * H;
+        psi_sp += rlk->zm->strength[nz] * F;
       }
     }
     phi_sigma = phi_sp + phi_sm;
@@ -759,7 +747,7 @@ double RLKProfile(RLK_Line *rlk, int k, int mu, bool_t to_obs,
 
 /* ------- begin -------------------------- RLKZeeman.c ------------- */
 
-ZeemanMultiplet* RLKZeeman(RLK_Line *rlk)
+void RLKZeeman(RLK_Line *rlk)
 {
   const char routineName[] = "RLKZeeman";
 
@@ -785,9 +773,12 @@ ZeemanMultiplet* RLKZeeman(RLK_Line *rlk)
 
 	 --                                            -------------- */
 
-  Jl = (rlk->gi - 1.0) / 2.0;
-  Ju = (rlk->gj - 1.0) / 2.0;
-  zm = (ZeemanMultiplet *) malloc(sizeof(ZeemanMultiplet));
+  Jl = rlk->level_i.J;
+  Ju = rlk->level_j.J;
+  
+  rlk->zm = (ZeemanMultiplet *) malloc(sizeof(ZeemanMultiplet));
+  initZeeman(rlk->zm);
+  zm = rlk->zm;
 
   /* --- Count the number of components --           -------------- */
 
@@ -805,8 +796,8 @@ ZeemanMultiplet* RLKZeeman(RLK_Line *rlk)
 
   /* --- Fill the structure and normalize the strengths -- -------- */
 
-  gLl = Lande(rlk->Si, rlk->Li, Jl);
-  gLu = Lande(rlk->Sj, rlk->Lj, Ju);
+  gLl = RLKLande(&rlk->level_i);
+  gLu = RLKLande(&rlk->level_j);
 
   n = 0;
   for (Ml = -Jl;  Ml <= Jl;  Ml++) {
@@ -817,7 +808,7 @@ ZeemanMultiplet* RLKZeeman(RLK_Line *rlk)
 	zm->strength[n] = ZeemanStrength(Ju, Mu, Jl, Ml);
 
 	norm[zm->q[n]+1] += zm->strength[n];
-        if (zm->q[n] == 1) g_eff += zm->shift[n] * zm->strength[n];
+	if (zm->q[n] == 1) g_eff += zm->shift[n] * zm->strength[n];
 	n++;
       }
     }
@@ -825,59 +816,165 @@ ZeemanMultiplet* RLKZeeman(RLK_Line *rlk)
   for (n = 0;  n < zm->Ncomponent;  n++)
     zm->strength[n] /= norm[zm->q[n]+1];
   g_eff /= norm[2];
-
-  return zm;
+  zm->g_eff = g_eff;
 }
 /* ------- end ---------------------------- RLKZeeman.c ------------- */
 
-/* ------- begin -------------------------- RLKdeterminate.c -------- */
+/* ------- begin -------------------------- RLKdet_level.c ---------- */
 
-bool_t RLKdeterminate(char *labeli, char *labelj, RLK_Line *rlk)
+#define LS_COUNT  2
+#define JK_COUNT  6
+#define JJ_COUNT  4
+
+bool_t RLKdet_level(char* label, RLK_level *level)
 {
-  const char routineName[] = "RLKZeeman";
+  const char routineName[] = "RLKdet_level";
 
-  char **words, orbit[2];
-  bool_t invalid;
-  int    count, multiplicity, length, Nread, Ji, Jj;
+  char **words, orbit[2], Lchar, L1char, lchar, Kchar, l1char, l2char;
+  char delims_i[] = "({[";
+  char delims_f[] = ")}]";
+  char *ptr_i, *ptr_f, *quanta_str;
+  bool_t counterror;
+  int  count, multiplicity, length, Nread, M1;
 
-  /* --- Get spin and orbital quantum numbers from level labels -- -- */
+  /* --- Get spin and orbital quantum numbers from level labels --
 
-  words  = getWords(labeli, " ", &count);
-  if (words[0]) {
-    length = strlen(words[count-1]);
-    Nread  = sscanf(words[count-1] + length-2, "%d%1s",
-		    &multiplicity, orbit);
-    free(words);
-    if (Nread != 2 || !isupper(orbit[0])) return FALSE;
+    For explicit LS_COUPLING, or JK_ and JJ_COUPLING provide labels with
+    explicit quantum numbers as follows (note the delimiters, no spaces).
+    In the Kurucz line list file (note J is always explicitly listed).
 
-    rlk->Li = getOrbital(orbit[0]);
-    rlk->Si = (multiplicity - 1) / 2.0;
-    Ji = (rlk->gi - 1.0) / 2.0;
-  } else
-    return FALSE;
+    In keyword.input set RLK_EXPLICIT = TRUE
+    You CAN NOT mix explicit and non-explicit label modes!
 
-  words  = getWords(labelj, " ", &count);
-  if (words[0]) {
-    length = strlen(words[count-1]);
-    Nread  = sscanf(words[count-1] + length-2, "%d%1s",
-		    &multiplicity, orbit);
-    free(words);
-    if (Nread != 2 || !isupper(orbit[0])) return FALSE;
+    See:  Landi degl'Innocenti & Landolfi 2004, pp 76-77
+    Note: the label HAS to be 10 characters long, and no other
+          elements of the line in the .kur should be moved!!
 
-    rlk->Lj = getOrbital(orbit[0]);
-    rlk->Sj = (multiplicity - 1) / 2.0;
-    Jj = (rlk->gj - 1.0) / 2.0;
-  } else
-    return FALSE;
+      LS_COUPLING: [m,L]             Exmpl: '[2P]      ' --> S = 0.5, L = 1
+      JK_COUPLING: (M1L1J1)lmK       Exmpl: '(6D4.5)f2K' --> S1 = 2.5, L1 = 2,
+                                               J1 = 4.5, l = 3, K = 3.5
+      JJ_COUPLING: {j1l1j2l2}        Exmpl: '{1.5p2.5s}' --> j1 = 1.5,
+                                               l1 = 1, j2 = 2.5, l2 = 0
 
-  /* --- For the moment only allow electronic dipole transitions -- --*/
+    Example for the FeI 1565.2874 line (JK_COUPLING in upper level):
 
-  /*  if (fabs(Ji - Jj) > 1.0)
-    return FALSE;
-    else */
+1565.2874 -0.476 26.00   50377.905  5.0 s6D)4d f7D   56764.763  4.0 s6D9/4f[3]   8.44 -5.00 -7.70K94  0 0  0 0.000  0 0.000    0    0           1510 1542
+
+    becomes:
+
+1565.2874 -0.476 26.00   50377.905  5.0 [7D]         56764.763  4.0 (6D4.5)f2k   8.44 -5.00 -7.70K94  0 0  0 0.000  0 0.000    0    0           1510 1542
+
+     --                                                -------------- */
+
+  if (!input.RLK_explicit) {
+
+    words = getWords(label, " ", &count);
+    if (words[0]) {
+      length = strlen(words[count-1]);
+      Nread  = sscanf(words[count-1] + length-2, "%d%1s",
+		      &multiplicity, orbit);
+      free(words);
+      if (Nread != 2 || !isupper(orbit[0])) return FALSE;
+    
+      level->L = getOrbital(orbit[0]);
+      level->S = (multiplicity - 1) / 2.0;
+      
+      level->cpl = LS_COUPLING;
+      return TRUE;
+    } else
+      return FALSE;
+  } else {
+  
+    /* --- Check for presence of any of three allowed delimiters -- - */
+  
+    ptr_i = strpbrk(label, delims_i);
+    ptr_f = strpbrk(label, delims_f);
+
+    if (ptr_i == NULL || ptr_f == NULL) {
+      if (ptr_i != NULL && ptr_f == NULL) {
+	sprintf(messageStr, " Malformed label: missing ending "
+		"delimiter: %c, label: %s\n",
+		delims_f[strchr(delims_i, ptr_i[0]) - delims_i], label);
+	Error(ERROR_LEVEL_2, routineName, messageStr);
+      }
+      if (ptr_i == NULL && ptr_f != NULL) {
+	sprintf(messageStr, " Malformed label: missing beginning "
+		"delimiter: %c, label: %s\n",
+		delims_i[strchr(delims_f, ptr_f[0]) - delims_f], label);
+	Error(ERROR_LEVEL_2, routineName, messageStr);
+      }
+      return FALSE;
+    }
+    if (ptr_i[0] != delims_i[strchr(delims_f, ptr_f[0]) - delims_f]) {
+
+      /* --- When delimiters are not matching --       -------------- */
+      
+      sprintf(messageStr,
+	      " Malformed label: mismatched delimiters: '%c %c', %s\n",
+	      ptr_i[0], ptr_f[0], label);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
+      return FALSE;
+    }     
+
+    length = ptr_f - ptr_i + 2;
+    quanta_str = (char *) malloc(length);
+    strncpy(quanta_str, ptr_i, length-1);
+    quanta_str[length-1] = '\0';
+
+    counterror = FALSE;
+
+    switch (ptr_i[0]) {
+    case '[':
+      if (Nread = sscanf(quanta_str, "[%1d%1c]",
+			 &multiplicity, &Lchar) != LS_COUNT)
+	counterror = TRUE;
+      else {
+	level->S = (multiplicity - 1) / 2.0;
+	level->L = getOrbital(Lchar);
+	
+	level->cpl = LS_COUPLING;
+      }
+      break;
+
+    case '(':
+      if (Nread = sscanf(label, "(%1d%1c%3lf)%1c%1d%1c",
+			 &M1, &L1char, &level->J1, &lchar,
+			 &multiplicity, &Kchar) != JK_COUNT)
+	counterror = TRUE;
+      else {
+	level->S1 = (M1 - 1) / 2.0;
+	level->L1 = getOrbital(L1char);
+	level->l  = getOrbital(toupper(lchar));
+	level->K  = getJK_K(Kchar);
+	
+	level->cpl = JK_COUPLING;
+      }
+      break;
+
+    case '{':
+      if (Nread = sscanf(quanta_str, "{%3lf%1c%3lf%1c}",
+			 &level->j1, &l1char,
+			 &level->j2, &l2char) != JJ_COUNT)
+	counterror = TRUE;
+      else {
+	level->l1 = getOrbital(toupper(l1char));
+	level->l2 = getOrbital(toupper(l2char));
+	
+	level->cpl = JJ_COUPLING;
+      }
+      break;
+    }
+    if (counterror) {
+      sprintf(messageStr, "Wrong quantum number count: %s: %d\n",
+	      quanta_str, Nread);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
+      return FALSE;
+    }
+    free(quanta_str);
     return TRUE;
+  }
 }
-/* ------- end ---------------------------- RLKdeterminate.c -------- */
+/* ------- end ---------------------------- RLKdet_level.c ---------- */
 
 /* ------- begin -------------------------- initRLK.c --------------- */
 
@@ -906,8 +1003,8 @@ void getUnsoldcross(RLK_Line *rlk)
   }
 
   Z = rlk->stage + 1;
-  deltaR = SQ(E_RYDBERG/(element->ionpot[rlk->stage] - rlk->Ej)) -
-    SQ(E_RYDBERG/(element->ionpot[rlk->stage] - rlk->Ei));
+  deltaR = SQ(E_RYDBERG/(element->ionpot[rlk->stage] - rlk->level_j.E)) -
+    SQ(E_RYDBERG/(element->ionpot[rlk->stage] - rlk->level_i.E));
 
   if (deltaR <= 0.0) {
     rlk->vdwaals = KURUCZ;
@@ -939,3 +1036,72 @@ void free_BS(Barklemstruct *bs)
   freeMatrix((void **) bs->alpha);
 }
 /* ------- end ---------------------------- free_BS.c --------------- */
+
+/* ------- begin -------------------------- RLKLande.c -------------- */
+
+double RLKLande(RLK_level *level)
+{
+  const char routineName[] = "RLKLande";
+
+  /* --- Lande g factors for different angular momentum coupling 
+         schemes.
+
+         See: Landi degl'Innocenti & Landolfi 2004, pp 76-77 -- ----- */
+
+  switch (level->cpl) {
+  case LS_COUPLING:
+    level->gL = 1.0 + zm_gamma(level->J, level->S, level->L);
+
+    break;
+    
+  case JK_COUPLING:
+    level->gL = 1.0 + zm_gamma(level->J, 0.5, level->K) +
+      zm_gamma(level->J, level->K, 0.5) *
+      zm_gamma(level->K, level->J1, level->l) *
+      zm_gamma(level->J1, level->S1, level->L1);
+
+    break;
+    
+  case JJ_COUPLING:
+    level->gL = 1.0 + zm_gamma(level->J, level->j1, level->j2) *
+      zm_gamma(level->j1, 0.5, level->l1) +
+      zm_gamma(level->J, level->j2, level->j1) *
+      zm_gamma(level->j2, 0.5, level->l2);
+
+    break;
+    
+  default:
+    sprintf(messageStr, "Invalid coupling: %d", level->cpl);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
+  return level->gL;
+}
+/* ------- end ---------------------------- RLKLande.c -------------- */
+
+/* ------- begin -------------------------- getJK_K.c -- ------------ */
+
+double getJK_K(char Kchar)
+{
+  const char routineName[] = "getJK_K";
+
+  double K = 0.0;
+
+  switch (Kchar) {
+    case 'p': K = 0.5;  break;
+    case 'f': K = 1.5;  break;
+    case 'h': K = 2.5;  break;
+    case 'k': K = 3.5;  break;
+    case 'm': K = 4.5;  break;
+    case 'o': K = 5.5;  break;
+    case 'r': K = 6.5;  break;
+    case 't': K = 7.5;  break;
+    case 'u': K = 8.5;  break;
+    case 'v': K = 9.5;  break;
+    case 'w': K = 10.5; break;
+  default: 
+    sprintf(messageStr, "Invalid Kchar: %c", Kchar);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
+  return K;
+}
+/* ------- end ---------------------------- getJK_K.c --------------- */

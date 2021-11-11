@@ -78,7 +78,7 @@ typedef struct {
   bool_t magneto_optical, XRD, Eddington,
          backgr_pol, limit_memory, allow_passive_bb, NonICE,
          rlkscatter, prdh_limit_mem, backgr_in_mem, xdr_endian,
-         old_background, accelerate_mols;
+         old_background, accelerate_mols, RLK_explicit;
   enum   solution startJ;
   enum   StokesMode StokesMode;
   enum   S_interpol S_interpolation;

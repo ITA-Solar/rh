@@ -112,6 +112,7 @@ void initParallelIO(bool_t run_ray, bool_t writej) {
 
 /* ------- begin --------------------------  closeParallelIO.c    --- */
 void closeParallelIO(bool_t run_ray, bool_t writej) {
+  int i;
 
   if (!run_ray) {
     close_hdf5_indata();
@@ -128,6 +129,12 @@ void closeParallelIO(bool_t run_ray, bool_t writej) {
 
   /* Free buffer variables */
   freeBufVars(writej);
+
+  /* Free RLK stuff */
+  for (i = 0;  i < atmos.Nrlk;  i++) {
+    if (atmos.rlk_lines[i].zm != NULL) freeZeeman(atmos.rlk_lines[i].zm);
+  }
+  if (atmos.rlk_lines != NULL) free(atmos.rlk_lines); 
 }
 /* ------- end   --------------------------  closeParallelIO.c    --- */
 

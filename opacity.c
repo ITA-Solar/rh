@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Fri Jul 24 16:39:47 2009 --
+       Last modified: Fri May 14 17:53:23 2021 --
 
        --------------------------                      ----------RH-- */
 
@@ -444,9 +444,9 @@ void Opacity(int nspect, int mu, bool_t to_obs, bool_t initialize)
 
 void alloc_as(int nspect, bool_t crosscoupling)
 {
-  register int n, m, nact;
+  register int m, nact;
 
-  int i, j, NrecStokes, NrecStokes_as, Nactive, nt;
+  int i, j, NrecStokes, NrecStokes_as, nt;
   Atom *atom;
   Molecule *molecule;
   ActiveSet *as;
@@ -547,7 +547,7 @@ void alloc_as(int nspect, bool_t crosscoupling)
 
 void free_as(int nspect, bool_t crosscoupling)
 {
-  register int nact, n, m;
+  register int nact, m;
 
   int i, j, nt;
   Atom *atom;
@@ -582,23 +582,23 @@ void free_as(int nspect, bool_t crosscoupling)
       freeMatrix((void **) atom->rhth[nt].wla);
 
       if (crosscoupling) {
-	for (m = 0;  m < as->Nlower[nact];  m++) {
-	  i = as->lower_levels[nact][m];
-	  free(atom->rhth[nt].chi_up[i]);
-	  atom->rhth[nt].chi_up[i] = NULL;
-	}
-	free(atom->rhth[nt].chi_up);
+        for (m = 0;  m < as->Nlower[nact];  m++) {
+          i = as->lower_levels[nact][m];
+          free(atom->rhth[nt].chi_up[i]);
+          atom->rhth[nt].chi_up[i] = NULL;
+        }
+        free(atom->rhth[nt].chi_up);
 
-	for (m = 0;  m < as->Nupper[nact];  m++) {
-	  j = as->upper_levels[nact][m];
-	  free(atom->rhth[nt].chi_down[j]);
-	  free(atom->rhth[nt].Uji_down[j]);
+        for (m = 0;  m < as->Nupper[nact];  m++) {
+          j = as->upper_levels[nact][m];
+          free(atom->rhth[nt].chi_down[j]);
+          free(atom->rhth[nt].Uji_down[j]);
 
-	  atom->rhth[nt].chi_down[j] = NULL;
-	  atom->rhth[nt].Uji_down[j] = NULL;
-	}
-	free(atom->rhth[nt].chi_down);
-	free(atom->rhth[nt].Uji_down);
+          atom->rhth[nt].chi_down[j] = NULL;
+          atom->rhth[nt].Uji_down[j] = NULL;
+        }
+        free(atom->rhth[nt].chi_down);
+        free(atom->rhth[nt].Uji_down);
       }
     }
   }
@@ -663,16 +663,16 @@ bool_t containsBoundBound(ActiveSet *as)
 
 bool_t containsActive(ActiveSet *as)
 {
-  register int n, nact;
+  register int nact;
 
   for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
     if (as->Nactiveatomrt[nact] > 0)
-	return TRUE;
+	    return TRUE;
   }
 
   for (nact = 0;  nact < atmos.Nactivemol;  nact++) {
     if (as->Nactivemolrt[nact] > 0)
-	return TRUE;
+	    return TRUE;
   }
 
   return FALSE;
@@ -688,8 +688,8 @@ bool_t containsPRDline(ActiveSet *as)
   for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
     for (n = 0;  n < as->Nactiveatomrt[nact];  n++) {
       if (as->art[nact][n].type == ATOMIC_LINE &&
-	  as->art[nact][n].ptype.line->PRD) {
-	return TRUE;
+	        as->art[nact][n].ptype.line->PRD) {
+	      return TRUE;
       }
     }
   }
@@ -837,7 +837,7 @@ flags MolecularOpacity(double lambda, int nspect, int mu, bool_t to_obs,
 	    backgrflags.hasline = TRUE;
 	    if (mrt->polarizable) {
 	      backgrflags.ispolarized = TRUE;
-	      if (mrt->zm == NULL) mrt->zm = MolZeeman(mrt);
+	      if (mrt->zm == NULL) MolZeeman(mrt);
 	    }
 
 	    for (k = 0;  k < atmos.Nspace;  k++) {

@@ -743,9 +743,7 @@ void calculate_ray(void) {
     if (input.prdh_limit_mem) prdh_limit_mem_save = TRUE;
     input.prdh_limit_mem = TRUE;
   }
-
   Background_p(analyze_output=FALSE, equilibria_only=FALSE);
-
   /* --- Solve radiative transfer for ray --           -------------- */
   solveSpectrum(FALSE, FALSE);
 

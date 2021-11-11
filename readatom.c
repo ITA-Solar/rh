@@ -653,6 +653,7 @@ void initAtomicLine(AtomicLine *line)
   line->id0 = NULL;
   line->id1 = NULL;
   line->gII = NULL;
+  line->zm = NULL;
 }
 /* ------- end ---------------------------- initAtomicLine.c -------- */
 
@@ -732,6 +733,9 @@ void freeAtomicLine(AtomicLine *line)
     if (line->psi_Q != NULL) freeMatrix((void **) line->psi_Q);
     if (line->psi_U != NULL) freeMatrix((void **) line->psi_U);
     if (line->psi_V != NULL) freeMatrix((void **) line->psi_V);
+    if (atmos.Stokes &&	input.StokesMode == FULL_STOKES) {
+      if (line->zm != NULL)freeZeeman(line->zm);
+    }
   }
   if (line->c_shift != NULL)    free(line->c_shift);
   if (line->c_fraction != NULL) free(line->c_fraction);
