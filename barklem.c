@@ -183,7 +183,7 @@ bool_t getBarklemcross(Barklemstruct *bs, RLK_Line *rlk)
   neff1 = Z * sqrt(E_Rydberg / deltaEi);
   neff2 = Z * sqrt(E_Rydberg / deltaEj);
 
-  if (rlk->level_i.L > rlk->level_j.L) SWAPDOUBLE(neff1, neff2);
+  if (rlk->level_i.L_ac > rlk->level_j.L_ac) SWAPDOUBLE(neff1, neff2);
   
   if (neff1 < bs->neff1[0] || neff1 > bs->neff1[bs->N1-1])
     return FALSE;

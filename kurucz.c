@@ -95,6 +95,7 @@ void   RLKZeeman(RLK_Line *rlk);
 double RLKLande(RLK_level* level);
 void   initRLK(RLK_Line *rlk);
 bool_t RLKdet_level(char* label, RLK_level *level);
+bool_t RLKdet_level_ac(char* label, RLK_level *level);
 double getJK_K(char c);
 void   getUnsoldcross(RLK_Line *rlk);
 void   free_BS(Barklemstruct *bs);
@@ -257,14 +258,18 @@ void readKuruczLines(char *inputFile)
         rlk->Bji = CUBE(lambda0) / (2.0 * HPLANCK * CLIGHT) * rlk->Aji;
         rlk->Bij = (rlk->level_j.g / rlk->level_i.g) * rlk->Bji;
 
-              /* --- Store in nm --                          -------------- */
-              rlk->lambda0 = lambda0 / NM_TO_M;
+        /* --- Store in nm --                          -------------- */
+        rlk->lambda0 = lambda0 / NM_TO_M;
 
-              determined = (RLKdet_level(labeli, &rlk->level_i) &&
-                RLKdet_level(labelj, &rlk->level_j));
-              rlk->polarizable = (atmos.Stokes && determined);
+        determined = (RLKdet_level(labeli, &rlk->level_i) &&
+                      RLKdet_level(labelj, &rlk->level_j));
+        rlk->polarizable = (atmos.Stokes && determined);
 
-              /* --- Line broadening --                      -------------- */
+        /* --- Get orbital quantum level for Barklem tables --- */
+        determined = (RLKdet_level_ac(labeli, &rlk->level_i) &&
+                      RLKdet_level_ac(labelj, &rlk->level_j));
+
+        /* --- Line broadening --                      -------------- */
 
         strncpy(Gvalues, inputLine+79, 18);
         Nread += sscanf(Gvalues, "%lf %lf %lf", &Grad, &GStark, &GvdWaals);
@@ -279,24 +284,24 @@ void readKuruczLines(char *inputFile)
         else
           rlk->GvdWaals = 0.0;
 
-              /* --- If possible use Barklem formalism --    -------------- */
+        /* --- If possible use Barklem formalism --    -------------- */
 
         useBarklem = FALSE;
         if (determined &&
             rlk->level_i.cpl == LS_COUPLING &&
             rlk->level_j.cpl == LS_COUPLING) {
         
-          Li = rlk->level_i.L;
-          Lj = rlk->level_j.L;
+          Li = rlk->level_i.L_ac;
+          Lj = rlk->level_j.L_ac;
           
           if ((Li == S_ORBIT && Lj == P_ORBIT) ||
-                    (Li == P_ORBIT && Lj == S_ORBIT)) {
+              (Li == P_ORBIT && Lj == S_ORBIT)) {
             useBarklem = getBarklemcross(&bs_SP, rlk);
           } else if ((Li == P_ORBIT && Lj == D_ORBIT) ||
-              (Li == D_ORBIT && Lj == P_ORBIT)) {
+                     (Li == D_ORBIT && Lj == P_ORBIT)) {
             useBarklem = getBarklemcross(&bs_PD, rlk);
           } else if ((Li == D_ORBIT && Lj == F_ORBIT) ||
-              (Li == F_ORBIT && Lj == D_ORBIT)) {
+                     (Li == F_ORBIT && Lj == D_ORBIT)) {
             useBarklem = getBarklemcross(&bs_DF, rlk);
           }
         }
@@ -975,6 +980,31 @@ bool_t RLKdet_level(char* label, RLK_level *level)
   }
 }
 /* ------- end ---------------------------- RLKdet_level.c ---------- */
+
+/* ------- begin -------------------------- RLKdet_level_ac.c ---------- */
+
+bool_t RLKdet_level_ac(char* label, RLK_level *level)
+{
+  const char routineName[] = "RLKdet_level_ac";
+
+  char **words, orbit[2];
+  int  count, length, Nread;
+
+  /* --- Get orbital quantum numbers from atomic configuration,
+         adapted from JdlCR STiC  -- */
+
+  /* --- Get spin and orbital quantum numbers from level labels -- -- */
+  words  = getWords(label, " ", &count);
+  if (words[0]) {
+    length = strlen(words[0]);
+    Nread  = sscanf(words[0] + length-1, "%1s", orbit);
+    free(words);
+    level->L_ac = getOrbital(toupper(orbit[0])); 
+  } else return FALSE;
+
+  return TRUE;
+}
+/* ------- end ---------------------------- RLKdet_level_ac.c ---------- */
 
 /* ------- begin -------------------------- initRLK.c --------------- */
 

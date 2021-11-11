@@ -656,14 +656,6 @@ void calculate_ray(void) {
   for (nact = 0; nact < atmos.Nactiveatom; nact++) {
     atom = atmos.activeatoms[nact];
 
-    // TIAGO: commented below
-    /* Rewind atom files to point just before collisional data
-    if ((ierror = fseek(atom->fp_input, io.atom_file_pos[nact], SEEK_SET))) {
-      sprintf(messageStr, "Unable to rewind atom file for %s", atom->ID);
-      Error(ERROR_LEVEL_2, "rh15d_ray", messageStr);
-    }
-    */
-
     /* Free collisions matrix, going to be re-allocated in background */
     if (atom->C != NULL) {
       freeMatrix((void **) atom->C);

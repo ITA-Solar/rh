@@ -158,7 +158,7 @@ struct Molecule {
 };
 
 typedef struct {
-  int    L, L1, l1, l2, l;
+  int    L, L1, l1, l2, l, L_ac;
   double g, E, S, J, S1, J1, j1, j2, K, gL, hfs;
   enum zeeman_cpl cpl;
   bool_t zm_explicit;
