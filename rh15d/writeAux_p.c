@@ -857,7 +857,7 @@ void writeAux_p(void) {
         for (j=0; j < atom->Nlevel; j++) {
           if (i != j) {
             for (k=0; k < atmos.Nspace; k++) {
-              idx = (j * atom->Nlevel + i) * atmos.Nspace + k;
+              idx = (i * atom->Nlevel + j) * atmos.Nspace + k;
               coll_rates[idx] = atom->C[j * atom->Nlevel + i][k];
             }
           }
