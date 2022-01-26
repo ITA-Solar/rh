@@ -55,8 +55,8 @@ bool_t xdr_populations(XDR *xdrs, char *atmosID, int Nlevel, long Nspace,
     }
     free(ID);
 
-    result &= xdr_int(xdrs, &Nl);
-    result &= xdr_int(xdrs, &Ns);
+    result &= xdr_int(xdrs, &(int)Nl);
+    result &= xdr_int(xdrs, &(int)Ns);
     if ((Nl != Nlevel)  ||  (Ns != Nspace)) return FALSE;
   }
   /* --- Exit if true populations do not exist --      -------------- */

@@ -26,6 +26,7 @@
 /* --- Function prototypes --                          -------------- */
 void overlord(void);
 void drone(void);
+void get_stats(double,const char*);
 
 
 /* --- Global variables --                             -------------- */
@@ -44,13 +45,20 @@ IO_data   io;
 IO_buffer iobuf;
 const float FILLVALUE = FILL;  /* Default fill value for HDF5 */
 
-double tic,toc;
-// srand(time(NULL)); // random number generator
+double tic,toc,dt_tictoc;
+double global_drone_min_stats[5];
+double global_drone_max_stats[5];
+
 
 /* ------- begin -------------------------- rhf1d.c ----------------- */
 
 int main(int argc, char *argv[]) {
   bool_t run_ray = FALSE, writej = FALSE;
+
+  for (size_t i = 0; i < 5; ++i) {
+    global_drone_max_stats[i] = 0.0;
+    global_drone_min_stats[i] = 1e6;
+  }
 
   /* --- Set up MPI ----------------------             -------------- */
   initParallel(&argc, &argv, run_ray=FALSE);
@@ -75,7 +83,7 @@ int main(int argc, char *argv[]) {
 
   toc = MPI_Wtime();
 
-  printf("[id=%03d] Initialization elapsed time: %0.2f [s]\n",mpi.rank, toc - tic);
+  get_stats(toc - tic, "Initialization");
 
   /* --- Read input data and initialize --             -------------- */
   
@@ -99,16 +107,30 @@ int main(int argc, char *argv[]) {
 
   toc = MPI_Wtime();
   
-  printf("[id=%03d] Read input data and initialize elapsed time: %0.2f [s]\n",mpi.rank, toc - tic);
+  get_stats(toc - tic, "Read RayInput");
+
+
+  tic = MPI_Wtime();
 
   /* Read first atmosphere column just to get dimensions */
   readAtmos(0, 0, &atmos, &geometry, &infile);
   if (atmos.Stokes) Bproject();
   readAtomicModels();
   readMolecularModels();
+
+  toc = MPI_Wtime();
+
+  get_stats(toc - tic, "read[Atomic/Molecular]Models");
+
   SortLambda();
   checkValuesRayInput();
+
+  tic = MPI_Wtime();
   initParallelIO(run_ray=FALSE, writej=FALSE);
+  toc = MPI_Wtime();
+  
+  get_stats(toc - tic, "initParallelIO");
+
   /*//////////////////////
   ////////////////////////
   //////////////////////*/
@@ -134,14 +156,28 @@ int main(int argc, char *argv[]) {
   if (mpi.rank == 0) fprintf(mpi.main_logfile, "%s", messageStr);
   Error(MESSAGE,"main",messageStr);
   printTotalCPU();
+
   MPI_Finalize();
   return 0;
 }
 /* ------- end ---------------------------- rhf1d.c ----------------- */
 
+void get_stats(double dt_local, const char* label) {
+  double dt_min = 0.0;
+  double dt_max = 0.0;
+
+  MPI_Reduce(&dt_local,&dt_min,1,MPI_DOUBLE,MPI_MIN,0,MPI_COMM_WORLD);
+  MPI_Reduce(&dt_local,&dt_max,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
+
+  if (mpi.rank == 0) {
+    printf("[bench] %64s min/max: %0.3f [s] / %0.3f [s]\n", label, dt_min, dt_max);
+  }
+}
+
 
 /* ------- start ---------------------------- overlord.c ------------ */
 void overlord(void) {
+
   MPI_Status status;
   int result;
   long rank, current_task=0;
@@ -172,6 +208,7 @@ void overlord(void) {
       MPI_Recv(&result, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG,
 	       MPI_COMM_WORLD, &status);
       /* Send the drone a new work unit */
+
       MPI_Ssend(&current_task, 1, MPI_LONG, status.MPI_SOURCE, WORKTAG,
 	        MPI_COMM_WORLD);
       /* Get the next unit of work to be done */
@@ -203,6 +240,22 @@ void drone(void) {
     long task=1;
 
     mpi.isfirst = TRUE;
+
+    double dt_readAtoms_min = 1e6;
+    double dt_readAtoms_max = 0.0;
+
+    double dt_writeAux_min  = 1e6;
+    double dt_writeAux_max  = 0.0;
+
+    double dt_writeRay_min  = 1e6;
+    double dt_writeRay_max  = 0.0;
+
+    double dt_writeAtmos_min = 1e6;
+    double dt_writeAtmos_max = 0.0;
+
+    double dt_writeMPI_min = 1e6;
+    double dt_writeMPI_max = 0.0;
+
     /* Main loop over tasks */
     while (1) {
         if (mpi.stop) mpi.stop = FALSE;
@@ -210,7 +263,14 @@ void drone(void) {
         MPI_Recv(&mpi.task, 1, MPI_LONG, 0, MPI_ANY_TAG,
                  MPI_COMM_WORLD, &status);
         /* Check the tag of the received message. */
-        if (status.MPI_TAG == DIETAG) return;
+        if (status.MPI_TAG == DIETAG) {
+          printf("[bench][%04d] %50s min/max: %0.3f [s] / %0.3f [s]\n", mpi.rank, "readAtoms", dt_readAtoms_min, dt_readAtoms_max);
+          printf("[bench][%04d] %50s min/max: %0.3f [s] / %0.3f [s]\n", mpi.rank, "writeAux", dt_writeAux_min, dt_writeAux_max);
+          printf("[bench][%04d] %50s min/max: %0.3f [s] / %0.3f [s]\n", mpi.rank, "writeRay", dt_writeRay_min, dt_writeRay_max);
+          printf("[bench][%04d] %50s min/max: %0.3f [s] / %0.3f [s]\n", mpi.rank, "writeAtmos", dt_writeAtmos_min, dt_writeAtmos_max);
+          printf("[bench][%04d] %50s min/max: %0.3f [s] / %0.3f [s]\n", mpi.rank, "writeMPI", dt_writeMPI_min, dt_writeMPI_max);
+         return; 
+        }
 
         ++task;
 
@@ -232,7 +292,10 @@ void drone(void) {
         readAtmos(mpi.xnum[mpi.ix],mpi.ynum[mpi.iy], &atmos, &geometry,
                   &infile);
         toc = MPI_Wtime();
-        printf("[id=%03d][task=%04ld] ReadAtmos elapsed time: %0.2f [s]\n",mpi.rank, mpi.task, toc - tic);
+
+        dt_tictoc = toc - tic;
+        if (dt_tictoc <= dt_readAtoms_min) dt_readAtoms_min = dt_tictoc;
+        if (dt_tictoc >= dt_readAtoms_max) dt_readAtoms_max = dt_tictoc;
 
          // Update quantities that depend on atmosphere and initialise others 
         UpdateAtmosDep();
@@ -277,9 +340,22 @@ void drone(void) {
             tic = MPI_Wtime();
             /* Make sure aux written before ray redefined */
             writeAux_p();
+            toc = MPI_Wtime();
+
+            dt_tictoc = toc - tic;
+            if (dt_tictoc <= dt_writeAux_min) dt_writeAux_min = dt_tictoc;
+            if (dt_tictoc >= dt_writeAux_max) dt_writeAux_max = dt_tictoc;
+
+            tic = MPI_Wtime();
             writeAtmos_p();
             toc = MPI_Wtime();
-            printf("[id=%03d][task=%04ld] writeAux & Atmos elapsed time: %0.2f [s]\n",mpi.rank, mpi.task, toc - tic);
+
+            dt_tictoc = toc - tic;
+            if (dt_tictoc <= dt_writeAtmos_min) dt_writeAtmos_min = dt_tictoc;
+            if (dt_tictoc >= dt_writeAtmos_max) dt_writeAtmos_max = dt_tictoc;
+
+
+            // get_stats(toc-tic,"Write Atmos");
             /* Redefine geometry just for this ray */
             atmos.Nrays     = 1;
             geometry.Nrays  = 1;
@@ -292,7 +368,11 @@ void drone(void) {
             tic = MPI_Wtime();
             writeRay();
             toc = MPI_Wtime();
-            printf("[id=%03d][task=%04ld] writeRay elapsed time: %0.2f [s]\n",mpi.rank, mpi.task, toc - tic);
+
+            dt_tictoc = toc - tic;
+            if (dt_tictoc <= dt_writeRay_min) dt_writeRay_min = dt_tictoc;
+            if (dt_tictoc >= dt_writeRay_max) dt_writeRay_max = dt_tictoc;
+            // printf("[id=%03d][task=%04ld] writeRay elapsed time: %0.2f [s]\n",mpi.rank, mpi.task, toc - tic);
 
             /* Put back previous values for geometry  */
             atmos.Nrays     = geometry.Nrays = geometry.save_Nrays;
@@ -303,8 +383,17 @@ void drone(void) {
             spectrum.updateJ = TRUE;
         }
         /* --- Write output MPI group, send result to overlord ---------- */
+        tic = MPI_Wtime();
         writeMPI_p(task);
+        toc = MPI_Wtime();
+
+        dt_tictoc = toc - tic;
+        if (dt_tictoc <= dt_writeMPI_min) dt_writeMPI_min = dt_tictoc;
+        if (dt_tictoc >= dt_writeMPI_max) dt_writeMPI_max = dt_tictoc;
+
         MPI_Send(&result, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+
     } /* End of main task loop */
+
 }
 /* ------- end   ---------------------------- drone.c ------------ */
