@@ -230,7 +230,7 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 
   /* Set collective read */
 
-  if (COLLECTIVE_IO_R) {
+  if (COLLECTIVE_IO_R && mpi.isbalanced) {
     if ((plist_id = H5Pcreate(H5P_DATASET_XFER)) < 0) HERR(routineName);
     if ((H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE)) <0) HERR(routineName);
   } else {
