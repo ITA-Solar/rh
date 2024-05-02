@@ -190,6 +190,9 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
   }
 
   getCPU(3, TIME_START, NULL);
+
+  do_fudge = FALSE;
+  
   if (strcmp(input.fudgeData, "none")) {
     do_fudge = TRUE;
 
@@ -216,8 +219,7 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
     }
     for (n = 0;  n < 3*Nfudge;  n++) fudge[0][n] += 1.0;
     fclose(fp_fudge);
-  } else
-    do_fudge = FALSE;
+  }
 
   /* --- Allocate temporary storage space. The quantities are used
          for the following purposes:

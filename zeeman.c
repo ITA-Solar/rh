@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Tue Jan 12 10:17:35 2010 --
+       Last modified: Mon May 17 17:29:45 2021 --
 
        --------------------------                      ----------RH-- */
 
@@ -67,6 +67,7 @@ bool_t determinate(char *label, double g, int *n, double *S, int *L,
   *S = (multiplicity - 1) / 2.0;
 
   /* --- Orbital quantum number --                     -------------- */
+
   *L = getOrbital(orbit[0]);
 
   /* --- Total angular momentum --                     -------------- */
@@ -125,7 +126,7 @@ double effectiveLande(AtomicLine *line)
     g_l = Lande(S_l, L_l, J_l);
     g_u = Lande(S_u, L_u, J_u);
 
-    return 0.5*(g_u + g_l) + 0.25*(g_u - g_l) *
+    return 0.5*(g_u + g_l) + 0.25*(g_u - g_l) * 
       (J_u*(J_u + 1.0) - J_l*(J_l + 1.0));
   } else
     return 0.0;
@@ -136,10 +137,7 @@ double effectiveLande(AtomicLine *line)
 
 double Lande(double S, int L, double J)
 {
-  if (J == 0.0)
-    return 0.0;
-  else
-    return 1.5 + (S*(S + 1.0) - L*(L + 1)) / (2.0*J*(J + 1.0));
+  return 1.0 + zm_gamma(J, S, L);
 }
 /* ------- end ---------------------------- Lande.c ----------------- */
 
@@ -150,7 +148,7 @@ double ZeemanStrength(double Ju, double Mu, double Jl, double Ml)
   const char routineName[] = "ZeemanStrength";
 
   int    q, dJ;
-  double s;
+  double s = 0.0;
 
   /* --- Return the strength of Zeeman component (Ju, Mu) -> (Jl, Ml),
          where J and M are the total angular momentum and magnetic
@@ -194,15 +192,17 @@ double ZeemanStrength(double Ju, double Mu, double Jl, double Ml)
   default:
     sprintf(messageStr, "Invalid dJ: %d", dJ);
     Error(ERROR_LEVEL_2, routineName, messageStr);
-  }
+  }   
   return s;
 }
 /* ------- end ---------------------------- ZeemanStrength.c -------- */
 
 /* ------- begin -------------------------- Zeeman.c ---------------- */
 
-ZeemanMultiplet* Zeeman(AtomicLine *line)
+void Zeeman(AtomicLine *line)
 {
+  const char routineName[] = "Zeeman";
+
   register int n;
 
   bool_t result = TRUE;
@@ -210,14 +210,14 @@ ZeemanMultiplet* Zeeman(AtomicLine *line)
   double Sl, Su, Jl, Ju, Mu, Ml, norm[3], gLu, gLl;
   Atom  *atom = line->atom;
   ZeemanMultiplet *zm;
-
+  
   /* --- Return a pointer to a ZeemanMultiplet structure with all the
          components of a Zeeman split line. The strengths in the line
          are normalized to unity for each of the three possible values
          of q = [-1, 0, 1].
 
          Convention:
-
+ 
           -- q = +1 corresponds to a redshifted \sigma profile
 	     (zm->shift > 0). This redshifted profile has
              right-handed circular polarization when the
@@ -228,7 +228,9 @@ ZeemanMultiplet* Zeeman(AtomicLine *line)
 
 	 --                                            -------------- */
 
-  zm = (ZeemanMultiplet *) malloc(sizeof(ZeemanMultiplet));
+  line->zm = (ZeemanMultiplet *) malloc(sizeof(ZeemanMultiplet));
+  initZeeman(line->zm);
+  zm = line->zm;
 
   if (line->g_Lande_eff != 0.0) {
 
@@ -282,20 +284,32 @@ ZeemanMultiplet* Zeeman(AtomicLine *line)
 	if (fabs(Mu - Ml) <= 1.0) {
 	  zm->q[n]        = (int) (Ml - Mu);
 	  zm->shift[n]    = gLl*Ml - gLu*Mu;
-          zm->strength[n] = ZeemanStrength(Ju, Mu, Jl, Ml);
-
+	  zm->strength[n] = ZeemanStrength(Ju, Mu, Jl, Ml);
+	  
 	  norm[zm->q[n]+1] += zm->strength[n];
-          n++;
+	  n++;
 	}
       }
     }
     for (n = 0;  n < zm->Ncomponent;  n++)
       zm->strength[n] /= norm[zm->q[n]+1];
   }
-
-  return zm;
+  zm->g_eff = effectiveLande(line);
 }
 /* ------- end ---------------------------- Zeeman.c ---------------- */
+
+/* ------- begin -------------------------- zm_gamma.c -------------- */
+
+double zm_gamma(double J, double S, double L)
+{
+  if (J == 0.0)
+    return 0.0;
+  else 
+    return (J * (J + 1.0) + S * (S + 1.0) - L * (L + 1.0)) /
+      (2.0*J * (J + 1.0));
+}
+
+/* ------- end ---------------------------- zm_gamma.c -------------- */
 
 /* ------- begin -------------------------- adjustStokesMode.c ------ */
 
@@ -308,12 +322,12 @@ void adjustStokesMode()
   AtomicLine *line;
 
   /* --- Reset Stokes mode so that the full Stokes equations are
-         solved in case of input.StokesMode == FIELD_FREE, or
-         input.StokesMode == POLARIZATION_FREE. --    -------------- */
+         solved in case of input.StokesMode == FIELD_FREE --
+                                                      -------------- */
 
-  if (atmos.Nactiveatom == 0 || atmos.Stokes == FALSE ||
-      input.StokesMode == NO_STOKES ||
-      input.StokesMode == FULL_STOKES) return;
+  if ((atmos.Nactiveatom == 0 || atmos.Stokes == FALSE ||
+       input.StokesMode == NO_STOKES ||
+       input.StokesMode == FULL_STOKES) && !input.backgr_pol) return;
   else
     input.StokesMode = FULL_STOKES;
 
@@ -331,7 +345,7 @@ void adjustStokesMode()
 
 	  /* --- First free up the space used in field-free
                  calculation --                        -------------- */
-
+	  
 	  if (!input.limit_memory) freeMatrix((void **) line->phi);
 	  free(line->wphi);
 
@@ -343,6 +357,19 @@ void adjustStokesMode()
   }
 }
 /* ------- end ---------------------------- adjustStokesMode.c ------ */
+
+/* ------- begin -------------------------- initZeeman.c ------------ */
+
+void initZeeman(ZeemanMultiplet *zm)
+{
+  zm->Ncomponent = 0;
+  zm->q = NULL;
+  
+  zm->shift = NULL;
+  zm->strength = NULL;
+  zm->g_eff = 0.0;
+}
+/* ------- end ---------------------------- initZeeman.c ------------ */
 
 /* ------- begin -------------------------- freeZeeman.c ------------ */
 
@@ -362,31 +389,30 @@ int getOrbital(char orbit)
 {
   const char routineName[] = "getOrbital";
 
-  int L;
+  int L = 0;
 
   switch (orbit) {
-  case 'S': L = 0;  break;
-  case 'P': L = 1;  break;
-  case 'D': L = 2;  break;
-  case 'F': L = 3;  break;
-  case 'G': L = 4;  break;
-  case 'H': L = 5;  break;
-  case 'I': L = 6;  break;
-  case 'K': L = 7;  break;
-  case 'L': L = 8;  break;
-  case 'M': L = 9;  break;
-  case 'N': L = 10;  break;
-  case 'O': L = 11;  break;
-  case 'Q': L = 12;  break;
-  case 'R': L = 13;  break;
-  case 'T': L = 14;  break;
-  case 'U': L = 15;  break;
-  case 'V': L = 16;  break;
-  case 'W': L = 17;  break;
-  case 'X': L = 18;  break;
-  case 'Y': L = 19;  break;
-  case 'Z': L = 20;  break;
-  default:
+    case 'S': L = 0;  break;
+    case 'P': L = 1;  break;
+    case 'D': L = 2;  break;
+    case 'F': L = 3;  break;
+    case 'G': L = 4;  break;
+    case 'H': L = 5;  break;
+    case 'I': L = 6;  break;
+    case 'J': L = 7;  break;
+    case 'K': L = 8;  break;
+    case 'L': L = 9;  break;
+    case 'M': L = 10; break;
+    case 'N': L = 11;  break;
+    case 'O': L = 12;  break;
+    case 'Q': L = 13;  break;
+    case 'R': L = 14;  break;
+    case 'T': L = 15;  break;
+    case 'U': L = 16;  break;
+    case 'V': L = 17;  break;
+    case 'W': L = 18;  break;
+    case 'X': L = 19;  break;
+  default: 
     sprintf(messageStr, "Invalid orbital: %c", orbit);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
