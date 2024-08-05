@@ -223,7 +223,7 @@ void close_Background(void)
 void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
 {
   const char routineName[] = "Background_p";
-  register int k, nspect, mu, to_obs;
+  register int n, k, nspect, mu, to_obs;
 
   static int ne_iter = 0;
   bool_t  do_fudge, fromscratch;
@@ -276,37 +276,35 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
 
     // sanity check
     if (input.StokesMode != NO_STOKES)
-	Error(ERROR_LEVEL_2,routineName,"Polarized transfer and in-memory backgr. op. is not implemented.");
+      Error(ERROR_LEVEL_2,routineName,"Polarized transfer and in-memory backgr. op. is not implemented.");
 
-	if (atmos.chi_b != NULL) freeMatrix((void **) atmos.chi_b);
-	atmos.chi_b = matrix_double(spectrum.Nspect * 2 * atmos.Nrays, atmos.Nspace);
+      if (atmos.chi_b != NULL) freeMatrix((void **) atmos.chi_b);
+      atmos.chi_b = matrix_double(spectrum.Nspect * 2 * atmos.Nrays, atmos.Nspace);
 
-	if (atmos.eta_b != NULL) freeMatrix((void **) atmos.eta_b);
-	atmos.eta_b = matrix_double(spectrum.Nspect * 2 * atmos.Nrays, atmos.Nspace);
+      if (atmos.eta_b != NULL) freeMatrix((void **) atmos.eta_b);
+      atmos.eta_b = matrix_double(spectrum.Nspect * 2 * atmos.Nrays, atmos.Nspace);
 
-	if (atmos.sca_b != NULL) freeMatrix((void **) atmos.sca_b);
-	atmos.sca_b = matrix_double(spectrum.Nspect * 2 * atmos.Nrays, atmos.Nspace);
+      if (atmos.sca_b != NULL) freeMatrix((void **) atmos.sca_b);
+      atmos.sca_b = matrix_double(spectrum.Nspect * 2 * atmos.Nrays, atmos.Nspace);
 
-  } else {
+    } else {
 
-	// on file
+      /* --- Open background file --                        ------------- */
 
-	/* --- Open background file --                        ------------- */
+      /* get file name, with the MPI rank */
+      sprintf(file_background,"%s_p%d%s", input.background_File , mpi.rank, fext);
 
-	/* get file name, with the MPI rank */
-	sprintf(file_background,"%s_p%d%s", input.background_File , mpi.rank, fext);
+      if ((atmos.fd_background =
+          open(file_background, O_RDWR | O_CREAT | O_TRUNC, PERMISSIONS)) == -1) {
+        sprintf(messageStr, "Unable to open output file %s",
+          file_background);
+        Error(ERROR_LEVEL_2, routineName, messageStr);
+      }
 
-	if ((atmos.fd_background =
-	     open(file_background, O_RDWR | O_CREAT | O_TRUNC, PERMISSIONS)) == -1) {
-	  sprintf(messageStr, "Unable to open output file %s",
-		  file_background);
-	  Error(ERROR_LEVEL_2, routineName, messageStr);
-	}
+      /* Zero record number, as background file is being overwritten */
+      mpi.backgrrecno = 0;
 
-	/* Zero record number, as background file is being overwritten */
-	mpi.backgrrecno = 0;
-
- }
+    }
 
 
   /* --- Allocate temporary storage space. The quantities are used
@@ -401,14 +399,14 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
 
     if (Hminus_bf(wavelength, chi, eta)) {
       for (k = 0;  k < atmos.Nspace;  k++) {
-	chi_ai[k] += chi[k];
-	eta_ai[k] += eta[k];
+        chi_ai[k] += chi[k];
+        eta_ai[k] += eta[k];
       }
     }
     if (Hminus_ff(wavelength, chi)) {
       for (k = 0;  k < atmos.Nspace;  k++) {
-	chi_ai[k] += chi[k];
-	eta_ai[k] += chi[k] * Bnu[k];
+        chi_ai[k] += chi[k];
+        eta_ai[k] += chi[k] * Bnu[k];
       }
     }
     /* --- Opacity fudge factors, applied to Hminus opacity -- ------ */
@@ -417,30 +415,30 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
       Linear(Nfudge, lambda_fudge, fudge[0],
 	     1, &wavelength, &Hmin_fudge, FALSE);
       for (k = 0;  k < atmos.Nspace;  k++) {
-	chi_ai[k] *= Hmin_fudge;
-	eta_ai[k] *= Hmin_fudge;
+        chi_ai[k] *= Hmin_fudge;
+        eta_ai[k] *= Hmin_fudge;
       }
     }
     /* --- Opacities from bound-free transitions in OH and CH -- ---- */
 
     if (OH_bf_opac(wavelength, chi, eta)) {
       for (k = 0;  k < atmos.Nspace;  k++) {
-	chi_ai[k] += chi[k];
-	eta_ai[k] += eta[k];
+        chi_ai[k] += chi[k];
+        eta_ai[k] += eta[k];
       }
     }
     if (CH_bf_opac(wavelength, chi, eta)) {
       for (k = 0;  k < atmos.Nspace;  k++) {
-	chi_ai[k] += chi[k];
-	eta_ai[k] += eta[k];
+        chi_ai[k] += chi[k];
+        eta_ai[k] += eta[k];
       }
     }
     /* --- Neutral Hydrogen Bound-Free and Free-Free --  ------------ */
 
     if (Hydrogen_bf(wavelength, chi, eta)) {
       for (k = 0;  k < atmos.Nspace;  k++) {
-	chi_ai[k] += chi[k];
-	eta_ai[k] += eta[k];
+        chi_ai[k] += chi[k];
+        eta_ai[k] += eta[k];
       }
     }
     Hydrogen_ff(wavelength, chi);
@@ -452,22 +450,22 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
 
     if (Rayleigh(wavelength, atmos.H, scatt)) {
       for (k = 0;  k < atmos.Nspace;  k++) {
-	sca_ai[k]  += scatt[k];
+        sca_ai[k]  += scatt[k];
       }
     }
     /* --- Rayleigh scattering by neutral helium --    -------------- */
 
     if (He && Rayleigh(wavelength, He, scatt)) {
       for (k = 0;  k < atmos.Nspace;  k++) {
-	sca_ai[k]  += scatt[k];
+        sca_ai[k]  += scatt[k];
       }
     }
     /* --- Absorption by H + H^+ (referred to as H2plus free-free) -- */
 
     if (H2plus_ff(wavelength, chi)) {
       for (k = 0;  k < atmos.Nspace;  k++) {
-	chi_ai[k] += chi[k];
-	eta_ai[k] += chi[k] * Bnu[k];
+        chi_ai[k] += chi[k];
+        eta_ai[k] += chi[k] * Bnu[k];
       }
     }
     /* --- Rayleigh scattering and free-free absorption by
@@ -475,20 +473,20 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
 
     if (Rayleigh_H2(wavelength, scatt)) {
       for (k = 0;  k < atmos.Nspace;  k++) {
-	sca_ai[k]  += scatt[k];
+        sca_ai[k]  += scatt[k];
       }
     }
     if (H2minus_ff(wavelength, chi)) {
       for (k = 0;  k < atmos.Nspace;  k++) {
-	chi_ai[k] += chi[k];
-	eta_ai[k] += chi[k] * Bnu[k];
+        chi_ai[k] += chi[k];
+        eta_ai[k] += chi[k] * Bnu[k];
       }
     }
     /* --- Bound-Free opacities due to ``metals'' --   -------------- */
 
     if (do_fudge) {
       Linear(Nfudge, lambda_fudge, fudge[2],
-	     1, &wavelength, &metal_fudge, FALSE);
+	           1, &wavelength, &metal_fudge, FALSE);
     } else {
       metal_fudge = 1.0;
     }
@@ -519,57 +517,33 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
     if (atmos.moving || atmos.Stokes) {
       for (mu = 0;  mu < atmos.Nrays;  mu++) {
         for (to_obs = 0;  to_obs <= 1;  to_obs++) {
-	  index = 2*(nspect*atmos.Nrays + mu) + to_obs;
+      	  index = 2*(nspect*atmos.Nrays + mu) + to_obs;
 
           /* --- First, copy the angle-independent parts -- --------- */
 
-	  for (k = 0;  k < atmos.Nspace;  k++) {
-	    chi_c[k] = chi_ai[k];
-	    eta_c[k] = eta_ai[k];
-	    sca_c[k] = sca_ai[k];
-	  }
+          for (k = 0;  k < atmos.Nspace;  k++) {
+            chi_c[k] = chi_ai[k];
+            eta_c[k] = eta_ai[k];
+            sca_c[k] = sca_ai[k];
+          }
           /* --- Zero the polarized quantities, if necessary -- ----- */
 
-	  if (atmos.Stokes) {
-           for (k = atmos.Nspace;  k < 4*atmos.Nspace;  k++) {
-              chi_c[k] = 0.0;
-              eta_c[k] = 0.0;
+          if (atmos.Stokes) {
+            for (k = atmos.Nspace;  k < 4*atmos.Nspace;  k++) {
+                chi_c[k] = 0.0;
+                eta_c[k] = 0.0;
             }
             if (input.magneto_optical)
               for (k = 0;  k < 3*atmos.Nspace;  k++) chip_c[k] = 0.0;
-	  }
+          }
           /* --- Add opacity from passive atomic lines (including
                  hydrogen) --                          -------------- */
 
-	  if (input.allow_passive_bb) {
-	    backgrflags = passive_bb(wavelength, nspect, mu, to_obs,
-				     chi, eta, chip);
-	    if (backgrflags.hasline) {
-	      atmos.backgrflags[nspect].hasline = TRUE;
-	      if (backgrflags.ispolarized) {
-                NrecStokes = 4;
-                atmos.backgrflags[nspect].ispolarized = TRUE;
-		if (input.magneto_optical) {
-                  for (k = 0;  k < 3*atmos.Nspace;  k++)
-                    chip_c[k] += chip[k];
-                }
-              } else
-                NrecStokes = 1;
-
-              for (k = 0;  k < NrecStokes*atmos.Nspace;  k++) {
-                chi_c[k] += chi[k];
-                eta_c[k] += eta[k];
-              }
-
-	    }
-	  }
-          /* --- Add opacity from Kurucz line list --  -------------- */
-
-          if (atmos.Nrlk > 0) {
-	    backgrflags = rlk_opacity(wavelength, nspect, mu, to_obs,
-				      chi, eta, scatt, chip);
-	    if (backgrflags.hasline) {
-	      atmos.backgrflags[nspect].hasline = TRUE;
+          if (input.allow_passive_bb) {
+            backgrflags = passive_bb(wavelength, nspect, mu, to_obs,
+                                     chi, eta, chip);
+            if (backgrflags.hasline) {
+              atmos.backgrflags[nspect].hasline = TRUE;
               if (backgrflags.ispolarized) {
                 NrecStokes = 4;
                 atmos.backgrflags[nspect].ispolarized = TRUE;
@@ -577,27 +551,48 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
                   for (k = 0;  k < 3*atmos.Nspace;  k++)
                     chip_c[k] += chip[k];
                 }
-              } else
-                NrecStokes = 1;
+              } else NrecStokes = 1;
 
               for (k = 0;  k < NrecStokes*atmos.Nspace;  k++) {
                 chi_c[k] += chi[k];
                 eta_c[k] += eta[k];
               }
-	      if (input.rlkscatter) {
-		for (k = 0;  k < atmos.Nspace;  k++) {
-		  sca_c[k] += scatt[k];
-		  chi_c[k] += scatt[k];
-		}
-	      }
-	    }
-	  }
-	  /* --- Add opacity from molecular lines --   -------------- */
+	          }
+	        }
+          /* --- Add opacity from Kurucz line list --  -------------- */
 
-	  backgrflags = MolecularOpacity(wavelength, nspect, mu, to_obs,
-					 chi, eta, chip);
-	  if (backgrflags.hasline) {
-	    atmos.backgrflags[nspect].hasline = TRUE;
+          if (atmos.Nrlk > 0) {
+	          backgrflags = rlk_opacity(wavelength, nspect, mu, to_obs,
+				                              chi, eta, scatt, chip);
+	          if (backgrflags.hasline) {
+              atmos.backgrflags[nspect].hasline = TRUE;
+              if (backgrflags.ispolarized) {
+                NrecStokes = 4;
+                atmos.backgrflags[nspect].ispolarized = TRUE;
+                if (input.magneto_optical) {
+                  for (k = 0;  k < 3*atmos.Nspace;  k++)
+                    chip_c[k] += chip[k];
+                }
+              } else NrecStokes = 1;
+
+              for (k = 0;  k < NrecStokes*atmos.Nspace;  k++) {
+                chi_c[k] += chi[k];
+                eta_c[k] += eta[k];
+              }
+              if (input.rlkscatter) {
+                for (k = 0;  k < atmos.Nspace;  k++) {
+                  sca_c[k] += scatt[k];
+                  chi_c[k] += scatt[k];
+                }
+	            }
+	          }
+	        }   
+          /* --- Add opacity from molecular lines --   -------------- */
+
+          backgrflags = MolecularOpacity(wavelength, nspect, mu, to_obs,
+                                         chi, eta, chip);
+          if (backgrflags.hasline) {
+            atmos.backgrflags[nspect].hasline = TRUE;
             if (backgrflags.ispolarized) {
               NrecStokes = 4;
               atmos.backgrflags[nspect].ispolarized = TRUE;
@@ -605,38 +600,37 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
                 for (k = 0;  k < 3*atmos.Nspace;  k++)
                   chip_c[k] += chip[k];
               }
-            } else
-              NrecStokes = 1;
+            } else NrecStokes = 1;
 
             for (k = 0;  k < NrecStokes*atmos.Nspace;  k++) {
               chi_c[k] += chi[k];
               eta_c[k] += eta[k];
             }
-	  }
-	  /* --- Store angle-dependent results only if at least one
-                 line was found at this wavelength --  -------------- */
+          }
+          /* --- Store angle-dependent results only if at least one
+                      line was found at this wavelength --  -------------- */
 
-	  atmos.backgrrecno[index] = mpi.backgrrecno;
-	  if ((mu == atmos.Nrays-1 && to_obs) ||
-	      (atmos.backgrflags[nspect].hasline &&
-	       (atmos.moving || atmos.backgrflags[nspect].ispolarized))) {
+          atmos.backgrrecno[index] = mpi.backgrrecno;
+          if ((mu == atmos.Nrays-1 && to_obs) ||
+              (atmos.backgrflags[nspect].hasline &&
+              (atmos.moving || atmos.backgrflags[nspect].ispolarized))) {
 
-	      if (input.backgr_in_mem) {
+            if (input.backgr_in_mem) {
 
-		if ((mu == atmos.Nrays-1 && to_obs) && !(atmos.backgrflags[nspect].hasline &&
-							 (atmos.moving || atmos.backgrflags[nspect].ispolarized)) ){
-		    storeBackground(nspect, 0, 0, chi_c, eta_c, sca_c);
-		} else {
-		    storeBackground(nspect, mu, to_obs, chi_c, eta_c, sca_c);
-		}
+              if ((mu == atmos.Nrays-1 && to_obs) && !(atmos.backgrflags[nspect].hasline &&
+                        (atmos.moving || atmos.backgrflags[nspect].ispolarized)) ){
+                  storeBackground(nspect, 0, 0, chi_c, eta_c, sca_c);
+              } else {
+                  storeBackground(nspect, mu, to_obs, chi_c, eta_c, sca_c);
+              }
 
-	      } else {
+            } else {
 
-		mpi.backgrrecno += writeBackground(nspect, mu, to_obs,
-						   chi_c, eta_c, sca_c, chip_c);
-	    }
-	  }
-	}
+              mpi.backgrrecno += writeBackground(nspect, mu, to_obs,
+                        chi_c, eta_c, sca_c, chip_c);
+            }
+          }
+        }
       }
 
     } else {
@@ -644,55 +638,55 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
 	     atomic lines (including hydrogen) --      -------------- */
 
       if (input.allow_passive_bb) {
-	backgrflags = passive_bb(wavelength, nspect, 0, TRUE,
-				 chi, eta, NULL);
-	if (backgrflags.hasline) {
-	  atmos.backgrflags[nspect].hasline = TRUE;
-	  for (k = 0;  k < atmos.Nspace;  k++) {
-	    chi_c[k] += chi[k];
-	    eta_c[k] += eta[k];
-	  }
-	}
+        backgrflags = passive_bb(wavelength, nspect, 0, TRUE,
+                                 chi, eta, NULL);
+        if (backgrflags.hasline) {
+          atmos.backgrflags[nspect].hasline = TRUE;
+          for (k = 0;  k < atmos.Nspace;  k++) {
+            chi_c[k] += chi[k];
+            eta_c[k] += eta[k];
+          }
+	      }
       }
       /* --- Add opacity from Kurucz line list --      -------------- */
 
       if (atmos.Nrlk > 0) {
-	backgrflags = rlk_opacity(wavelength, nspect, 0, TRUE,
-				  chi, eta, scatt, NULL);
-	if (backgrflags.hasline) {
-	  atmos.backgrflags[nspect].hasline = TRUE;
-	  for (k = 0;  k < atmos.Nspace;  k++) {
-	    chi_c[k] += chi[k];
-	    eta_c[k] += eta[k];
-	  }
-      	  if (input.rlkscatter) {
-	    for (k = 0;  k < atmos.Nspace;  k++) {
-	      sca_c[k] += scatt[k];
-	      chi_c[k] += scatt[k];
-	    }
-	  }
-	}
+        backgrflags = rlk_opacity(wavelength, nspect, 0, TRUE,
+                                  chi, eta, scatt, NULL);
+        if (backgrflags.hasline) {
+          atmos.backgrflags[nspect].hasline = TRUE;
+          for (k = 0;  k < atmos.Nspace;  k++) {
+            chi_c[k] += chi[k];
+            eta_c[k] += eta[k];
+          }
+          if (input.rlkscatter) {
+            for (k = 0;  k < atmos.Nspace;  k++) {
+              sca_c[k] += scatt[k];
+              chi_c[k] += scatt[k];
+            }
+          }
+	      }
       }
       /* --- Add opacity from molecular lines --       -------------- */
 
       backgrflags = MolecularOpacity(wavelength, nspect, 0, TRUE,
-				     chi, eta, NULL);
+				                             chi, eta, NULL);
       if (backgrflags.hasline) {
-	atmos.backgrflags[nspect].hasline = TRUE;
-	for (k = 0;  k < atmos.Nspace;  k++) {
-	  chi_c[k] += chi[k];
-	  eta_c[k] += eta[k];
-	}
+        atmos.backgrflags[nspect].hasline = TRUE;
+        for (k = 0;  k < atmos.Nspace;  k++) {
+          chi_c[k] += chi[k];
+          eta_c[k] += eta[k];
+	      }
       }
       /* --- Store results --                          -------------- */
 
       atmos.backgrrecno[nspect] = mpi.backgrrecno;
 
       if (input.backgr_in_mem) {
-	storeBackground(nspect, 0, 0, chi_c, eta_c, sca_c);
+	      storeBackground(nspect, 0, 0, chi_c, eta_c, sca_c);
       } else {
-	mpi.backgrrecno += writeBackground(nspect, 0, 0,
-					   chi_c, eta_c, sca_c, NULL);
+	      mpi.backgrrecno += writeBackground(nspect, 0, 0,
+				                              	   chi_c, eta_c, sca_c, NULL);
       }
     }
   }

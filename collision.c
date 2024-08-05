@@ -957,8 +957,6 @@ void CollisionRate(struct Atom *atom, char *fp_atom)
   free(T);
   free(coeff);
 
-  //fsetpos(fp_atom, &collpos);  // Tiago: not needed now (but when to free fp_atom?!)
-
   sprintf(labelStr, "Collision Rate %2s", atom->ID);
   getCPU(3, TIME_POLL, labelStr);
 }
