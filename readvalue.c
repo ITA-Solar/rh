@@ -37,10 +37,12 @@
        the string input value to the proper type and store the latter
        in the variable pointed to by pointer.
        --                                              -------------- */
+#define _GNU_SOURCE
 
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
 #include "rh.h"
 #include "atom.h"
