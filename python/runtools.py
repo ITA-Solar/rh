@@ -148,7 +148,7 @@ def run_timeout(cmd, timeout=0, log='rh_running.log'):
     import shlex
     import time
     print(cmd)
-    logfile = open(log, 'wb', 1)
+    logfile = open(log, 'wb', buffering=0)
     args = shlex.split(cmd)   # tokenise args list
     p = subprocess.Popen(args, shell=False, bufsize=0, stdin=None,
                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
