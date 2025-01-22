@@ -20,6 +20,7 @@ In the `normal` mode the jobs (all the atmosphere columns for which one wants to
 As an MPI program, the binaries should be launched with the appropriate command. Some examples::
 
     mpirun -np N ./rh15d_ray_pool
+    srun ./rh15d_ray_pool       # Use in Betzy or other system with SLURM
     mpiexec ./rh15d_ray_pool    # use in Pleiades
     aprun -B ./rh15d_ray        # use in Hexagon or other Cray
 
@@ -47,11 +48,11 @@ All the processes write asynchronously to all the output files. In some cases th
 
     lfs setstripe -s stripe_size -c stripe_count -o stripe_offset directory|filename
 
-It can be run per file (e.g. ``output_ray.hdf5``), or for the whole ``output`` directory. Using a stripe count of ``-1`` will ensure that the maximum number of OSTs is used. For the typical files RH 1.5D produces, it is usually ok to apply the same Lustre settings to the whole ``output`` directory, and the following settings seem to reasonable::
+It can be run per file (e.g. ``output_ray.hdf5``), or for the whole ``output`` directory. Using a stripe count of ``-1`` will ensure that the maximum number of OSTs is used. For the typical files RH 1.5D produces, it is usually ok to apply the same Lustre settings to the whole ``output`` directory, and the following settings seem to reasonable (tested on Betzy and Pleiades)::
 
-    lfs setstripe -s 4m -c -1 output/
+    lfs setstripe -S 8M -c -1 output/
 
-Similarly, the ``scratch`` directory can also benefit from Lustre striping. Because most files there are small, it is recommended to use a stripe count of 1 for ``scratch``.
+Similarly, the directory where you will store the input atmospheres, and the ``scratch`` directory can also benefit from Lustre striping. For ``scratch``, because most files there are small, it is recommended to use a stripe count of 1.
 
 .. warning::
    You need a parallel filesystem if you are running RH 1.5D across more than one host. Most supercomputers have parallel filesystems, but if you are running in a smaller cluster this may not be the case. RH 1.5D will always run, but the HDF5 writes will not work and the results will be unreadable. NFS is **not** a parallel file system.
