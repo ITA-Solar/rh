@@ -70,6 +70,14 @@ void init_hdf5_indata_new(void)
   char    angleSet[MAX_LINE_SIZE], group_name[ARR_STRLEN], **atom_names;
   Atom   *atom;
 
+  if (input.NmaxIter > NMaxIter) {  /* Adjust NmaxIter to avoid hdf5 writing error */
+      sprintf(messageStr,  
+              "Increasing internal NMaxIter (%d) to N_MAX_ITER (%d).\n", 
+              NMaxIter, input.NmaxIter);
+      Error(WARNING, routineName, messageStr);
+      NMaxIter = input.NmaxIter;
+  }
+
   /* Create the file  */
   if (( plist = H5Pcreate(H5P_FILE_ACCESS )) < 0) HERR(routineName);
   if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
@@ -584,6 +592,7 @@ void init_hdf5_indata_existing(void)
   size_t  attr_size;
   hid_t   ncid, plist;
   char   *atmosID;
+  int     NMaxIter;
   H5T_class_t type_class;
 
   /* Open the file with parallel MPI-IO access */
@@ -607,6 +616,15 @@ void init_hdf5_indata_existing(void)
     Error(WARNING, routineName, messageStr);
     }
   free(atmosID);
+  /* Check that NMaxIter is enough to cover N_MAX_ITER from keyword.input */
+  if (( H5LTget_attribute_int(ncid, "/mpi", "niterations", &NMaxIter) ) < 0)
+    HERR(routineName);
+  if (input.NmaxIter > NMaxIter) {  /* Raise error to avoid hdf5 writing error */
+      sprintf(messageStr,  
+              "N_MAX_ITER is %d, while maximum size in file is %d. Reduce N_MAX_ITER or start a new file with larger NMaxIter.\n",
+              input.NmaxIter, NMaxIter);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
   /* Get group IDs */
   if (( io.in_input_ncid = H5Gopen(ncid, "input", H5P_DEFAULT) ) < 0)
       HERR(routineName);
