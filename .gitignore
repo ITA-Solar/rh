@@ -34,6 +34,9 @@
 *.dat
 *.old
 *.orig
+.DS_Store
+.ipynb_checkpoints
+
 
 # Directories
 Atoms
