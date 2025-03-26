@@ -233,8 +233,6 @@ void SetLTEQuantities(void)
       /* --- Read the collisional data (in MULTI's GENCOL format).
              After this we can close the input file for the active
              atom. --                                  -------------- */
-      // Tiago: this must work with atom as string, must use
-      //        atom->offset_coll, and somehow read the file again! (filename gone)
       CollisionRate(atom, atom->offset_coll);
 
       /* --- Compute the fixed rates and store in Cij -- ------------ */

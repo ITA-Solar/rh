@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Thu Jun 30 15:35:10 2011 --
+       Last modified: Fri May 14 19:15:05 2021 --
 
        --------------------------                      ----------RH-- */
 
@@ -38,7 +38,7 @@ double MolZeemanStr(double Ju, double Mu, double Jl, double Ml)
   const char routineName[] = "MolZeemanStr";
 
   int    q, dJ;
-  double s;
+  double s = 0.0;
 
   /* --- Return the strength of Zeeman component (Ju, Mu) -> (Jl, Ml),
          where J and M are the total angular momentum and magnetic
@@ -195,7 +195,7 @@ double MolLande_eff(MolecularLine *mrt)
 
 /* ------- begin -------------------------- MolZeeman.c ------------- */
 
-ZeemanMultiplet* MolZeeman(MolecularLine *mrt)
+void MolZeeman(MolecularLine *mrt)
 {
   const char routineName[] = "MolZeeman";
 
@@ -221,7 +221,9 @@ ZeemanMultiplet* MolZeeman(MolecularLine *mrt)
 
 	 --                                            -------------- */
 
-  zm = (ZeemanMultiplet *) malloc(sizeof(ZeemanMultiplet));
+  mrt->zm = (ZeemanMultiplet *) malloc(sizeof(ZeemanMultiplet));
+  initZeeman(mrt->zm);
+  zm = mrt->zm;
 
   if (mrt->g_Lande_eff != 0.0) {
 
@@ -315,7 +317,5 @@ ZeemanMultiplet* MolZeeman(MolecularLine *mrt)
 	  "Zeeman components, gL_eff = %7.4f\n", mrt->molecule->ID,
 	  lambda_air, zm->Ncomponent, mrt->g_Lande_eff);
   Error(MESSAGE, routineName, messageStr);
-
-  return zm;
 }
-/* ------- end ---------------------------- Zeeman.c ---------------- */
+/* ------- end ------------------------- MolZeeman.c ---------------- */

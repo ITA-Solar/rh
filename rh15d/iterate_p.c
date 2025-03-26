@@ -141,7 +141,7 @@ void Iterate_p(int NmaxIter, double iterLimit)
     niter++;
     
     if (input.solve_ne == ITERATION)
-      Background(write_analyze_output=TRUE, equilibria_only=FALSE);
+      Background_p(write_analyze_output=TRUE, equilibria_only=FALSE);
     
     /* Update collisional radiative switching */
     if (input.crsw > 0)

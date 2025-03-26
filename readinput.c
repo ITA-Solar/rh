@@ -169,6 +169,9 @@ void readInput(char *input_string)
      &input.magneto_optical, setboolValue},
     {"BACKGROUND_POLARIZATION", "FALSE", FALSE, KEYWORD_DEFAULT,
      &input.backgr_pol, setboolValue},
+    {"RLK_EXPLICIT", "FALSE", FALSE, KEYWORD_DEFAULT,
+     &input.RLK_explicit, setboolValue},
+
     {"XDR_ENDIAN", "TRUE", FALSE, KEYWORD_OPTIONAL,
      &input.xdr_endian, setboolValue},
 
@@ -317,6 +320,9 @@ void readInput(char *input_string)
   /* --- Stokes for the moment only in 1D plane --     -------------- */
 
   if (strcmp(input.Stokes_input, "none")) {
+
+    /* --- Magnetic field is specified --              -------------- */
+
     switch (topology) {
     case ONE_D_PLANE:
     case TWO_D_PLANE:
@@ -354,6 +360,9 @@ void readInput(char *input_string)
 	    "Cannot accomodate magnetic fields in this topology");
     }
   } else {
+
+    /* --- No magnetic field input specified --        -------------- */
+    
     if (atmos.B_char != 0.0) {
       Error(WARNING, routineName,
 	    "Ignoring value of keyword B_STRENGTH_CHAR when no "

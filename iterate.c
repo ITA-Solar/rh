@@ -56,8 +56,6 @@ void Iterate(int NmaxIter, double iterLimit)
   double dpopsmax, PRDiterlimit;
   Atom *atom;
   Molecule *molecule;
-  AtomicLine *line;        // Tiago: DELETE
-  int i, mu, to_obs, lamu; // Tiago: DELETE
 
   if (NmaxIter <= 0) return;
   getCPU(1, TIME_START, NULL);
@@ -119,9 +117,9 @@ void Iterate(int NmaxIter, double iterLimit)
       /* --- Redistribute intensity in PRD lines if necessary -- ---- */
 
       if (input.PRDiterLimit < 0.0)
-	PRDiterlimit = MAX(dpopsmax, -input.PRDiterLimit);
+      	PRDiterlimit = MAX(dpopsmax, -input.PRDiterLimit);
       else
-	PRDiterlimit = input.PRDiterLimit;
+      	PRDiterlimit = input.PRDiterLimit;
       Redistribute(input.PRD_NmaxIter, PRDiterlimit);
     }
 
@@ -146,45 +144,13 @@ void Iterate(int NmaxIter, double iterLimit)
 
     if (atmos.hydrostatic) {
       if (!atmos.atoms[0].active) {
-	sprintf(messageStr, "Can only perform hydrostatic equilibrium"
+      	sprintf(messageStr, "Can only perform hydrostatic equilibrium"
                             " for hydrogen active");
-	Error(ERROR_LEVEL_2, routineName, messageStr);
+	      Error(ERROR_LEVEL_2, routineName, messageStr);
       }
       Hydrostatic(N_MAX_HSE_ITER, HSE_ITER_LIMIT);
     }
   }
-
-      // Tiago: temporary printouts to get PRD rho after iteration
-      /*
-       atom = atmos.activeatoms[0];
-       line = &atom->line[0];
-
-       switch (input.PRD_angle_dep) {
-	case PRD_ANGLE_INDEP:
-	  printf("rho_prd = \n");
-	  for (i = 0; i < line->Nlambda; i++) {
-	    printf("%8.4f   %e   %e   %e   %e   %e\n", line->lambda[i], line->rho_prd[i][105], line->rho_prd[i][110], line->rho_prd[i][120], line->rho_prd[i][150], line->rho_prd[i][155]);
-	  }
-          //exit(1);
-	  break;
-
-	case PRD_ANGLE_DEP:
-	    for (mu = 0; mu < atmos.Nrays; mu++) {
-	      for (to_obs = 0; to_obs <= 1; to_obs++) {
-	       for (i = 0; i < line->Nlambda; i++) {
-		lamu = 2*(atmos.Nrays*i + mu) + to_obs;
-		if ((to_obs == 1) && (mu == 4))
-		printf("%8.4f  %e   %e   %e   %e   %e\n", line->lambda[i], line->rho_prd[lamu][105],line->rho_prd[lamu][110],line->rho_prd[lamu][120], line->rho_prd[lamu][150], line->rho_prd[lamu][155] );
-	      }
-	    }
-	  }
-	  //exit(1);
-          break;
-       }
-      */
-
-
-
 
   for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
     atom = atmos.activeatoms[nact];
