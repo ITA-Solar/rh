@@ -113,4 +113,7 @@ void   w2(double dtau, double *w);
 void   w3(double dtau, double *w);
 
 void   U3(double dtau, double *U);
+void linear_coeffs(double const dt, double* const w);
+
+
 /* ------- end ---------------------------- rh.h -------------------- */
