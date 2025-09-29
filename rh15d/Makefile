@@ -12,13 +12,13 @@ include ../Makefile.config
 # Try to get git revision, set preprocessor macros if successful
 REV=$(shell git describe --always)
 ifeq ($(REV), )
-    CFLAGS += -I../ -I$(HDF5_DIR)/include/
+    CFLAGS += -I../
 else
     REV = $(shell git log -1 --pretty=format:"%h  %an  %ai")
-    CFLAGS += -I../ -I$(HDF5_DIR)/include/ -D'REV_ID="$(REV)"'
+    CFLAGS += -I../ -D'REV_ID="$(REV)"'
 endif
 
-LDFLAGS += -L../ -L$(HDF5_DIR)/lib/ -lrh -lrh_f90 -lhdf5 -lhdf5_hl -lm -lpthread
+LDFLAGS += -L../ -lrh -lrh_f90 -lhdf5_hl -lm -lpthread
 
 SRC = accelerate_p.c  \
   	  anglequad.c  \
@@ -73,9 +73,22 @@ DEPS = $(wildcard $(patsubst %,$(DEPDIR)/%.d,$(basename $(OBJS) $(BIN_OBJ))))
 BIN = $(basename $(BIN_OBJ))
 
 all: $(BIN)
+	@echo ""
+	@echo "--------------------------------------------------------------------------------"
+	@echo "  ALL EXECUTABLES BUILT SUCCESSFULLY!"
+	@echo "  Built executables: $(BIN)"
+	@echo "  Directory: $(PWD)"
+	@echo ""
 
 $(BIN): % : $(OBJS) %.o ../librh.a ../librh_f90.a
 	$(LD) -o $@ $(OBJS) $@.o $(LDFLAGS)
+	@echo ""
+	@echo "--------------------------------------------------------------------------------"
+	@echo "  SUCCESS! Executable '$@' has been built successfully!"
+	@echo "  Location: $(PWD)/$@"
+	@echo "  Compiler: $(CC)"
+	@echo "  Git Rev:  $(REV)"
+	@echo ""
 
 ../librh.a ../librh_f90.a:
 	cd ..; $(MAKE) librh.a  librh_f90.a

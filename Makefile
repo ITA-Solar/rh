@@ -114,6 +114,12 @@ DEPS = $(wildcard $(patsubst %,$(DEPDIR)/%.d,$(basename $(SRC))))
 LIBS = librh.a librh_f90.a
 
 all: $(LIBS)
+	@echo ""
+	@echo "--------------------------------------------------------------------------------"
+	@echo "  ALL RH LIBRARIES BUILT SUCCESSFULLY!"
+	@echo "  Built libraries: $(LIBS)"
+	@echo "  Directory: $(PWD)"
+	@echo ""
 
 %.o : %.c
 %.o : %.c $(DEPDIR)/%.d
@@ -123,10 +129,22 @@ all: $(LIBS)
 librh.a: $(OBJS)
 	$(AR) $(ARFLAGS) $@ $(OBJS)
 	$(RANLIB) $@
+	@echo ""
+	@echo "--------------------------------------------------------------------------------"
+	@echo "  SUCCESS! Library '$@' has been built successfully!"
+	@echo "  Location: $(PWD)/$@"
+	@echo "  Archiver: $(AR)"
+	@echo ""
 
 librh_f90.a: $(OBJS_F)
 	$(AR) $(ARFLAGS) $@ $(OBJS_F)
 	$(RANLIB) $@
+	@echo ""
+	@echo "--------------------------------------------------------------------------------"
+	@echo "  SUCCESS! Library '$@' has been built successfully!"
+	@echo "  Location: $(PWD)/$@"
+	@echo "  Archiver: $(AR)"
+	@echo ""
 
 clean:
 	rm -f $(OBJS) $(OBJS_F) $(LIBS)
