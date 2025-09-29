@@ -36,6 +36,7 @@ bool_t xdr_populations(XDR *xdrs, char *atmosID, int Nlevel, long Nspace,
 
   char  *ID;
   bool_t result = TRUE;
+  int    Nspace_tmp, Nl_tmp, Ns_tmp;
   long    Npop = Nlevel * Nspace, Nl, Ns;
 
   /* --- The actual reading/writing routine. Upon input the values
@@ -45,7 +46,8 @@ bool_t xdr_populations(XDR *xdrs, char *atmosID, int Nlevel, long Nspace,
   if (xdrs->x_op == XDR_ENCODE) {
     result &= xdr_counted_string(xdrs, &atmosID);
     result &= xdr_int(xdrs, &Nlevel);
-    result &= xdr_long(xdrs, &Nspace);
+    Nspace_tmp = (int)Nspace;
+    result &= xdr_int(xdrs, &Nspace_tmp);
   } else {
     result &= xdr_counted_string(xdrs, &ID);
     if (!strstr(ID, atmosID)) {
@@ -55,8 +57,10 @@ bool_t xdr_populations(XDR *xdrs, char *atmosID, int Nlevel, long Nspace,
     }
     free(ID);
 
-    result &= xdr_int(xdrs, &Nl);
-    result &= xdr_int(xdrs, &Ns);
+    result &= xdr_int(xdrs, &Nl_tmp);
+    Nl = (long)Nl_tmp;
+    result &= xdr_int(xdrs, &Ns_tmp);
+    Ns = (long)Ns_tmp;
     if ((Nl != Nlevel)  ||  (Ns != Nspace)) return FALSE;
   }
   /* --- Exit if true populations do not exist --      -------------- */
