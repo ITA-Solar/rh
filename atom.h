@@ -187,7 +187,7 @@ struct Paschenstruct{
 
 /* --- Associated function prototypes --               -------------- */
 
-void   initSolution();
+void   initSolution(Atom *atom, Molecule *molecule);
 void   Iterate(int NmaxIter, double iterLimit);
 
 void   readAtomicModels(void);
