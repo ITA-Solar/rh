@@ -14,8 +14,11 @@
 
 
 #include <math.h>
+#include <stdlib.h>    // abs
 #include <string.h>    // memcpy, memset
+#if defined(__x86_64__) || defined(__i386__)
 #include <x86intrin.h> // Intrinsic SSE instructions
+#endif
 //
 #include "rh.h"
 #include "error.h"
@@ -236,6 +239,7 @@ void SIMD_MatInv(float* src)
      
      --- */
   
+#if defined(__x86_64__) || defined(__i386__)
   __m128 minor0, minor1, minor2, minor3;
   __m128 row0, row1, row2, row3;
   __m128 det, tmp1;
@@ -319,6 +323,29 @@ void SIMD_MatInv(float* src)
   minor3 = _mm_mul_ps(det, minor3);
   _mm_storel_pi((__m64*)(src+12), minor3);
   _mm_storeh_pi((__m64*)(src+14), minor3);
+#else
+  // Fallback for non-x86 architectures (ARM, etc.)
+  // Convert float matrix to double and use m4inv
+  double mat[4][4];
+  int i, j;
+  
+  // Convert float array to double 4x4 matrix
+  for (i = 0; i < 4; i++) {
+    for (j = 0; j < 4; j++) {
+      mat[i][j] = (double)src[i * 4 + j];
+    }
+  }
+  
+  // Use existing double-precision matrix inversion
+  m4inv(mat);
+  
+  // Convert back to float array
+  for (i = 0; i < 4; i++) {
+    for (j = 0; j < 4; j++) {
+      src[i * 4 + j] = (float)mat[i][j];
+    }
+  }
+#endif
 }
 
 /* -------------------------------------------------------------------------- */
