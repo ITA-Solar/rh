@@ -89,7 +89,7 @@ void readJlambda(int nspect, double *J)
 
   if (!result) {
     sprintf(messageStr,
-	    "Error reading file: offset = %lu, recordsize = %zu",
+	    "Error reading file: offset = %lld, recordsize = %zu",
 	    offset, recordsize);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
@@ -113,7 +113,7 @@ void writeJlambda(int nspect, double *J)
 
   if (!result) {
     sprintf(messageStr,
-	    "Error writing file: offset = %lu, recordsize = %zu",
+	    "Error writing file: offset = %lld, recordsize = %zu",
 	    offset, recordsize);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
@@ -176,7 +176,7 @@ void readJ20lambda(int nspect, double *J20)
 
   if (!result) {
     sprintf(messageStr,
-	    "Error reading file: offset = %lu, recordsize = %zu",
+	    "Error reading file: offset = %lld, recordsize = %zu",
 	    offset, recordsize);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
@@ -201,7 +201,7 @@ void writeJ20lambda(int nspect, double *J20)
 
   if (!result) {
     sprintf(messageStr,
-	    "Error writing file: offset = %lu, recordsize = %zu",
+	    "Error writing file: offset = %lld, recordsize = %zu",
 	    offset, recordsize);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
@@ -230,7 +230,7 @@ void readImu(int nspect, int mu, bool_t to_obs, double *I)
 
  if (!result) {
     sprintf(messageStr,
-	    "Error reading file: offset = %lu, recordsize = %zu",
+	    "Error reading file: offset = %lld, recordsize = %zu",
 	    offset, recordsize);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
@@ -259,7 +259,7 @@ void writeImu(int nspect, int mu, bool_t to_obs, double *I)
 
  if (!result) {
     sprintf(messageStr,
-	    "Error writing file: offset = %lu, recordsize = %zu",
+	    "Error writing file: offset = %lld, recordsize = %zu",
 	    offset, recordsize);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
