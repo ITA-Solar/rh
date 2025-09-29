@@ -22,6 +22,7 @@
 #include <stdlib.h> // abs(int)
 
 #include "rh.h"
+#include "error.h"
 #include "atom.h"
 #include "atmos.h"
 #include "geometry.h"
@@ -36,6 +37,7 @@
 extern Geometry geometry;
 extern Atmosphere atmos;
 extern Spectrum spectrum;
+extern char messageStr[];
 
 void har_mean_deriv(double* wprime,double dsup,double dsdn,
 		    double chiup,double chic,double chidn)
@@ -61,6 +63,7 @@ void har_mean_deriv(double* wprime,double dsup,double dsdn,
 void Piecewise_1D(int nspect, int mu, bool_t to_obs,
 		  double *chi, double *S, double *I, double *Psi)
 {
+  static const char routineName[] = "Piecewise_1D";
   register int k;
 
   int    k_start, k_end, dk, Ndep = geometry.Ndep;
@@ -98,6 +101,11 @@ void Piecewise_1D(int nspect, int mu, bool_t to_obs,
       break;
     case IRRADIATED:
       I_upw = geometry.Ibottom[nspect][mu];
+      break;
+    case REFLECTIVE:
+      sprintf(messageStr, "Boundary condition not implemented: %d",
+	      geometry.vboundary[BOTTOM]);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
     }
   } else {
     switch (geometry.vboundary[TOP]) {
@@ -110,6 +118,11 @@ void Piecewise_1D(int nspect, int mu, bool_t to_obs,
       break;
     case IRRADIATED:
       I_upw = geometry.Itop[nspect][mu];
+      break;
+    case REFLECTIVE:
+      sprintf(messageStr, "Boundary condition not implemented: %d",
+	      geometry.vboundary[TOP]);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
     }
   }
   I[k_start] = I_upw;
@@ -176,6 +189,7 @@ void Piecewise_1D(int nspect, int mu, bool_t to_obs,
 void Piecewise_Hermite_1D(int nspect, int mu, bool_t to_obs,
 		  double *chi, double *S, double *I, double *Psi)
 {
+  const char routineName[] = "Piecewise_Hermite_1D";
   register int k;
 
   int    k_start, k_end, dk, Ndep = geometry.Ndep,i;
@@ -215,6 +229,11 @@ void Piecewise_Hermite_1D(int nspect, int mu, bool_t to_obs,
       break;
     case IRRADIATED:
       I_upw = geometry.Ibottom[nspect][mu];
+      break;
+    case REFLECTIVE:
+      sprintf(messageStr, "Boundary condition not implemented: %d",
+	      geometry.vboundary[BOTTOM]);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
     }
   } else {
     switch (geometry.vboundary[TOP]) {
@@ -227,6 +246,11 @@ void Piecewise_Hermite_1D(int nspect, int mu, bool_t to_obs,
       break;
     case IRRADIATED:
       I_upw = geometry.Itop[nspect][mu];
+      break;
+    case REFLECTIVE:
+      sprintf(messageStr, "Boundary condition not implemented: %d",
+	      geometry.vboundary[TOP]);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
     }
   }
   I[k_start] = I_upw;
@@ -357,6 +381,10 @@ void PieceBezier_1D(int nspect, int mu, bool_t to_obs,
     case IRRADIATED:
       I_uw = geometry.Ibottom[nspect][mu];
       break;
+    case REFLECTIVE:
+      sprintf(messageStr, "Boundary condition not implemented: %d",
+	      geometry.vboundary[BOTTOM]);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
     }
   } else {
     switch (geometry.vboundary[TOP]) {
@@ -370,6 +398,10 @@ void PieceBezier_1D(int nspect, int mu, bool_t to_obs,
     case IRRADIATED:
       I_uw = geometry.Itop[nspect][mu];
       break;
+    case REFLECTIVE:
+      sprintf(messageStr, "Boundary condition not implemented: %d",
+	      geometry.vboundary[TOP]);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
     }
   }
 

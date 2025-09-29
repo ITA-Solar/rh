@@ -26,6 +26,7 @@
 #include <math.h>
 
 #include "rh.h"
+#include "error.h"
 #include "atom.h"
 #include "atmos.h"
 #include "geometry.h"
@@ -42,6 +43,7 @@ extern Geometry geometry;
 extern Atmosphere atmos;
 extern Spectrum spectrum;
 extern MPI_data mpi;
+extern char messageStr[];
 
 
 /* ------- begin -------------------------- PiecewiseStokes.c ------- */
@@ -49,6 +51,7 @@ extern MPI_data mpi;
 void PiecewiseStokes(int nspect, int mu, bool_t to_obs,
 		     double *chi_I, double **S, double **I, double *Psi)
 {
+  const char routineName[] = "PiecewiseStokes";
   register int k, n, m;
 
   int    Ndep = geometry.Ndep, k_start, k_end, dk;
@@ -87,6 +90,11 @@ void PiecewiseStokes(int nspect, int mu, bool_t to_obs,
     case IRRADIATED:
       I_upw[0] = geometry.Ibottom[nspect][mu];
       for (n = 1;  n < 4;  n++) I_upw[n] = 0.0;
+      break;
+    case REFLECTIVE:
+      sprintf(messageStr, "Boundary condition not implemented: %d",
+	      geometry.vboundary[BOTTOM]);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
     }
   } else {
     switch (geometry.vboundary[TOP]) {
@@ -96,6 +104,16 @@ void PiecewiseStokes(int nspect, int mu, bool_t to_obs,
     case IRRADIATED:
       I_upw[0] = geometry.Itop[nspect][mu];
       for (n = 1;  n < 4;  n++) I_upw[n] = 0.0;
+      break;
+    case THERMALIZED:
+      Planck(2, &atmos.T[0], spectrum.lambda[nspect], Bnu);
+      I_upw[0] = Bnu[0] - (Bnu[1] - Bnu[0]) / dtau_uw;
+      for (n = 1;  n < 4;  n++) I_upw[n] = 0.0;
+      break;
+    case REFLECTIVE:
+      sprintf(messageStr, "Boundary condition not implemented: %d",
+	      geometry.vboundary[TOP]);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
     }
   }
   for (n = 0;  n < 4;  n++)
