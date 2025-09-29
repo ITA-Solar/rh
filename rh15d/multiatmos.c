@@ -94,7 +94,7 @@ void readAtmos_multi(Atmosphere *atmos, Geometry *geometry,
     Nread = sscanf(inputLine, "%s", atmos->ID);
 
   getLine(atmos->fp_atmos, MULTI_COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
-  Nread += sscanf(inputLine, "%20s", scaleStr);
+  Nread += sscanf(inputLine, "%19s", scaleStr);
   getLine(atmos->fp_atmos, MULTI_COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
   Nread += sscanf(inputLine, "%lf", &atmos->gravity);
   getLine(atmos->fp_atmos, MULTI_COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);

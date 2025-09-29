@@ -51,7 +51,7 @@ void init_atmos(Atmosphere *atmos, Geometry *geometry, Input_Atmos_file *infile)
         } else {
             getLine(fp_atmos, MULTI_COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
             getLine(fp_atmos, MULTI_COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
-            Nread += sscanf(inputLine, "%20s", scaleStr);
+            Nread += sscanf(inputLine, "%19s", scaleStr);
             fclose(fp_atmos);
             switch(toupper(scaleStr[0])) {
                 case 'M':
