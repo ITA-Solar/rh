@@ -836,6 +836,12 @@ void writeAux_p(void) {
           if (( H5Dwrite(io.aux_atom_RjiL[nact], H5T_NATIVE_DOUBLE, mem_dspace,
                   file_dspace, H5P_DEFAULT, line->Rji) ) < 0) HERR(routineName);
       }
+      if (( H5Sclose(mem_dspace) ) < 0) HERR(routineName);
+      if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
+      if (( mem_dspace = H5Screate_simple(1, dims, NULL) ) < 0)
+          HERR(routineName);
+      if (( file_dspace = H5Dget_space(io.aux_atom_RijC[nact]) ) < 0)
+          HERR(routineName);
       for (kr=0; kr < atom->Ncont; kr++) {
           offset[0] = kr;
           continuum = &atom->continuum[kr];
