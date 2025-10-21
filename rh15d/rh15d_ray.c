@@ -40,6 +40,8 @@ int main(int argc, char *argv[])
   int    niter;
 
   /* --- Set up MPI ----------------------             -------------- */
+  /* Initialize main_logfile to stderr as safe default during MPI setup */
+  mpi.main_logfile = stderr;
   initParallel(&argc, &argv, run_ray=FALSE);
   memset(&spectrum,0,sizeof(spectrum));
 
