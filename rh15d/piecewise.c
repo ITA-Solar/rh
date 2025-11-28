@@ -1,11 +1,5 @@
 /* ------- file: -------------------------- piecewise1d.c -----------
 
-       Version:       rh2.0
-       Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Tue Dec 26 10:13:01 2006 --
-
-       --------------------------                      ----------RH-- */
-
 /* --- Piecewise quadratic integration of transfer equation in
        one dimension.
 
@@ -19,7 +13,7 @@
 
 
 #include <math.h>
-#include <stdlib.h> // abs(int)
+#include <stdlib.h> 
 
 #include "rh.h"
 #include "atom.h"
@@ -55,12 +49,16 @@ void har_mean_deriv(double* wprime,double dsup,double dsdn,
 
 }
 
-
-/* ------- begin -------------------------- Piecewise_1D.c ---------- */
+/* -------------------------------------------------------------------- */
 
 void Piecewise_1D(int nspect, int mu, bool_t to_obs,
 		  double *chi, double *S, double *I, double *Psi)
 {
+  /* --- 
+     Variant of the linear formal solution
+     Coded by J. de la Cruz Rodriguez (ISP-SU, 2025)
+     --- */
+  
   register int k;
 
   int    k_start, k_end, dk, Ndep = geometry.Ndep;
@@ -112,62 +110,30 @@ void Piecewise_1D(int nspect, int mu, bool_t to_obs,
       I_upw = geometry.Itop[nspect][mu];
     }
   }
+
+  /* --- Init integration  --- */
+     
   I[k_start] = I_upw;
   if (Psi) Psi[k_start] = 0.0;
 
+  
   /* --- Solve transfer along ray --                   -------------- */
 
   for (k = k_start+dk;  k != k_end+dk;  k += dk) {
-    w3(dtau_uw, w);
 
-    if (k != k_end) {
+    /* --- Opacity integration --- */
+    
+    dtau_uw = zmu * (chi[k] + chi[k-dk]) *
+      fabs(geometry.height[k] - geometry.height[k-dk]); 
+    
+    linear_coeffs(dtau_uw, w);
+    I[k] = I[k-dk]*w[0] + w[1]*S[k-dk] + w[2]*S[k];
 
-      /* --- Piecewise quadratic here --               -------------- */
+    if (Psi) Psi[k] = w[2];
 
-      dtau_dw = zmu * (chi[k] + chi[k+dk]) *
-	fabs(geometry.height[k] - geometry.height[k+dk]);
-      dS_dw   = (S[k] - S[k+dk]) / dtau_dw;
-
-
-      /* Tiago: commenting this out to always keep linear piecewise
-      c1 = (dS_uw*dtau_dw + dS_dw*dtau_uw);
-      c2 = (dS_uw - dS_dw);
-      I[k] = (1.0 - w[0])*I_upw + w[0]*S[k] +
-	(w[1]*c1 + w[2]*c2) / (dtau_uw + dtau_dw);
-      */
-
-      /* --- Try piecewise linear if quadratic gives negative
-             monochromatic intensity --                -------------- */
-      /*
-      if (I[k] < 0.0) { */
-      c1   = dS_uw;
-      I[k] = (1.0 - w[0])*I_upw + w[0]*S[k] + w[1]*c1;
-
-      if (Psi) Psi[k] = w[0] - w[1]/dtau_uw;
-
-      /*
-      } else {
-	if (Psi) {
-	  c1 = dtau_uw - dtau_dw;
-	  Psi[k] = w[0] + (w[1]*c1 - w[2]) / (dtau_uw * dtau_dw);
-	}
-      }
-      */
-    } else {
-
-      /* --- Piecewise linear integration at end of ray -- ---------- */
-
-      I[k] = (1.0 - w[0])*I_upw + w[0]*S[k] + w[1]*dS_uw;
-      if (Psi) Psi[k] = w[0] - w[1] / dtau_uw;
-    }
-    I_upw = I[k];
-
-    /* --- Re-use downwind quantities for next upwind position -- --- */
-
-    dS_uw   = dS_dw;
-    dtau_uw = dtau_dw;
   }
 }
+
 /* ------- end ---------------------------- Piecewise_1D.c ---------- */
 
 
