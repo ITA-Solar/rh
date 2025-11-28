@@ -91,7 +91,7 @@ void linear_coeffs(double const dt, double* const w)
 {
   /* ---
      Linear interpolation coefficients 
-     The formal solution is expresed as:
+     The formal solution is expressed as:
 
      I_k = I_{k-dk}*exp(-dt) + c_u * S_{k-dk} + c_c * S_k
      
@@ -111,16 +111,16 @@ void linear_coeffs(double const dt, double* const w)
   
   double u0 = 0.0;
 
-  if(dt >= 40.0){ // assume exp{-dt} = 0.0
+  if(dt >= 40.0){  /* assume exp{-dt} = 0.0  */
     w[0] = 0.0;
     w[1] = 1.0 / dt;
     w[2] = 1.0 - w[1];
-  }else if(dt > 0.01){ // Normal range
+  }else if(dt > 0.01){  /* Normal range  */
     w[0] = exp(-dt);
     u0 = (1.0 - w[0]) / dt;
     w[1] = u0 - w[0];
     w[2] = 1.0 - u0;
-  }else{ // Taylor expansion at dt=0
+  }else{  /* Taylor expansion at dt=0 */
     w[0] = 1.0 - dt + 0.5*dt*dt;
     w[1] = (0.5 - dt/3.0)*dt;
     w[2] = (0.5 - dt/6.0)*dt;
