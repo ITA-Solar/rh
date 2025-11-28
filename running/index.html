@@ -1,0 +1,1308 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://ita-solar.github.io/rh/running/">
+      
+      
+        <link rel="prev" href="../input/">
+      
+      
+        <link rel="next" href="../output/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Running the code - RH 1.5D Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#running-the-code" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="RH 1.5D Documentation" class="md-header__button md-logo" aria-label="RH 1.5D Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RH 1.5D Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Running the code
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ita-solar/rh" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ita-solar/rh
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="RH 1.5D Documentation" class="md-nav__button md-logo" aria-label="RH 1.5D Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    RH 1.5D Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ita-solar/rh" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ita-solar/rh
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../input/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Input files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running the code
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running the code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#binaries-label" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Binaries and execution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-run-directory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The run directory
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logs-and-messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logs and messages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reruns-and-lack-of-convergence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reruns and lack of convergence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#helper-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Helper script
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dealing with output
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Dealing with output
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output file structure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command line tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output_python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reading output in Python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output_idl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reading output in IDL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../helita/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    helita interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bugs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bugs and limitations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#binaries-label" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Binaries and execution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-run-directory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The run directory
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logs-and-messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logs and messages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reruns-and-lack-of-convergence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reruns and lack of convergence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#helper-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Helper script
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="running-the-code">Running the code<a class="headerlink" href="#running-the-code" title="Permanent link">&para;</a></h1>
+<h2 id="binaries-label">Binaries and execution<a class="headerlink" href="#binaries-label" title="Permanent link">&para;</a></h2>
+<p>Compilation should produce three executables: <code>rh15d_ray_pool</code>,
+<code>rh15d_ray</code>, and <code>rh15d_lteray</code>. The latter is a special case for
+running only in LTE. The other two are the main programs. They represent
+two different modes of job distribution: <em>normal</em> and
+<em>pool</em>.</p>
+<p>In the <em>pool</em> mode there is a process that works as
+<em>overlord</em>: its function is to distribute the work to other processes.
+The other processes (<em>drones</em>) ask the
+<em>overlord</em> for a work unit. When they finish their unit,
+they go back and ask for more, until all tasks are completed. Because of
+race conditions and because different columns will run at different
+speeds, it is not possible to know which columns a given process will
+run beforehand. Due to the <em>overlord</em>, <code>rh15d_ray_pool</code>
+needs to run with two or more processes. The advantage of the
+<em>pool</em> mode is that the dynamic load allocation ensures the
+most efficient use of the resources. With the normal mode it may happen
+that some processors will work on columns that take longer to converge
+(especially as they are adjacent), and in the end the execution will
+have to wait for the process that takes longer. In some cases
+(especially with PRD) the <em>pool</em> mode can be 2-3 times
+faster than the <em>normal</em> mode. When one runs with a large
+number of processes (&gt; 2000) and each column takes little time to
+calculate, the <em>pool</em> mode can suffer from communication
+bottlenecks and may be slower because a single <em>overlord</em>
+cannot distribute the tasks fast enough. The only disadvantage of the
+pool mode (so far) is that not all output is currently supported with
+this mode.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The <em>normal</em> mode is deprecated and will be removed in a
+later revision. Use only for single processor runs or if you know what
+you're doing!</p>
+</div>
+<p>In the <em>normal</em> mode the jobs (all the atmosphere columns
+for which one wants to calculate) are divided by the number of processes
+at the start of the execution. There is no communication between
+processes, and each process knows from the start all the columns it is
+going to run. These columns are adjacent. If the number of columns is
+not a multiple of the number of processes, there will be some processes
+with larger workloads. There is no minimum number of processes to run,
+and <code>rh15d_ray</code> can also be run in a single process. Regions of an
+atmosphere can take a lot longer to run than others, and the processes
+that work on those will take longer to finish. In the
+<em>normal</em> mode this means that the slowest process will set
+the overall running time, and therefore in practice it can take more
+than 10x longer than the <em>pool</em> mode (and is therefore not
+recommended).</p>
+<p>As an MPI program, the binaries should be launched with the appropriate
+command. Some examples:</p>
+<div class="codehilite"><pre><span></span><code>mpirun -np N ./rh15d_ray_pool
+srun ./rh15d_ray_pool       # Use in Betzy or other system with SLURM
+mpiexec ./rh15d_ray_pool    # use in Pleiades
+aprun -B ./rh15d_ray        # use in Hexagon or other Cray
+</code></pre></div>
+
+<h2 id="the-run-directory">The run directory<a class="headerlink" href="#the-run-directory" title="Permanent link">&para;</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Before running, make sure you have the sub-directories <code>scratch</code> and</p>
+</div>
+<p><code>output</code> in the run directory.</p>
+<p>The run directory contains the configuration files, the binaries, and
+the <code>scratch</code> and <code>output</code> directories. As the names imply, temporary
+files will be placed under <code>scratch</code> and the final output files in
+<code>output</code>. No files under <code>scratch</code> will be used after the run is
+finished (they are not read for re-runs).</p>
+<p>The <code>scratch</code> directory contains different types of files. Most of them
+are binary files write by RH 1.5D to save memory. Example files are the
+<code>background_p*.dat</code> with the background opacities, files with PRD
+weights, and the <code>rh_p*.log</code> log files. Each process creates one of
+those files, and they will have the suffix <code>_pN.*</code>, where <code>N</code> is the
+process number. The log files have the same format as in RH. The writing
+of each process's log file is buffered by line. Because these are
+updated often, when running with many processes this can be a drag on
+some systems. Therefore, it is possible to run full buffering (meaning
+log files are only written when the main program finishes). This option
+is not exposed in the configuration files, so one needs to change the
+file <code>parallel.c</code> in the following part:</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="cm">/* _IOFBF for full buffering, _IOLBF for line buffering */</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">setvbuf</span><span class="p">(</span><span class="n">mpi</span><span class="p">.</span><span class="n">logfile</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">_IOLBF</span><span class="p">,</span><span class="w"> </span><span class="n">BUFSIZ_MPILOG</span><span class="p">);</span>
+</span></code></pre></div>
+<p>One should replace <code>_IOLBF</code> by <code>_IOFBF</code> to change from line buffering to
+full buffering.</p>
+<p>The <code>output</code> directory will contain the three output files:
+<code>output_aux.hdf5</code>, <code>output_indata.hdf5</code>, and <code>output_ray.hdf5</code>. See
+<a href="../output/">output</a> for more details on the
+structure of these files. If doing a re-run, these files must already
+exist; they will be updated with the new results. Otherwise, if these
+files are already in <code>output</code> before the execution, they will be
+overwritten. At the start of the execution, the output files are written
+with a special a fill value. This means that the disk space for the full
+output must be available at the start of the run, and no CPU time will
+be wasted if at the end of the run there is not enough disk space. The
+files are usually written every time a process finishes work on a given
+column. The fill value arrays are overwritten with the data. One
+advantage of this method is that even if the system crashes or the
+program stops, it is possible to recover the results already written
+(and a re-run can be performed for just the missing columns).</p>
+<p>All the processes write asynchronously to all the output files. In some
+cases this can cause contention in the filesystem, with many processes
+trying to access the same data at the same time. In the worst case
+scenario, the contention can create bottlenecks which practically stop
+the execution. Therefore, it is highly recommended that the users tune
+their filesystem for the typical loads of RH. Many supercomputers make
+use of Lustre, a parallel filesystem. With Lustre, resources such as
+files can be divided in different stripes that can be placed in several
+different machines (OSTs). For running RH with more than 500 processes,
+one should use as many OSTs as available in the system, and select the
+lustre stripe size to the typical amount of data written to a file per
+simulation column. The stripe can set with the <code>lfs
+setstripe</code> command:</p>
+<div class="codehilite"><pre><span></span><code>lfs setstripe -s stripe_size -c stripe_count -o stripe_offset directory|filename
+</code></pre></div>
+
+<p>It can be run per file (e.g. <code>output_ray.hdf5</code>), or for the whole
+<code>output</code> directory. Using a stripe count of <code>-1</code> will ensure that the
+maximum number of OSTs is used. For the typical files RH 1.5D produces,
+it is usually ok to apply the same Lustre settings to the whole <code>output</code>
+directory, and the following settings seem to reasonable (tested on
+Betzy and Pleiades):</p>
+<div class="codehilite"><pre><span></span><code>lfs setstripe -S 8M -c -1 output/
+</code></pre></div>
+
+<p>Similarly, the directory where you will store the input atmospheres, and
+the <code>scratch</code> directory can also benefit from Lustre striping. For
+<code>scratch</code>, because most files there are small, it is recommended to use
+a stripe count of 1.</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>You need a parallel filesystem if you are running RH 1.5D across more
+than one host. Most supercomputers have parallel filesystems, but if you
+are running in a smaller cluster this may not be the case. RH 1.5D will
+always run, but the HDF5 writes will not work and the results will be
+unreadable. NFS is <strong>not</strong> a parallel file system.</p>
+</div>
+<h2 id="logs-and-messages">Logs and messages<a class="headerlink" href="#logs-and-messages" title="Permanent link">&para;</a></h2>
+<p>In addition to the logs per process saved to <code>scratch</code>, a much smaller
+log will be printed in <code>stdout</code>. This log is a smaller summary of what
+each process is doing. Here is an example of typical messages:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">Proc</span><span class="nv">ess</span><span class="w">   </span><span class="mi">1</span><span class="p">:</span><span class="w"> </span><span class="o">---</span><span class="w"> </span><span class="nv">START</span><span class="w"> </span><span class="nv">task</span><span class="w">   </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="nv">xi</span><span class="p">,</span><span class="nv">yi</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="w">  </span><span class="mi">0</span><span class="p">,</span><span class="mi">156</span><span class="p">)</span>
+<span class="k">Proc</span><span class="nv">ess</span><span class="w"> </span><span class="mi">232</span><span class="p">:</span><span class="w"> </span><span class="o">---</span><span class="w"> </span><span class="nv">START</span><span class="w"> </span><span class="nv">task</span><span class="w">   </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="nv">xi</span><span class="p">,</span><span class="nv">yi</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="w">  </span><span class="mi">0</span><span class="p">,</span><span class="mi">159</span><span class="p">)</span>
+<span class="k">Proc</span><span class="nv">ess</span><span class="w">  </span><span class="mi">36</span><span class="p">:</span><span class="w"> </span><span class="o">---</span><span class="w"> </span><span class="nv">START</span><span class="w"> </span><span class="nv">task</span><span class="w">   </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="nv">xi</span><span class="p">,</span><span class="nv">yi</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="w">  </span><span class="mi">0</span><span class="p">,</span><span class="mi">162</span><span class="p">)</span>
+<span class="k">Proc</span><span class="nv">ess</span><span class="w">  </span><span class="mi">12</span><span class="p">:</span><span class="w"> </span><span class="o">---</span><span class="w"> </span><span class="nv">START</span><span class="w"> </span><span class="nv">task</span><span class="w">   </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="nv">xi</span><span class="p">,</span><span class="nv">yi</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="w">  </span><span class="mi">0</span><span class="p">,</span><span class="mi">171</span><span class="p">)</span>
+<span class="err">(</span><span class="nf">...</span><span class="p">)</span>
+<span class="k">Proc</span><span class="nv">ess</span><span class="w">  </span><span class="mi">12</span><span class="p">:</span><span class="w"> </span><span class="o">***</span><span class="w"> </span><span class="nv">END</span><span class="w">   </span><span class="nv">task</span><span class="w">   </span><span class="mi">1</span><span class="w"> </span><span class="nv">iter</span><span class="p">,</span><span class="w"> </span><span class="nv">iterations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">121</span><span class="p">,</span><span class="w"> </span><span class="nv">CONVERGED</span>
+<span class="k">Proc</span><span class="nv">ess</span><span class="w">   </span><span class="mi">3</span><span class="p">:</span><span class="w"> </span><span class="o">***</span><span class="w"> </span><span class="nv">END</span><span class="w">   </span><span class="nv">task</span><span class="w">   </span><span class="mi">1</span><span class="w"> </span><span class="nv">iter</span><span class="p">,</span><span class="w"> </span><span class="nv">iterations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span><span class="w"> </span><span class="nv">NO</span><span class="w"> </span><span class="nv">Convergence</span>
+<span class="k">Proc</span><span class="nv">ess</span><span class="w">   </span><span class="mi">4</span><span class="p">:</span><span class="w"> </span><span class="o">***</span><span class="w"> </span><span class="nv">SKIP</span><span class="w">  </span><span class="nv">task</span><span class="w">   </span><span class="mi">1</span><span class="w"> </span><span class="p">(</span><span class="nv">crashed</span><span class="w"> </span><span class="nv">after</span><span class="w"> </span><span class="mi">81</span><span class="w"> </span><span class="nv">iterations</span><span class="p">)</span>
+<span class="k">Proc</span><span class="nv">ess</span><span class="w">   </span><span class="mi">3</span><span class="p">:</span><span class="w"> </span><span class="o">---</span><span class="w"> </span><span class="nv">START</span><span class="w"> </span><span class="nv">task</span><span class="w">   </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="nv">xi</span><span class="p">,</span><span class="nv">yi</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="mi">23</span><span class="p">,</span><span class="w"> </span><span class="mi">64</span><span class="p">)</span>
+<span class="k">Proc</span><span class="nv">ess</span><span class="w">  </span><span class="mi">12</span><span class="p">:</span><span class="w"> </span><span class="o">---</span><span class="w"> </span><span class="nv">START</span><span class="w"> </span><span class="nv">task</span><span class="w">   </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="nv">xi</span><span class="p">,</span><span class="nv">yi</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="mi">23</span><span class="p">,</span><span class="w"> </span><span class="mi">65</span><span class="p">)</span>
+<span class="k">Proc</span><span class="nv">ess</span><span class="w">   </span><span class="mi">4</span><span class="p">:</span><span class="w"> </span><span class="o">---</span><span class="w"> </span><span class="nv">START</span><span class="w"> </span><span class="nv">task</span><span class="w">   </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="nv">xi</span><span class="p">,</span><span class="nv">yi</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="mi">23</span><span class="p">,</span><span class="w"> </span><span class="mi">65</span><span class="p">)</span>
+<span class="err">(</span><span class="nf">...</span><span class="p">)</span>
+<span class="err">***</span><span class="w"> </span><span class="nf">Job</span><span class="w"> </span><span class="nv">ending.</span><span class="w"> </span><span class="nv">Total</span><span class="w"> </span><span class="mi">262144</span><span class="w"> </span><span class="mi">1</span><span class="o">-</span><span class="nv">D</span><span class="w"> </span><span class="nv">columns</span><span class="p">:</span><span class="w"> </span><span class="mi">262142</span><span class="w"> </span><span class="nv">converged</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="nv">did</span><span class="w"> </span><span class="nv">not</span><span class="w"> </span><span class="nv">converge</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="nv">crashed.</span>
+<span class="err">***</span><span class="w"> </span><span class="nf">RH</span><span class="w"> </span><span class="nv">finished</span><span class="w"> </span><span class="nv">gracefully.</span>
+</code></pre></div>
+
+<p>In this example one can see the three possible outputs for a
+single-column calculation: convergence, non-convergence (meaning the
+target <code>ITER_LIMIT</code> was not met in <code>N_MAX_ITER</code> iterations), or a crash
+(many reasons). If there are singular matrices or other causes for a
+column to crash, RH 1.5D will skip that column and proceed to the next
+work unit. Such cases can be re-run with different parameters. In some
+cases (e.g. inexistent files) it is not possible to prevent a crash, and
+RH 1.5D will finish non-gracefully.</p>
+<h2 id="reruns-and-lack-of-convergence">Reruns and lack of convergence<a class="headerlink" href="#reruns-and-lack-of-convergence" title="Permanent link">&para;</a></h2>
+<p>Dynamic atmospheres often have large gradients in temperature, density,
+velocity, etc. that cause problems when solving the non-LTE problem.
+This may lead to some (or all) columns not converging, and is dependent
+on the input atmosphere, model atoms, and run options. In RH terms,
+non-converged or "crashed", represent the same problem. In some cases,
+the iterations diverge strongly (crash), while in others they fail to
+reach the target limit for convergence in the allocated maximum number
+of iterations (non-convergence).</p>
+<p>The output for atmosphere columns that did not converged or crashed is
+not saved to disk (a fill value is used instead). The recommended
+procedure in these cases is to rerun RH with different input options
+(e.g. less agressive acceleration, a larger number of maximum
+iterations). A special rerun mode is available to save time calculating
+again the columns that have already converged. When <code>15D_RERUN = TRUE</code>
+in <code>keyword.input</code>, RH will read the output and run again only for the
+columns that did not converge.</p>
+<p>The rerun mode requires all the previous output to be under <code>output/</code>.
+The user has the possibility of changing options in <code>keyword.input</code> for
+the rerun. Not all options can be changed, because this could lead to
+non-sensical results (e.g. changing the input atmosphere or atom files).
+Only the following options can be changed in <code>keyword.input</code>:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>15D_RERUN</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>15D_DEPTH_CUT</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>15D_TMAX_CUT</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>15D_DEPTH_REFINE</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>N_PESC_ITER</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>COLLRAD_SWITCH</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>COLLRAD_SWITCH_INIT</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>PRD_SWITCH</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>NRAYS</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>N_MAX_SCATTER</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>N_MAX_ITER</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>ITER_LIMIT</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>NG_DELAY</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>NG_ORDER</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>NG_PERIOD</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>S_INTERPOLATION</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>PRD_N_MAX_ITER</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>PRD_ITER_LIMIT</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>B_STRENGTH_CHAR</code></td>
+</tr>
+</tbody>
+</table>
+<p>All the other options are locked to the values used for the firs run.
+Likewise, it is not possible to change <code>atoms.input</code>, the atom files, or
+the line list files. When RH 1.5D is first run, nearly all input options
+(except the input atmosphere and molecule files) are saved into the
+output, and in a rerun these are read from the output and not from the
+original files. This also means that a rerun can be performed even if
+the original files are no longer available.</p>
+<h2 id="helper-script">Helper script<a class="headerlink" href="#helper-script" title="Permanent link">&para;</a></h2>
+<p>There is a Python script called <code>runtools.py</code> designed to make it easier
+to run RH 1.5D for large projects. It resides in
+<code>rh/python/runtools.py</code>. It requires <a href="http://www.python.org/">Python</a>
+with the <a href="http://www.numpy.org/">numpy</a> and <a href="http://www.h5py.org/">h5py</a>
+(or <a href="http://code.google.com/p/netcdf4-python/">netCDF4</a>) modules. It was
+made to run a given RH 1.5D setup over many simulation snapshots,
+spanning several atmosphere files. It supports a progressive rerun of a
+given problem, and allows the of use different <code>keyword.input</code>
+parameters for different columns, tackling columns harder to converge.</p>
+<p>The first part of <code>runtools.py</code> should be modified for a users's need.
+It typically contains:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">atmos_dir</span> <span class="o">=</span> <span class="s1">&#39;/mydata_dir&#39;</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">seq_file</span> <span class="o">=</span> <span class="s1">&#39;RH_SEQUENCE&#39;</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">outsuff</span> <span class="o">=</span> <span class="s1">&#39;output/output_ray_mysim_CaII_PRD_s</span><span class="si">%03i</span><span class="s1">.hdf5&#39;</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">mpicmd</span> <span class="o">=</span> <span class="s1">&#39;mpiexec&#39;</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nb">bin</span> <span class="o">=</span> <span class="s1">&#39;./rh15d_ray_pool&#39;</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">defkey</span> <span class="o">=</span> <span class="s1">&#39;keyword.save&#39;</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">log</span> <span class="o">=</span> <span class="s1">&#39;rh_running.log&#39;</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">tm</span> <span class="o">=</span> <span class="mi">40</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">rerun</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">rerun_opt</span> <span class="o">=</span> <span class="p">[</span> <span class="p">{</span><span class="s1">&#39;NG_DELAY&#39;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span> <span class="s1">&#39;NG_PERIOD&#39;</span><span class="p">:</span> <span class="mi">40</span><span class="p">,</span> <span class="s1">&#39;15D_DEPTH_REFINE&#39;</span><span class="p">:</span> <span class="s1">&#39;FALSE&#39;</span><span class="p">,</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>               <span class="s1">&#39;15D_ZCUT&#39;</span><span class="p">:</span> <span class="s1">&#39;TRUE&#39;</span><span class="p">,</span> <span class="s1">&#39;N_MAX_ITER&#39;</span><span class="p">:</span> <span class="mi">250</span><span class="p">,</span> <span class="s1">&#39;PRD_SWITCH&#39;</span><span class="p">:</span> <span class="mf">0.002</span> <span class="p">},</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>              <span class="p">{</span><span class="s1">&#39;NG_DELAY&#39;</span><span class="p">:</span> <span class="mi">120</span><span class="p">,</span> <span class="s1">&#39;NG_PERIOD&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s1">&#39;15D_DEPTH_REFINE&#39;</span><span class="p">:</span> <span class="s1">&#39;TRUE&#39;</span><span class="p">,</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>               <span class="s1">&#39;PRD_SWITCH&#39;</span><span class="p">:</span> <span class="mf">0.001</span> <span class="p">}</span> <span class="p">]</span>
+</span></code></pre></div>
+<p>The different options are:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Name</th>
+<th style="text-align: left;">Type</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>atmos_dir</code></td>
+<td style="text-align: left;">string</td>
+<td style="text-align: left;">Directory where the atmosphere files are kept.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>seq_file</code></td>
+<td style="text-align: left;">string</td>
+<td style="text-align: left;">Location of sequence file. This file contains the names of the atmosphere files to be used (one file per line). The script will then run RH 1.5D for every snapshot in every file listed.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>outsuff</code></td>
+<td style="text-align: left;">string</td>
+<td style="text-align: left;">Template to write the <code>output_ray.ncdf</code> files. The <code>%03i</code> format will be replaced with the snapshot number.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>mpicmd</code></td>
+<td style="text-align: left;">string</td>
+<td style="text-align: left;">System-dependent command to launch MPI. The script knows that for aprun the -B option should be used. This option also activates system specific routines (e.g. how to kill the run in pleiades).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>bin</code></td>
+<td style="text-align: left;">string</td>
+<td style="text-align: left;">RH 1.5D binary to use.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>defkey</code></td>
+<td style="text-align: left;">string</td>
+<td style="text-align: left;">Default template for <code>keyword.input</code>. Because the of the rerun options, <code>keyword.input</code> is overwritten for every rerun. This file is used as a template it (i.e., most of its options will be unchanged, unless specified in <code>rerun_opt</code>).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>log</code></td>
+<td style="text-align: left;">string</td>
+<td style="text-align: left;">File where to save the main log. Will be overwritten for each new snapshot.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>tm</code></td>
+<td style="text-align: left;">int</td>
+<td style="text-align: left;">Timeout (in minutes) to kill execution of code, if there is no message written to main log. Used to prevent code from hanging if there are system issues. After killed, program is relaunched. If <code>tm = 0</code>, program will never be killed.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>rerun</code></td>
+<td style="text-align: left;">bool</td>
+<td style="text-align: left;">If <code>True</code>, will re-run the program (with different settings) to achieve convergence if any columns failed. Number of reruns is given by size of <code>rerun_opt</code>.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>rerun_opt</code></td>
+<td style="text-align: left;">list</td>
+<td style="text-align: left;">Options for re-run. This is a list made of dictionaries. Each dictionary contains the keywords to update <code>keyword.input</code>. Only the keywords that differ from the <code>defkey</code> file are necessary.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>Only the first line of the sequence time is read at a time. The script
+reads the first line, deletes it from the file, and closes the file. It
+then reads the first line again and continues running, until there are
+no more lines in the file. This behaviour enables the file to be worked
+by multiple scripts at the same time, and allows one to dynamically
+change the task list at any time of the run.</p>
+</div>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>The script also includes a tenaciously persistent wait and relaunch
+feature designed to avoid corruption if there are system crashes or
+problems. Besides the <code>tm</code> timeout, if there is any problem with the
+execution, the code will wait for some periods and try and relaunch the
+code. For example, if one of the atmosphere files does not exist,
+<code>runtools.py</code> will try three times and then proceed to the next file.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.sections", "navigation.indexes", "navigation.expand"], "search": "../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,1541 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://ita-solar.github.io/rh/output/">
+      
+      
+        <link rel="prev" href="../running/">
+      
+      
+        <link rel="next" href="../cmd/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Output file structure - RH 1.5D Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#output-file-structure" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="RH 1.5D Documentation" class="md-header__button md-logo" aria-label="RH 1.5D Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RH 1.5D Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Output file structure
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ita-solar/rh" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ita-solar/rh
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="RH 1.5D Documentation" class="md-nav__button md-logo" aria-label="RH 1.5D Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    RH 1.5D Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ita-solar/rh" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ita-solar/rh
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../input/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Input files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../running/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running the code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dealing with output
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Dealing with output
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output file structure
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output file structure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output_auxhdf5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        output_aux.hdf5
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output_indatahdf5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        output_indata.hdf5
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output_rayhdf5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        output_ray.hdf5
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command line tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output_python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reading output in Python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output_idl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reading output in IDL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../helita/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    helita interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bugs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bugs and limitations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output_auxhdf5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        output_aux.hdf5
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output_indatahdf5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        output_indata.hdf5
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output_rayhdf5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        output_ray.hdf5
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="output-file-structure">Output file structure<a class="headerlink" href="#output-file-structure" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>Output is written into three files: <code>output_aux.hdf5</code>,
+<code>output_indata.hdf5</code>, and <code>output_ray.hdf5</code>. This is a big departure
+from RH, which contained several more output files. In particular, RH
+1.5D will not write all the information that was written by RH, due to
+the sheer size it would take for large 3D simulations. The files are
+written in the machine-independent, self-describing HDF5 format. The
+contents of the files are organised in groups, variables, and
+attributes. Groups and variables can be imagined as directories and
+files in a filesystem. Inside groups, different variables and dimensions
+can be organised. The content of the output files can vary: some runs
+will have more detailed information and therefore more variables written
+to the files.</p>
+<p>HDF5 is an open, platform-independent format, and therefore interfaces
+to many programming languages are available. The <a href="https://www.hdfgroup.org/HDF5/">main interface
+libraries</a> are available in C, C++,
+Fortran, and Java. But there are also interfaces for Python
+(<a href="http://www.h5py.org/">h5py</a>),
+<a href="https://github.com/JuliaIO/HDF5.jl">Julia</a>, IDL (from version 6.2),
+MATLAB , Octave,
+<a href="http://search.cpan.org/~chm/PDL-IO-HDF5-0.6501/hdf5.pd">Perl</a>, and
+<a href="https://cran.r-project.org/package=h5">R</a>.</p>
+<p>The RH 1.5D output format is standard HDF5 but it is also compatible
+with NetCDF 4 readers: in most cases one needs to specify only the
+variable or group name to read the data. The HDF5 and NetCDF libraries
+provide useful command line tools, which can be used to gather
+information about the RH 1.5D files or extract data. Additionally, there
+is a more complete set of tools written in Python to read and analyse
+these files.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Because of the limitations of different languages, not all interfaces
+support all HDF5 features. Some libraries (e.g. IDL or plain h5py in
+Python) will not detect missing data in arrays (written with the fill
+value). In such cases, reading variables with missing data, the data are read with no
+warning or indication of those that have special fill values.</p>
+</div>
+<p>The structure of the three output files is given below.</p>
+<div class="admonition info">
+<p class="admonition-title">Missing data</p>
+<p>When a column fails to converge, output for that column is not written.
+This means that the variables that depend on <code>(nx, ny)</code> will have some
+values missing. HDF5 marks these values as missing data
+and uses a fill value (of 9.9692e+36). When the <code>15D_DEPTH_ZCUT</code> option
+is used, not all heights will be used in the calculation. The code does
+not read the skipped parts of the atmosphere. When writing such
+variables of <code>nz</code>, only the points that were used are written to the
+file, and the rest will be marked as missing data (typically the z cut
+height varies with the column).</p>
+</div>
+<h2 id="output_auxhdf5"><code>output_aux.hdf5</code><a class="headerlink" href="#output_auxhdf5" title="Permanent link">&para;</a></h2>
+<p>This file contains the level populations and radiative rates. For each
+active atom or molecule, it contains different groups called <code>atom_XX</code>
+or <code>molecule_XX</code>, where <code>XX</code> is the identifier for the species (e.g.
+<code>MG</code>, <code>CO</code>).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The atmosphere dimensions on many of the output files are not
+necessarily the same as in the atmosphere file. They depend on the
+number of columns calculated, which are a function of
+<code>X/Y_START/END/STEP</code>.</p>
+</div>
+<p>It has the following global attributes:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th style="text-align: left;"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>atmosID</code></td>
+<td style="text-align: left;">Identifier for the atmosphere file.</td>
+</tr>
+<tr>
+<td><code>rev_id</code></td>
+<td style="text-align: left;">Revision identifier.</td>
+</tr>
+<tr>
+<td><code>nx</code></td>
+<td style="text-align: left;">Number of points in x dimension</td>
+</tr>
+<tr>
+<td><code>ny</code></td>
+<td style="text-align: left;">Number of points in y dimension</td>
+</tr>
+<tr>
+<td><code>nz</code></td>
+<td style="text-align: left;">Number of points in height dimension</td>
+</tr>
+</tbody>
+</table>
+<p>Inside each of the atom/molecule groups, the following dimensions can
+exist:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Name</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>x</code></td>
+<td style="text-align: left;">Horizontal x dimension.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>y</code></td>
+<td style="text-align: left;">Horizontal y dimension.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>height</code></td>
+<td style="text-align: left;">Vertical dimension.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>level</code></td>
+<td style="text-align: left;">Number of atomic levels.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>line</code></td>
+<td style="text-align: left;">Number of atomic transitions</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>continuum</code></td>
+<td style="text-align: left;">Number of bound-free transitions.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>vibration_level</code></td>
+<td style="text-align: left;">Number of molecule vibration levels.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>molecular_line</code></td>
+<td style="text-align: left;">Number of molecular lines.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>rotational_state</code></td>
+<td style="text-align: left;">Number of rotational states.</td>
+</tr>
+</tbody>
+</table>
+<p>The atom groups can contain the following optional variables:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;"><div style="width:120px">Name</div></th>
+<th style="text-align: left;">Dimensions</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>populations</code></td>
+<td style="text-align: left;"><code>(level, x, y, height)</code></td>
+<td style="text-align: left;">Atomic populations.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>populations_LTE</code></td>
+<td style="text-align: left;"><code>(level, x, y, height)</code></td>
+<td style="text-align: left;">Atomic LTE populations.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Rij_line</code></td>
+<td style="text-align: left;"><code>(line, x, y, height)</code></td>
+<td style="text-align: left;">Radiative rates out of the line.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Rji_line</code></td>
+<td style="text-align: left;"><code>(line, x, y, height)</code></td>
+<td style="text-align: left;">Radiative rates into the line.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Rij_continuum</code></td>
+<td style="text-align: left;"><code>(continuum, x, y, height)</code></td>
+<td style="text-align: left;">Radiative rates out of the bf transition.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Rji_continuum</code></td>
+<td style="text-align: left;"><code>(continuum, x, y, height)</code></td>
+<td style="text-align: left;">Radiative rates into the bf transition.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>collision_rates</code></td>
+<td style="text-align: left;"><code>(level, level, x, y, height)</code></td>
+<td style="text-align: left;">Collisional rates.  Convention: first index is upper level.</td>
+</tr>
+</tbody>
+</table>
+<p>The molecule groups can contain the following optional variables:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;"><div style="width:120px">Name</div></th>
+<th style="text-align: left;">Dimensions</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>populations</code></td>
+<td style="text-align: left;"><code>(vibration_level, x, y, height)</code></td>
+<td style="text-align: left;">Molecular populations.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>populations_LTE</code></td>
+<td style="text-align: left;"><code>(vibration_level, x, y, height)</code></td>
+<td style="text-align: left;">Molecular LTE populations.</td>
+</tr>
+</tbody>
+</table>
+<p>All units are SI.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In older versions it was possible to specify the keyword
+<code>15D_WRITE_EXTRA</code> and get additional output written to <code>output_aux.hdf5</code>
+(e.g. a new <code>opacity</code> group and more rates). While the procedures are
+still in <code>writeAux_p.c</code>, the functionality is deprecated because other
+changes in the code were not compatible with this way of writing the
+output. It is possible that this functionality will return at a later
+version.</p>
+</div>
+<h2 id="output_indatahdf5"><code>output_indata.hdf5</code><a class="headerlink" href="#output_indatahdf5" title="Permanent link">&para;</a></h2>
+<p>This file contains data and metadata related to the run. It contains
+three groups: <code>input</code> (mostly settings from <code>keyword.input</code>), <code>atmos</code>
+(atmospheric variables), and <code>mpi</code> (several variables relating to the
+run).</p>
+<p>It has the following global attributes:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th style="text-align: left;"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>atmosID</code></td>
+<td style="text-align: left;">Identifier for the atmosphere file.</td>
+</tr>
+<tr>
+<td><code>rev_id</code></td>
+<td style="text-align: left;">Revision identifier.</td>
+</tr>
+<tr>
+<td><code>nx</code></td>
+<td style="text-align: left;">Number of points in x dimension</td>
+</tr>
+<tr>
+<td><code>ny</code></td>
+<td style="text-align: left;">Number of points in y dimension</td>
+</tr>
+<tr>
+<td><code>nz</code></td>
+<td style="text-align: left;">Number of points in height dimension</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>input</code> group contains all the input files (except atmosphere and
+molecular data), and a few attributes that are options from
+<code>keyword.input</code>. It contains the following string variables:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;"><div style="width:170px">Variable</div></th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>atom_groups</code></td>
+<td style="text-align: left;">Array with names of atom groups. Other is the same as atom order in <code>atoms.input</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>atoms_file_contents</code></td>
+<td style="text-align: left;">Contents of <code>atoms.input</code> saved into a string</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>keyword_file_contents</code></td>
+<td style="text-align: left;">Contents of <code>keyword.input</code> saved into a string</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>kurucz_file contents</code></td>
+<td style="text-align: left;">Contents of <code>kurucz.input</code> saved into a string, only if used</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>input</code> group also has other groups inside. If Kurucz line lists are
+used, it contains groups called <code>Kurucz_line_file0</code>, ...,
+<code>Kurucz_line_fileN</code>, where N-1 is the total number of line list files.
+The other groups are all atom files (<code>PASSIVE</code> and <code>ACTIVE</code>), and they
+take the names of <code>atom_XX</code>, where <code>XX</code> is the element name (for a list
+of these, see the variable <code>atom_groups</code> above). Inside all of these
+groups (Kurucz and atom) there is one variable, called <code>file_contents</code>,
+which contains the file saved intro a string and an attribute, called
+<code>file_name</code>, which contains the file name and path. These input options
+and files are read instead of the original files when doing a rerun.</p>
+<p>The <code>atmos</code> groups contains the dimensions <code>x</code>, <code>y</code>, <code>height</code>, <code>element</code>
+and <code>ray</code>. It also contains the following variables:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;"><div style="width:140px">Name</div></th>
+<th style="text-align: left;">Dimensions</th>
+<th style="text-align: left;">Units</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>temperature</code></td>
+<td style="text-align: left;"><code>(x, y, height)</code></td>
+<td style="text-align: left;">K</td>
+<td style="text-align: left;">Temperatures</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>velocity_z</code></td>
+<td style="text-align: left;"><code>(x, y, height)</code></td>
+<td style="text-align: left;">m s<sup>-1</sup></td>
+<td style="text-align: left;">Vertical velocities</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>electron_density</code></td>
+<td style="text-align: left;"><code>(x, y, height)</code></td>
+<td style="text-align: left;">m<sup>-3</sup></td>
+<td style="text-align: left;">Electron   densities</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>height_scale</code></td>
+<td style="text-align: left;"><code>(x, y, height)</code></td>
+<td style="text-align: left;">m</td>
+<td style="text-align: left;">Height scale used. Can be different for every column when depth refine is used.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>element_weight</code></td>
+<td style="text-align: left;"><code>(element)</code></td>
+<td style="text-align: left;">a.m.u.</td>
+<td style="text-align: left;">Atomic weights</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>element_abundance</code></td>
+<td style="text-align: left;"><code>(element)</code></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Element abundances relative to hydrogen.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>muz</code></td>
+<td style="text-align: left;"><code>(ray)</code></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">mu values for each ray.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>muz</code></td>
+<td style="text-align: left;"><code>(ray)</code></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">mu weights for each ray.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>x</code></td>
+<td style="text-align: left;"><code>(x)</code></td>
+<td style="text-align: left;">m</td>
+<td style="text-align: left;">Spatial coordinates along x axis.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>y</code></td>
+<td style="text-align: left;"><code>(y)</code></td>
+<td style="text-align: left;">m</td>
+<td style="text-align: left;">Spatial coordinates along y axis.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When <code>15D_DEPTH_REFINE</code> is used, each column will have a different
+(optimised) height scale, but they all have the same number of depth
+points (<code>nz</code>). In these cases, it is very important to save the <code>height</code>
+variable because otherwise one does not know how to relate the height
+relations of quantities from different columns.</p>
+</div>
+<p>The <code>atmos</code> group also contains the following attributes:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th style="text-align: left;"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>moving</code></td>
+<td style="text-align: left;">Unsigned int, 1 if velocity fields present.</td>
+</tr>
+<tr>
+<td><code>stokes</code></td>
+<td style="text-align: left;">Unsigned int, 1 if stokes output present.</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>mpi</code> group contains the dimensions <code>x</code>, <code>y</code>, and <code>iteration</code>
+(maximum number of iterations).</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code>iteration</code> is needs to be hardcoded for reruns. The default maximum value is 1500. If your <code>N_MAX_ITER</code> is larger than this, <code>iteration</code> will be adjusted. Reruns can never have a value larger than the maximum of 1500 or <code>N_MAX_ITER</code> (of the first run).</p>
+</div>
+<p>The <code>mpi</code> group also contains several variables:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;"><div style="width:120px">Name</div></th>
+<th style="text-align: left;">Dimensions</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>xnum</code></td>
+<td style="text-align: left;"><code>(x)</code></td>
+<td style="text-align: left;">Indices of x positions calculated.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>xnum</code></td>
+<td style="text-align: left;"><code>(x)</code></td>
+<td style="text-align: left;">Indices of x positions calculated.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>task_map</code></td>
+<td style="text-align: left;"><code>(x, y)</code></td>
+<td style="text-align: left;">Maps which process ran which column.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>task_map_number</code></td>
+<td style="text-align: left;"><code>(x, y)</code></td>
+<td style="text-align: left;">Maps which task number each column was.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>iterations</code></td>
+<td style="text-align: left;"><code>(x, y)</code></td>
+<td style="text-align: left;">Number of iterations used for each column.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>convergence</code></td>
+<td style="text-align: left;"><code>(x, y)</code></td>
+<td style="text-align: left;">Indicates if each column converged or not. Possible values are <code>1</code> (converged), <code>0</code> (non converged),  or <code>-1</code> (crashed).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>delta_max</code></td>
+<td style="text-align: left;"><code>(x, y)</code></td>
+<td style="text-align: left;">Final value for <code>delta_max</code> when iteration finished.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>delta_max_history</code></td>
+<td style="text-align: left;"><code>(x, y, iteration)</code></td>
+<td style="text-align: left;">Evolution of <code>delta_max</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>z_cut</code></td>
+<td style="text-align: left;"><code>(x, y)</code></td>
+<td style="text-align: left;">Height index of the temperature cut.</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>mpi</code> group also contains the following attributes: <code>x_start</code>,
+<code>x_end</code>, <code>x_step</code>, <code>y_start</code>, <code>y_end</code>, and <code>y_step</code>, all of which are
+options from <code>keyword.input</code>.</p>
+<h2 id="output_rayhdf5"><code>output_ray.hdf5</code><a class="headerlink" href="#output_rayhdf5" title="Permanent link">&para;</a></h2>
+<p>This file contains the synthetic spectra and can also contain extra
+information such as opacities and the source function. It contains only
+the root group. Its dimensions are <code>x</code>, <code>y</code>, <code>wavelength</code>, and
+eventually <code>wavelength_selected</code> and <code>height</code>. The latter two are only
+present when <code>ray.input</code> specifies more than <code>0</code> wavelengths for
+detailed output, and it matches <code>Nsource</code>, the number of those
+wavelengths entered in <code>ray.input</code>.</p>
+<p>It can contain the following variables:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;"><div style="width:140px">Name</div></th>
+<th style="text-align: left;"><div style="width:100px">Dimensions</div></th>
+<th style="text-align: left;">Units</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>wavelength</code></td>
+<td style="text-align: left;"><code>(    wavelength)</code></td>
+<td style="text-align: left;">nm</td>
+<td style="text-align: left;">Wavelength     scale.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>intensity</code></td>
+<td style="text-align: left;"><code>(x, y,wavelength)</code></td>
+<td style="text-align: left;">W m<sup>-2</sup> Hz<sup>-1</sup> sr<sup>-1</sup></td>
+<td style="text-align: left;">Synthetic  disk-centre    intensity (Stokes I)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>stokes_Q</code></td>
+<td style="text-align: left;"><code>(x, y, wavelength)</code></td>
+<td style="text-align: left;">W m<sup>-2</sup> Hz<sup>-1</sup> sr<sup>-1</sup></td>
+<td style="text-align: left;">Stokes Q.  <strong>Optional.</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>stokes_U</code></td>
+<td style="text-align: left;"><code>(x, y, wavelength)</code></td>
+<td style="text-align: left;">W m<sup>-2</sup> Hz<sup>-1</sup> sr<sup>-1</sup></td>
+<td style="text-align: left;">Stokes U.  <strong>Optional.</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>stokes_V</code></td>
+<td style="text-align: left;"><code>(x, y, wavelength)</code></td>
+<td style="text-align: left;">W m<sup>-2</sup> Hz<sup>-1</sup> sr<sup>-1</sup></td>
+<td style="text-align: left;">Stokes V.  <strong>Optional.</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>tau_one_height</code></td>
+<td style="text-align: left;"><code>(x, y,wavelength)</code></td>
+<td style="text-align: left;">m</td>
+<td style="text-align: left;">Height where  optical depth reaches unity, for each column. <strong>Optional.</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>wavelength_selected</code></td>
+<td style="text-align: left;"><code>(wavelength_selected)</code></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Wavelength scale for the detailed  output variables   below.  <strong>Optional.</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>wavelength_indices</code></td>
+<td style="text-align: left;"><code>(wavelength_selected)</code></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Indices of wavelengths selected for variables below. <strong>Optional.</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>chi</code></td>
+<td style="text-align: left;"><code>(x, y, height, wavelength_selected)</code></td>
+<td style="text-align: left;">m<sup>-1</sup></td>
+<td style="text-align: left;">Total opacity (line and continuum) <strong>Optional.</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>source_function</code></td>
+<td style="text-align: left;"><code>(x, y, height, wavelength_selected)</code></td>
+<td style="text-align: left;">W m<sup>-2</sup> Hz<sup>-1</sup> sr<sup>-1</sup></td>
+<td style="text-align: left;">Total source function (line and continuum) <strong>Optional.</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Jlambda</code></td>
+<td style="text-align: left;"><code>(x, y, height, wavelength_selected)</code></td>
+<td style="text-align: left;">W m<sup>-2</sup> Hz<sup>-1</sup> sr<sup>-1</sup></td>
+<td style="text-align: left;">Angle-averaged radiation field <strong>Optional.</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>scattering</code></td>
+<td style="text-align: left;"><code>(x, y, height, wavelength_selected)</code></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Scattering term multiplied by Jlambda <strong>Optional.</strong></td>
+</tr>
+</tbody>
+</table>
+<p>The <code>wavelength</code> is in nm, air or vacuum units, depending if
+<code>VACUUM_TO_AIR</code> is <code>TRUE</code> or <code>FALSE</code> (in <code>keyword.input</code>). <code>chi</code> is in
+m<sup>-1</sup> and <code>tau_one_height</code> in m.</p>
+<p>Despite internally being calculated in double precision, all the output
+(except the wavelength scale) is written in single precision to save
+disk space.</p>
+<p>The full Stokes vector is only written when in <code>keyword.input</code>
+<code>STOKES_MODE</code> is not <code>NO_STOKES</code> and the <code>STOKES_INPUT</code> is set.</p>
+<p>The <code>chi</code>, <code>source_function</code>, and <code>Jlambda</code> variables depend on the 3D
+grid and on wavelength. Therefore, for even moderate grid sizes they can
+take huge amounts of space. If <code>nx = ny = nz = 512</code> and
+<code>wavelength_selected = 200</code>, each of these variables will need 100Gb of
+disk space. For a simulation with a cubic grid of 1024<sup>3</sup> points and
+saving the full output for 1000 wavelength points, <code>output_ray.hdf5</code>
+will occupy a whopping 12Tb per snapshot of disk space. To avoid such
+problems, these large arrays are only written when <code>ray.input</code> contains
+<code>Nsource &gt; 0</code>, and for the wavelengths selected.</p>
+<p>The <code>output_ray.hdf5</code> file contains the following global attributes:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th style="text-align: left;"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>atmosID</code></td>
+<td style="text-align: left;">Identifier for the atmosphere file</td>
+</tr>
+<tr>
+<td><code>snapshot_number</code></td>
+<td style="text-align: left;">Number of simulation snapshot (from atmosphere file)</td>
+</tr>
+<tr>
+<td><code>rev_id</code></td>
+<td style="text-align: left;">Revision identifier</td>
+</tr>
+<tr>
+<td><code>nx</code></td>
+<td style="text-align: left;">Number of points in x dimension</td>
+</tr>
+<tr>
+<td><code>ny</code></td>
+<td style="text-align: left;">Number of points in y dimension</td>
+</tr>
+<tr>
+<td><code>nz</code></td>
+<td style="text-align: left;">Number of points in height dimension</td>
+</tr>
+<tr>
+<td><code>nwave</code></td>
+<td style="text-align: left;">Number of wavelength points</td>
+</tr>
+<tr>
+<td><code>wavelength_selected</code></td>
+<td style="text-align: left;">Number of wavelength points selected for detailed output</td>
+</tr>
+<tr>
+<td><code>creation_time</code></td>
+<td style="text-align: left;">Local time when file was created</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.sections", "navigation.indexes", "navigation.expand"], "search": "../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+      
+    
+  </body>
+</html>
