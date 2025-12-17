@@ -1,0 +1,1278 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://ita-solar.github.io/rh/installation/">
+      
+      
+        <link rel="prev" href="../introduction/">
+      
+      
+        <link rel="next" href="../input/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Installation - RH 1.5D Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#installation" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="RH 1.5D Documentation" class="md-header__button md-logo" aria-label="RH 1.5D Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RH 1.5D Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Installation
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ita-solar/rh" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ita-solar/rh
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="RH 1.5D Documentation" class="md-nav__button md-logo" aria-label="RH 1.5D Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    RH 1.5D Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ita-solar/rh" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ita-solar/rh
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#getting-the-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Getting the code
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependencies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Dependencies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hdf5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HDF5
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mpi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MPI
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compilation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compilation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Compilation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#makefile-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Makefile configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#main-libraries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Main libraries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#program-binaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Program binaries
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-directory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run directory
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../input/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Input files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../running/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running the code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dealing with output
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Dealing with output
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output file structure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command line tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output_python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reading output in Python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output_idl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reading output in IDL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../helita/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    helita interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bugs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bugs and limitations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#getting-the-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Getting the code
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependencies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Dependencies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hdf5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HDF5
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mpi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MPI
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compilation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compilation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Compilation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#makefile-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Makefile configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#main-libraries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Main libraries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#program-binaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Program binaries
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-directory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run directory
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h1>
+<h2 id="getting-the-code">Getting the code<a class="headerlink" href="#getting-the-code" title="Permanent link">&para;</a></h2>
+<p>The code is available on a git repository, hosted on github:
+<a href="https://github.com/ita-solar/rh">https://github.com/ita-solar/rh</a>. If you don't have
+<a href="http://git-scm.com/">git</a> installed and just want to get started, the
+easiest way is to download a zip file with the latest revision:
+<a href="https://github.com/ita-solar/rh/archive/master.zip">https://github.com/ita-solar/rh/archive/master.zip</a>. If you have git
+installed and would like to be up-to-date with the repository, you can
+do a git clone:</p>
+<div class="codehilite"><pre><span></span><code>git clone https://github.com/ita-solar/rh.git
+</code></pre></div>
+
+<p>or using SSH:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">git</span><span class="w"> </span><span class="n">clone</span><span class="w"> </span><span class="n">git</span><span class="nv">@github</span><span class="p">.</span><span class="nl">com</span><span class="p">:</span><span class="n">ita</span><span class="o">-</span><span class="n">solar</span><span class="o">/</span><span class="n">rh</span><span class="p">.</span><span class="n">git</span>
+</code></pre></div>
+
+<p>Whether you unpack the zip file or do one of the above it will create a
+directory called <code>rh</code> in your current path. This directory will have the
+following subdirectories:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Directory</th>
+<th style="text-align: left;">Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">rh</td>
+<td style="text-align: left;">Main RH source</td>
+</tr>
+<tr>
+<td style="text-align: left;">rh/Atmos</td>
+<td style="text-align: left;">Used to keep atmosphere files</td>
+</tr>
+<tr>
+<td style="text-align: left;">rh/Atoms_example</td>
+<td style="text-align: left;">Used to keep atom files, line and wavelength lists (example)</td>
+</tr>
+<tr>
+<td style="text-align: left;">rh/idl</td>
+<td style="text-align: left;">Old RH IDL routines, not used</td>
+</tr>
+<tr>
+<td style="text-align: left;">rh/Molecules</td>
+<td style="text-align: left;">Used to keep molecule files</td>
+</tr>
+<tr>
+<td style="text-align: left;">rh/python</td>
+<td style="text-align: left;">Utility Python programs</td>
+</tr>
+<tr>
+<td style="text-align: left;">rh/rh15d.</td>
+<td style="text-align: left;">Source files for RH 1.5D</td>
+</tr>
+<tr>
+<td style="text-align: left;">rh/rhf1d</td>
+<td style="text-align: left;">Source files for 1D geometry <span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></span> <strong>deprecated, do not use</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;">rh/rhsphere</td>
+<td style="text-align: left;">Source files for spherical geometry <span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></span> <strong>deprecated, do not use</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;">rh/tools</td>
+<td style="text-align: left;">Associate C programs for RH, not tested.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The source code directories for other geometries (rhf1d, rhsphere) are
+still in the code tree, but they are deprecated and will be removed
+soon. With the latest changes related to rh15d, they are not guaranteed
+to work or even run. Do not use.</p>
+</div>
+<h2 id="dependencies">Dependencies<a class="headerlink" href="#dependencies" title="Permanent link">&para;</a></h2>
+<h3 id="hdf5">HDF5<a class="headerlink" href="#hdf5" title="Permanent link">&para;</a></h3>
+<p>RH 1.5D makes use of the <a href="http://www.hdfgroup.org/HDF5/">HDF5</a> library
+to read the atmosphere files and write the output. It is not possible to
+run the code without this library. RH 1.5D requires HDF5 version 1.8.1
+or newer (including versions 1.10.x).</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>RH 1.5D previously made use of the netCDF4 library for its output (which
+in turn also required HDF5). The latest changes mean RH 1.5D needs only
+HDF5. Because netCDF4 files are also HDF5 files, the output is still
+readable in the same way as before and input files in netCDF version 4
+format can still be read in the same way by RH 1.5D. If you used input
+atmospheres in netCDF version 3 format, then these will have to be
+converted to HDF5. It is recommended that new atmosphere files be
+created in HDF5 only.</p>
+</div>
+<p>Because HDF5 is commonly used in high-performance computing, many
+supercomputers already have them available. Here are a few setups for
+different supercomputers:</p>
+<p>Betzy:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span><span class="w"> </span><span class="nb">load</span><span class="w"> </span><span class="n">iompi</span><span class="o">/</span><span class="mi">2022</span><span class="n">a</span><span class="w"> </span><span class="n">HDF5</span><span class="o">/</span><span class="mf">1.12</span><span class="o">.</span><span class="mi">2</span><span class="o">-</span><span class="n">iompi</span><span class="o">-</span><span class="mi">2022</span><span class="n">a</span>
+</code></pre></div>
+
+<p>Fram:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span><span class="w"> </span><span class="nb">load</span><span class="w"> </span><span class="n">HDF5</span><span class="o">/</span><span class="mf">1.8</span><span class="o">.</span><span class="mi">19</span><span class="o">-</span><span class="n">intel</span><span class="o">-</span><span class="mi">2018</span><span class="n">a</span><span class="w"> </span><span class="n">intel</span><span class="o">/</span><span class="mi">2018</span><span class="n">a</span>
+</code></pre></div>
+
+<p>Pleiades:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span><span class="w"> </span><span class="nb">load</span><span class="w"> </span><span class="n">hdf5</span><span class="o">/</span><span class="mf">1.8</span><span class="o">.</span><span class="mi">18</span><span class="n">_mpt</span>
+</code></pre></div>
+
+<p>Vilje:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span><span class="w"> </span><span class="nb">load</span><span class="w"> </span><span class="n">intelcomp</span><span class="o">/</span><span class="mf">18.0</span><span class="o">.</span><span class="mi">1</span><span class="w"> </span><span class="n">mpt</span><span class="o">/</span><span class="mf">2.14</span><span class="w"> </span><span class="n">hdf5</span><span class="o">/</span><span class="mf">1.8</span><span class="o">.</span><span class="mi">19</span>
+</code></pre></div>
+
+<p>Hexagon:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span><span class="w"> </span><span class="nb">load</span><span class="w"> </span><span class="n">cray</span><span class="o">-</span><span class="n">hdf5</span><span class="o">-</span><span class="n">parallel</span>
+</code></pre></div>
+
+<p>and at ITA's Linux system:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span><span class="w"> </span><span class="nb">load</span><span class="w"> </span><span class="n">intel</span><span class="o">/</span><span class="n">oneapi</span><span class="w"> </span><span class="n">compiler</span><span class="o">/</span><span class="n">latest</span><span class="w"> </span><span class="n">mpi</span><span class="o">/</span><span class="n">latest</span><span class="w"> </span><span class="n">hdf5</span><span class="o">/</span><span class="n">Intel</span><span class="o">/</span><span class="mf">1.14</span><span class="o">.</span><span class="mi">3</span>
+</code></pre></div>
+
+<h3 id="mpi">MPI<a class="headerlink" href="#mpi" title="Permanent link">&para;</a></h3>
+<p>You need MPI to run RH 1.5D. In supercomputers and clusters these are
+provided, but for your workstation or laptop you may need to install
+manually both MPI and HDF5 (with parallel support). If you have an
+existing conda or mamba installation, it should be possible to install
+compilers, MPI libraries, and HDF5 parallel. For example, the following
+will install the latest version of HDF5 with OpenMPI as the MPI library:</p>
+<div class="codehilite"><pre><span></span><code>conda install -c conda-forge &#39;hdf5=*=*openmpi*&#39;
+</code></pre></div>
+
+<p>This will install HDF5 to the same directory of your python environment
+(files under <code>lib/</code> and <code>bin/</code>). This setup has been tested on macOS
+with Apple Silicon, and works for RH 1.5D. However, packages may change
+and you may need to specify another way. Installing HDF5 via the system
+package manager (e.g. apt-get in Linux) is not recommended, since those
+HDF5 builds will probably not have parallel support.</p>
+<p>If installing binaries fails, the safest bet is to download and compile
+HDF5 from the source, enabling parallel builds in the <code>./configure</code>
+script, e.g.:</p>
+<div class="codehilite"><pre><span></span><code>./configure (...) --enable-parallel
+</code></pre></div>
+
+<h2 id="compilation">Compilation<a class="headerlink" href="#compilation" title="Permanent link">&para;</a></h2>
+<p>Compilation of RH 1.5D consists of two steps:</p>
+<ol>
+<li>Compilation of the geometry-independent main libraries (<code>librh.a</code>
+    and <code>librh_f90.a</code>)</li>
+<li>Compilation of the <code>rh15d_mpi</code> tree and main binaries</li>
+</ol>
+<p>RH 1.5D has been compiled in a variety of architectures and compilers,
+including gcc, the Intel compilers, and clang. As for MPI
+implementations, it has been tested with SGI's mpt, OpenMPI, mpich,
+mvapich, and Intel's MPI.</p>
+<h3 id="makefile-configuration">Makefile configuration<a class="headerlink" href="#makefile-configuration" title="Permanent link">&para;</a></h3>
+<p>RH 1.5D does not automatically look for the compilers and libraries. You
+need to tell RH which compilers to use and where to find the HDF5
+library by editing the file <code>rh/Makefile.config</code>. This file is also used
+to set up any additional compiler or linker flags, if appropriate.
+<strong>Changes to any other Makefiles are not necessary.</strong> It is also no
+longer necessary to set the environment variables <code>OS</code> and <code>CPU</code>, as in
+previous versions.</p>
+<p>For <code>HDF5_DIR</code>, please enter the base directory for the library (not the
+directory with the lib* files), so that both library and include files
+are used. In Fram and Hexagon this is already stored in the <code>HDF5_DIR</code>
+environment variable, so you can comment that line in <code>Makefile.config</code>.
+If your version of HDF5 was not built as a shared binary, you need to
+link HDF5 and other used libraries directly (you will need to set at
+least <code>-lz</code> in <code>LDFLAGS</code>).</p>
+<p>The following compiler flags are recommended for Betzy:</p>
+<div class="codehilite"><pre><span></span><code>CFLAGS = -O3 -DHAVE_F90 -qopt-prefetch -use-intel-optimized-headers -march=core-avx2 -fp-model source  
+F90FLAGS = -O3 -qopt-prefetch -use-intel-optimized-headers -march=core-avx2 -fp-model source
+</code></pre></div>
+
+<p>And for the ITA linux system (RHEL 9.x):</p>
+<div class="codehilite"><pre><span></span><code>CFLAGS = -O3 -DHAVE_F90 -Wformat  -I/usr/include/tirpc/  -std=gnu89
+F90FLAGS = -O3 -Wformat  -I/usr/include/tirpc/  -std=gnu89
+LDFLAGS = -ltirpc
+HDF5_DIR = /astro/local/hdf5/rhel9/1.14.3/intel/
+</code></pre></div>
+
+<p>There are two steps in the compilation: main libraries and rh15d
+binaries. To speed up compilation, you can use parallel builds (e.g.
+<code>make -j8</code>) in all steps of the compilation.</p>
+<h3 id="main-libraries">Main libraries<a class="headerlink" href="#main-libraries" title="Permanent link">&para;</a></h3>
+<p>The common RH files are put in a library under the base directory. After
+editing <code>Makefile.config</code>, build the main libraries with <code>make</code> on the
+<code>rh</code> directory. If successful, the compilation will produce the two
+library files <code>librh.a</code> and <code>librh_f90.a</code>.</p>
+<h3 id="program-binaries">Program binaries<a class="headerlink" href="#program-binaries" title="Permanent link">&para;</a></h3>
+<p>The <code>rh15d</code> contains the source files for the 1.5D version. After
+compiling the main library, go to that directory and compile the
+binaries with <code>make</code>. The following executables will be created:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;"><div style="width:100px">File</div></th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>rh15d_ray_pool</code></td>
+<td style="text-align: left;">Main RH 1.5D binary, uses a job pool</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>rh15d_ray</code></td>
+<td style="text-align: left;">Alternative RH 1.5D binary. <strong>Deprecated.</strong> This program runs much slower than <code>rh15d_ray_pool</code> and is kept for backwards compatibility only. Will be removed in a future revision.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>rh15d_lteray</code></td>
+<td style="text-align: left;">Special binary for running in LTE</td>
+</tr>
+</tbody>
+</table>
+<h2 id="run-directory">Run directory<a class="headerlink" href="#run-directory" title="Permanent link">&para;</a></h2>
+<p>Once compiled, you can copy or link the binaries to a run directory.
+This directory will contain all the necessary input files, and it should
+contain two subdirectories called <code>output</code> and <code>scratch</code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If the subdirectories <code>output</code> and <code>scratch</code> do not exist in the
+directory where the code is run, the code will crash with an obscure
+error message.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.sections", "navigation.indexes", "navigation.expand"], "search": "../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+      
+    
+  </body>
+</html>
