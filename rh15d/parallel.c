@@ -53,7 +53,13 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
   MPI_Get_processor_name(mpi.name, &mpi.namelen);
   mpi.comm = MPI_COMM_WORLD;
-  mpi.info = MPI_INFO_NULL;
+  /* --- MPI-IO hints optimised for Lustre parallel filesystem --- */
+  MPI_Info_create(&mpi.info);
+  MPI_Info_set(mpi.info, "romio_cb_write",  "enable");   /* collective buffering */
+  MPI_Info_set(mpi.info, "romio_ds_write",  "disable");  /* no data sieving     */
+  MPI_Info_set(mpi.info, "cb_buffer_size",  "16777216"); /* 16 MB coll. buffer  */
+  MPI_Info_set(mpi.info, "romio_cb_read",   "enable");
+  MPI_Info_set(mpi.info, "romio_ds_read",   "disable");
   /* Open log files */
   sprintf(logfile, (run_ray) ? RAY_MPILOG_TEMPLATE : MPILOG_TEMPLATE, mpi.rank);
   if ((mpi.logfile = fopen(logfile, "w")) == NULL) {
@@ -79,6 +85,30 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
   return;
 }
 /* ------- end   --------------------------   initParallel.c --   --- */
+
+/* ------- begin --------------------------   create_hdf5_fapl.c  --- */
+hid_t create_hdf5_fapl(void) {
+/* Creates an HDF5 file access property list optimised for Lustre.
+   Caller is responsible for closing the returned plist with H5Pclose. */
+  const char routineName[] = "create_hdf5_fapl";
+  hid_t plist;
+
+  if (( plist = H5Pcreate(H5P_FILE_ACCESS) ) < 0) HERR(routineName);
+  if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
+  /* Align HDF5 objects to 1 MB boundaries to match typical Lustre stripe size,
+     threshold 0 means all allocations are aligned */
+  if (( H5Pset_alignment(plist, 0, 1048576) ) < 0) HERR(routineName);
+  /* Aggregate metadata allocations into 8 MB blocks to reduce Lustre
+     metadata operations */
+  if (( H5Pset_meta_block_size(plist, 8388608) ) < 0) HERR(routineName);
+  /* Use collective metadata I/O: this does NOT require synchronising data
+     writes, it only makes HDF5 metadata operations collective, which greatly
+     reduces metadata contention on Lustre (available since HDF5 1.10) */
+  if (( H5Pset_all_coll_metadata_ops(plist, 1) ) < 0) HERR(routineName);
+  if (( H5Pset_coll_metadata_write(plist, 1) ) < 0) HERR(routineName);
+  return plist;
+}
+/* ------- end   --------------------------   create_hdf5_fapl.c  --- */
 
 /* ------- begin --------------------------   initParallelIO.c    --- */
 void initParallelIO(bool_t run_ray, bool_t writej) {

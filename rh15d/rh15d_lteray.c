@@ -169,6 +169,7 @@ int main(int argc, char *argv[])
   Error(MESSAGE, "main", messageStr);
 
   printTotalCPU();
+  MPI_Info_free(&mpi.info);
   MPI_Finalize();
 
   return 0;

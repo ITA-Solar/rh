@@ -176,6 +176,7 @@ int main(int argc, char *argv[])
   if (mpi.rank == 0) fprintf(mpi.main_logfile, "%s", messageStr);
   Error(MESSAGE, "main", messageStr);
   printTotalCPU();
+  MPI_Info_free(&mpi.info);
   MPI_Finalize();
   return 0;
 }

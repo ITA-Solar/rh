@@ -48,9 +48,8 @@ void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry,
   size_t count[] = {1, 1};
   char *filename;
 
-  /* --- Open input file for model atmosphere --       -------------- */
-  if ((plist_id = H5Pcreate(H5P_FILE_ACCESS)) < 0) HERR(routineName);
-  if ((H5Pset_fapl_mpio(plist_id, mpi.comm, mpi.info)) < 0) HERR(routineName);
+  /* --- Open input file for model atmosphere (Lustre-optimised) --- */
+  plist_id = create_hdf5_fapl();
 
   /* --- Sets IO cache enviction for beter perfomance on parallel io */
   if (IO_CACHE_EVICTION) { // disable metadata cache eviction

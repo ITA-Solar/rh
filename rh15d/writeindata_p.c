@@ -78,9 +78,8 @@ void init_hdf5_indata_new(void)
       NMaxIter = input.NmaxIter;
   }
 
-  /* Create the file  */
-  if (( plist = H5Pcreate(H5P_FILE_ACCESS )) < 0) HERR(routineName);
-  if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
+  /* Create the file with Lustre-optimised parallel MPI-IO access */
+  plist = create_hdf5_fapl();
   if (( ncid = H5Fcreate(INPUTDATA_FILE, H5F_ACC_TRUNC, H5P_DEFAULT,
                          plist) ) < 0) HERR(routineName);
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
@@ -595,9 +594,8 @@ void init_hdf5_indata_existing(void)
   int     NMaxIter;
   H5T_class_t type_class;
 
-  /* Open the file with parallel MPI-IO access */
-  if (( plist = H5Pcreate(H5P_FILE_ACCESS )) < 0) HERR(routineName);
-  if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
+  /* Open the file with Lustre-optimised parallel MPI-IO access */
+  plist = create_hdf5_fapl();
   if (( ncid = H5Fopen(INPUTDATA_FILE, H5F_ACC_RDWR, plist) ) < 0)
     HERR(routineName);
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
@@ -901,9 +899,8 @@ void readConvergence(void) {
 
   mpi.rh_converged = matrix_int(mpi.nx, mpi.ny);
 
-  /* --- Open the inputdata file --- */
-  if (( plist = H5Pcreate(H5P_FILE_ACCESS )) < 0) HERR(routineName);
-  if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
+  /* --- Open the inputdata file with Lustre-optimised access --- */
+  plist = create_hdf5_fapl();
   if (( ncid = H5Fopen(INPUTDATA_FILE, H5F_ACC_RDONLY, plist) ) < 0)
     HERR(routineName);
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
@@ -964,9 +961,8 @@ void readSavedKeywords(void) {
   double saved_crsw, saved_crsw_ini, saved_prdswitch, saved_prdsw;
   double saved_p15d_tmax, saved_iterLimit, saved_PRDiterLimit;
 
-  /* --- Open the inputdata file --- */
-  if (( plist = H5Pcreate(H5P_FILE_ACCESS )) < 0) HERR(routineName);
-  if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
+  /* --- Open the inputdata file with Lustre-optimised access --- */
+  plist = create_hdf5_fapl();
   if (( ncid = H5Fopen(INPUTDATA_FILE, H5F_ACC_RDONLY, plist) ) < 0)
     HERR(routineName);
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
@@ -1069,9 +1065,8 @@ void readSavedInput(void) {
   H5T_class_t type_class;
 
 
-  /* --- Open the inputdata file --- */
-  if (( plist = H5Pcreate(H5P_FILE_ACCESS )) < 0) HERR(routineName);
-  if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
+  /* --- Open the inputdata file with Lustre-optimised access --- */
+  plist = create_hdf5_fapl();
   if (( ncid = H5Fopen(INPUTDATA_FILE, H5F_ACC_RDONLY, plist) ) < 0)
     HERR(routineName);
   if (( H5Pclose(plist) ) < 0) HERR(routineName);

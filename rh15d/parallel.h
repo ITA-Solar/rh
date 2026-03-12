@@ -10,6 +10,7 @@
 #define __PARALLEL_H__
 
 #include <mpi.h>
+#include <hdf5.h>
 
 typedef struct {
   char     name[MPI_MAX_PROCESSOR_NAME], rev_id[MAX_LINE_SIZE];
@@ -60,6 +61,7 @@ void writeOpacity_p(void);
 void initParallel(int *argc, char **argv[], bool_t run_ray);
 void initParallelIO(bool_t run_ray, bool_t writej);
 void closeParallelIO(bool_t run_ray, bool_t writej);
+hid_t create_hdf5_fapl(void);
 void UpdateAtmosDep(void);
 void RequestStop_p(void);
 bool_t StopRequested_p(void);

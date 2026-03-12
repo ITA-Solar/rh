@@ -70,9 +70,8 @@ void init_hdf5_ray_new(void)
 
   write_xtra = (io.ray_nwave_sel > 0);
 
-  /* Create the file with parallel MPI-IO access */
-  if (( plist = H5Pcreate(H5P_FILE_ACCESS )) < 0) HERR(routineName);
-  if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
+  /* Create the file with Lustre-optimised parallel MPI-IO access */
+  plist = create_hdf5_fapl();
   if (( ncid = H5Fcreate(RAY_FILE, H5F_ACC_TRUNC, H5P_DEFAULT, plist) ) < 0)
     HERR(routineName);
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
@@ -342,9 +341,8 @@ void init_hdf5_ray_existing(void)
 
   write_xtra = (io.ray_nwave_sel > 0);
 
-  /* Open the file with parallel MPI-IO access */
-  if (( plist = H5Pcreate(H5P_FILE_ACCESS )) < 0) HERR(routineName);
-  if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
+  /* Open the file with Lustre-optimised parallel MPI-IO access */
+  plist = create_hdf5_fapl();
   if (( ncid = H5Fopen(RAY_FILE, H5F_ACC_RDWR, plist) ) < 0) HERR(routineName);
   if (( H5Pclose(plist) ) < 0) HERR(routineName);
 
