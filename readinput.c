@@ -240,7 +240,9 @@ void readInput(char *input_string)
     {"15D_WRITE_TAU1", "FALSE",  FALSE, KEYWORD_OPTIONAL, &input.p15d_wtau,
      setboolValue},
     {"15D_WRITE_EXTRA",    "TRUE",  FALSE, KEYWORD_OPTIONAL, &input.p15d_wxtra,
-     setboolValue}
+     setboolValue},
+    {"15D_FLUSH_INTERVAL", "4",    FALSE, KEYWORD_OPTIONAL,
+     &input.p15d_flush_interval, setintValue}
 
   };
   Nkeyword = sizeof(theKeywords) / sizeof(Keyword);

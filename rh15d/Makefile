@@ -36,6 +36,7 @@ SRC = accelerate_p.c  \
 	  ludcmp_p.c  \
 	  multiatmos.c  \
 	  parallel.c  \
+	  pool_buffer.c  \
 	  piecestokes.c  \
 	  piecewise.c  \
 	  project.c  \

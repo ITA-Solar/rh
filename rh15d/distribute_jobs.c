@@ -125,17 +125,17 @@ void distribute_jobs(void)
   minNtasks   = mpi.Ntasks;
   maxNtasks   = mpi.Ntasks;
   mpi.taskmap = get_taskmap(remain_tasks, tasks, &mpi.my_start);
-  free(tasks);
 
-  /* Find max Ntask per processor*/
-  for (size_t i = 0; i < mpi.size; ++i) {
-    if (minNtasks >= tasks[i]) {
+  /* Find max/min Ntask per processor */
+  for (int i = 0; i < mpi.size; ++i) {
+    if (minNtasks > tasks[i]) {
       minNtasks = tasks[i];
     }
-    if (maxNtasks <= tasks[i]) {
+    if (maxNtasks < tasks[i]) {
       maxNtasks = tasks[i];
     }
   }
+  free(tasks);
 
   if (minNtasks == maxNtasks) {
     mpi.isbalanced = true;
