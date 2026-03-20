@@ -293,6 +293,9 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
 
 	/* --- Open background file --                        ------------- */
 
+	/* Close previous column's file descriptor if still open */
+	if (atmos.fd_background > 0) close(atmos.fd_background);
+
 	/* get file name, with the MPI rank */
 	sprintf(file_background,"%s_p%d%s", input.background_File , mpi.rank, fext);
 

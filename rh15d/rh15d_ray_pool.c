@@ -96,6 +96,10 @@ int main(int argc, char *argv[])
   /* --- Batched pool with periodic collective flush --- */
   int flush_interval = input.p15d_flush_interval;
   if (flush_interval < 1) flush_interval = 1;
+  /* Clamp so batch never exceeds total number of columns */
+  if ((long)flush_interval * mpi.size > mpi.total_tasks)
+    flush_interval = (int)(mpi.total_tasks / mpi.size) + 1;
+  if (flush_interval < 1) flush_interval = 1;
   long batch_size = (long)flush_interval * mpi.size;
   long total_dispatched = 0;
 
@@ -119,11 +123,10 @@ int main(int argc, char *argv[])
       drone_batch(&poolbuf);
     }
 
-    /* All ranks collectively flush buffered columns to disk */
-    writeCollective_pool(&poolbuf);
-    poolbuf_reset(&poolbuf);
-
+    /* All ranks collectively write buffered columns to disk and flush */
     total_dispatched += this_batch;
+    writeCollective_pool(&poolbuf, TRUE);
+    poolbuf_reset(&poolbuf);
   }
 
   /* Tell all drones to exit */

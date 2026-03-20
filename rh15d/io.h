@@ -257,7 +257,7 @@ void poolbuf_free(PoolOutputBuf *buf);
 void poolbuf_store_mpi(PoolOutputBuf *buf, long task_id);
 void poolbuf_store_aux_atmos(PoolOutputBuf *buf);
 void poolbuf_store_ray(PoolOutputBuf *buf);
-void writeCollective_pool(PoolOutputBuf *buf);
+void writeCollective_pool(PoolOutputBuf *buf, bool_t flush);
 
 void readSavedInput(void);
 void readSavedKeywords(void);

@@ -353,7 +353,6 @@ void poolbuf_store_ray(PoolOutputBuf *buf) {
     if (input.limit_memory) free(J);
   }
 
-  close_Background();  /* To avoid many open files */
 }
 /* ------- end   --------------------------   poolbuf_store_ray  -------- */
 
@@ -617,19 +616,88 @@ static void write_dataset_collective_varz(
 }
 
 
+/* Write all kr-slabs of a rate dataset in a single collective H5Dwrite.
+   Dataset shape: [Nkr, nx, ny, nz].  For each (kr, column) pair we
+   select a hyperslab [kr, ix, iy, zcut:zcut+Nspace].  The memory
+   buffer must be ordered kr-major: for kr in 0..Nkr-1, for col in
+   0..nconv-1, Nspace doubles.  HDF5 iterates OR-combined blocks in
+   row-major (offset) order which matches kr-major, col-sorted order
+   since columns are already sorted by (ix,iy). */
+static void write_rates_all_kr(
+    hid_t dset_id, hid_t plist_id,
+    PoolColumnBuf *cols, int ncols,
+    int Nkr,
+    double **col_rate_ptrs,  /* col_rate_ptrs[c] → Nkr*Nspace contiguous */
+    int nconv_total)         /* unused, kept for clarity */
+{
+  const char routineName[] = "write_rates_all_kr";
+  hid_t file_dspace, mem_dspace;
+  int first = 1;
+
+  if (( file_dspace = H5Dget_space(dset_id) ) < 0) HERR(routineName);
+
+  if (ncols > 0 && Nkr > 0) {
+    /* Compute total memory size */
+    hsize_t mem_total = 0;
+    int c, kr;
+    for (kr = 0; kr < Nkr; kr++)
+      for (c = 0; c < ncols; c++)
+        mem_total += cols[c].Nspace;
+
+    /* Build kr-major memory buffer */
+    double *membuf = (double *) malloc(mem_total * sizeof(double));
+    long pos = 0;
+    for (kr = 0; kr < Nkr; kr++) {
+      for (c = 0; c < ncols; c++) {
+        memcpy(membuf + pos,
+               col_rate_ptrs[c] + (long)kr * cols[c].Nspace,
+               cols[c].Nspace * sizeof(double));
+        pos += cols[c].Nspace;
+      }
+    }
+
+    /* Build multi-block file hyperslab: one block per (kr, col) */
+    for (kr = 0; kr < Nkr; kr++) {
+      for (c = 0; c < ncols; c++) {
+        hsize_t offset[4] = {kr, cols[c].ix, cols[c].iy, cols[c].zcut};
+        hsize_t count[4]  = {1,  1,           1,          cols[c].Nspace};
+        if (( H5Sselect_hyperslab(file_dspace,
+                first ? H5S_SELECT_SET : H5S_SELECT_OR,
+                offset, NULL, count, NULL) ) < 0) HERR(routineName);
+        first = 0;
+      }
+    }
+
+    if (( mem_dspace = H5Screate_simple(1, &mem_total, NULL) ) < 0)
+      HERR(routineName);
+    if (( H5Dwrite(dset_id, H5T_NATIVE_DOUBLE, mem_dspace,
+                    file_dspace, plist_id, membuf) ) < 0) HERR(routineName);
+    if (( H5Sclose(mem_dspace) ) < 0) HERR(routineName);
+    free(membuf);
+  } else {
+    /* Empty participation for collective call */
+    if (( H5Sselect_none(file_dspace) ) < 0) HERR(routineName);
+    hsize_t zero = 0;
+    if (( mem_dspace = H5Screate_simple(1, &zero, NULL) ) < 0)
+      HERR(routineName);
+    if (( H5Dwrite(dset_id, H5T_NATIVE_DOUBLE, mem_dspace,
+                    file_dspace, plist_id, NULL) ) < 0) HERR(routineName);
+    if (( H5Sclose(mem_dspace) ) < 0) HERR(routineName);
+  }
+  if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
+}
+
+
 /* ======================================================================
    Phase 2: Collective writer
    ====================================================================== */
 
 /* ------- begin --------------------------   writeCollective_pool  ----- */
-void writeCollective_pool(PoolOutputBuf *buf) {
+void writeCollective_pool(PoolOutputBuf *buf, bool_t flush) {
   const char routineName[] = "writeCollective_pool";
   int    i, c, nact, kr;
   hid_t  plist_id;
   bool_t write_xtra;
-
-  /* Synchronise all ranks before the collective write phase */
-  MPI_Barrier(mpi.comm);
 
   sprintf(messageStr, "Process %4d: --- START collective write (%d columns)\n",
           mpi.rank, buf->ncols);
@@ -920,128 +988,47 @@ void writeCollective_pool(PoolOutputBuf *buf) {
 
       /* --- Rates [Nline/Ncont, nx, ny, nz] --- */
       if (input.p15d_wrates) {
-        /* Line rates: write one kr-slab at a time per collective call.
-           Each column contributes Nspace elements at [kr, ix, iy, zcut:].
-           We iterate over kr and do one collective call per kr. */
-        for (kr = 0; kr < atom->Nline; kr++) {
-          hsize_t base_count[4] = {1, 1, 1, 0};
+        /* Build per-column pointer arrays, then write all kr slabs for
+           each rate dataset in a single collective H5Dwrite call. */
+        double **col_ptrs = (double **) malloc(nconv * sizeof(double *));
 
-          hsize_t mem_total = 0;
-          for (c = 0; c < nconv; c++) mem_total += conv_cols[c].Nspace;
-
-          hid_t rate_dsets[4] = {io.aux_atom_RijL[nact],
-                                 io.aux_atom_RjiL[nact],
-                                 io.aux_atom_CijL[nact],
-                                 io.aux_atom_CjiL[nact]};
-
-          for (int r = 0; r < 4; r++) {
-            double *membuf = NULL;
-            if (nconv > 0 && mem_total > 0) {
-              membuf = (double *) malloc(mem_total * sizeof(double));
-              long pos = 0;
-              for (c = 0; c < nconv; c++) {
-                double *src;
-                switch (r) {
-                  case 0: src = conv_cols[c].atom_RijL[nact]; break;
-                  case 1: src = conv_cols[c].atom_RjiL[nact]; break;
-                  case 2: src = conv_cols[c].atom_CijL[nact]; break;
-                  case 3: src = conv_cols[c].atom_CjiL[nact]; break;
-                }
-                memcpy(membuf + pos,
-                       src + (long)kr * conv_cols[c].Nspace,
-                       conv_cols[c].Nspace * sizeof(double));
-                pos += conv_cols[c].Nspace;
-              }
+        /* Line rates: 4 datasets × 1 H5Dwrite each (all kr combined) */
+        hid_t line_dsets[4] = {io.aux_atom_RijL[nact],
+                               io.aux_atom_RjiL[nact],
+                               io.aux_atom_CijL[nact],
+                               io.aux_atom_CjiL[nact]};
+        for (int r = 0; r < 4; r++) {
+          for (c = 0; c < nconv; c++) {
+            switch (r) {
+              case 0: col_ptrs[c] = conv_cols[c].atom_RijL[nact]; break;
+              case 1: col_ptrs[c] = conv_cols[c].atom_RjiL[nact]; break;
+              case 2: col_ptrs[c] = conv_cols[c].atom_CijL[nact]; break;
+              case 3: col_ptrs[c] = conv_cols[c].atom_CjiL[nact]; break;
             }
-
-            /* Override the kr dimension in the offset */
-            hid_t file_dspace = H5Dget_space(rate_dsets[r]);
-            if (nconv > 0 && membuf != NULL) {
-              int first = 1;
-              for (c = 0; c < nconv; c++) {
-                hsize_t offset[4] = {kr, conv_cols[c].ix, conv_cols[c].iy,
-                                     conv_cols[c].zcut};
-                hsize_t count[4] = {1, 1, 1, conv_cols[c].Nspace};
-                H5Sselect_hyperslab(file_dspace,
-                    first ? H5S_SELECT_SET : H5S_SELECT_OR,
-                    offset, NULL, count, NULL);
-                first = 0;
-              }
-              hid_t mem_dspace = H5Screate_simple(1, &mem_total, NULL);
-              H5Dwrite(rate_dsets[r], H5T_NATIVE_DOUBLE, mem_dspace,
-                       file_dspace, plist_id, membuf);
-              H5Sclose(mem_dspace);
-            } else {
-              H5Sselect_none(file_dspace);
-              hsize_t zero = 0;
-              hid_t mem_dspace = H5Screate_simple(1, &zero, NULL);
-              H5Dwrite(rate_dsets[r], H5T_NATIVE_DOUBLE, mem_dspace,
-                       file_dspace, plist_id, NULL);
-              H5Sclose(mem_dspace);
-            }
-            H5Sclose(file_dspace);
-            free(membuf);
           }
+          write_rates_all_kr(line_dsets[r], plist_id,
+              conv_cols, nconv, atom->Nline, col_ptrs, 0);
         }
 
-        /* Continuum rates: same pattern */
-        for (kr = 0; kr < atom->Ncont; kr++) {
-          hsize_t mem_total = 0;
-          for (c = 0; c < nconv; c++) mem_total += conv_cols[c].Nspace;
-
-          hid_t rate_dsets[4] = {io.aux_atom_RijC[nact],
-                                 io.aux_atom_RjiC[nact],
-                                 io.aux_atom_CijC[nact],
-                                 io.aux_atom_CjiC[nact]};
-
-          for (int r = 0; r < 4; r++) {
-            double *membuf = NULL;
-            if (nconv > 0 && mem_total > 0) {
-              membuf = (double *) malloc(mem_total * sizeof(double));
-              long pos = 0;
-              for (c = 0; c < nconv; c++) {
-                double *src;
-                switch (r) {
-                  case 0: src = conv_cols[c].atom_RijC[nact]; break;
-                  case 1: src = conv_cols[c].atom_RjiC[nact]; break;
-                  case 2: src = conv_cols[c].atom_CijC[nact]; break;
-                  case 3: src = conv_cols[c].atom_CjiC[nact]; break;
-                }
-                memcpy(membuf + pos,
-                       src + (long)kr * conv_cols[c].Nspace,
-                       conv_cols[c].Nspace * sizeof(double));
-                pos += conv_cols[c].Nspace;
-              }
+        /* Continuum rates: 4 datasets × 1 H5Dwrite each */
+        hid_t cont_dsets[4] = {io.aux_atom_RijC[nact],
+                               io.aux_atom_RjiC[nact],
+                               io.aux_atom_CijC[nact],
+                               io.aux_atom_CjiC[nact]};
+        for (int r = 0; r < 4; r++) {
+          for (c = 0; c < nconv; c++) {
+            switch (r) {
+              case 0: col_ptrs[c] = conv_cols[c].atom_RijC[nact]; break;
+              case 1: col_ptrs[c] = conv_cols[c].atom_RjiC[nact]; break;
+              case 2: col_ptrs[c] = conv_cols[c].atom_CijC[nact]; break;
+              case 3: col_ptrs[c] = conv_cols[c].atom_CjiC[nact]; break;
             }
-
-            hid_t file_dspace = H5Dget_space(rate_dsets[r]);
-            if (nconv > 0 && membuf != NULL) {
-              int first = 1;
-              for (c = 0; c < nconv; c++) {
-                hsize_t offset[4] = {kr, conv_cols[c].ix, conv_cols[c].iy,
-                                     conv_cols[c].zcut};
-                hsize_t count[4] = {1, 1, 1, conv_cols[c].Nspace};
-                H5Sselect_hyperslab(file_dspace,
-                    first ? H5S_SELECT_SET : H5S_SELECT_OR,
-                    offset, NULL, count, NULL);
-                first = 0;
-              }
-              hid_t mem_dspace = H5Screate_simple(1, &mem_total, NULL);
-              H5Dwrite(rate_dsets[r], H5T_NATIVE_DOUBLE, mem_dspace,
-                       file_dspace, plist_id, membuf);
-              H5Sclose(mem_dspace);
-            } else {
-              H5Sselect_none(file_dspace);
-              hsize_t zero = 0;
-              hid_t mem_dspace = H5Screate_simple(1, &zero, NULL);
-              H5Dwrite(rate_dsets[r], H5T_NATIVE_DOUBLE, mem_dspace,
-                       file_dspace, plist_id, NULL);
-              H5Sclose(mem_dspace);
-            }
-            H5Sclose(file_dspace);
-            free(membuf);
           }
+          write_rates_all_kr(cont_dsets[r], plist_id,
+              conv_cols, nconv, atom->Ncont, col_ptrs, 0);
         }
+
+        free(col_ptrs);
       }
     }
 
@@ -1097,10 +1084,12 @@ void writeCollective_pool(PoolOutputBuf *buf) {
   if (( H5Pclose(plist_id) ) < 0) HERR(routineName);
   free(conv_cols);
 
-  /* Flush all HDF5 files to disk for crash resilience */
-  if (( H5Fflush(io.ray_ncid, H5F_SCOPE_LOCAL) ) < 0) HERR(routineName);
-  if (( H5Fflush(io.in_ncid,  H5F_SCOPE_LOCAL) ) < 0) HERR(routineName);
-  if (( H5Fflush(io.aux_ncid, H5F_SCOPE_LOCAL) ) < 0) HERR(routineName);
+  /* Flush HDF5 files only on last batch (files are flushed at close) */
+  if (flush) {
+    if (( H5Fflush(io.ray_ncid, H5F_SCOPE_LOCAL) ) < 0) HERR(routineName);
+    if (( H5Fflush(io.in_ncid,  H5F_SCOPE_LOCAL) ) < 0) HERR(routineName);
+    if (( H5Fflush(io.aux_ncid, H5F_SCOPE_LOCAL) ) < 0) HERR(routineName);
+  }
 
   sprintf(messageStr, "Process %4d: *** END   collective write\n", mpi.rank);
   Error(MESSAGE, "main", messageStr);

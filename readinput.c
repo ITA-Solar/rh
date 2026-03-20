@@ -241,7 +241,7 @@ void readInput(char *input_string)
      setboolValue},
     {"15D_WRITE_EXTRA",    "TRUE",  FALSE, KEYWORD_OPTIONAL, &input.p15d_wxtra,
      setboolValue},
-    {"15D_FLUSH_INTERVAL", "4",    FALSE, KEYWORD_OPTIONAL,
+    {"15D_FLUSH_INTERVAL", "128",  FALSE, KEYWORD_OPTIONAL,
      &input.p15d_flush_interval, setintValue}
 
   };
