@@ -88,7 +88,9 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
 
 /* ------- begin --------------------------   create_hdf5_fapl.c  --- */
 hid_t create_hdf5_fapl(void) {
-/* Creates an HDF5 file access property list optimised for Lustre.
+/* Creates an HDF5 file access property list optimised for Lustre,
+   with collective metadata enabled (for output files where all ranks
+   participate in I/O together).
    Caller is responsible for closing the returned plist with H5Pclose. */
   const char routineName[] = "create_hdf5_fapl";
   hid_t plist;
@@ -106,6 +108,21 @@ hid_t create_hdf5_fapl(void) {
      reduces metadata contention on Lustre (available since HDF5 1.10) */
   if (( H5Pset_all_coll_metadata_ops(plist, 1) ) < 0) HERR(routineName);
   if (( H5Pset_coll_metadata_write(plist, 1) ) < 0) HERR(routineName);
+  return plist;
+}
+
+hid_t create_hdf5_fapl_indep(void) {
+/* Creates an HDF5 file access property list optimised for Lustre,
+   WITHOUT collective metadata.  Use for files that are read independently
+   by individual ranks (e.g. atmosphere input in pool mode). */
+  const char routineName[] = "create_hdf5_fapl_indep";
+  hid_t plist;
+
+  if (( plist = H5Pcreate(H5P_FILE_ACCESS) ) < 0) HERR(routineName);
+  if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
+  if (( H5Pset_alignment(plist, 0, 1048576) ) < 0) HERR(routineName);
+  if (( H5Pset_meta_block_size(plist, 8388608) ) < 0) HERR(routineName);
+  /* No collective metadata — ranks read independently */
   return plist;
 }
 /* ------- end   --------------------------   create_hdf5_fapl.c  --- */

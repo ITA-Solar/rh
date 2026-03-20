@@ -48,8 +48,10 @@ void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry,
   size_t count[] = {1, 1};
   char *filename;
 
-  /* --- Open input file for model atmosphere (Lustre-optimised) --- */
-  plist_id = create_hdf5_fapl();
+  /* --- Open input file for model atmosphere (Lustre-optimised) ---
+     Use independent metadata: in pool mode drones read columns
+     asynchronously, so collective metadata ops would deadlock. */
+  plist_id = create_hdf5_fapl_indep();
 
   /* --- Sets IO cache enviction for beter perfomance on parallel io */
   if (IO_CACHE_EVICTION) { // disable metadata cache eviction

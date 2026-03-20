@@ -62,6 +62,7 @@ void initParallel(int *argc, char **argv[], bool_t run_ray);
 void initParallelIO(bool_t run_ray, bool_t writej);
 void closeParallelIO(bool_t run_ray, bool_t writej);
 hid_t create_hdf5_fapl(void);
+hid_t create_hdf5_fapl_indep(void);
 void UpdateAtmosDep(void);
 void RequestStop_p(void);
 bool_t StopRequested_p(void);
