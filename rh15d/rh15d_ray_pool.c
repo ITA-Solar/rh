@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
   if (mpi.rank == 0) {
     long rank;
     for (rank = 1; rank <= mpi.size; ++rank)
-      MPI_Ssend(0, 0, MPI_INT, rank, DIETAG, MPI_COMM_WORLD);
+      MPI_Send(0, 0, MPI_INT, rank, DIETAG, MPI_COMM_WORLD);
   } else {
     MPI_Status status;
     long dummy;
@@ -169,7 +169,7 @@ void overlord_batch(long start_task, long batch_count) {
 
   /* Seed the drones with initial work */
   for (rank = 1; rank <= ndrones; ++rank) {
-    MPI_Ssend(&current_task, 1, MPI_LONG, rank, WORKTAG, MPI_COMM_WORLD);
+    MPI_Send(&current_task, 1, MPI_LONG, rank, WORKTAG, MPI_COMM_WORLD);
     ++current_task;
   }
 
@@ -177,8 +177,8 @@ void overlord_batch(long start_task, long batch_count) {
   while (current_task < end_task) {
     MPI_Recv(&result, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG,
              MPI_COMM_WORLD, &status);
-    MPI_Ssend(&current_task, 1, MPI_LONG, status.MPI_SOURCE, WORKTAG,
-              MPI_COMM_WORLD);
+    MPI_Send(&current_task, 1, MPI_LONG, status.MPI_SOURCE, WORKTAG,
+             MPI_COMM_WORLD);
     ++current_task;
   }
 
@@ -190,7 +190,7 @@ void overlord_batch(long start_task, long batch_count) {
 
   /* Signal all drones: batch complete, time to flush */
   for (rank = 1; rank <= mpi.size; ++rank) {
-    MPI_Ssend(0, 0, MPI_INT, rank, BATCHTAG, MPI_COMM_WORLD);
+    MPI_Send(0, 0, MPI_INT, rank, BATCHTAG, MPI_COMM_WORLD);
   }
 }
 /* ------- end   ---------------------------- overlord.c ------------ */
