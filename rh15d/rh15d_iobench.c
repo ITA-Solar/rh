@@ -174,6 +174,21 @@ static void iobench_fill_fake(PoolOutputBuf *buf, long task_id) {
 }
 
 
+/* Compute total bytes that one column contributes to the READ phase.
+   Mirrors the datasets fetched by readAtmos_hdf5 (always at full nz). */
+static double iobench_read_bytes_per_column(void) {
+  double bytes = 0.0;
+  /* T, z, ne, vz, vturb */
+  bytes += 5.0 * (double)infile.nz * sizeof(double);
+  /* nH */
+  bytes += (double)atmos.NHydr * (double)infile.nz * sizeof(double);
+  /* B-field components if Stokes */
+  if (atmos.Stokes)
+    bytes += 3.0 * (double)infile.nz * sizeof(double);
+  return bytes;
+}
+
+
 /* Compute total bytes that one filled column contributes to disk.
    Mirrors the dataset list in writeCollective_pool. */
 static double iobench_bytes_per_column(void) {
@@ -224,6 +239,8 @@ int main(int argc, char *argv[])
   double t_read_total = 0.0, t_fill_total = 0.0, t_write_total = 0.0;
   double t_run0, t_run1;
   double bytes_written_local = 0.0, bytes_written_global = 0.0;
+  double bytes_read_local    = 0.0, bytes_read_global    = 0.0;
+  double read_bytes_per_col  = 0.0, write_bytes_per_col  = 0.0;
 
   /* --- Set up MPI --- */
   mpi.main_logfile = stderr;
@@ -345,6 +362,12 @@ int main(int argc, char *argv[])
     readAtmos(mpi.xnum[mpi.ix], mpi.ynum[mpi.iy], &atmos, &geometry, &infile);
     t1 = MPI_Wtime();
     t_read_total += (t1 - t0);
+    /* Capture per-column sizes once we have a real atmos to measure. */
+    if (read_bytes_per_col == 0.0) {
+      read_bytes_per_col  = iobench_read_bytes_per_column();
+      write_bytes_per_col = iobench_bytes_per_column();
+    }
+    bytes_read_local += read_bytes_per_col;
 
     /* Fake-fill output buffers (no compute) */
     t0 = MPI_Wtime();
@@ -408,11 +431,18 @@ int main(int argc, char *argv[])
              MPI_COMM_WORLD);
   MPI_Reduce(&bytes_written_local, &bytes_written_global, 1, MPI_DOUBLE,
              MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&bytes_read_local, &bytes_read_global, 1, MPI_DOUBLE,
+             MPI_SUM, 0, MPI_COMM_WORLD);
 
   if (mpi.rank == 0) {
-    double GB = bytes_written_global / (1024.0 * 1024.0 * 1024.0);
-    double agg_throughput = (t_write_max > 0) ? (GB / t_write_max) : 0.0;
-    double end_to_end_throughput = (t_run_max > 0) ? (GB / t_run_max) : 0.0;
+    double GB_w = bytes_written_global / (1024.0 * 1024.0 * 1024.0);
+    double GB_r = bytes_read_global    / (1024.0 * 1024.0 * 1024.0);
+    double KiB_per_col_r = read_bytes_per_col  / 1024.0;
+    double KiB_per_col_w = write_bytes_per_col / 1024.0;
+    double write_throughput = (t_write_max > 0) ? (GB_w / t_write_max) : 0.0;
+    double read_throughput  = (t_read_max  > 0) ? (GB_r / t_read_max ) : 0.0;
+    double end_to_end_throughput =
+        (t_run_max > 0) ? ((GB_r + GB_w) / t_run_max) : 0.0;
 
     fprintf(mpi.main_logfile,
       "\n"
@@ -430,13 +460,18 @@ int main(int argc, char *argv[])
       "  Extra ray wavelengths         : %d\n"
       "  Read mode                     : %s\n"
       "----------------------------------------------------------------\n"
+      "  Per-column read  size         : %10.2f KiB\n"
+      "  Per-column write size         : %10.2f KiB\n"
+      "----------------------------------------------------------------\n"
       "  Setup time      (max)         : %10.3f s\n"
       "  Atmos read      (max)         : %10.3f s\n"
       "  Buffer fill     (max)         : %10.3f s\n"
       "  Collective write(max)         : %10.3f s\n"
       "  Total run loop  (max)         : %10.3f s\n"
       "----------------------------------------------------------------\n"
+      "  Total bytes read              : %12.3f GiB\n"
       "  Total bytes written           : %12.3f GiB\n"
+      "  Throughput (read only)        : %10.3f GiB/s\n"
       "  Throughput (write only)       : %10.3f GiB/s\n"
       "  Throughput (end-to-end loop)  : %10.3f GiB/s\n"
       "================================================================\n",
@@ -450,8 +485,9 @@ int main(int argc, char *argv[])
       input.p15d_wtau   ? "yes" : "no",
       io.ray_nwave_sel,
       mpi.isbalanced ? "collective" : "independent",
+      KiB_per_col_r, KiB_per_col_w,
       t_setup_max, t_read_max, t_fill_max, t_write_max, t_run_max,
-      GB, agg_throughput, end_to_end_throughput);
+      GB_r, GB_w, read_throughput, write_throughput, end_to_end_throughput);
   }
 
   sprintf(messageStr, "*** I/O benchmark finished. Rank %d processed %ld "

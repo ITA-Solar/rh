@@ -108,6 +108,11 @@ hid_t create_hdf5_fapl(void) {
      reduces metadata contention on Lustre (available since HDF5 1.10) */
   if (( H5Pset_all_coll_metadata_ops(plist, 1) ) < 0) HERR(routineName);
   if (( H5Pset_coll_metadata_write(plist, 1) ) < 0) HERR(routineName);
+  /* Disable HDF5 file locking — Lustre handles concurrency itself, and the
+     internal lock files (*.loc) cause filesystem contention.  This is the
+     programmatic equivalent of HDF5_USE_FILE_LOCKING=FALSE and works even
+     when the env var is not propagated to MPI ranks. */
+  if (( H5Pset_file_locking(plist, false, false) ) < 0) HERR(routineName);
   return plist;
 }
 
@@ -123,6 +128,8 @@ hid_t create_hdf5_fapl_indep(void) {
   if (( H5Pset_alignment(plist, 0, 1048576) ) < 0) HERR(routineName);
   if (( H5Pset_meta_block_size(plist, 8388608) ) < 0) HERR(routineName);
   /* No collective metadata — ranks read independently */
+  /* Disable HDF5 file locking (see comment in create_hdf5_fapl) */
+  if (( H5Pset_file_locking(plist, false, false) ) < 0) HERR(routineName);
   return plist;
 }
 /* ------- end   --------------------------   create_hdf5_fapl.c  --- */
