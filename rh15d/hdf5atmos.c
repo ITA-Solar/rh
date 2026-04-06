@@ -268,16 +268,14 @@ void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry,
 /* ------- end ---------------------------- init_hdf5_atmos  -------- */
 
 /* ------- begin -------------------------- readAtmos_hdf5  ---------
-   Reads T, ne, vz, vturb, nH (and B if Stokes) for a given (xi,yi).
+   Reads T, ne, vz, vturb, nH (and B if Stokes) for a given (xi,yi)
+   in a SINGLE H5Dread_multi call.
 
-   Tier 2 I/O optimisations relative to the original version:
-   (a) Eliminated the redundant second T read.  T is read once at the
-       full nz extent; if zcut > 0 the data is shifted in place with
-       memmove and the per-column arrays are realloced.
-   (b) File dataspaces are cached on first call (rfa_*_fspace) so
-       H5Dget_space / H5Sclose are not called per-column.
-   (c) The remaining 5–8 reads are issued in a single H5Dread_multi
-       call, collapsing 5–8 collective sync points into one.       */
+   Strategy: read every variable at the FULL nz extent in one
+   collective operation, then if temperature-cutoff is requested,
+   determine zcut from the in-memory T array and compact each buffer
+   in place via memmove + realloc.  Trades a small amount of extra
+   bytes (the cut-off region) for a single sync point per column.   */
 void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
                     Input_Atmos_file *infile) {
   const char routineName[] = "readAtmos_hdf5";
@@ -289,9 +287,11 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   hsize_t  count_nh[] = {1, 1, 1, 1, 1};
   hsize_t  dims_mem[2];
   hid_t    plist_id;
-  hid_t    mem_T, mem_1d, mem_nh;
+  hid_t    mem_1d, mem_nh;
   bool_t   old_moving;
   double  *Bx = NULL, *By = NULL, *Bz = NULL;
+  double  *nh_scratch;
+  long     full_nz, Nspace;
   int      i, j;
 
   /* --- Lazy init of cached file dataspaces --- */
@@ -306,46 +306,30 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
     plist_id = H5P_DEFAULT;
   }
 
-  atmos->Nspace = geometry->Ndep = infile->nz;
+  full_nz       = (long) infile->nz;
+  atmos->Nspace = full_nz;
+  geometry->Ndep = (int) full_nz;
 
-  /* === Step 1: read full T column (single read, used to find zcut) === */
-  start4[0] = input.p15d_nt; count4[0] = 1;
-  start4[1] = (size_t) xi;   count4[1] = 1;
-  start4[2] = (size_t) yi;   count4[2] = 1;
-  start4[3] = 0;             count4[3] = infile->nz;
+  /* --- Realloc all per-column 1D buffers to the full nz extent so the
+     multi-read can fill them in one shot. --- */
+  atmos->T         = (double *) realloc(atmos->T,         full_nz * sizeof(double));
+  atmos->ne        = (double *) realloc(atmos->ne,        full_nz * sizeof(double));
+  geometry->vel    = (double *) realloc(geometry->vel,    full_nz * sizeof(double));
+  atmos->vturb     = (double *) realloc(atmos->vturb,     full_nz * sizeof(double));
+  geometry->height = (double *) realloc(geometry->height, full_nz * sizeof(double));
+  atmos->nHtot     = (double *) realloc(atmos->nHtot,     full_nz * sizeof(double));
 
-  if (H5Sselect_hyperslab(rfa_T_fspace, H5S_SELECT_SET, start4,
-                          NULL, count4, NULL) < 0) HERR(routineName);
-  dims_mem[0] = infile->nz;
-  if ((mem_T = H5Screate_simple(1, dims_mem, NULL)) < 0) HERR(routineName);
-  atmos->T = (double *) realloc(atmos->T, infile->nz * sizeof(double));
-  if (H5Dread(infile->T_varid, H5T_NATIVE_DOUBLE, mem_T, rfa_T_fspace,
-              plist_id, atmos->T) < 0) HERR(routineName);
-  if (H5Sclose(mem_T) < 0) HERR(routineName);
-
-  /* === Step 2: determine zcut, shift T in place, resize columns === */
-  mpi.zcut = 0;
-  if (input.p15d_zcut && input.p15d_tmax >= 0) {
-    int cut = -1;
-    for (i = 0; i < infile->nz; i++) {
-      if (atmos->T[i] <= input.p15d_tmax) { cut = i; break; }
-    }
-    if (cut < 0) {
-      sprintf(messageStr,
-              "\n-Could not find temperature cut point! Aborting.\n");
-      Error(ERROR_LEVEL_2, routineName, messageStr);
-    }
-    mpi.zcut = cut;
+  /* B-field scratch buffers (only if Stokes) */
+  if (atmos->Stokes) {
+    Bx = (double *) malloc(full_nz * sizeof(double));
+    By = (double *) malloc(full_nz * sizeof(double));
+    Bz = (double *) malloc(full_nz * sizeof(double));
   }
-  if (mpi.zcut > 0) {
-    long keep = (long)infile->nz - mpi.zcut;
-    memmove(atmos->T, atmos->T + mpi.zcut, keep * sizeof(double));
-  }
-  atmos->Nspace  = (long)infile->nz - mpi.zcut;
-  geometry->Ndep = (int) atmos->Nspace;
-  realloc_ndep(atmos, geometry);
 
-  /* === Step 3: build the multi-read for everything except T === */
+  /* nH scratch — flat NHydr*nz buffer; final atmos->nH built post-zcut. */
+  nh_scratch = (double *) malloc((long)atmos->NHydr * full_nz * sizeof(double));
+
+  /* === Build the multi-read at full nz extent === */
   hid_t   dsets  [10];
   hid_t   types  [10];
   hid_t   fspaces[10];
@@ -353,23 +337,35 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   void   *bufs   [10];
   size_t  ndset = 0;
 
-  /* 1D memory dataspace, shared by all 4D variables */
-  dims_mem[0] = atmos->Nspace;
+  /* 1D memory dataspace at full nz, shared by all 4D variables */
+  dims_mem[0] = full_nz;
   if ((mem_1d = H5Screate_simple(1, dims_mem, NULL)) < 0) HERR(routineName);
 
-  /* Update 4D hyperslab to apply zcut */
-  start4[3] = mpi.zcut;
-  count4[3] = atmos->Nspace;
+  /* 4D hyperslab template for column (xi, yi) at full nz */
+  start4[0] = input.p15d_nt; count4[0] = 1;
+  start4[1] = (size_t) xi;   count4[1] = 1;
+  start4[2] = (size_t) yi;   count4[2] = 1;
+  start4[3] = 0;             count4[3] = full_nz;
 
-  /* z (different shape: 2D or 4D depending on file layout) */
+  /* T */
+  if (H5Sselect_hyperslab(rfa_T_fspace, H5S_SELECT_SET, start4,
+                          NULL, count4, NULL) < 0) HERR(routineName);
+  dsets  [ndset] = infile->T_varid;
+  types  [ndset] = H5T_NATIVE_DOUBLE;
+  fspaces[ndset] = rfa_T_fspace;
+  mspaces[ndset] = mem_1d;
+  bufs   [ndset] = atmos->T;
+  ndset++;
+
+  /* z (2D or 4D layout) */
   if (mpi.ndims_z == 2) {
     start_z[0] = input.p15d_nt; count_z[0] = 1;
-    start_z[1] = mpi.zcut;      count_z[1] = atmos->Nspace;
+    start_z[1] = 0;             count_z[1] = full_nz;
   } else if (mpi.ndims_z == 4) {
     start_z[0] = input.p15d_nt; count_z[0] = 1;
     start_z[1] = (size_t) xi;   count_z[1] = 1;
     start_z[2] = (size_t) yi;   count_z[2] = 1;
-    start_z[3] = mpi.zcut;      count_z[3] = atmos->Nspace;
+    start_z[3] = 0;             count_z[3] = full_nz;
   }
   if (H5Sselect_hyperslab(rfa_z_fspace, H5S_SELECT_SET, start_z,
                           NULL, count_z, NULL) < 0) HERR(routineName);
@@ -402,7 +398,7 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   bufs   [ndset] = geometry->vel;
   ndset++;
 
-  /* vturb (if present in file) */
+  /* vturb (optional) */
   if (infile->vturb_varid != -1) {
     if (H5Sselect_hyperslab(rfa_vturb_fspace, H5S_SELECT_SET, start4,
                             NULL, count4, NULL) < 0) HERR(routineName);
@@ -414,11 +410,8 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
     ndset++;
   }
 
-  /* Magnetic field (Cartesian, converted to spherical after read) */
+  /* Magnetic field */
   if (atmos->Stokes) {
-    Bx = (double *) malloc(atmos->Nspace * sizeof(double));
-    By = (double *) malloc(atmos->Nspace * sizeof(double));
-    Bz = (double *) malloc(atmos->Nspace * sizeof(double));
     if (H5Sselect_hyperslab(rfa_Bx_fspace, H5S_SELECT_SET, start4,
                             NULL, count4, NULL) < 0) HERR(routineName);
     if (H5Sselect_hyperslab(rfa_By_fspace, H5S_SELECT_SET, start4,
@@ -436,27 +429,25 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
     bufs   [ndset] = Bz; ndset++;
   }
 
-  /* nH (5D, separate memspace) */
+  /* nH (5D, separate memspace [NHydr, nz]) */
   start_nh[0] = input.p15d_nt; count_nh[0] = 1;
   start_nh[1] = 0;             count_nh[1] = atmos->NHydr;
   start_nh[2] = (size_t) xi;   count_nh[2] = 1;
   start_nh[3] = (size_t) yi;   count_nh[3] = 1;
-  start_nh[4] = mpi.zcut;      count_nh[4] = atmos->Nspace;
+  start_nh[4] = 0;             count_nh[4] = full_nz;
   if (H5Sselect_hyperslab(rfa_nh_fspace, H5S_SELECT_SET, start_nh,
                           NULL, count_nh, NULL) < 0) HERR(routineName);
   dims_mem[0] = atmos->NHydr;
-  dims_mem[1] = atmos->Nspace;
+  dims_mem[1] = full_nz;
   if ((mem_nh = H5Screate_simple(2, dims_mem, NULL)) < 0) HERR(routineName);
-  /* (existing behaviour: nH matrix is reallocated each call) */
-  atmos->nH = matrix_double(atmos->NHydr, atmos->Nspace);
   dsets  [ndset] = infile->nh_varid;
   types  [ndset] = H5T_NATIVE_DOUBLE;
   fspaces[ndset] = rfa_nh_fspace;
   mspaces[ndset] = mem_nh;
-  bufs   [ndset] = atmos->nH[0];
+  bufs   [ndset] = nh_scratch;
   ndset++;
 
-  /* === Step 4: single multi-read for all remaining datasets === */
+  /* === The single H5Dread_multi call: ONE I/O op per column === */
   if (H5Dread_multi(ndset, dsets, types, mspaces, fspaces,
                     plist_id, bufs) < 0) HERR(routineName);
 
@@ -466,9 +457,70 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
     if (H5Pclose(plist_id) < 0) HERR(routineName);
   }
 
-  /* === Step 5: post-processing === */
+  /* === Determine zcut from T (in memory, no I/O) === */
+  mpi.zcut = 0;
+  if (input.p15d_zcut && input.p15d_tmax >= 0) {
+    int cut = -1;
+    for (i = 0; i < full_nz; i++) {
+      if (atmos->T[i] <= input.p15d_tmax) { cut = i; break; }
+    }
+    if (cut < 0) {
+      sprintf(messageStr,
+              "\n-Could not find temperature cut point! Aborting.\n");
+      Error(ERROR_LEVEL_2, routineName, messageStr);
+    }
+    mpi.zcut = cut;
+  }
+  Nspace = full_nz - mpi.zcut;
+
+  /* === Compact 1D buffers in place if zcut > 0 === */
+  if (mpi.zcut > 0) {
+    memmove(atmos->T,         atmos->T         + mpi.zcut,
+            Nspace * sizeof(double));
+    memmove(atmos->ne,        atmos->ne        + mpi.zcut,
+            Nspace * sizeof(double));
+    memmove(geometry->vel,    geometry->vel    + mpi.zcut,
+            Nspace * sizeof(double));
+    memmove(atmos->vturb,     atmos->vturb     + mpi.zcut,
+            Nspace * sizeof(double));
+    memmove(geometry->height, geometry->height + mpi.zcut,
+            Nspace * sizeof(double));
+    if (atmos->Stokes) {
+      memmove(Bx, Bx + mpi.zcut, Nspace * sizeof(double));
+      memmove(By, By + mpi.zcut, Nspace * sizeof(double));
+      memmove(Bz, Bz + mpi.zcut, Nspace * sizeof(double));
+    }
+  }
+
+  /* Shrink 1D buffers down to Nspace */
+  atmos->T         = (double *) realloc(atmos->T,         Nspace * sizeof(double));
+  atmos->ne        = (double *) realloc(atmos->ne,        Nspace * sizeof(double));
+  geometry->vel    = (double *) realloc(geometry->vel,    Nspace * sizeof(double));
+  atmos->vturb     = (double *) realloc(atmos->vturb,     Nspace * sizeof(double));
+  geometry->height = (double *) realloc(geometry->height, Nspace * sizeof(double));
+  atmos->nHtot     = (double *) realloc(atmos->nHtot,     Nspace * sizeof(double));
   if (atmos->Stokes) {
-    for (j = 0; j < atmos->Nspace; j++) {
+    atmos->B       = (double *) realloc(atmos->B,       Nspace * sizeof(double));
+    atmos->gamma_B = (double *) realloc(atmos->gamma_B, Nspace * sizeof(double));
+    atmos->chi_B   = (double *) realloc(atmos->chi_B,   Nspace * sizeof(double));
+  }
+
+  atmos->Nspace  = Nspace;
+  geometry->Ndep = (int) Nspace;
+
+  /* === Build atmos->nH at the post-zcut size from scratch buffer === */
+  /* (existing behaviour: previous nH is leaked, not fixing here) */
+  atmos->nH = matrix_double(atmos->NHydr, Nspace);
+  for (i = 0; i < atmos->NHydr; i++) {
+    memcpy(atmos->nH[i],
+           nh_scratch + (long)i * full_nz + mpi.zcut,
+           Nspace * sizeof(double));
+  }
+  free(nh_scratch);
+
+  /* === Post-processing === */
+  if (atmos->Stokes) {
+    for (j = 0; j < Nspace; j++) {
       atmos->B[j]       = sqrt(SQ(Bx[j]) + SQ(By[j]) + SQ(Bz[j]));
       atmos->gamma_B[j] = acos(Bz[j]/atmos->B[j]);
       atmos->chi_B[j]   = atan(By[j]/Bx[j]);
@@ -480,27 +532,27 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
     free(Bx); free(By); free(Bz);
   }
 
-  for (j = 0; j < atmos->Nspace; j++) atmos->nHtot[j] = 0.0;
+  for (j = 0; j < Nspace; j++) atmos->nHtot[j] = 0.0;
 
   /* Depth grid refinement */
   if (input.p15d_refine)
     depth_refine(atmos, geometry, input.p15d_tmax);
 
   /* Fix vturb: remove zeros, apply multiplier and offset */
-  for (i = 0; i < atmos->Nspace; i++) {
+  for (i = 0; i < Nspace; i++) {
     if (atmos->vturb[i] < 0.0) atmos->vturb[i] = 0.0;
     atmos->vturb[i] = atmos->vturb[i] * input.vturb_mult + input.vturb_add;
   }
 
   /* Sum to get nHtot */
   for (i = 0; i < atmos->NHydr; i++)
-    for (j = 0; j < atmos->Nspace; j++)
+    for (j = 0; j < Nspace; j++)
       atmos->nHtot[j] += atmos->nH[i][j];
 
   /* Moving-atmosphere check */
   old_moving = atmos->moving;
   atmos->moving = FALSE;
-  for (i = 0; i < atmos->Nspace; i++) {
+  for (i = 0; i < Nspace; i++) {
     if (fabs(geometry->vel[i]) >= atmos->vmacro_tresh) {
       atmos->moving = TRUE;
       if ((old_moving == FALSE) & (atmos->moving == TRUE)) {
