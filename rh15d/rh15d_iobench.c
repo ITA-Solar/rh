@@ -242,6 +242,20 @@ int main(int argc, char *argv[])
   /* --- Read input data and initialize (same path as ray_pool) --- */
   readInput(NULL);
   if (input.p15d_rerun) readSavedKeywords();
+
+  /* --- I/O benchmark: force-disable depth_refine.
+     readAtmos() otherwise calls depth_refine() per column, which does
+     spline interpolation + Hminus_bf opacity — real compute work that
+     would pollute the I/O measurement. */
+  if (input.p15d_refine) {
+    if (mpi.rank == 0) {
+      fprintf(mpi.main_logfile,
+              "  [iobench] forcing 15D_DEPTH_REFINE = FALSE for pure "
+              "I/O measurement\n");
+    }
+    input.p15d_refine = FALSE;
+  }
+
   spectrum.updateJ = TRUE;
   getCPU(1, TIME_START, NULL);
   init_atmos(&atmos, &geometry, &infile);
@@ -253,6 +267,37 @@ int main(int argc, char *argv[])
   }
   mpi.Ntasks = 1;
   atmos.moving = TRUE;
+
+  /* --- I/O benchmark: select read mode --------------------------------
+     `readAtmos_hdf5` issues collective H5Dread when mpi.isbalanced is
+     TRUE and independent reads when FALSE.  In the real rh15d_ray_pool
+     the overlord is excluded so 262144 / 2047 ≈ unbalanced → independent
+     reads.  Our static round-robin makes the iobench balanced by
+     accident, which would measure a code path the real run does not
+     take.  Default to independent (real pool semantics); allow override
+     via env var for A/B testing.
+
+     RH_IOBENCH_READ_MODE = "independent" (default) | "collective"
+  */
+  {
+    const char *mode = getenv("RH_IOBENCH_READ_MODE");
+    if (mode != NULL && strcmp(mode, "collective") == 0) {
+      mpi.isbalanced = TRUE;
+      if (mpi.rank == 0) {
+        fprintf(mpi.main_logfile,
+                "  [iobench] read mode: COLLECTIVE "
+                "(forced via RH_IOBENCH_READ_MODE)\n");
+      }
+    } else {
+      mpi.isbalanced = FALSE;
+      if (mpi.rank == 0) {
+        fprintf(mpi.main_logfile,
+                "  [iobench] read mode: INDEPENDENT "
+                "(matches real rh15d_ray_pool)\n");
+      }
+    }
+  }
+
   /* First read just to get dimensions */
   readAtmos(0, 0, &atmos, &geometry, &infile);
   if (atmos.Stokes) Bproject();
@@ -281,6 +326,12 @@ int main(int argc, char *argv[])
 
   t_run0 = MPI_Wtime();
 
+  /* Progress reporting: rank 0 prints every ~5% of its share */
+  long my_share    = (mpi.total_tasks + mpi.size - 1 - mpi.rank) / mpi.size;
+  long progress_iv = my_share / 20;
+  if (progress_iv < 1) progress_iv = 1;
+  long progress_done = 0;
+
   for (task = mpi.rank; task < mpi.total_tasks; task += mpi.size) {
     double t0, t1;
 
@@ -303,6 +354,24 @@ int main(int argc, char *argv[])
     t_fill_total += (t1 - t0);
 
     total_tasks_local++;
+    progress_done++;
+    if (mpi.rank == 0 && (progress_done % progress_iv == 0)) {
+      double elapsed = MPI_Wtime() - t_run0;
+      double frac    = (double)progress_done / (double)my_share;
+      double eta     = (frac > 0.0) ? elapsed * (1.0 / frac - 1.0) : 0.0;
+      fprintf(mpi.main_logfile,
+              "  [iobench] rank 0: %ld / %ld cols read+filled "
+              "(%5.1f%%, elapsed %.1fs, eta %.1fs)\n",
+              progress_done, my_share, 100.0 * frac, elapsed, eta);
+      fflush(mpi.main_logfile);
+    }
+  }
+
+  if (mpi.rank == 0) {
+    fprintf(mpi.main_logfile,
+            "  [iobench] rank 0: read+fill loop done, entering "
+            "collective write...\n");
+    fflush(mpi.main_logfile);
   }
 
   /* Single collective write of everything we buffered.  All ranks
@@ -359,6 +428,7 @@ int main(int argc, char *argv[])
       "  Write rates      (p15d_wrates): %s\n"
       "  Write tau_one    (p15d_wtau)  : %s\n"
       "  Extra ray wavelengths         : %d\n"
+      "  Read mode                     : %s\n"
       "----------------------------------------------------------------\n"
       "  Setup time      (max)         : %10.3f s\n"
       "  Atmos read      (max)         : %10.3f s\n"
@@ -379,6 +449,7 @@ int main(int argc, char *argv[])
       input.p15d_wrates ? "yes" : "no",
       input.p15d_wtau   ? "yes" : "no",
       io.ray_nwave_sel,
+      mpi.isbalanced ? "collective" : "independent",
       t_setup_max, t_read_max, t_fill_max, t_write_max, t_run_max,
       GB, agg_throughput, end_to_end_throughput);
   }
