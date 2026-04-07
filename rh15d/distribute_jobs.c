@@ -293,6 +293,10 @@ void finish_jobs(void)
   free(mpi.ynum);
   if (mpi.taskmap != NULL)
     freeMatrix((void **) mpi.taskmap);
+  if (mpi.rank_node != NULL) {
+    free(mpi.rank_node);
+    mpi.rank_node = NULL;
+  }
 
 }
 /* ------- end   -------------------------- finish_jobs.c ------- --- */
