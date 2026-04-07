@@ -104,15 +104,6 @@ typedef struct {
   bool_t p15d_wxtra, p15d_rerun, p15d_refine, p15d_zcut, p15d_wtau;
   bool_t p15d_wpop, p15d_wrates;
   int    p15d_flush_interval;
-  /* --- Node-partitioned pool mode (node-shared atmosphere cache) ----
-     use_node_atmos_cache: when TRUE (default), rh15d_ray_pool reads the
-     atmosphere once per node into a shared-memory window and serves
-     every readAtmos call from that cache instead of touching the file.
-     atmos_cache_cyclic: v1 uses contiguous row-based decomposition.
-     When TRUE, use a cyclic row decomposition to average spatial load
-     imbalance across nodes.  Plumbed but not yet implemented in v1. */
-  bool_t use_node_atmos_cache;
-  bool_t atmos_cache_cyclic;
   double iterLimit, PRDiterLimit, metallicity, *wavetable;
   unsigned int Nxwave;
   /* Tiago, for saving the input files */
@@ -122,6 +113,18 @@ typedef struct {
   char **kurucz_line_file_name;
   int Nkurucz_files;
   pthread_attr_t thread_attr;
+  /* --- Node-partitioned pool mode (node-shared atmosphere cache) ----
+     Added at the END of the struct so existing field offsets are
+     preserved across incremental builds — old object files using a
+     stale inputs.h still find atoms_file_contents etc. at the right
+     place.  When TRUE (default), rh15d_ray_pool reads the atmosphere
+     once per node into a shared-memory window and serves every
+     readAtmos call from that cache instead of touching the file.
+     atmos_cache_cyclic: v1 uses contiguous row-based decomposition.
+     When TRUE, use cyclic row decomposition for spatial load balance.
+     Plumbed but not yet honored in v1. */
+  bool_t use_node_atmos_cache;
+  bool_t atmos_cache_cyclic;
 } InputData;
 
 
