@@ -24,6 +24,24 @@ typedef struct {
   FILE    *logfile, *main_logfile;
   MPI_Comm comm;
   MPI_Info info;
+  /* --- Node-level communicator (ranks sharing physical memory) ----
+     Populated by initParallel via MPI_Comm_split_type(MPI_COMM_TYPE_SHARED).
+     Used by node-partitioned pool mode and the node-shared atmosphere
+     cache.  All ranks on a node share the same node_comm; node_id is
+     a unique [0, n_nodes) index per node, the same for every rank on
+     that node. */
+  MPI_Comm node_comm;
+  int      node_rank;        /* this rank's position in node_comm        */
+  int      node_size;        /* number of ranks on this node             */
+  int      n_nodes;          /* total number of nodes in MPI_COMM_WORLD  */
+  int      node_id;          /* unique [0, n_nodes) id for this node    */
+  /* --- Node-owned slice of the global taskmap (set by distribute_jobs) -
+     Each node owns a contiguous range of reduced rows ix in [ix0, ix1).
+     node_task_start / node_task_count index into mpi.taskmap and select
+     the columns assigned to this node.  Used by the node-local pool
+     dispatcher.  Cyclic decomposition is a planned follow-up. */
+  int      node_ix0, node_ix1;
+  long     node_task_start, node_task_count;
 } MPI_data;
 
 void init_Background();

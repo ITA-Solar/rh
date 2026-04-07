@@ -53,6 +53,40 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
   MPI_Get_processor_name(mpi.name, &mpi.namelen);
   mpi.comm = MPI_COMM_WORLD;
+
+  /* --- Build node-level communicator (ranks sharing physical memory) ---
+     MPI_COMM_TYPE_SHARED partitions COMM_WORLD into groups of ranks that
+     can use MPI_Win_allocate_shared with each other.  Used downstream by
+     node-partitioned pool mode and the shared atmosphere cache. */
+  MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, mpi.rank,
+                      MPI_INFO_NULL, &mpi.node_comm);
+  MPI_Comm_rank(mpi.node_comm, &mpi.node_rank);
+  MPI_Comm_size(mpi.node_comm, &mpi.node_size);
+
+  /* --- Compute n_nodes and a unique [0, n_nodes) id per node ---
+     Every rank participates in the all-reduce; only node-rank 0 contributes
+     a 1, others contribute 0, so the sum equals the number of nodes.
+     The exclusive prefix sum over those 0/1 values gives a stable node_id
+     consistent across all ranks on the same node. */
+  {
+    int is_node_root = (mpi.node_rank == 0) ? 1 : 0;
+    int my_node_id   = 0;
+    MPI_Allreduce(&is_node_root, &mpi.n_nodes, 1, MPI_INT, MPI_SUM,
+                  MPI_COMM_WORLD);
+    MPI_Exscan(&is_node_root, &my_node_id, 1, MPI_INT, MPI_SUM,
+               MPI_COMM_WORLD);
+    if (mpi.rank == 0) my_node_id = 0;  /* MPI_Exscan leaves rank 0 unset */
+    /* Broadcast the node_id from node_rank 0 to all ranks on this node */
+    MPI_Bcast(&my_node_id, 1, MPI_INT, 0, mpi.node_comm);
+    mpi.node_id = my_node_id;
+  }
+
+  /* Initialise node-task slice fields; populated later by distribute_jobs. */
+  mpi.node_ix0         = 0;
+  mpi.node_ix1         = 0;
+  mpi.node_task_start  = 0;
+  mpi.node_task_count  = 0;
+
   /* --- MPI-IO hints optimised for Lustre parallel filesystem --- */
   MPI_Info_create(&mpi.info);
   MPI_Info_set(mpi.info, "romio_cb_write",  "enable");   /* collective buffering */
