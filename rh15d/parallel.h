@@ -42,6 +42,11 @@ typedef struct {
      dispatcher.  Cyclic decomposition is a planned follow-up. */
   int      node_ix0, node_ix1;
   long     node_task_start, node_task_count;
+  /* rank_node[r] is the node_id of global rank r.  Allocated in
+     initParallel via MPI_Allgather, freed in finish_jobs.  Used by the
+     rh15d_ray_pool overlord to dispatch tasks to drones on nodes that
+     own the corresponding atmosphere rows. */
+  int     *rank_node;
 } MPI_data;
 
 void init_Background();

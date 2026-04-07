@@ -87,13 +87,37 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
   mpi.node_task_start  = 0;
   mpi.node_task_count  = 0;
 
-  /* --- MPI-IO hints optimised for Lustre parallel filesystem --- */
+  /* --- Build rank -> node_id mapping ---
+     Every rank contributes its node_id; the resulting array lets the
+     pool overlord route tasks for node k only to drones on node k. */
+  mpi.rank_node = (int *) malloc((size_t) mpi.size * sizeof(int));
+  MPI_Allgather(&mpi.node_id, 1, MPI_INT,
+                mpi.rank_node, 1, MPI_INT, MPI_COMM_WORLD);
+
+  /* --- MPI-IO hints optimised for Lustre parallel filesystem ---
+     Tuning assumes the output directory is set up with
+         lfs setstripe -c 12 -S 1M output/
+     (see the production job script).  striping_unit and striping_factor
+     inform the MPI-IO driver of the Lustre layout so collective buffers
+     can be aligned to stripe boundaries; cb_nodes = n_nodes dedicates
+     one aggregator per node, which avoids cross-node contention on the
+     OSS/OST paths.  If the Lustre layout in your run differs from these
+     values, override at runtime with MPICH_MPIIO_HINTS or set this
+     programmatically from the actual layout.                           */
   MPI_Info_create(&mpi.info);
   MPI_Info_set(mpi.info, "romio_cb_write",  "enable");   /* collective buffering */
   MPI_Info_set(mpi.info, "romio_ds_write",  "disable");  /* no data sieving     */
   MPI_Info_set(mpi.info, "cb_buffer_size",  "16777216"); /* 16 MB coll. buffer  */
   MPI_Info_set(mpi.info, "romio_cb_read",   "enable");
   MPI_Info_set(mpi.info, "romio_ds_read",   "disable");
+  MPI_Info_set(mpi.info, "striping_unit",   "1048576");  /* match lfs -S 1M     */
+  MPI_Info_set(mpi.info, "striping_factor", "12");       /* match lfs -c 12     */
+  {
+    char cb_nodes_str[16];
+    snprintf(cb_nodes_str, sizeof(cb_nodes_str), "%d", mpi.n_nodes);
+    MPI_Info_set(mpi.info, "cb_nodes", cb_nodes_str);    /* 1 aggregator / node */
+  }
+  MPI_Info_set(mpi.info, "cb_config_list", "*:1");        /* 1 aggr per host    */
   /* Open log files */
   sprintf(logfile, (run_ray) ? RAY_MPILOG_TEMPLATE : MPILOG_TEMPLATE, mpi.rank);
   if ((mpi.logfile = fopen(logfile, "w")) == NULL) {
