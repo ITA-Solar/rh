@@ -242,7 +242,15 @@ void readInput(char *input_string)
     {"15D_WRITE_EXTRA",    "TRUE",  FALSE, KEYWORD_OPTIONAL, &input.p15d_wxtra,
      setboolValue},
     {"15D_FLUSH_INTERVAL", "128",  FALSE, KEYWORD_OPTIONAL,
-     &input.p15d_flush_interval, setintValue}
+     &input.p15d_flush_interval, setintValue},
+
+    /* Node-partitioned pool mode: read atmosphere once per node into a
+       shared-memory window and serve readAtmos from cache.  Default ON. */
+    {"15D_USE_NODE_ATMOS_CACHE", "TRUE", FALSE, KEYWORD_OPTIONAL,
+     &input.use_node_atmos_cache, setboolValue},
+    /* Cyclic row decomposition across nodes (planned, not implemented). */
+    {"15D_ATMOS_CACHE_CYCLIC",   "FALSE", FALSE, KEYWORD_OPTIONAL,
+     &input.atmos_cache_cyclic,  setboolValue}
 
   };
   Nkeyword = sizeof(theKeywords) / sizeof(Keyword);

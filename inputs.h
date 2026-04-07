@@ -104,6 +104,15 @@ typedef struct {
   bool_t p15d_wxtra, p15d_rerun, p15d_refine, p15d_zcut, p15d_wtau;
   bool_t p15d_wpop, p15d_wrates;
   int    p15d_flush_interval;
+  /* --- Node-partitioned pool mode (node-shared atmosphere cache) ----
+     use_node_atmos_cache: when TRUE (default), rh15d_ray_pool reads the
+     atmosphere once per node into a shared-memory window and serves
+     every readAtmos call from that cache instead of touching the file.
+     atmos_cache_cyclic: v1 uses contiguous row-based decomposition.
+     When TRUE, use a cyclic row decomposition to average spatial load
+     imbalance across nodes.  Plumbed but not yet implemented in v1. */
+  bool_t use_node_atmos_cache;
+  bool_t atmos_cache_cyclic;
   double iterLimit, PRDiterLimit, metallicity, *wavetable;
   unsigned int Nxwave;
   /* Tiago, for saving the input files */

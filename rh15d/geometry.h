@@ -66,6 +66,7 @@ void close_atmos(Atmosphere *atmos, Geometry *geometry,
                  Input_Atmos_file *infile);
 void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry,
                      Input_Atmos_file *infile);
+void init_atmos_node_cache(Atmosphere *atmos, Input_Atmos_file *infile);
 void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 		            Input_Atmos_file *infile);
 void close_hdf5_atmos(Atmosphere *atmos, Geometry *geometry,

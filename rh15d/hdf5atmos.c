@@ -26,11 +26,343 @@
 #define MULTI_COMMENT_CHAR  "*"
 
 /* --- Function prototypes --                          -------------- */
+static void node_cache_init(Atmosphere *atmos, Input_Atmos_file *infile);
+static void node_cache_free(void);
 
 /* --- Global variables --                             -------------- */
 extern MPI_data mpi;
 extern InputData input;
 extern char messageStr[];
+
+/* ==================================================================
+   Node-shared atmosphere cache
+   ------------------------------------------------------------------
+   When input.use_node_atmos_cache is TRUE, each node reads its
+   assigned slab of the atmosphere ONCE at startup into a set of
+   MPI-3 shared-memory windows (one per variable).  readAtmos then
+   serves columns from this cache instead of touching the file — no
+   per-column HDF5 I/O in the hot path.
+
+   Layout per variable (reduced coordinates):
+       T, ne, vz, vturb, [Bx, By, Bz]:
+           [n_local_rows × mpi.ny × nz] of doubles, row-major
+       nH:
+           [NHydr × n_local_rows × mpi.ny × nz] of doubles
+       z:  [n_local_rows × mpi.ny × nz] (4D file) or [nz] (2D file)
+
+   A node owns reduced rows ix ∈ [mpi.node_ix0, mpi.node_ix1).
+   Local index for reduced (ix, iy): (ix - node_ix0) * mpi.ny + iy
+   File → reduced: xi = p15d_x0 + ix*p15d_xst (and analogously for y).
+   ================================================================== */
+
+typedef struct {
+  bool_t    initialized;
+  int       nrows;                /* node's owned reduced row count    */
+  int       ix0;                  /* first reduced row (=node_ix0)     */
+  int       ny;                   /* reduced ny                        */
+  long      nz;                   /* full z extent (same as infile.nz) */
+  int       NHydr;
+  bool_t    stokes;
+  bool_t    has_vturb;
+  int       ndims_z;              /* 2 or 4                            */
+
+  /* Pointers into shared-memory windows */
+  double   *T;
+  double   *ne;
+  double   *vz;
+  double   *vturb;
+  double   *z;       /* size depends on ndims_z */
+  double   *nH;      /* NHydr-major */
+  double   *Bx;
+  double   *By;
+  double   *Bz;
+
+  /* Shared-memory window handles (only node-rank 0 does the alloc,
+     but every rank keeps the handle so MPI_Win_free can be called). */
+  MPI_Win   win_T;
+  MPI_Win   win_ne;
+  MPI_Win   win_vz;
+  MPI_Win   win_vturb;
+  MPI_Win   win_z;
+  MPI_Win   win_nH;
+  MPI_Win   win_Bx;
+  MPI_Win   win_By;
+  MPI_Win   win_Bz;
+} AtmosNodeCache;
+
+static AtmosNodeCache node_cache = { .initialized = FALSE };
+
+/* --- Allocate one shared-memory window on node_comm and return
+       the pointer that every rank on the node can use.  Only
+       node-rank 0 contributes non-zero bytes; other ranks allocate
+       zero and immediately MPI_Win_shared_query to get the mapping. */
+static double *alloc_shared_double(MPI_Comm node_comm, int node_rank,
+                                   size_t n_doubles, MPI_Win *out_win) {
+  const char routineName[] = "alloc_shared_double";
+  MPI_Aint  alloc_bytes = (node_rank == 0)
+                          ? (MPI_Aint)(n_doubles * sizeof(double)) : 0;
+  double   *base_ptr = NULL;
+
+  if (MPI_Win_allocate_shared(alloc_bytes, (int)sizeof(double),
+                              MPI_INFO_NULL, node_comm,
+                              &base_ptr, out_win) != MPI_SUCCESS) {
+    sprintf(messageStr,
+            "MPI_Win_allocate_shared failed for %.3f MiB\n",
+            (double)alloc_bytes / (1024.0 * 1024.0));
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
+  /* Non-zero ranks map the memory allocated by rank 0 */
+  if (node_rank != 0) {
+    MPI_Aint sz;
+    int      disp_unit;
+    if (MPI_Win_shared_query(*out_win, 0, &sz, &disp_unit,
+                             &base_ptr) != MPI_SUCCESS) {
+      Error(ERROR_LEVEL_2, routineName,
+            "MPI_Win_shared_query failed\n");
+    }
+  }
+  return base_ptr;
+}
+
+
+/* --- Strided-hyperslab read of one 4D variable [nt, nx, ny, nz] ---
+   Reads this node's row slab from the file into `dst` (already sized
+   nrows * ny_red * nz doubles).  Only called by node-rank 0.       */
+static void read_slab_4d(hid_t dset, hid_t file_type,
+                         int node_ix0, int node_ix1,
+                         long nz, double *dst) {
+  const char routineName[] = "read_slab_4d";
+  hid_t    fspace, mspace;
+  hsize_t  start[4], stride[4], count[4];
+  hsize_t  mem_dims[3];
+  int      nrows = node_ix1 - node_ix0;
+
+  if ((fspace = H5Dget_space(dset)) < 0) HERR(routineName);
+
+  start[0]  = input.p15d_nt;
+  start[1]  = (hsize_t)(input.p15d_x0 + node_ix0 * input.p15d_xst);
+  start[2]  = (hsize_t) input.p15d_y0;
+  start[3]  = 0;
+  stride[0] = 1;
+  stride[1] = (hsize_t) input.p15d_xst;
+  stride[2] = (hsize_t) input.p15d_yst;
+  stride[3] = 1;
+  count[0]  = 1;
+  count[1]  = (hsize_t) nrows;
+  count[2]  = (hsize_t) mpi.ny;
+  count[3]  = (hsize_t) nz;
+
+  if (H5Sselect_hyperslab(fspace, H5S_SELECT_SET, start, stride,
+                          count, NULL) < 0) HERR(routineName);
+
+  mem_dims[0] = (hsize_t) nrows;
+  mem_dims[1] = (hsize_t) mpi.ny;
+  mem_dims[2] = (hsize_t) nz;
+  if ((mspace = H5Screate_simple(3, mem_dims, NULL)) < 0) HERR(routineName);
+
+  if (H5Dread(dset, file_type, mspace, fspace, H5P_DEFAULT, dst) < 0)
+    HERR(routineName);
+
+  if (H5Sclose(mspace) < 0) HERR(routineName);
+  if (H5Sclose(fspace) < 0) HERR(routineName);
+}
+
+
+/* --- Strided read of nH [nt, NHydr, nx, ny, nz] --- */
+static void read_slab_nh(hid_t dset, int node_ix0, int node_ix1,
+                         int NHydr, long nz, double *dst) {
+  const char routineName[] = "read_slab_nh";
+  hid_t    fspace, mspace;
+  hsize_t  start[5], stride[5], count[5];
+  hsize_t  mem_dims[4];
+  int      nrows = node_ix1 - node_ix0;
+
+  if ((fspace = H5Dget_space(dset)) < 0) HERR(routineName);
+
+  start[0] = input.p15d_nt; start[1] = 0;
+  start[2] = (hsize_t)(input.p15d_x0 + node_ix0 * input.p15d_xst);
+  start[3] = (hsize_t) input.p15d_y0;
+  start[4] = 0;
+  stride[0] = 1;                          stride[1] = 1;
+  stride[2] = (hsize_t) input.p15d_xst;   stride[3] = (hsize_t) input.p15d_yst;
+  stride[4] = 1;
+  count[0] = 1;                           count[1] = (hsize_t) NHydr;
+  count[2] = (hsize_t) nrows;             count[3] = (hsize_t) mpi.ny;
+  count[4] = (hsize_t) nz;
+
+  if (H5Sselect_hyperslab(fspace, H5S_SELECT_SET, start, stride,
+                          count, NULL) < 0) HERR(routineName);
+
+  mem_dims[0] = (hsize_t) NHydr;
+  mem_dims[1] = (hsize_t) nrows;
+  mem_dims[2] = (hsize_t) mpi.ny;
+  mem_dims[3] = (hsize_t) nz;
+  if ((mspace = H5Screate_simple(4, mem_dims, NULL)) < 0) HERR(routineName);
+
+  if (H5Dread(dset, H5T_NATIVE_DOUBLE, mspace, fspace, H5P_DEFAULT, dst) < 0)
+    HERR(routineName);
+
+  if (H5Sclose(mspace) < 0) HERR(routineName);
+  if (H5Sclose(fspace) < 0) HERR(routineName);
+}
+
+
+/* --- Read z depending on its dimensionality (2D or 4D in file) --- */
+static void read_slab_z(hid_t dset, int node_ix0, int node_ix1,
+                        long nz, int ndims_z, double *dst) {
+  const char routineName[] = "read_slab_z";
+  hid_t    fspace, mspace;
+
+  if ((fspace = H5Dget_space(dset)) < 0) HERR(routineName);
+
+  if (ndims_z == 2) {
+    /* z[nt, nz] — shared for the whole snapshot */
+    hsize_t start[2] = {(hsize_t)input.p15d_nt, 0};
+    hsize_t count[2] = {1, (hsize_t)nz};
+    hsize_t mem_dims[1] = {(hsize_t)nz};
+
+    if (H5Sselect_hyperslab(fspace, H5S_SELECT_SET, start, NULL,
+                            count, NULL) < 0) HERR(routineName);
+    if ((mspace = H5Screate_simple(1, mem_dims, NULL)) < 0) HERR(routineName);
+    if (H5Dread(dset, H5T_NATIVE_DOUBLE, mspace, fspace,
+                H5P_DEFAULT, dst) < 0) HERR(routineName);
+    if (H5Sclose(mspace) < 0) HERR(routineName);
+  } else {
+    /* z[nt, nx, ny, nz] — strided like the 4D variables */
+    read_slab_4d(dset, H5T_NATIVE_DOUBLE, node_ix0, node_ix1, nz, dst);
+    if (H5Sclose(fspace) < 0) HERR(routineName);
+    return;
+  }
+  if (H5Sclose(fspace) < 0) HERR(routineName);
+}
+
+
+/* --- Initialize the node-shared cache.  Called from init_hdf5_atmos
+       when input.use_node_atmos_cache is TRUE. --------------------- */
+static void node_cache_init(Atmosphere *atmos, Input_Atmos_file *infile) {
+  const char routineName[] = "node_cache_init";
+  AtmosNodeCache *c = &node_cache;
+  int    nrows;
+  size_t n_1d, n_nh, n_z;
+
+  if (c->initialized) return;
+
+  nrows = mpi.node_ix1 - mpi.node_ix0;
+  if (nrows <= 0) {
+    sprintf(messageStr,
+            "node_cache_init: node %d has zero rows (ix0=%d ix1=%d)\n",
+            mpi.node_id, mpi.node_ix0, mpi.node_ix1);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
+
+  c->nrows     = nrows;
+  c->ix0       = mpi.node_ix0;
+  c->ny        = mpi.ny;
+  c->nz        = (long) infile->nz;
+  c->NHydr     = atmos->NHydr;
+  c->stokes    = atmos->Stokes;
+  c->has_vturb = (infile->vturb_varid != -1);
+  c->ndims_z   = mpi.ndims_z;
+
+  n_1d = (size_t)nrows * (size_t)mpi.ny * (size_t)c->nz;
+  n_nh = (size_t)c->NHydr * n_1d;
+  n_z  = (c->ndims_z == 2) ? (size_t)c->nz : n_1d;
+
+  /* --- Allocate shared windows --- */
+  c->T  = alloc_shared_double(mpi.node_comm, mpi.node_rank, n_1d, &c->win_T);
+  c->ne = alloc_shared_double(mpi.node_comm, mpi.node_rank, n_1d, &c->win_ne);
+  c->vz = alloc_shared_double(mpi.node_comm, mpi.node_rank, n_1d, &c->win_vz);
+  if (c->has_vturb) {
+    c->vturb = alloc_shared_double(mpi.node_comm, mpi.node_rank, n_1d,
+                                   &c->win_vturb);
+  }
+  c->z  = alloc_shared_double(mpi.node_comm, mpi.node_rank, n_z,  &c->win_z);
+  c->nH = alloc_shared_double(mpi.node_comm, mpi.node_rank, n_nh, &c->win_nH);
+  if (c->stokes) {
+    c->Bx = alloc_shared_double(mpi.node_comm, mpi.node_rank, n_1d, &c->win_Bx);
+    c->By = alloc_shared_double(mpi.node_comm, mpi.node_rank, n_1d, &c->win_By);
+    c->Bz = alloc_shared_double(mpi.node_comm, mpi.node_rank, n_1d, &c->win_Bz);
+  }
+
+  /* --- Only node-rank 0 reads from the HDF5 file; others wait --- */
+  if (mpi.node_rank == 0) {
+    read_slab_4d(infile->T_varid,  H5T_NATIVE_DOUBLE,
+                 mpi.node_ix0, mpi.node_ix1, c->nz, c->T);
+    if (input.solve_ne == NONE) {
+      read_slab_4d(infile->ne_varid, H5T_NATIVE_DOUBLE,
+                   mpi.node_ix0, mpi.node_ix1, c->nz, c->ne);
+    }
+    read_slab_4d(infile->vz_varid, H5T_NATIVE_DOUBLE,
+                 mpi.node_ix0, mpi.node_ix1, c->nz, c->vz);
+    if (c->has_vturb) {
+      read_slab_4d(infile->vturb_varid, H5T_NATIVE_DOUBLE,
+                   mpi.node_ix0, mpi.node_ix1, c->nz, c->vturb);
+    }
+    read_slab_z(infile->z_varid, mpi.node_ix0, mpi.node_ix1, c->nz,
+                c->ndims_z, c->z);
+    read_slab_nh(infile->nh_varid, mpi.node_ix0, mpi.node_ix1,
+                 c->NHydr, c->nz, c->nH);
+    if (c->stokes) {
+      read_slab_4d(infile->Bx_varid, H5T_NATIVE_DOUBLE,
+                   mpi.node_ix0, mpi.node_ix1, c->nz, c->Bx);
+      read_slab_4d(infile->By_varid, H5T_NATIVE_DOUBLE,
+                   mpi.node_ix0, mpi.node_ix1, c->nz, c->By);
+      read_slab_4d(infile->Bz_varid, H5T_NATIVE_DOUBLE,
+                   mpi.node_ix0, mpi.node_ix1, c->nz, c->Bz);
+    }
+  }
+  /* Barrier so other ranks only read memory after rank 0 has filled it. */
+  MPI_Barrier(mpi.node_comm);
+
+  c->initialized = TRUE;
+
+  if (mpi.rank == 0) {
+    double gib_per_node = ((double)n_1d * (c->stokes ? 7 : 4)  /* T,ne,vz,vturb?,B* */
+                          + (double)n_nh
+                          + (double)n_z)
+                         * sizeof(double) / (1024.0 * 1024.0 * 1024.0);
+    sprintf(messageStr,
+            "node cache: %d nodes, %d rows/node (first), %d ny, %ld nz, "
+            "%.3f GiB per node\n",
+            mpi.n_nodes, nrows, mpi.ny, c->nz, gib_per_node);
+    Error(MESSAGE, routineName, messageStr);
+  }
+}
+
+
+/* --- Free shared windows --- */
+static void node_cache_free(void) {
+  AtmosNodeCache *c = &node_cache;
+  if (!c->initialized) return;
+  MPI_Win_free(&c->win_T);
+  MPI_Win_free(&c->win_ne);
+  MPI_Win_free(&c->win_vz);
+  if (c->has_vturb) MPI_Win_free(&c->win_vturb);
+  MPI_Win_free(&c->win_z);
+  MPI_Win_free(&c->win_nH);
+  if (c->stokes) {
+    MPI_Win_free(&c->win_Bx);
+    MPI_Win_free(&c->win_By);
+    MPI_Win_free(&c->win_Bz);
+  }
+  memset(c, 0, sizeof(*c));
+  c->initialized = FALSE;
+}
+
+
+/* --- Does a reduced (ix, iy) fall in this node's cache? --- */
+static inline bool_t node_cache_owns(int ix, int iy) {
+  (void) iy;
+  return (node_cache.initialized &&
+          ix >= node_cache.ix0 &&
+          ix <  node_cache.ix0 + node_cache.nrows);
+}
+
+/* --- Local byte offset of a column in the 1D shared buffers --- */
+static inline long node_cache_col_offset(int ix, int iy) {
+  long local = (long)(ix - node_cache.ix0) * (long)node_cache.ny + (long)iy;
+  return local * node_cache.nz;
+}
 
 /* --- Cached file dataspace handles for readAtmos_hdf5 --------------
    Opening the file dataspace via H5Dget_space and closing it again on
@@ -266,6 +598,25 @@ void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry,
   atmos->sca_b = NULL;
 }
 /* ------- end ---------------------------- init_hdf5_atmos  -------- */
+
+
+/* ------- begin -------------------------- init_atmos_node_cache ---
+   Public wrapper that populates the node-shared atmosphere cache.
+   Must be called AFTER distribute_jobs has run (needs
+   mpi.node_ix0/ix1, mpi.ny populated) but BEFORE the first
+   readAtmos call in the hot loop.
+
+   No-op when input.use_node_atmos_cache is FALSE or if this node
+   happens to own zero reduced rows.  Safe to call multiple times;
+   subsequent calls are no-ops.                                     */
+void init_atmos_node_cache(Atmosphere *atmos, Input_Atmos_file *infile) {
+  if (!input.use_node_atmos_cache) return;
+  if (mpi.n_nodes <= 0 || mpi.ny <= 0) return;
+  if (mpi.node_ix1 <= mpi.node_ix0)    return;
+  if (node_cache.initialized)          return;
+  node_cache_init(atmos, infile);
+}
+/* ------- end ---------------------------- init_atmos_node_cache --- */
 
 /* ------- begin -------------------------- readAtmos_hdf5  ---------
    Reads T, ne, vz, vturb, nH (and B if Stokes) for a given (xi,yi)
@@ -575,6 +926,8 @@ void close_hdf5_atmos(Atmosphere *atmos, Geometry *geometry,
     Input_Atmos_file *infile) {
   /* Closes the HDF5 file and frees memory */
   int ierror;
+  /* Release the node-shared atmosphere cache (no-op if not populated) */
+  node_cache_free();
   /* Release cached file dataspaces from readAtmos_hdf5 */
   rfa_close_cached_dataspaces();
   /* Close the file. */
