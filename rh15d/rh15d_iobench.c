@@ -315,8 +315,16 @@ int main(int argc, char *argv[])
     }
   }
 
-  /* First read just to get dimensions */
-  readAtmos(0, 0, &atmos, &geometry, &infile);
+  /* --- Populate the node-shared atmosphere cache.  Must come AFTER
+     distribute_jobs (which sets node_ix0/ix1) and BEFORE the first
+     readAtmos call so the dimension-discovery read also goes through
+     the cache. */
+  init_atmos_node_cache(&atmos, &infile);
+
+  /* First read just to get dimensions.  Use a node-local column so
+     the cache lookup hits — column (node_ix0, 0) is always owned by
+     this node. */
+  readAtmos(mpi.xnum[mpi.node_ix0], mpi.ynum[0], &atmos, &geometry, &infile);
   if (atmos.Stokes) Bproject();
   readAtomicModels();
   readMolecularModels();
@@ -343,13 +351,23 @@ int main(int argc, char *argv[])
 
   t_run0 = MPI_Wtime();
 
+  /* Node-local static decomposition: each rank processes a stride
+     of its node's task slice (mpi.node_task_start ..
+     mpi.node_task_start + mpi.node_task_count).  Rank R on the node
+     starts at offset node_rank, stride node_size.  Every column
+     processed lies within this node's owned row range, so the cache
+     lookup always hits and no rank ever falls back to file I/O.  */
+  long node_start = mpi.node_task_start;
+  long node_end   = mpi.node_task_start + mpi.node_task_count;
+
   /* Progress reporting: rank 0 prints every ~5% of its share */
-  long my_share    = (mpi.total_tasks + mpi.size - 1 - mpi.rank) / mpi.size;
+  long my_share    = (mpi.node_task_count + mpi.node_size - 1 - mpi.node_rank)
+                     / mpi.node_size;
   long progress_iv = my_share / 20;
   if (progress_iv < 1) progress_iv = 1;
   long progress_done = 0;
 
-  for (task = mpi.rank; task < mpi.total_tasks; task += mpi.size) {
+  for (task = node_start + mpi.node_rank; task < node_end; task += mpi.node_size) {
     double t0, t1;
 
     mpi.task = task;

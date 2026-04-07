@@ -619,14 +619,17 @@ void init_atmos_node_cache(Atmosphere *atmos, Input_Atmos_file *infile) {
 /* ------- end ---------------------------- init_atmos_node_cache --- */
 
 /* ------- begin -------------------------- readAtmos_hdf5  ---------
-   Reads T, ne, vz, vturb, nH (and B if Stokes) for a given (xi,yi)
-   in a SINGLE H5Dread_multi call.
+   Two source modes:
 
-   Strategy: read every variable at the FULL nz extent in one
-   collective operation, then if temperature-cutoff is requested,
-   determine zcut from the in-memory T array and compact each buffer
-   in place via memmove + realloc.  Trades a small amount of extra
-   bytes (the cut-off region) for a single sync point per column.   */
+   (1) Node-shared cache (input.use_node_atmos_cache && cache owns the
+       column).  Pure memcpy from shared memory — zero HDF5 I/O.
+
+   (2) HDF5 file fallback (the original path).  Single H5Dread_multi
+       at full nz extent, used when the cache is disabled or the
+       requested column lies outside this node's owned slab.
+
+   Both paths share the post-read processing (zcut + memmove + realloc
+   + B-field conversion + depth_refine + nHtot sum).                */
 void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
                     Input_Atmos_file *infile) {
   const char routineName[] = "readAtmos_hdf5";
@@ -645,17 +648,13 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   long     full_nz, Nspace;
   int      i, j;
 
-  /* --- Lazy init of cached file dataspaces --- */
-  if (!rfa_initialized) rfa_init_cached_dataspaces(atmos, infile);
-
-  /* --- Transfer property list (collective vs independent) --- */
-  if (COLLECTIVE_IO_R && mpi.isbalanced) {
-    if ((plist_id = H5Pcreate(H5P_DATASET_XFER)) < 0) HERR(routineName);
-    if (H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE) < 0)
-      HERR(routineName);
-  } else {
-    plist_id = H5P_DEFAULT;
-  }
+  /* The cached file dataspaces and HDF5 transfer property list are only
+     needed for the file fallback path; they are created lazily after
+     the cache check, so we don't leak them when the cache path is used.
+     plist_id is initialized to H5P_DEFAULT here so the code that runs
+     unconditionally (which does not exist in this function but is a
+     useful invariant) cannot read an uninitialized handle. */
+  plist_id = H5P_DEFAULT;
 
   full_nz       = (long) infile->nz;
   atmos->Nspace = full_nz;
@@ -679,6 +678,69 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 
   /* nH scratch — flat NHydr*nz buffer; final atmos->nH built post-zcut. */
   nh_scratch = (double *) malloc((long)atmos->NHydr * full_nz * sizeof(double));
+
+  /* === Source mode (1): node-shared cache ===
+     Convert the file (xi, yi) back to reduced (ix, iy) and check whether
+     this node's cache holds the column.  If yes, do a pure memcpy from
+     the shared windows; otherwise fall through to the HDF5 file path. */
+  {
+    int ix_red = (xi - input.p15d_x0) / input.p15d_xst;
+    int iy_red = (yi - input.p15d_y0) / input.p15d_yst;
+
+    if (input.use_node_atmos_cache && node_cache_owns(ix_red, iy_red)) {
+      long col_off    = node_cache_col_offset(ix_red, iy_red);
+      long var_stride = (long)node_cache.nrows * (long)node_cache.ny * full_nz;
+
+      memcpy(atmos->T,        &node_cache.T [col_off],
+             full_nz * sizeof(double));
+      if (input.solve_ne == NONE) {
+        memcpy(atmos->ne,     &node_cache.ne[col_off],
+               full_nz * sizeof(double));
+      }
+      memcpy(geometry->vel,   &node_cache.vz[col_off],
+             full_nz * sizeof(double));
+      if (node_cache.has_vturb) {
+        memcpy(atmos->vturb,  &node_cache.vturb[col_off],
+               full_nz * sizeof(double));
+      } else {
+        memset(atmos->vturb, 0, full_nz * sizeof(double));
+      }
+      if (node_cache.ndims_z == 2) {
+        /* z is shared across all columns of the snapshot */
+        memcpy(geometry->height, node_cache.z, full_nz * sizeof(double));
+      } else {
+        memcpy(geometry->height, &node_cache.z[col_off],
+               full_nz * sizeof(double));
+      }
+      if (atmos->Stokes) {
+        memcpy(Bx, &node_cache.Bx[col_off], full_nz * sizeof(double));
+        memcpy(By, &node_cache.By[col_off], full_nz * sizeof(double));
+        memcpy(Bz, &node_cache.Bz[col_off], full_nz * sizeof(double));
+      }
+      /* nH: shared layout is [NHydr × nrows × ny × nz].  Pull each
+         variable's column slice into the contiguous nh_scratch buffer
+         expected by the post-processing path. */
+      for (i = 0; i < atmos->NHydr; i++) {
+        memcpy(nh_scratch + (long)i * full_nz,
+               &node_cache.nH[(long)i * var_stride + col_off],
+               full_nz * sizeof(double));
+      }
+      goto post_read;  /* skip the HDF5 file path entirely */
+    }
+  }
+
+  /* === Source mode (2): HDF5 file (the existing fallback path) === */
+
+  /* Lazy init of cached file dataspaces (only needed for file reads) */
+  if (!rfa_initialized) rfa_init_cached_dataspaces(atmos, infile);
+
+  /* Transfer property list (collective vs independent).  Created here
+     so the cache fast-path doesn't allocate or leak it. */
+  if (COLLECTIVE_IO_R && mpi.isbalanced) {
+    if ((plist_id = H5Pcreate(H5P_DATASET_XFER)) < 0) HERR(routineName);
+    if (H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE) < 0)
+      HERR(routineName);
+  }
 
   /* === Build the multi-read at full nz extent === */
   hid_t   dsets  [10];
@@ -808,6 +870,7 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
     if (H5Pclose(plist_id) < 0) HERR(routineName);
   }
 
+post_read:
   /* === Determine zcut from T (in memory, no I/O) === */
   mpi.zcut = 0;
   if (input.p15d_zcut && input.p15d_tmax >= 0) {
