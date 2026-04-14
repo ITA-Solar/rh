@@ -188,7 +188,7 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
     readBRS();
     return;
   }
-    
+
   getCPU(3, TIME_START, NULL);
 
   do_fudge = FALSE;
@@ -256,7 +256,7 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
   chi   = (double *) malloc(NrecStokes*atmos.Nspace * sizeof(double));
   eta   = (double *) malloc(NrecStokes*atmos.Nspace * sizeof(double));
   scatt = (double *) malloc(atmos.Nspace * sizeof(double));
-    
+
   if (atmos.Stokes && input.magneto_optical) {
     chip   = (double *) malloc(3*atmos.Nspace * sizeof(double));
     chip_c = (double *) malloc(3*atmos.Nspace * sizeof(double));
@@ -297,6 +297,10 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
          a wavelength overlaps with a Bound-Bound transition in the
          background, or whether it is polarized --     -------------- */
 
+  if (atmos.backgrflags)
+  {
+    free(atmos.backgrflags);
+  }
   atmos.backgrflags = (flags *) malloc(spectrum.Nspect * sizeof(flags));
   for (nspect = 0;  nspect < spectrum.Nspect;  nspect++) {
     atmos.backgrflags[nspect].hasline = FALSE;
@@ -308,6 +312,10 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
 
   backgrrecno = 0;
 
+  if (atmos.backgrrecno)
+  {
+    free(atmos.backgrrecno);
+  }
   if (atmos.moving || atmos.Stokes) {
     atmos.backgrrecno = 
       (int *) malloc(2*spectrum.Nspect*atmos.Nrays * sizeof(int));
@@ -393,7 +401,7 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
     }
     Hydrogen_ff(wavelength, chi);
     for (k = 0;  k < atmos.Nspace;  k++) {
-      chi_ai[k] += chi[k]; 
+      chi_ai[k] += chi[k];
       eta_ai[k] += chi[k] * Bnu[k];
     }
     /* --- Rayleigh scattering by neutral hydrogen --  -------------- */
@@ -476,7 +484,7 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
 	    eta_c[k] = eta_ai[k];
             sca_c[k] = sca_ai[k];
 	  }
-	  
+
           /* --- Zero the polarized quantities, if necessary -- ----- */
 
 	  if (atmos.Stokes) {

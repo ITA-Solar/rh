@@ -2,7 +2,6 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Thu Mar 24 16:58:54 2022 --
 
        --------------------------                      ----------RH-- */
 
@@ -14,6 +13,15 @@
        - Barklem, O'Mara & Ross 1998, MNRAS 296, 1057-1060 (d-f, f-d)
        - Barklem, O'Mara 1998, MNRAS 300, 863-871
        --                                              -------------- */
+/* --------
+
+   Modifications:
+       2016-11-05, JdlCR: The tables from Barklem do not work with ionized
+       species like Ca II or Mg II. Added the possibility to provide the
+       cross-sections in the atom file.
+
+   -------- */
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,21 +34,22 @@
 #include "atmos.h"
 #include "constant.h"
 #include "error.h"
+#include "inputs.h"
 
 
-#define BARKLEM_SP_DATA     "../../Atoms/Barklem_spdata.dat"
+#define BARKLEM_SP_DATA     "Barklem_spdata.dat"
 #define BARKLEM_SP_NS       21
 #define BARKLEM_SP_NP       18
 #define BARKLEM_SP_NEFF1    1.0
 #define BARKLEM_SP_NEFF2    1.3
 
-#define BARKLEM_PD_DATA     "../../Atoms/Barklem_pddata.dat"
+#define BARKLEM_PD_DATA     "Barklem_pddata.dat"
 #define BARKLEM_PD_NP       18
 #define BARKLEM_PD_ND       18
 #define BARKLEM_PD_NEFF1    1.3
 #define BARKLEM_PD_NEFF2    2.3
 
-#define BARKLEM_DF_DATA     "../../Atoms/Barklem_dfdata.dat"
+#define BARKLEM_DF_DATA     "Barklem_dfdata.dat"
 #define BARKLEM_DF_ND       18
 #define BARKLEM_DF_NF       18
 #define BARKLEM_DF_NEFF1    2.3
@@ -52,6 +61,7 @@
 /* --- Global variables --                             -------------- */
 
 extern Atmosphere atmos;
+extern InputData input;
 extern char messageStr[];
 
 /* ------- begin -------------------------- determinate_abo.c ------- */
@@ -110,7 +120,11 @@ bool_t readBarklemTable(enum Barklemtype type, Barklemstruct *bs)
 
   switch (type) {
   case SP:
-    strcpy(filename, BARKLEM_SP_DATA);
+    if ( snprintf(filename, MAX_LINE_SIZE, "%s/%s", input.BarklemDir,
+                  BARKLEM_SP_DATA) >= MAX_LINE_SIZE ) {
+        sprintf(messageStr, "Barklem file path too large. Aborting.\n");
+        Error(ERROR_LEVEL_2, routineName, messageStr);
+    }
     bs->N1 = BARKLEM_SP_NS;
     bs->N2 = BARKLEM_SP_NP;
 
@@ -119,7 +133,11 @@ bool_t readBarklemTable(enum Barklemtype type, Barklemstruct *bs)
     break;
 
   case PD:
-    strcpy(filename, BARKLEM_PD_DATA);
+    if ( snprintf(filename, MAX_LINE_SIZE, "%s/%s", input.BarklemDir,
+                  BARKLEM_PD_DATA) >= MAX_LINE_SIZE ) {
+        sprintf(messageStr, "Barklem file path too large. Aborting.\n");
+        Error(ERROR_LEVEL_2, routineName, messageStr);
+    }
     bs->N1 = BARKLEM_PD_NP;
     bs->N2 = BARKLEM_PD_ND;
 
@@ -128,7 +146,11 @@ bool_t readBarklemTable(enum Barklemtype type, Barklemstruct *bs)
     break;
 
   case DF:
-    strcpy(filename, BARKLEM_DF_DATA);
+    if ( snprintf(filename, MAX_LINE_SIZE, "%s/%s", input.BarklemDir,
+                  BARKLEM_DF_DATA) >= MAX_LINE_SIZE ) {
+        sprintf(messageStr, "Barklem file path too large. Aborting.\n");
+        Error(ERROR_LEVEL_2, routineName, messageStr);
+    }
     bs->N1 = BARKLEM_DF_ND;
     bs->N2 = BARKLEM_DF_NF;
 
@@ -146,7 +168,7 @@ bool_t readBarklemTable(enum Barklemtype type, Barklemstruct *bs)
   bs->neff1 = (double *) malloc(bs->N1 * sizeof(double));
   for (n = 0;  n < bs->N1;  n++)
     bs->neff1[n] = neff1_0 + n * BARKLEM_DELTA_NEFF;
- 
+
   bs->neff2 = (double *) malloc(bs->N2 * sizeof(double));
   for (n = 0;  n < bs->N2;  n++)
     bs->neff2[n] = neff2_0 + n * BARKLEM_DELTA_NEFF;
@@ -230,8 +252,8 @@ bool_t getBarklemcross(Barklemstruct *bs, RLK_Line *rlk)
   meanvelocity = sqrt(8.0 * KBOLTZMANN / (PI * reducedmass));
   crossmean    = SQ(RBOHR) * pow(meanvelocity / 1.0E4, -rlk->alpha);
 
-  rlk->cross *= 2.0 * pow(4.0/PI, rlk->alpha/2.0) * 
-    exp(gammln((4.0 - rlk->alpha)/2.0)) * meanvelocity * crossmean;  
+  rlk->cross *= 2.0 * pow(4.0/PI, rlk->alpha/2.0) *
+    exp(gammln((4.0 - rlk->alpha)/2.0)) * meanvelocity * crossmean;
 
   rlk->vdwaals = BARKLEM;
   return TRUE;
@@ -249,7 +271,7 @@ bool_t getBarklemactivecross(AtomicLine *line)
          crossmean, E_Rydberg, deltaEi, deltaEj;
   Atom *atom;
   Barklemstruct bs;
- 
+
   atom = line->atom;
   j = line->j;
   i = line->i;
@@ -319,8 +341,8 @@ bool_t getBarklemactivecross(AtomicLine *line)
   meanvelocity = sqrt(8.0 * KBOLTZMANN / (PI * reducedmass));
   crossmean    = SQ(RBOHR) * pow(meanvelocity / 1.0E4, -line->cvdWaals[1]);
 
-  line->cvdWaals[0] *= 2.0 * pow(4.0/PI, line->cvdWaals[1]/2.0) * 
-    exp(gammln((4.0 - line->cvdWaals[1])/2.0)) * meanvelocity * crossmean;  
+  line->cvdWaals[0] *= 2.0 * pow(4.0/PI, line->cvdWaals[1]/2.0) *
+    exp(gammln((4.0 - line->cvdWaals[1])/2.0)) * meanvelocity * crossmean;
 
   /* --- Use UNSOLD for the contribution of Helium atoms -- ---------- */
 
