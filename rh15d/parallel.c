@@ -95,29 +95,66 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
                 mpi.rank_node, 1, MPI_INT, MPI_COMM_WORLD);
 
   /* --- MPI-IO hints optimised for Lustre parallel filesystem ---
-     Tuning assumes the output directory is set up with
+     striping_unit and striping_factor inform the MPI-IO driver of the
+     Lustre layout so collective buffers can be aligned to stripe
+     boundaries; cb_nodes = n_nodes dedicates one aggregator per node,
+     which avoids cross-node contention on the OSS/OST paths.
+
+     The Lustre-specific values must match the actual `lfs setstripe`
+     layout of the output directory.  Defaults below assume
          lfs setstripe -c 12 -S 1M output/
-     (see the production job script).  striping_unit and striping_factor
-     inform the MPI-IO driver of the Lustre layout so collective buffers
-     can be aligned to stripe boundaries; cb_nodes = n_nodes dedicates
-     one aggregator per node, which avoids cross-node contention on the
-     OSS/OST paths.  If the Lustre layout in your run differs from these
-     values, override at runtime with MPICH_MPIIO_HINTS or set this
-     programmatically from the actual layout.                           */
-  MPI_Info_create(&mpi.info);
-  MPI_Info_set(mpi.info, "romio_cb_write",  "enable");   /* collective buffering */
-  MPI_Info_set(mpi.info, "romio_ds_write",  "disable");  /* no data sieving     */
-  MPI_Info_set(mpi.info, "cb_buffer_size",  "16777216"); /* 16 MB coll. buffer  */
-  MPI_Info_set(mpi.info, "romio_cb_read",   "enable");
-  MPI_Info_set(mpi.info, "romio_ds_read",   "disable");
-  MPI_Info_set(mpi.info, "striping_unit",   "1048576");  /* match lfs -S 1M     */
-  MPI_Info_set(mpi.info, "striping_factor", "12");       /* match lfs -c 12     */
+     (the value used in the reference production job script).  Each
+     default can be overridden per-run via env var, so you do not need
+     to rebuild to match a different Lustre layout:
+
+         RH_LUSTRE_STRIPE_COUNT  (default 12)    -> striping_factor
+         RH_LUSTRE_STRIPE_SIZE   (default 1 MB)  -> striping_unit   [bytes]
+         RH_MPIIO_CB_BUFFER_SIZE (default 16 MB) -> cb_buffer_size  [bytes]
+         RH_MPIIO_CB_NODES       (default mpi.n_nodes) -> cb_nodes
+
+     The romio_cb_* / romio_ds_* booleans are not env-overridable
+     here — flip them via ROMIO_HINTS if you need to experiment.
+
+     Gated by keyword 15D_MPIIO_LUSTRE_HINTS (default TRUE).  When
+     FALSE, the create_hdf5_fapl helpers below pass MPI_INFO_NULL to
+     H5Pset_fapl_mpio and the MPI-IO driver falls back to ROMIO
+     defaults — use this to A/B against pre-42fc036/e1767d1 baseline.
+     NOTE: readInput has not run yet at this point, so mpi.info is
+     always populated here; the keyword only affects whether it is
+     passed into the FAPL. */
   {
-    char cb_nodes_str[16];
-    snprintf(cb_nodes_str, sizeof(cb_nodes_str), "%d", mpi.n_nodes);
-    MPI_Info_set(mpi.info, "cb_nodes", cb_nodes_str);    /* 1 aggregator / node */
+    const char *s;
+    char buf[32];
+    const char *stripe_count  = (s = getenv("RH_LUSTRE_STRIPE_COUNT"))  ? s : "12";
+    const char *stripe_size   = (s = getenv("RH_LUSTRE_STRIPE_SIZE"))   ? s : "1048576";
+    const char *cb_buf_size   = (s = getenv("RH_MPIIO_CB_BUFFER_SIZE")) ? s : "16777216";
+    const char *cb_nodes_env  = getenv("RH_MPIIO_CB_NODES");
+
+    MPI_Info_create(&mpi.info);
+    MPI_Info_set(mpi.info, "romio_cb_write",  "enable");   /* collective buffering */
+    MPI_Info_set(mpi.info, "romio_ds_write",  "disable");  /* no data sieving     */
+    MPI_Info_set(mpi.info, "romio_cb_read",   "enable");
+    MPI_Info_set(mpi.info, "romio_ds_read",   "disable");
+    MPI_Info_set(mpi.info, "cb_buffer_size",  (char *) cb_buf_size);
+    MPI_Info_set(mpi.info, "striping_unit",   (char *) stripe_size);
+    MPI_Info_set(mpi.info, "striping_factor", (char *) stripe_count);
+    if (cb_nodes_env != NULL) {
+      MPI_Info_set(mpi.info, "cb_nodes", (char *) cb_nodes_env);
+    } else {
+      snprintf(buf, sizeof(buf), "%d", mpi.n_nodes);
+      MPI_Info_set(mpi.info, "cb_nodes", buf);             /* 1 aggregator / node */
+    }
+    MPI_Info_set(mpi.info, "cb_config_list", "*:1");        /* 1 aggr per host    */
+
+    if (mpi.rank == 0) {
+      sprintf(messageStr,
+              "MPI-IO Lustre hints: stripe_count=%s stripe_size=%s "
+              "cb_buffer_size=%s cb_nodes=%s\n",
+              stripe_count, stripe_size, cb_buf_size,
+              cb_nodes_env ? cb_nodes_env : buf);
+      Error(MESSAGE, "initParallel", messageStr);
+    }
   }
-  MPI_Info_set(mpi.info, "cb_config_list", "*:1");        /* 1 aggr per host    */
   /* Open log files */
   sprintf(logfile, (run_ray) ? RAY_MPILOG_TEMPLATE : MPILOG_TEMPLATE, mpi.rank);
   if ((mpi.logfile = fopen(logfile, "w")) == NULL) {
@@ -149,23 +186,35 @@ hid_t create_hdf5_fapl(void) {
 /* Creates an HDF5 file access property list optimised for Lustre,
    with collective metadata enabled (for output files where all ranks
    participate in I/O together).
-   Caller is responsible for closing the returned plist with H5Pclose. */
+   Caller is responsible for closing the returned plist with H5Pclose.
+
+   Keyword 15D_MPIIO_LUSTRE_HINTS (default TRUE) toggles the two
+   Lustre-specific behavioural knobs:
+     - info arg to H5Pset_fapl_mpio: mpi.info (romio + stripe hints
+       built in initParallel) when TRUE, MPI_INFO_NULL when FALSE
+     - collective HDF5 metadata ops: enabled when TRUE, off when FALSE
+   H5Pset_alignment and H5Pset_meta_block_size are always applied
+   (pure HDF5-level tuning, no behavioural side effects).
+   H5Pset_file_locking is always disabled (correctness on Lustre). */
   const char routineName[] = "create_hdf5_fapl";
   hid_t plist;
+  MPI_Info info_arg = input.mpiio_lustre_hints ? mpi.info : MPI_INFO_NULL;
 
   if (( plist = H5Pcreate(H5P_FILE_ACCESS) ) < 0) HERR(routineName);
-  if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
+  if (( H5Pset_fapl_mpio(plist, mpi.comm, info_arg) ) < 0) HERR(routineName);
   /* Align HDF5 objects to 1 MB boundaries to match typical Lustre stripe size,
      threshold 0 means all allocations are aligned */
   if (( H5Pset_alignment(plist, 0, 1048576) ) < 0) HERR(routineName);
   /* Aggregate metadata allocations into 8 MB blocks to reduce Lustre
      metadata operations */
   if (( H5Pset_meta_block_size(plist, 8388608) ) < 0) HERR(routineName);
-  /* Use collective metadata I/O: this does NOT require synchronising data
-     writes, it only makes HDF5 metadata operations collective, which greatly
-     reduces metadata contention on Lustre (available since HDF5 1.10) */
-  if (( H5Pset_all_coll_metadata_ops(plist, 1) ) < 0) HERR(routineName);
-  if (( H5Pset_coll_metadata_write(plist, 1) ) < 0) HERR(routineName);
+  if (input.mpiio_lustre_hints) {
+    /* Collective metadata I/O: does NOT synchronise data writes, only
+       makes HDF5 metadata operations collective, which greatly reduces
+       metadata contention on Lustre (available since HDF5 1.10). */
+    if (( H5Pset_all_coll_metadata_ops(plist, 1) ) < 0) HERR(routineName);
+    if (( H5Pset_coll_metadata_write(plist, 1) ) < 0) HERR(routineName);
+  }
   /* Disable HDF5 file locking — Lustre handles concurrency itself, and the
      internal lock files (*.loc) cause filesystem contention.  This is the
      programmatic equivalent of HDF5_USE_FILE_LOCKING=FALSE and works even
@@ -177,12 +226,14 @@ hid_t create_hdf5_fapl(void) {
 hid_t create_hdf5_fapl_indep(void) {
 /* Creates an HDF5 file access property list optimised for Lustre,
    WITHOUT collective metadata.  Use for files that are read independently
-   by individual ranks (e.g. atmosphere input in pool mode). */
+   by individual ranks (e.g. atmosphere input in pool mode).
+   Honours 15D_MPIIO_LUSTRE_HINTS for the MPI-IO info arg. */
   const char routineName[] = "create_hdf5_fapl_indep";
   hid_t plist;
+  MPI_Info info_arg = input.mpiio_lustre_hints ? mpi.info : MPI_INFO_NULL;
 
   if (( plist = H5Pcreate(H5P_FILE_ACCESS) ) < 0) HERR(routineName);
-  if (( H5Pset_fapl_mpio(plist, mpi.comm, mpi.info) ) < 0) HERR(routineName);
+  if (( H5Pset_fapl_mpio(plist, mpi.comm, info_arg) ) < 0) HERR(routineName);
   if (( H5Pset_alignment(plist, 0, 1048576) ) < 0) HERR(routineName);
   if (( H5Pset_meta_block_size(plist, 8388608) ) < 0) HERR(routineName);
   /* No collective metadata — ranks read independently */

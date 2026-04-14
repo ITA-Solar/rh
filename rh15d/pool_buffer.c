@@ -708,10 +708,16 @@ void writeCollective_pool(PoolOutputBuf *buf, bool_t flush) {
   if (buf->ncols > 1)
     qsort(buf->cols, buf->ncols, sizeof(PoolColumnBuf), cmp_col_ixiy);
 
-  /* --- Create collective transfer property list --- */
+  /* --- Create transfer property list (collective or independent per
+         keyword 15D_POOL_COLLECTIVE_WRITE) --- */
   if (( plist_id = H5Pcreate(H5P_DATASET_XFER) ) < 0) HERR(routineName);
-  if (( H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE) ) < 0)
-    HERR(routineName);
+  {
+    H5FD_mpio_xfer_t xfer_mode = input.pool_collective_write
+                                 ? H5FD_MPIO_COLLECTIVE
+                                 : H5FD_MPIO_INDEPENDENT;
+    if (( H5Pset_dxpl_mpio(plist_id, xfer_mode) ) < 0)
+      HERR(routineName);
+  }
 
   write_xtra = (io.ray_nwave_sel > 0);
 

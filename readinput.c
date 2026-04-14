@@ -241,7 +241,7 @@ void readInput(char *input_string)
      setboolValue},
     {"15D_WRITE_EXTRA",    "TRUE",  FALSE, KEYWORD_OPTIONAL, &input.p15d_wxtra,
      setboolValue},
-    {"15D_FLUSH_INTERVAL", "128",  FALSE, KEYWORD_OPTIONAL,
+    {"15D_FLUSH_INTERVAL", "16",  FALSE, KEYWORD_OPTIONAL,
      &input.p15d_flush_interval, setintValue},
 
     /* Node-partitioned pool mode: read atmosphere once per node into a
@@ -250,7 +250,15 @@ void readInput(char *input_string)
      &input.use_node_atmos_cache, setboolValue},
     /* Cyclic row decomposition across nodes (planned, not implemented). */
     {"15D_ATMOS_CACHE_CYCLIC",   "FALSE", FALSE, KEYWORD_OPTIONAL,
-     &input.atmos_cache_cyclic,  setboolValue}
+     &input.atmos_cache_cyclic,  setboolValue},
+
+    /* Pool-mode phase-2 flush: collective (TRUE, default) vs independent. */
+    {"15D_POOL_COLLECTIVE_WRITE", "TRUE", FALSE, KEYWORD_OPTIONAL,
+     &input.pool_collective_write, setboolValue},
+    /* MPI-IO Lustre hints on mpi.info (romio cb, stripe, cb_nodes) +
+       collective HDF5 metadata ops on output FAPL. */
+    {"15D_MPIIO_LUSTRE_HINTS",    "TRUE", FALSE, KEYWORD_OPTIONAL,
+     &input.mpiio_lustre_hints,    setboolValue}
 
   };
   Nkeyword = sizeof(theKeywords) / sizeof(Keyword);

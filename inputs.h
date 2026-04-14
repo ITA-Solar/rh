@@ -125,6 +125,23 @@ typedef struct {
      Plumbed but not yet honored in v1. */
   bool_t use_node_atmos_cache;
   bool_t atmos_cache_cyclic;
+  /* Pool mode: when TRUE (default), writeCollective_pool uses
+     H5FD_MPIO_COLLECTIVE for the phase-2 flush; when FALSE, each rank
+     writes its own hyperslabs with H5FD_MPIO_INDEPENDENT.  Independent
+     mode is useful on filesystems where collective buffering adds more
+     overhead than it saves, or for debugging MPI-IO behaviour. */
+  bool_t pool_collective_write;
+  /* Lustre contention-reduction toggle: when TRUE (default), the
+     create_hdf5_fapl helpers pass the romio/stripe/cb_nodes MPI-IO
+     hints (built in initParallel) to H5Pset_fapl_mpio, AND enable
+     collective HDF5 metadata ops on the output FAPL.  When FALSE,
+     MPI_INFO_NULL is passed and collective metadata ops are left off
+     — toggle off to A/B against pre-42fc036/e1767d1 baseline.
+     Note: H5Pset_alignment and H5Pset_meta_block_size are always
+     applied (pure HDF5-level tuning with no behavioural side effects);
+     H5Pset_file_locking(false) is also always applied (correctness
+     requirement on Lustre, not a performance knob). */
+  bool_t mpiio_lustre_hints;
 } InputData;
 
 
