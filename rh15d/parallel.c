@@ -147,12 +147,14 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
     MPI_Info_set(mpi.info, "cb_config_list", "*:1");        /* 1 aggr per host    */
 
     if (mpi.rank == 0) {
-      sprintf(messageStr,
+      /* Log files are not open yet — write straight to stderr so the
+         hints appear in the SLURM output without dereferencing the
+         still-NULL commandline.logfile / mpi.main_logfile. */
+      fprintf(stderr,
               "MPI-IO Lustre hints: stripe_count=%s stripe_size=%s "
               "cb_buffer_size=%s cb_nodes=%s\n",
               stripe_count, stripe_size, cb_buf_size,
               cb_nodes_env ? cb_nodes_env : buf);
-      Error(MESSAGE, "initParallel", messageStr);
     }
   }
   /* Open log files */
