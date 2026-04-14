@@ -179,7 +179,7 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
   bool_t nhm_flag, hunt;
   long    i, k, k0=0, k1=0;
   size_t  bufsize;
-  double  CI, PhiHmin, *chi, *eta, *tau, tdiv, rdiv, taudiv, *aind, *xpt;
+  double  CI, PhiHmin, *chi, *eta, *tau, tdiv, rdiv, taudiv, vdiv, *aind, *xpt;
   double *new_height, *buf;
   const double taumax = 100.0, lg1 = log10(1.1);
 
@@ -228,7 +228,8 @@ void depth_refine(Atmosphere *atmos, Geometry *geometry, double Tmax) {
     /* rho is not available, so nH[0] used instead */
     rdiv = fabs(log10(atmos->nH[0][k]) - log10(atmos->nH[0][k-1]))/lg1;
     taudiv = fabs(log10(tau[k]) - log10(tau[k-1]))/0.1;
-    aind[k] = aind[k-1] + MAX(MAX(tdiv,rdiv),taudiv);
+    vdiv = fabs(geometry->vel[k] - geometry->vel[k-1]) * (1.e-3 / 0.25);
+    aind[k] = aind[k-1] + MAX(MAX(MAX(tdiv,rdiv),taudiv),vdiv);
   }
 
   for (k = 1; k <= k1; k++)
