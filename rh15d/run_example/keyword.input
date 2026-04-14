@@ -39,6 +39,9 @@
 # Write radiative rates?
   15D_WRITE_RRATES = FALSE
 
+# Write collisional rates?
+  15D_WRITE_CRATES = FALSE
+
 # Value to add to supplied VTURB (in m/s)
   VTURB_ADD = 0.0
 

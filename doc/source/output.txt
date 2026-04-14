@@ -1,4 +1,4 @@
-******************
+*****************
 Analysis of output
 ******************
 
@@ -64,23 +64,26 @@ The atom groups can contain the following optional variables:
 
 .. tabularcolumns:: |l|l|L|
 
-+---------------------+-------------------------------+------------------------------------+
-| Name                | Dimensions                    | Description                        |
-+=====================+===============================+====================================+
-| ``populations``     | ``(level, x, y, height)``     | Atomic populations.                |
-+---------------------+-------------------------------+------------------------------------+
-| ``populations_LTE`` | ``(level, x, y, height)``     | Atomic LTE populations.            |
-+---------------------+-------------------------------+------------------------------------+
-| ``Rij_line``        | ``(line, x, y, height)``      | Radiative rates out of the line.   |
-+---------------------+-------------------------------+------------------------------------+
-| ``Rji_line``        | ``(line, x, y, height)``      | Radiative rates into the line.     |
-+---------------------+-------------------------------+------------------------------------+
-| ``Rij_continuum``   | ``(continuum, x, y, height)`` | Radiative rates out of the         |
-|                     |                               | bf transition.                     |
-+---------------------+-------------------------------+------------------------------------+
-| ``Rji_continuum``   | ``(continuum, x, y, height)`` | Radiative rates into the bf        |
-|                     |                               | transition.                        |
-+---------------------+-------------------------------+------------------------------------+
++---------------------+---------------------------------+--------------------------------------+
+| Name                | Dimensions                      | Description                          |
++=====================+=================================+======================================+
+| ``populations``     | ``(level, x, y, height)``       | Atomic populations.                  |
++---------------------+---------------------------------+--------------------------------------+
+| ``populations_LTE`` | ``(level, x, y, height)``       | Atomic LTE populations.              |
++---------------------+---------------------------------+--------------------------------------+
+| ``Rij_line``        | ``(line, x, y, height)``        | Radiative rates out of the line.     |
++---------------------+---------------------------------+--------------------------------------+
+| ``Rji_line``        | ``(line, x, y, height)``        | Radiative rates into the line.       |
++---------------------+---------------------------------+--------------------------------------+
+| ``Rij_continuum``   | ``(continuum, x, y, height)``   | Radiative rates out of the           |
+|                     |                                 | bf transition.                       |
++---------------------+---------------------------------+--------------------------------------+
+| ``Rji_continuum``   | ``(continuum, x, y, height)``   | Radiative rates into the bf          |
+|                     |                                 | transition.                          |
++---------------------+---------------------------------+--------------------------------------+
+| ``collision_rates`` | ``(level, level, x, y, height)``| Collisional rates. Convention: first |
+|                     |                                 | index is upper level.                |
++---------------------+---------------------------------+--------------------------------------+
 
 The molecule groups can contain the following optional variables:
 
@@ -146,7 +149,7 @@ The ``atmos`` groups contains the dimensions ``x``, ``y``, ``height``, ``element
 +-----------------------+------------------------------+-----------------+--------------------------------------+
 | ``velocity_z``        | ``(x, y, height)``           | m s\ :sup:`-1`\ | Vertical velocities                  |
 +-----------------------+------------------------------+-----------------+--------------------------------------+
-| ``electron_density``  | ``(x, y, height)``           | m s\ :sup:`-3`\ | Electron densities                   |
+| ``electron_density``  | ``(x, y, height)``           | m\ :sup:`-3`\ | Electron densities                   |
 +-----------------------+------------------------------+-----------------+--------------------------------------+
 | ``height_scale``      | ``(x, y, height)``           | m               | Height scale used. Can be different  |
 |                       |                              |                 | for every column when depth refine   |

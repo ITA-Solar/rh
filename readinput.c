@@ -237,6 +237,8 @@ void readInput(char *input_string)
       setboolValue},
     {"15D_WRITE_RRATES", "FALSE",  FALSE, KEYWORD_OPTIONAL, &input.p15d_wrates,
       setboolValue},
+    {"15D_WRITE_CRATES", "FALSE",  FALSE, KEYWORD_OPTIONAL, &input.p15d_wcrates,
+      setboolValue},
     {"15D_WRITE_TAU1", "FALSE",  FALSE, KEYWORD_OPTIONAL, &input.p15d_wtau,
      setboolValue},
     {"15D_WRITE_EXTRA",    "TRUE",  FALSE, KEYWORD_OPTIONAL, &input.p15d_wxtra,

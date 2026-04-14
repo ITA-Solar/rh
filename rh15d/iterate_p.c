@@ -96,7 +96,7 @@ void Iterate_p(int NmaxIter, double iterLimit)
   else
     input.prdswitch = 1.0;
   
-  while (niter <= NmaxIter && !StopRequested()) {
+  while (niter <= NmaxIter) {
     getCPU(2, TIME_START, NULL);
 
     for (nact = 0;  nact < atmos.Nactiveatom;  nact++)

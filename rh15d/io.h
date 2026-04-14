@@ -121,10 +121,6 @@
 #define RJI_L_NAME  "Rji_line"
 #define RIJ_C_NAME  "Rij_continuum"
 #define RJI_C_NAME  "Rji_continuum"
-#define CIJ_L_NAME  "Cij_line"
-#define CJI_L_NAME  "Cji_line"
-#define CIJ_C_NAME  "Cij_continuum"
-#define CJI_C_NAME  "Cji_continuum"
 #define EM_NAME     "energy_matrix"
 #define COLL_NAME   "collision_rates"
 #define DAMP_NAME   "damping"
@@ -171,9 +167,8 @@ typedef struct {
   /* for the aux file */
   hid_t  aux_ncid,         *aux_atom_ncid,     aux_op_ncid,      *aux_atom_pop,
         *aux_atom_poplte,  *aux_atom_RijL,    *aux_atom_RjiL,    *aux_atom_RijC,
-        *aux_atom_RjiC,    *aux_atom_CijL,    *aux_atom_CjiL,    *aux_atom_CijC,
-        *aux_atom_CjiC,    *aux_atom_vbroad,  *aux_mol_ncid,     *aux_mol_pop,
-        *aux_mol_poplte,   *aux_mol_E,        *aux_mol_vbroad,
+        *aux_atom_RjiC,    *aux_atom_vbroad,  *aux_mol_ncid,     *aux_mol_pop,
+        *aux_mol_poplte,   *aux_mol_E,        *aux_mol_vbroad,   *aux_atom_Cij,
          aux_op_chi_ai,     aux_op_chi_ad,     aux_op_eta_ai,     aux_op_eta_ad;
   /* for atom file positions */
   long *atom_file_pos;
@@ -189,7 +184,7 @@ typedef struct {
 
 typedef struct {
   double  **n, **nstar, **nv, **nvstar;
-  double  **RijL, **RjiL, **RijC, **RjiC, **CijL, **CjiL, **CijC, **CjiC;
+  double  **RijL, **RjiL, **RijC, **RjiC;
   float   *J,  *J20;
 } IO_buffer;
 
@@ -233,12 +228,11 @@ typedef struct {
     double **atom_nstar;
     double **atom_RijL;      /* [Nactiveatom] -> [Nline  * Nspace] */
     double **atom_RjiL;
-    double **atom_CijL;
-    double **atom_CjiL;
     double **atom_RijC;      /* [Nactiveatom] -> [Ncont  * Nspace] */
     double **atom_RjiC;
-    double **atom_CijC;
-    double **atom_CjiC;
+    double **atom_Cij;       /* [Nactiveatom] -> [Nlevel*Nlevel*Nspace]
+                                Full collision-rate matrix, layout
+                                [i*Nlevel+j][k] = atom->C[j*Nlevel+i][k]. */
     /* Per active molecule */
     double **mol_nv;         /* [Nactivemol] -> [Nv * Nspace] */
     double **mol_nvstar;

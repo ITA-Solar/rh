@@ -100,7 +100,7 @@ void poolbuf_store_aux_atmos(PoolOutputBuf *buf) {
    geometry is redefined for the output ray. */
 
   PoolColumnBuf *c = &buf->cols[buf->ncols - 1];
-  int nact, kr, ij, ji;
+  int nact, kr, i, j, k, idx;
   Atom *atom;
   Molecule *molecule;
   AtomicLine      *line;
@@ -122,12 +122,9 @@ void poolbuf_store_aux_atmos(PoolOutputBuf *buf) {
     c->atom_nstar = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
     c->atom_RijL  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
     c->atom_RjiL  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
-    c->atom_CijL  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
-    c->atom_CjiL  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
     c->atom_RijC  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
     c->atom_RjiC  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
-    c->atom_CijC  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
-    c->atom_CjiC  = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
+    c->atom_Cij   = (double **) malloc(atmos.Nactiveatom * sizeof(double *));
 
     for (nact = 0; nact < atmos.Nactiveatom; nact++) {
       atom = atmos.activeatoms[nact];
@@ -148,8 +145,6 @@ void poolbuf_store_aux_atmos(PoolOutputBuf *buf) {
 
         c->atom_RijL[nact] = (double *) malloc(Lsize);
         c->atom_RjiL[nact] = (double *) malloc(Lsize);
-        c->atom_CijL[nact] = (double *) malloc(Lsize);
-        c->atom_CjiL[nact] = (double *) malloc(Lsize);
 
         for (kr = 0; kr < atom->Nline; kr++) {
           line = &atom->line[kr];
@@ -157,18 +152,10 @@ void poolbuf_store_aux_atmos(PoolOutputBuf *buf) {
                  c->Nspace * sizeof(double));
           memcpy(c->atom_RjiL[nact] + kr * c->Nspace, line->Rji,
                  c->Nspace * sizeof(double));
-          ij = line->j * atom->Nlevel + line->i;
-          memcpy(c->atom_CijL[nact] + kr * c->Nspace, atom->C[ij],
-                 c->Nspace * sizeof(double));
-          ji = line->i * atom->Nlevel + line->j;
-          memcpy(c->atom_CjiL[nact] + kr * c->Nspace, atom->C[ji],
-                 c->Nspace * sizeof(double));
         }
 
         c->atom_RijC[nact] = (double *) malloc(Csize);
         c->atom_RjiC[nact] = (double *) malloc(Csize);
-        c->atom_CijC[nact] = (double *) malloc(Csize);
-        c->atom_CjiC[nact] = (double *) malloc(Csize);
 
         for (kr = 0; kr < atom->Ncont; kr++) {
           continuum = &atom->continuum[kr];
@@ -176,18 +163,28 @@ void poolbuf_store_aux_atmos(PoolOutputBuf *buf) {
                  c->Nspace * sizeof(double));
           memcpy(c->atom_RjiC[nact] + kr * c->Nspace, continuum->Rji,
                  c->Nspace * sizeof(double));
-          ij = continuum->j * atom->Nlevel + continuum->i;
-          memcpy(c->atom_CijC[nact] + kr * c->Nspace, atom->C[ij],
-                 c->Nspace * sizeof(double));
-          ji = continuum->i * atom->Nlevel + continuum->j;
-          memcpy(c->atom_CjiC[nact] + kr * c->Nspace, atom->C[ji],
-                 c->Nspace * sizeof(double));
         }
       } else {
         c->atom_RijL[nact] = c->atom_RjiL[nact] = NULL;
-        c->atom_CijL[nact] = c->atom_CjiL[nact] = NULL;
         c->atom_RijC[nact] = c->atom_RjiC[nact] = NULL;
-        c->atom_CijC[nact] = c->atom_CjiC[nact] = NULL;
+      }
+
+      if (input.p15d_wcrates) {
+        /* Capture full collision-rate matrix, layout matches writeAux_p
+           for direct hyperslab write: [i*Nlevel+j][k] = C[j*Nlevel+i][k]. */
+        long Ksize = (long)atom->Nlevel * atom->Nlevel * c->Nspace;
+        c->atom_Cij[nact] = (double *) calloc(Ksize, sizeof(double));
+        for (i = 0; i < atom->Nlevel; i++) {
+          for (j = 0; j < atom->Nlevel; j++) {
+            if (i == j) continue;
+            for (k = 0; k < c->Nspace; k++) {
+              idx = (i * atom->Nlevel + j) * c->Nspace + k;
+              c->atom_Cij[nact][idx] = atom->C[j * atom->Nlevel + i][k];
+            }
+          }
+        }
+      } else {
+        c->atom_Cij[nact] = NULL;
       }
     }
   }
@@ -383,23 +380,17 @@ void poolbuf_free(PoolOutputBuf *buf) {
         free(c->atom_nstar[nact]);
         free(c->atom_RijL[nact]);
         free(c->atom_RjiL[nact]);
-        free(c->atom_CijL[nact]);
-        free(c->atom_CjiL[nact]);
         free(c->atom_RijC[nact]);
         free(c->atom_RjiC[nact]);
-        free(c->atom_CijC[nact]);
-        free(c->atom_CjiC[nact]);
+        free(c->atom_Cij[nact]);
       }
       free(c->atom_n);
       free(c->atom_nstar);
       free(c->atom_RijL);
       free(c->atom_RjiL);
-      free(c->atom_CijL);
-      free(c->atom_CjiL);
       free(c->atom_RijC);
       free(c->atom_RjiC);
-      free(c->atom_CijC);
-      free(c->atom_CjiC);
+      free(c->atom_Cij);
     }
 
     if (c->mol_nv != NULL) {
@@ -448,23 +439,17 @@ void poolbuf_reset(PoolOutputBuf *buf) {
         free(c->atom_nstar[nact]);
         free(c->atom_RijL[nact]);
         free(c->atom_RjiL[nact]);
-        free(c->atom_CijL[nact]);
-        free(c->atom_CjiL[nact]);
         free(c->atom_RijC[nact]);
         free(c->atom_RjiC[nact]);
-        free(c->atom_CijC[nact]);
-        free(c->atom_CjiC[nact]);
+        free(c->atom_Cij[nact]);
       }
       free(c->atom_n);
       free(c->atom_nstar);
       free(c->atom_RijL);
       free(c->atom_RjiL);
-      free(c->atom_CijL);
-      free(c->atom_CjiL);
       free(c->atom_RijC);
       free(c->atom_RjiC);
-      free(c->atom_CijC);
-      free(c->atom_CjiC);
+      free(c->atom_Cij);
     }
 
     if (c->mol_nv != NULL) {
@@ -998,43 +983,84 @@ void writeCollective_pool(PoolOutputBuf *buf, bool_t flush) {
            each rate dataset in a single collective H5Dwrite call. */
         double **col_ptrs = (double **) malloc(nconv * sizeof(double *));
 
-        /* Line rates: 4 datasets × 1 H5Dwrite each (all kr combined) */
-        hid_t line_dsets[4] = {io.aux_atom_RijL[nact],
-                               io.aux_atom_RjiL[nact],
-                               io.aux_atom_CijL[nact],
-                               io.aux_atom_CjiL[nact]};
-        for (int r = 0; r < 4; r++) {
+        /* Line rates: 2 datasets × 1 H5Dwrite each (all kr combined) */
+        hid_t line_dsets[2] = {io.aux_atom_RijL[nact],
+                               io.aux_atom_RjiL[nact]};
+        for (int r = 0; r < 2; r++) {
           for (c = 0; c < nconv; c++) {
-            switch (r) {
-              case 0: col_ptrs[c] = conv_cols[c].atom_RijL[nact]; break;
-              case 1: col_ptrs[c] = conv_cols[c].atom_RjiL[nact]; break;
-              case 2: col_ptrs[c] = conv_cols[c].atom_CijL[nact]; break;
-              case 3: col_ptrs[c] = conv_cols[c].atom_CjiL[nact]; break;
-            }
+            col_ptrs[c] = (r == 0) ? conv_cols[c].atom_RijL[nact]
+                                   : conv_cols[c].atom_RjiL[nact];
           }
           write_rates_all_kr(line_dsets[r], plist_id,
               conv_cols, nconv, atom->Nline, col_ptrs, 0);
         }
 
-        /* Continuum rates: 4 datasets × 1 H5Dwrite each */
-        hid_t cont_dsets[4] = {io.aux_atom_RijC[nact],
-                               io.aux_atom_RjiC[nact],
-                               io.aux_atom_CijC[nact],
-                               io.aux_atom_CjiC[nact]};
-        for (int r = 0; r < 4; r++) {
+        /* Continuum rates: 2 datasets × 1 H5Dwrite each */
+        hid_t cont_dsets[2] = {io.aux_atom_RijC[nact],
+                               io.aux_atom_RjiC[nact]};
+        for (int r = 0; r < 2; r++) {
           for (c = 0; c < nconv; c++) {
-            switch (r) {
-              case 0: col_ptrs[c] = conv_cols[c].atom_RijC[nact]; break;
-              case 1: col_ptrs[c] = conv_cols[c].atom_RjiC[nact]; break;
-              case 2: col_ptrs[c] = conv_cols[c].atom_CijC[nact]; break;
-              case 3: col_ptrs[c] = conv_cols[c].atom_CjiC[nact]; break;
-            }
+            col_ptrs[c] = (r == 0) ? conv_cols[c].atom_RijC[nact]
+                                   : conv_cols[c].atom_RjiC[nact];
           }
           write_rates_all_kr(cont_dsets[r], plist_id,
               conv_cols, nconv, atom->Ncont, col_ptrs, 0);
         }
 
         free(col_ptrs);
+      }
+
+      /* --- Collision rates [Nlevel, Nlevel, nx, ny, nz] --- */
+      if (input.p15d_wcrates) {
+        hid_t dset_id = io.aux_atom_Cij[nact];
+        hid_t file_dspace, mem_dspace;
+        int first = 1;
+        hsize_t Nl = (hsize_t) atom->Nlevel;
+        hsize_t mem_total = 0;
+        for (c = 0; c < nconv; c++)
+          mem_total += Nl * Nl * (hsize_t)conv_cols[c].Nspace;
+
+        if (( file_dspace = H5Dget_space(dset_id) ) < 0) HERR(routineName);
+
+        if (nconv > 0 && mem_total > 0) {
+          double *membuf = (double *) malloc(mem_total * sizeof(double));
+          long pos = 0;
+          for (c = 0; c < nconv; c++) {
+            long sz = (long) Nl * Nl * conv_cols[c].Nspace;
+            memcpy(membuf + pos, conv_cols[c].atom_Cij[nact],
+                   sz * sizeof(double));
+            pos += sz;
+          }
+
+          for (c = 0; c < nconv; c++) {
+            hsize_t offset[5] = {0, 0, conv_cols[c].ix, conv_cols[c].iy,
+                                 conv_cols[c].zcut};
+            hsize_t count[5]  = {Nl, Nl, 1, 1,
+                                 (hsize_t) conv_cols[c].Nspace};
+            if (( H5Sselect_hyperslab(file_dspace,
+                    first ? H5S_SELECT_SET : H5S_SELECT_OR,
+                    offset, NULL, count, NULL) ) < 0) HERR(routineName);
+            first = 0;
+          }
+
+          if (( mem_dspace = H5Screate_simple(1, &mem_total, NULL) ) < 0)
+            HERR(routineName);
+          if (( H5Dwrite(dset_id, H5T_NATIVE_DOUBLE, mem_dspace,
+                          file_dspace, plist_id, membuf) ) < 0)
+            HERR(routineName);
+          if (( H5Sclose(mem_dspace) ) < 0) HERR(routineName);
+          free(membuf);
+        } else {
+          if (( H5Sselect_none(file_dspace) ) < 0) HERR(routineName);
+          hsize_t zero = 0;
+          if (( mem_dspace = H5Screate_simple(1, &zero, NULL) ) < 0)
+            HERR(routineName);
+          if (( H5Dwrite(dset_id, H5T_NATIVE_DOUBLE, mem_dspace,
+                          file_dspace, plist_id, NULL) ) < 0)
+            HERR(routineName);
+          if (( H5Sclose(mem_dspace) ) < 0) HERR(routineName);
+        }
+        if (( H5Sclose(file_dspace) ) < 0) HERR(routineName);
       }
     }
 

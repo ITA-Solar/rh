@@ -1,0 +1,84 @@
+site_name: RH 1.5D Documentation
+site_url: https://ita-solar.github.io/rh/
+
+nav:
+  - Getting started:
+    - introduction.md
+    - installation.md
+    - input.md
+    - running.md
+  - Dealing with output:
+    - output.md
+    - cmd.md
+    - output_python.md
+    - output_idl.md
+    - helita.md
+  - Bugs and limitations: bugs.md
+
+
+theme:
+  name: material
+  font: false
+  features:
+    - navigation.instant
+    - navigation.sections
+    - navigation.indexes 
+    - navigation.expand
+  palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+
+repo_name: ita-solar/rh
+repo_url: https://github.com/ita-solar/rh
+
+# Extensions
+markdown_extensions:
+  - toc:
+      permalink: true
+  - admonition
+  - codehilite
+  - pymdownx.arithmatex
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - attr_list
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.magiclink
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - footnotes
+
+# For mathjax
+extra_javascript:
+  - 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'

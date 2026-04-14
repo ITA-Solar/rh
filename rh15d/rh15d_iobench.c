@@ -110,12 +110,9 @@ static void iobench_fill_fake(PoolOutputBuf *buf, long task_id) {
     c->atom_nstar = (double **) calloc(atmos.Nactiveatom, sizeof(double *));
     c->atom_RijL  = (double **) calloc(atmos.Nactiveatom, sizeof(double *));
     c->atom_RjiL  = (double **) calloc(atmos.Nactiveatom, sizeof(double *));
-    c->atom_CijL  = (double **) calloc(atmos.Nactiveatom, sizeof(double *));
-    c->atom_CjiL  = (double **) calloc(atmos.Nactiveatom, sizeof(double *));
     c->atom_RijC  = (double **) calloc(atmos.Nactiveatom, sizeof(double *));
     c->atom_RjiC  = (double **) calloc(atmos.Nactiveatom, sizeof(double *));
-    c->atom_CijC  = (double **) calloc(atmos.Nactiveatom, sizeof(double *));
-    c->atom_CjiC  = (double **) calloc(atmos.Nactiveatom, sizeof(double *));
+    c->atom_Cij   = (double **) calloc(atmos.Nactiveatom, sizeof(double *));
 
     for (nact = 0; nact < atmos.Nactiveatom; nact++) {
       atom = atmos.activeatoms[nact];
@@ -130,12 +127,12 @@ static void iobench_fill_fake(PoolOutputBuf *buf, long task_id) {
         long Csize = (long)atom->Ncont * c->Nspace;
         c->atom_RijL[nact] = (double *) calloc(Lsize, sizeof(double));
         c->atom_RjiL[nact] = (double *) calloc(Lsize, sizeof(double));
-        c->atom_CijL[nact] = (double *) calloc(Lsize, sizeof(double));
-        c->atom_CjiL[nact] = (double *) calloc(Lsize, sizeof(double));
         c->atom_RijC[nact] = (double *) calloc(Csize, sizeof(double));
         c->atom_RjiC[nact] = (double *) calloc(Csize, sizeof(double));
-        c->atom_CijC[nact] = (double *) calloc(Csize, sizeof(double));
-        c->atom_CjiC[nact] = (double *) calloc(Csize, sizeof(double));
+      }
+      if (input.p15d_wcrates) {
+        long Ksize = (long)atom->Nlevel * atom->Nlevel * c->Nspace;
+        c->atom_Cij[nact] = (double *) calloc(Ksize, sizeof(double));
       }
     }
   }
