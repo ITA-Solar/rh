@@ -352,7 +352,7 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   old_moving = atmos->moving;
   atmos->moving = FALSE;
   for (i = 0;  i < atmos->Nspace;  i++) {
-    if (fabs(geometry->vel[i]) >= atmos->vmacro_tresh) {
+    if (fabs(geometry->vel[i]) > atmos->vmacro_tresh) {
       atmos->moving = TRUE;
       /* old_moving should only be false*/
       if ((old_moving == FALSE) & (atmos->moving == TRUE)) {
