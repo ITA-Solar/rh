@@ -247,8 +247,9 @@ void readInput(char *input_string)
      &input.p15d_flush_interval, setintValue},
 
     /* Node-partitioned pool mode: read atmosphere once per node into a
-       shared-memory window and serve readAtmos from cache.  Default ON. */
-    {"15D_USE_NODE_ATMOS_CACHE", "TRUE", FALSE, KEYWORD_OPTIONAL,
+       shared-memory window and serve readAtmos from cache.  Default OFF to
+       avoid memory issues on small/laptop runs; enable for large HPC jobs. */
+    {"15D_USE_NODE_ATMOS_CACHE", "FALSE", FALSE, KEYWORD_OPTIONAL,
      &input.use_node_atmos_cache, setboolValue},
     /* Cyclic row decomposition across nodes (planned, not implemented). */
     {"15D_ATMOS_CACHE_CYCLIC",   "FALSE", FALSE, KEYWORD_OPTIONAL,

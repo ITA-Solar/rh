@@ -13,7 +13,7 @@ All keywords below go into `keyword.input`. All env vars are read once in
 | Keyword | Default | Effect when `TRUE` | Effect when `FALSE` | Source |
 |---|---|---|---|---|
 | `15D_POOL_COLLECTIVE_WRITE` | `TRUE` | Phase-2 pool flush uses `H5FD_MPIO_COLLECTIVE` | Uses `H5FD_MPIO_INDEPENDENT` (each rank writes its own hyperslabs) | c6f3782 |
-| `15D_USE_NODE_ATMOS_CACHE` | `TRUE` | `readAtmos_hdf5` serves from the node-shared cache window (one file read per node) | Every rank reads its columns from the atmosphere file directly | 3347388 … ede246c |
+| `15D_USE_NODE_ATMOS_CACHE` | `FALSE` | `readAtmos_hdf5` serves from the node-shared cache window (one file read per node) | Every rank reads its columns from the atmosphere file directly | 3347388 … ede246c |
 | `15D_ATMOS_CACHE_CYCLIC` | `FALSE` | Cyclic row decomposition across nodes (planned, not yet honored in v1) | Contiguous row decomposition | — |
 | `15D_MPIIO_LUSTRE_HINTS` | `TRUE` | `create_hdf5_fapl` passes `mpi.info` (romio + stripe + cb_nodes) to `H5Pset_fapl_mpio` **and** enables collective HDF5 metadata ops on output | Passes `MPI_INFO_NULL`, no collective metadata ops (ROMIO defaults) | 42fc036, e1767d1 |
 | `15D_FLUSH_INTERVAL` | `16` | Columns buffered per rank before phase-2 flush | same | 77fd7bd |
