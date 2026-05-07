@@ -97,20 +97,20 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
   /* --- MPI-IO hints optimised for Lustre parallel filesystem ---
      striping_unit and striping_factor inform the MPI-IO driver of the
      Lustre layout so collective buffers can be aligned to stripe
-     boundaries; cb_nodes = n_nodes dedicates one aggregator per node,
+     boundaries; cb_nodes = 2*n_nodes dedicates two aggregators per node,
      which avoids cross-node contention on the OSS/OST paths.
 
      The Lustre-specific values must match the actual `lfs setstripe`
      layout of the output directory.  Defaults below assume
-         lfs setstripe -c 12 -S 1M output/
+         lfs setstripe -c 24 -S 32M output/
      (the value used in the reference production job script).  Each
      default can be overridden per-run via env var, so you do not need
      to rebuild to match a different Lustre layout:
 
-         RH_LUSTRE_STRIPE_COUNT  (default 12)    -> striping_factor
-         RH_LUSTRE_STRIPE_SIZE   (default 1 MB)  -> striping_unit   [bytes]
-         RH_MPIIO_CB_BUFFER_SIZE (default 16 MB) -> cb_buffer_size  [bytes]
-         RH_MPIIO_CB_NODES       (default mpi.n_nodes) -> cb_nodes
+         RH_LUSTRE_STRIPE_COUNT  (default 24)     -> striping_factor
+         RH_LUSTRE_STRIPE_SIZE   (default 32 MB)  -> striping_unit   [bytes]
+         RH_MPIIO_CB_BUFFER_SIZE (default 256 MB) -> cb_buffer_size  [bytes]
+         RH_MPIIO_CB_NODES       (default 2*mpi.n_nodes) -> cb_nodes
 
      The romio_cb_* / romio_ds_* booleans are not env-overridable
      here — flip them via ROMIO_HINTS if you need to experiment.
@@ -125,9 +125,9 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
   {
     const char *s;
     char buf[32];
-    const char *stripe_count  = (s = getenv("RH_LUSTRE_STRIPE_COUNT"))  ? s : "12";
-    const char *stripe_size   = (s = getenv("RH_LUSTRE_STRIPE_SIZE"))   ? s : "1048576";
-    const char *cb_buf_size   = (s = getenv("RH_MPIIO_CB_BUFFER_SIZE")) ? s : "16777216";
+    const char *stripe_count  = (s = getenv("RH_LUSTRE_STRIPE_COUNT"))  ? s : "24";
+    const char *stripe_size   = (s = getenv("RH_LUSTRE_STRIPE_SIZE"))   ? s : "33554432";
+    const char *cb_buf_size   = (s = getenv("RH_MPIIO_CB_BUFFER_SIZE")) ? s : "268435456";
     const char *cb_nodes_env  = getenv("RH_MPIIO_CB_NODES");
 
     MPI_Info_create(&mpi.info);
@@ -141,10 +141,10 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
     if (cb_nodes_env != NULL) {
       MPI_Info_set(mpi.info, "cb_nodes", (char *) cb_nodes_env);
     } else {
-      snprintf(buf, sizeof(buf), "%d", mpi.n_nodes);
-      MPI_Info_set(mpi.info, "cb_nodes", buf);             /* 1 aggregator / node */
+      snprintf(buf, sizeof(buf), "%d", 2 * mpi.n_nodes);
+      MPI_Info_set(mpi.info, "cb_nodes", buf);             /* 2 aggregators / node */
     }
-    MPI_Info_set(mpi.info, "cb_config_list", "*:1");        /* 1 aggr per host    */
+    MPI_Info_set(mpi.info, "cb_config_list", "*:2");        /* 2 aggr per host    */
 
     if (mpi.rank == 0) {
       /* Log files are not open yet — write straight to stderr so the
@@ -204,9 +204,9 @@ hid_t create_hdf5_fapl(void) {
 
   if (( plist = H5Pcreate(H5P_FILE_ACCESS) ) < 0) HERR(routineName);
   if (( H5Pset_fapl_mpio(plist, mpi.comm, info_arg) ) < 0) HERR(routineName);
-  /* Align HDF5 objects to 1 MB boundaries to match typical Lustre stripe size,
+  /* Align HDF5 objects to 32 MB boundaries to match Lustre stripe size,
      threshold 0 means all allocations are aligned */
-  if (( H5Pset_alignment(plist, 0, 1048576) ) < 0) HERR(routineName);
+  if (( H5Pset_alignment(plist, 0, 33554432) ) < 0) HERR(routineName);
   /* Aggregate metadata allocations into 8 MB blocks to reduce Lustre
      metadata operations */
   if (( H5Pset_meta_block_size(plist, 8388608) ) < 0) HERR(routineName);
@@ -236,7 +236,7 @@ hid_t create_hdf5_fapl_indep(void) {
 
   if (( plist = H5Pcreate(H5P_FILE_ACCESS) ) < 0) HERR(routineName);
   if (( H5Pset_fapl_mpio(plist, mpi.comm, info_arg) ) < 0) HERR(routineName);
-  if (( H5Pset_alignment(plist, 0, 1048576) ) < 0) HERR(routineName);
+  if (( H5Pset_alignment(plist, 0, 33554432) ) < 0) HERR(routineName);
   if (( H5Pset_meta_block_size(plist, 8388608) ) < 0) HERR(routineName);
   /* No collective metadata — ranks read independently */
   /* Disable HDF5 file locking (see comment in create_hdf5_fapl) */
