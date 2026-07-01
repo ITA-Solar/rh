@@ -3,13 +3,9 @@
 /* Reads atomic data compilation from TopBase
  *
  * Han Uitenbroek
- * Last modified: Thu Feb  3 11:32:34 2000 --
+ * Last modified: Fri Apr 29 03:50:24 2011 --
  */
 
-/* Tiago, malloc.h not needed for Mac OS X */
-#if !defined(__APPLE__)
-#include <malloc.h>
-#endif
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,14 +38,14 @@ char messageStr[MAX_LINE_SIZE];
 
 /* ------- begin -------------------------- readTopBase.c ----------- */
 
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   register int i, j, la;
   
   char    input[MAX_LINE_SIZE], parity[2], config1[10], config2[10],
           state[4], orbital[2], spectrumID[5];
   bool_t  exit_on_EOF, readphoto = FALSE, hunt, lines = FALSE;
-  int     Nlevel, Nl, nread, itb, *islp, *ilv, ln, ll, multiplicity,
+  int     Nlevel, Nl, Nread, itb, *islp, *ilv, ln, ll, multiplicity,
           islp_p, ilv_p, i_p, nz, ne, nprint, Nlamb,
           stage, i_l, islp_l, ilv_l, jslp_l, jlv_l, Nrad, ntoken;
   double  gi, *te, e, rl, abundance, weight, Eion, *alpha,
@@ -95,18 +91,18 @@ void main(int argc, char *argv[])
      atomic weigtht, and Energy of the continuum -- ----------------- */
   
   fprintf(stderr, "Give atom ID (char[2]) > "); 
-  scanf("%2s", atom.ID);
+  Nread = scanf("%2s", atom.ID);
   strupcase(atom.ID);
   fprintf(stderr, "Give ionization stage (int) > ");
-  scanf("%d", &stage);
+  Nread = scanf("%d", &stage);
   fprintf(stderr, "Give abundance relative to Hydrogen > ");
-  scanf("%lf", &abundance);
+  Nread = scanf("%lf", &abundance);
   fprintf(stderr, "Give atomic weight [amu] > ");
-  scanf("%lf", &weight);
+  Nread = scanf("%lf", &weight);
   fprintf(stderr, "Give energy of the continuum [E_RYDBERG] > ");
-  scanf("%lf", &Econt);
+  Nread = scanf("%lf", &Econt);
   fprintf(stderr, "Give energy of the lowest level [E_RYDBERG] > ");
-  scanf("%lf", &E0);
+  Nread = scanf("%lf", &E0);
   
   /* --- Count the actual number of levels in the energy table -- --- */
   
@@ -116,7 +112,6 @@ void main(int argc, char *argv[])
   islp = (int *) malloc(atom.Nlevel * sizeof(int));
   ilv  = (int *) malloc(atom.Nlevel * sizeof(int));
   rewind(fp_energy);
-  
 
   atom.Nline = atom.Ncont = atom.Nfixed = atom.Nprd = 0;
   atom.weight = weight;
@@ -223,7 +218,7 @@ void main(int argc, char *argv[])
     C = 2 * PI * (Q_ELECTRON/EPSILON_0) * (Q_ELECTRON/M_ELECTRON) / CLIGHT;
 
     while (getLine(fp_lines, "=", input, exit_on_EOF=FALSE) != EOF) {
-      nread = sscanf(input, "%d %d %d %d %d %lf %lf",
+      Nread = sscanf(input, "%d %d %d %d %d %lf %lf",
 		     &i_l, &islp_l, &ilv_l, &jslp_l, &jlv_l, &gf, &fdum);
 
       for (i = 0;  i < atom.Nlevel;  i++) {
@@ -270,12 +265,12 @@ void main(int argc, char *argv[])
   if (readphoto) {
     while (getLine(fp_photo, "=", input, exit_on_EOF=FALSE) != EOF) {
 
-      nread = sscanf(input, "%d %d %d %d %d %lf %d",
+      Nread = sscanf(input, "%d %d %d %d %d %lf %d",
 		     &i_p, &nz, &ne, &islp_p, &ilv_p, &Eion, &Nlamb);
       E     = (double *) malloc(Nlamb * sizeof(double));
       alpha = (double *) malloc(Nlamb * sizeof(double));
       for (la = 0;  la < Nlamb;  la++)
-	nread = fscanf(fp_photo, "%lf %lf", E+la, alpha+la);
+	Nread = fscanf(fp_photo, "%lf %lf", E+la, alpha+la);
 
       for (i = 0;  i < atom.Nlevel;  i++) {
 	if ((islp[i] == islp_p)  &&  (ilv[i] == ilv_p)) {

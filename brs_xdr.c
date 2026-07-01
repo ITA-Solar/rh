@@ -129,7 +129,7 @@ bool_t xdr_BRS(XDR *xdrs)
 			 sizeof(bool_t), (xdrproc_t) xdr_bool);
   } else {
     atmos.backgrflags = (flags *) malloc(spectrum.Nspect * sizeof(flags));
-    atmos.backgrrecno = (long *) malloc(Nrecno * sizeof(long));
+    atmos.backgrrecno = (int *) malloc(Nrecno * sizeof(int));
 
     result &= xdr_counted_string(xdrs, &atmosID);
     if (!strstr(atmosID, atmos.ID)) {
@@ -162,7 +162,7 @@ bool_t xdr_BRS(XDR *xdrs)
   }
 
   result &= xdr_vector(xdrs, (char *) atmos.backgrrecno, Nrecno,
-		       sizeof(long), (xdrproc_t) xdr_long);
+		       sizeof(int), (xdrproc_t) xdr_int);
 
   free(hasline);
   free(ispolarized);

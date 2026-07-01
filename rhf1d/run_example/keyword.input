@@ -7,18 +7,13 @@
 # First specify input files for atmosphere and abundances
 # (both KEYWORD_REQUIRED).
 
+
   ATMOS_FILE = ../../Atmos/FALC_82.atmos
-  ABUND_FILE = ../../Atoms_example/abundance.input
+  ABUND_FILE = ../../Atoms/abundance.input
 
 # Set choice of number of rays (KEYWORD_OPTIONAL).
 
-  NRAYS = 3
-
-# Set choice of angular grid (KEYWORD_OPTIONAL).
-# Options: SET_VERTICAL, SET_A2, SET_A4, SET_A6, SET_A8, SET_B4, SET_B6,
-# SET_B8 (see anglequadr.c)
-
-#-#  ANGLE_SET = SET_A4
+  NRAYS = 5
 
 # Input file for all atoms (KEYWORD_REQUIRED).
 
@@ -27,36 +22,15 @@
 # Input file for all molecules (KEYWORD_REQUIRED).
 
   MOLECULES_FILE = molecules.input
-##  NON_ICE = FALSE
 
 ##  Table of additional wavelengths  KEYWORD_OPTIONAL
 
-##  WAVETABLE = ../../Atoms_example/wave_files/cont.wave
-
-# N_PESC_ITER sets the number of escape probility iterations
-# It only works if ESCAPE_PROBABILITY is chosen as initial solution method
-# for any of the active atoms.
-  N_PESC_ITER = 4
-
-# COLLRAD_SWITCH defines if collisional-radiative switching is on
-# If < 0, switching parameter is constant (and equal to COLLRAD_SWITCH_INI)
-# If = 0, no collisional-radiative switching
-# If > 0, collisional-radiative switching decreases by COLLRAD_SWITCH per log decade,
-#         starting with the COLLRAD_SWITCH_INI value.
-# worked: (25, 50), (x,y,snap) = (300,150,0) [20 SLICE]
-# lead to non-conv instead of crash: (15, 5555500), (x,y,snap) = (400,150,4)
-
-  COLLRAD_SWITCH = 0.
-  COLLRAD_SWITCH_INI = 300.
-
-# PRD Switching. At the moment this number (if > 0), is used so that
-# it converges to full PRD in 1/sqrt(PRD_SWITCH) iterations.
-  PRD_SWITCH = 0.0
+##  WAVETABLE = ../../Atoms/wave_files/CO.wave
 
 # Maximum number of iterations to initialize scattering radiation
 # field in the background (KEYWORD_OPTIONAL).
 
-  N_MAX_SCATTER = 3
+  N_MAX_SCATTER = 5
 
 # Row of statistical equilibrium equation that is to be eliminated
 # to enforce particle conservation (KEYWORD_REQUIRED). If set to -1
@@ -68,21 +42,15 @@
 # Set number of maximum iterations and convergence limit
 # (both KEYWORD_REQUIRED).
 
-  N_MAX_ITER = 50 
-  ITER_LIMIT = 1.0E-2
+  N_MAX_ITER = 150
+  ITER_LIMIT = 1.0E-4
 
 # Parameters for Ng convergence acceleration (all are KEYWORD_OPTIONAL)
 # (default for NG_ORDER = 0 --> no acceleration)
 
   NG_DELAY  = 20
   NG_ORDER  = 2
-  NG_PERIOD = 9
-
-# Regulate the approximation for the formal solution in the rhf1d and
-# rh15d versions of the code (KEYWORD_DEFAULT). Set to either LINEAR or
-# CUBIC_HERMITE. Default value is LINEAR
-
-# SINTERPOLATION = CUBIC_HERMITE
+  NG_PERIOD = 20
 
 # PRD specific parameters. PRD_N_MAX_ITER is the maximum number of
 # PRD iterations per main iteration. PRD_ITER_LIMIT is the convergence
@@ -91,7 +59,7 @@
 # PRD convergence limit. Both are KEYWORD_OPTIONAL. If PRD_N_MAX_ITER
 # all lines will be treated in CRD.
 
-  PRD_N_MAX_ITER = 3
+  PRD_N_MAX_ITER = 0
   PRD_ITER_LIMIT = 1.0E-2
 
 # PRD_NG_?? are the Ng accelleration parameters for PRD iterations
@@ -101,12 +69,16 @@
 #  PRD_NG_ORDER   = 2
 #  PRD_NG_PERIOD  = 3
 
-# The option PRD_ANGLE_DEP can take the values of :
-# - PRD_ANGLE_INDEP (angle-independent PRD, default)
-# - PRD_ANGLE_APPROX (Jorrit's hybrid scheme)
-# - PRD_ANGLE_DEP (full angle-dependent PRD)
-  PRD_ANGLE_DEP = PRD_ANGLE_APPROX
+# If PRD_ANGLE_DEP is set to FALSE angle-averaged PRD is used. Other
+# options are:
+#- PRD_ANGLE_AVER  (same, angle-averaged PRD)
+#- PRD_ANGLE_DEP (angle-dependent PRD; costly)
+#- PRD_ANGLE_APPROX (angle-dependent approximation; fast)
+# (KEYWORD_DEFAULT). The default is FALSE.
 
+  PRD_ANGLE_DEP = PRD_ANGLE_APPROX
+# Enables cross redistribution for lines sharing the same upper level.
+# Default is FALSE
   XRD = FALSE
 
 # Temporary files for mean intensities and background opacities
@@ -115,6 +87,7 @@
   J_FILE          = J.dat
   STARTING_J      = NEW_J
   BACKGROUND_FILE = background.dat
+  OLD_BACKGROUND  = FALSE
 
 # Apply multiplicative factor to all background metals. METALLICITY
 # is specified in terms of dex, ie -1.0 means a tenfold decrease in metals
@@ -124,34 +97,34 @@
 
 # Data file with lines in Bob Kurucz's format. Type is KEYWORD_OPTIONAL.
 # When KURUCZ_DATA is set to ``none'' (the default value) no data is read.
-# Solve for electron density if SOLVE_NE is set to true.
+# Solve for electron density if SOLVE_NE is set to ONCE or ITERATION.
 # Type is KEYWORD_DEFAULT. Default value is FALSE.
 # KURUCZ_PF_DATA should point to the file with Kurucz partition function
 # tables (as function of T) for the first 100 peridic table elements.
-# It is needed when either KURUCZ_DATA or SOLVE_NE is set an is of
-# type KEYWORD_OPTIONAL
+# It is needed when either KURUCZ_DATA or SOLVE_NE is set and is of
+# type KEYWORD_DEFAULT
 
-  KURUCZ_PF_DATA = ../../Atoms_example/pf_Kurucz.input
-##  KURUCZ_DATA = kurucz.input
-##  SOLVE_NE = TRUE
+  KURUCZ_PF_DATA = ../../Atoms/pf_Kurucz.input
+#  KURUCZ_DATA = kurucz.input
+#  SOLVE_NE = ONCE
+#  RLK_SCATTER = TRUE
 
 # Set HYDROGEN_LTE = TRUE if hydrogen in the background has to be
 # treated with LTE populations (KEYWORD_DEFAULT). Default is FALSE
 
-##  HYDROGEN_LTE = TRUE
+  HYDROGEN_LTE = TRUE
 ##  HYDROSTATIC = TRUE
-##  NON_ICE = TRUE
 
 # Data file for background opacity fudge to compensate for missing
 # UV line haze. Type is KEYWORD_OPTIONAL. When set to ``none'' (the
 # default value) no data is read.
 
-# OPACITY_FUDGE = ../../Atmos/opacity_fudge.input
+##  OPACITY_FUDGE = ../../Atmos/opacity_fudge.input
 
 # Output files for atomic data, spectrum, populations, and geometry
 # (all KEYWORD_DEFAULT).
 
-# DEFAULT -->   SPECTRUM_OUTPUT = spectrum.out
+ SPECTRUM_OUTPUT = spectrum.out
 
 # OPACITY_OUTPUT, RADRATE_OUTPUT, COLLRATE_OUTPUT, and DAMPING_OUTPUT
 # are all KEYWORD_OPTIONAL
@@ -180,27 +153,29 @@
 # absorption coefficients are calculated seperately for the different mu
 # values (KEYWORD_OPTIONAL).
 
-##  VMACRO_TRESH = 1.0E-1
-
+  VMACRO_TRESH = 0.0
+  S_INTERPOLATION = S_LINEAR
+  S_INTERPOLATION_STOKES = DELO_BEZIER3
+  
 # Reference wavelength in [nm] (KEYWORD_DEFAULT). When not specified
 # or set to 0.0 no additional wavelength point will be added.
 
 # DEFAULT -->  LAMBDA_REF = 500.0
 
 # If VACUUM_TO_AIR (KEYWORD_OPTIONAL) is set to TRUE wavelengths at and above
-# VACUUM_TO_AIR_LIMIT (see spectrum.h) will be converted to air wavelengths
+# VACUUM_TO_AIR_LIMIT (see spectrum.h) will be converted to air wavelength
 # in the output files.
 
   VACUUM_TO_AIR = TRUE
 
 # Input file for the magnetic field (KEYWORD_OPTIONAL). Default is "none".
 
-#  STOKES_INPUT = ../../Atmos_example/MACKKL_M_100_3500G_ver.B
+#  STOKES_INPUT = ./FALC_82_500G_45.B
 
 # Input Stokes mode (KEYWORD_OPTIONAL). 
 # Options are: NO_STOKES, FIELD_FREE, POLARIZATION_FREE, and FULL_STOKES.
 
-#  STOKES_MODE = FIELD_FREE
+  STOKES_MODE = NO_STOKES
 
 # Include magneto-optical effects (KEYWORD_DEFAULT). Default is TRUE.
 
@@ -209,7 +184,7 @@
 # Typical value of magnetic field in Tesla (1 T = 1.0E+4 Gauss)
 # (KEYWORD_DEFAULT).
 
-#  B_STRENGTH_CHAR = 0.35
+  B_STRENGTH_CHAR = 0.01
 
 # Include scattering polarization in the background (KEYWORD_DEFAULT).
 # Default is FALSE.
@@ -223,7 +198,7 @@
 # Set this value to TRUE to get printout on CPU usage (may take some
 # extra CPU usage though!).
 
-  PRINT_CPU = TRUE
+  PRINT_CPU = FALSE
 
 # Enable program to do the formal solution for N_THREADS wavelengths
 # concurrently (KEYWORD_OPTIONAL). Maximum number of threads is limited

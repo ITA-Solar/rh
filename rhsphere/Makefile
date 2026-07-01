@@ -2,20 +2,14 @@
 #
 #      Version:       rh2.0, 1-D spherically symmetric
 #      Author:        Han Uitenbroek (huitenbroek@nso.edu)
-#      Last modified: Wed Apr 22 09:41:23 2009 --
+#      Last modified: Thu May 20 13:08:22 2021 --
 #
 ##     --------------------------                      ----------RH-- ##
 
+
 GEOMETRY = SPHERICAL_SYMMETRIC
 
-include ../Makefile.config
-
-CFLAGS += -I../
-LDFLAGS += -L../
-
-## --- If no FORTRAN compiler is available remove -lrh_f90 in following
-
-    LIBS = -lrh -lrh_f90
+include ../makefiles/rhmakefile
 
 
 ## --- Define groups of object files --                -------------- ##

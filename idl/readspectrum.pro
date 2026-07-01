@@ -127,19 +127,16 @@ FUNCTION readSpectrum, fileName
       ENDIF
     END
     "TWO_D_PLANE": BEGIN
-      I = spectrum.I
-      permute, I, /CLOCKWISE
-      spectrum = replace_tag(spectrum, 'I', reform(I))
-      IF (tag_present(atmos, 'STOKES') OR inputData.backgr_pol) THEN BEGIN
-        Stokes_Q = spectrum.Stokes_Q
-        permute, Stokes_Q, /CLOCKWISE
-        spectrum = replace_tag(spectrum, 'STOKES_Q', reform(Stokes_Q))
-        Stokes_U = spectrum.Stokes_U
-        permute, Stokes_U, /CLOCKWISE
-        spectrum = replace_tag(spectrum, 'STOKES_U', reform(Stokes_U))
-        Stokes_V = spectrum.Stokes_V
-        permute, Stokes_V, /CLOCKWISE
-        spectrum = replace_tag(spectrum, 'STOKES_V', reform(Stokes_V))
+      spectrum = replace_tag(spectrum, $
+                             'I', reform(transpose(spectrum.I, [2, 0, 1])))
+
+     IF (tag_present(atmos, 'STOKES') OR inputData.backgr_pol) THEN BEGIN
+        spectrum = replace_tag(spectrum, 'STOKES_Q', $
+                               reform(transpose(spectrum.Stokes_Q, [2, 0, 1])))
+        spectrum = replace_tag(spectrum, 'STOKES_U', $
+                               reform(transpose(spectrum.Stokes_U, [2, 0, 1])))
+        spectrum = replace_tag(spectrum, 'STOKES_V', $
+                               reform(transpose(spectrum.Stokes_V, [2, 0, 1])))
       ENDIF
     END
     "THREE_D_PLANE": BEGIN

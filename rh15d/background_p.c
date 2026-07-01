@@ -192,9 +192,9 @@ void init_Background(void)
 
   if (atmos.moving || atmos.Stokes) {
     atmos.backgrrecno =
-      (long *) malloc(2*spectrum.Nspect*atmos.Nrays * sizeof(long));
+      (int *) malloc(2*spectrum.Nspect*atmos.Nrays * sizeof(int));
   } else
-    atmos.backgrrecno = (long *) malloc(spectrum.Nspect * sizeof(long));
+    atmos.backgrrecno = (int *) malloc(spectrum.Nspect * sizeof(int));
 
   /* --- Read background files from Kurucz data file -- ------------- */
   atmos.Nrlk = 0;

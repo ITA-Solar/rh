@@ -53,9 +53,8 @@ typedef struct {
   char    ID[ATMOS_ID_WIDTH];
   bool_t  moving, H_LTE, Stokes, hydrostatic;
   int     Ndim, *N, Nspace, Nrays, Nelem, Natom, Nmolecule, Nrlk,
-          Npf, NHydr, fd_background, NPRDactive,
+         *backgrrecno, Npf, NHydr, fd_background, NPRDactive,
           Nactiveatom, Nactivemol;
-  long   *backgrrecno;
   double *T, *ne, *vturb, totalAbund, avgMolWght, wght_per_H, gravity,
           vmicro_char, vmacro_tresh, lambda_ref, *wmu, *Tpf,
          *nHtot, **nH, *nHmin, *B, *gamma_B, *chi_B, B_char,

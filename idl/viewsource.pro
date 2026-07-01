@@ -33,7 +33,7 @@ PRO XViewSource_Event, Event
     'QUIT': widget_control, Event.top, /DESTROY
 
     'PRINT': BEGIN
-      filename = '/tmp/viewSource-' + timeStamp() + '.ps'
+      filename = 'viewSource-' + timeStamp() + '.ps'
       IF ((geometryType EQ "TWO_D_PLANE" OR $
            geometryType EQ "THREE_D_PLANE") AND state.displayType GT 0) THEN $
        font = -1 ELSE font = 0
@@ -47,7 +47,7 @@ PRO XViewSource_Event, Event
 
     'PNG': BEGIN
       widget_control, state.drawWidget, GET_VALUE=WindowNo
-      rhwritepng, WindowNo, '/tmp/viewSource-'
+      rhwritepng, WindowNo, 'viewSource-'
     END
 
     'ORIENT': orient, state, EVENT_HANDLER='XViewSource_Event', $
@@ -309,7 +309,7 @@ PRO drawS, state, TRACK=track
   readJ, state.lambdaNo
   readOpacity, state.lambdaNo, state.ray
 
-  Bp = Planck(atmos.T, spectrum.lambda(state.lambdaNo), /HZ)
+  Bp = Planck(atmos.T, spectrum.lambda[state.lambdaNo], /HZ)
   S  = (eta_as + eta_c + J*scatt) / (chi_as + chi_c)
 
   CASE (state.ratio) OF 
@@ -335,7 +335,7 @@ PRO drawS, state, TRACK=track
     zkm = geometry.z / KM_TO_M
 
     IF (keyword_set(TRACK)) THEN BEGIN
-      wavelength = strtrim(string(spectrum.lambda(state.lambdaNo), $
+      wavelength = strtrim(string(spectrum.lambda[state.lambdaNo], $
                           FORMAT='(F9.3, " [nm]")'), 2)
       CASE (state.ratio) OF
         0: tracktitle = 'source function: S  at lambda = '   + wavelength
@@ -347,10 +347,29 @@ PRO drawS, state, TRACK=track
     ENDIF ELSE BEGIN
 
       zmu = sqrt(1.0 - geometry.xmu[state.ray]^2 + geometry.ymu[state.ray]^2)
-      zeff_c   = tauone(geometry.z, chi_c/zmu)
-      zeff_tot = tauone(geometry.z, (chi_c + chi_as)/zmu)
-      s1_c   = interpolate(sv, findgen(geometry.Nx), zeff_c)
-      s1_tot = interpolate(sv, findgen(geometry.Nx), zeff_tot)
+
+      xtauone_c = fltarr(geometry.Nx)   &  xtauone_tot = xtauone_c
+      ztauone_c = fltarr(geometry.Nx)   &  ztauone_tot = ztauone_c
+
+      s1_c = fltarr(geometry.Nx)        &  s1_tot = s1_c
+
+      FOR l=1, geometry.Nx-1 DO BEGIN
+        vis  = raytrace(geometry, state.ray, l, XRAY=xray, ZRAY=zray)
+        path = (zray - zray[0]) / zmu
+
+        peff_c   = tauone(path, rayinterpolate(chi_c, vis))
+        peff_tot = tauone(path, rayinterpolate(chi_c + chi_as, vis))
+
+        xtauone_c[l]   = interpolate(xray, peff_c)
+        xtauone_tot[l] = interpolate(xray, peff_tot)
+        ztauone_c[l]   = interpolate(zray, peff_c)
+        ztauone_tot[l] = interpolate(zray, peff_tot)
+
+        sray   = rayinterpolate(sv, vis)
+        s1_c[l]   = interpolate(sray, peff_c)
+        s1_tot[l] = interpolate(sray, peff_tot)
+
+      ENDFOR
 
       CASE (state.displayType) OF 
       0: BEGIN
@@ -358,15 +377,14 @@ PRO drawS, state, TRACK=track
         panel, scaleimg_idl(sv, screenSize[0]-155, screenSize[1]-100),$
          XPOS=60, YPOS=50, xkm, zkm, /ORTHOSCOPIC, /ORDER, $
          XTITLE='x [km]', YTITLE='z [km]', ZLOG=state.log, SCALETEXT=title
-        oplot, xkm, interpolate(zkm, zeff_c), THICK=thick, LINE=2, $
-         COLOR=255B
+        oplot, xtauone_c/KM_TO_M, ztauone_c/KM_TO_M, THICK=thick, COLOR=255B, PSYM=2
         as_non_zero = where(chi_as GT 0.0, count)
         IF (count GT 0) THEN $
-         oplot, xkm, interpolate(zkm, zeff_tot), THICK=thick, COLOR=255B
+         oplot, xtauone_tot/KM_TO_M, ztauone_tot/KM_TO_M, THICK=thick, COLOR=220B, PSYM=4
 
         IF (!D.NAME EQ 'PS') THEN rhannotate, xann(0.05), yann(0.925), $
          TEXT=string(FORMAT='(F9.3, " [nm]")', $
-                     spectrum.lambda(state.lambdaNo)), CHARCOLOR=255B
+                     spectrum.lambda[state.lambdaNo]), CHARCOLOR=255B
       END
       1: surface, sv, xkm, zkm, /T3D, COLOR=!P.COLOR, $
          CHARSIZE=1.4, XTITLE='x', YTITLE='z', ZTITLE=title, $
@@ -376,11 +394,11 @@ PRO drawS, state, TRACK=track
       ENDCASE
 
       IF (state.displayType GT 0) THEN BEGIN
-        plots, xkm, interpolate(zkm, zeff_c), s1_c, /T3D, THICK=thick, $
+        plots, xtauone_c/KM_TO_M, ztauone_c/KM_TO_M, s1_c, /T3D, THICK=thick, $
          LINE=2, COLOR=PlanckColor
         as_non_zero = where(chi_as GT 0.0, count)
         IF (count GT 0) THEN $
-         plots, xkm, interpolate(zkm, zeff_tot), s1_tot, $
+         plots, xtauone_c/KM_TO_M, ztauone_c/KM_TO_M, s1_tot, $
          /T3D, THICK=thick, COLOR=PlanckColor
       ENDIF
     ENDELSE
@@ -480,7 +498,7 @@ PRO XViewSource, GROUP_LEADER=group_leader
 ;
 ; 	Written by:    Han Uitenbroek
 ;
-;   --- Last modified: Fri Jun  2 10:23:28 2006 --
+;   --- Last modified: Wed Jun 30 08:37:54 2010 --
 ;-
 
 @atmos.common

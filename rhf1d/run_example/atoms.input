@@ -4,5 +4,5 @@
 # Metals
 #  model file              ACTIVE/PASSIVE  INITIAL_SOLUTION   population file
 
-  ../../Atoms_example/H_6.atom     PASSIVE   ZERO_RADIATION   pops.H.out
-  ../../Atoms_example/CaII.atom     ACTIVE   ZERO_RADIATION   pops.CA.out
+  ../../Atoms/H_6.atom     PASSIVE   ZERO_RADIATION   pops.H.out
+  ../../Atoms/CaII.atom     ACTIVE   ZERO_RADIATION   pops.CA.out

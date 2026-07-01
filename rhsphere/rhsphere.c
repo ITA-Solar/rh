@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 
   /* --- Read input data and initialize --             -------------- */
 
-  readInput(NULL);
+  readInput();
   spectrum.updateJ = TRUE;
 
   getCPU(1, TIME_START, NULL);

@@ -35,7 +35,7 @@ function parselabel, g, label, S, L, J, QUIET=quiet
 
   S = (multiplicity - 1) / 2.0;
   J = (g - 1.0) / 2.0
-
+stop
   IF (J GT L + S) THEN BEGIN
     IF (NOT keyword_set(QUIET)) THEN $
      print, 'PARSELABEL: Label ', label, ' is a composite level'

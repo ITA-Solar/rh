@@ -109,7 +109,7 @@ PRO drawDisk, state
 
   imlambda = reform(linear(cmprss(spectrum.I(state.lambdaNo, *)), mueff), $
                     Nr, Nr)
-  imlambda(zeros) = 0.0
+  imlambda[zeros] = 0.0
   panel, scaleimg_idl(imlambda, ScreenSize[1] - 50, ScreenSize[1] - 50), $
    SCALETEXT='Intensity [J m!U-2!N Hz!U-1!N s!U-1!N sr!U-1!N]'
 

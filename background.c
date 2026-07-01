@@ -317,10 +317,10 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
     free(atmos.backgrrecno);
   }
   if (atmos.moving || atmos.Stokes) {
-    atmos.backgrrecno =
-      (long *) malloc(2*spectrum.Nspect*atmos.Nrays * sizeof(long));
+    atmos.backgrrecno = 
+      (int *) malloc(2*spectrum.Nspect*atmos.Nrays * sizeof(int));
   } else
-    atmos.backgrrecno = (long *) malloc(spectrum.Nspect * sizeof(long));
+    atmos.backgrrecno = (int *) malloc(spectrum.Nspect * sizeof(int));
 
   /* --- Open output file for background opacity, emissivity,
          scattering --                                 -------------- */
@@ -422,7 +422,7 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
 
     if (H2plus_ff(wavelength, chi)) {
       for (k = 0;  k < atmos.Nspace;  k++) {
-	chi_ai[k] += chi[k];
+	chi_ai[k] += chi[k]; 
 	eta_ai[k] += chi[k] * Bnu[k];
       }
     }
@@ -436,7 +436,7 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
     }
     if (H2minus_ff(wavelength, chi)) {
       for (k = 0;  k < atmos.Nspace;  k++) {
-	chi_ai[k] += chi[k];
+	chi_ai[k] += chi[k]; 
 	eta_ai[k] += chi[k] * Bnu[k];
       }
     }
@@ -572,16 +572,16 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
 	  }
 	  /* --- Store angle-dependent results only if at least one
                  line was found at this wavelength --  -------------- */
-
+      
 	  atmos.backgrrecno[index] = backgrrecno;
 	  if ((mu == atmos.Nrays-1 && to_obs) ||
-	      (atmos.backgrflags[nspect].hasline &&
+	      (atmos.backgrflags[nspect].hasline && 
 	       (atmos.moving || atmos.backgrflags[nspect].ispolarized))) {
 	    backgrrecno += writeBackground(nspect, mu, to_obs,
 					   chi_c, eta_c, sca_c, chip_c);
 	  }
 	}
-      }
+      }    
     } else {
       /* --- Angle-independent case. First, add opacity from passive
 	     atomic lines (including hydrogen) --      -------------- */
@@ -637,7 +637,7 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
 
   if (write_analyze_output) {
     /* --- Write background record structure --          ------------ */
-
+    
     writeBRS();
 
     /* --- Write out the metals and molecules --         ------------ */
@@ -650,20 +650,20 @@ void Background(bool_t write_analyze_output, bool_t equilibria_only)
 
   if (atmos.Natom > 1) {
     for (n = 1;  n < atmos.Natom;  n++)
-      if (!atmos.atoms[n].active  &&
+      if (!atmos.atoms[n].active  &&  
           !atmos.hydrostatic  &&
 	  input.solve_ne < ITERATION)
 	freeAtom(&atmos.atoms[n]);
   }
   if (atmos.Nmolecule > 1) {
     for (n = 1;  n < atmos.Nmolecule;  n++)
-      if (!atmos.molecules[n].active  &&
+      if (!atmos.molecules[n].active  &&  
           !atmos.hydrostatic  &&
-	  input.solve_ne < ITERATION)
+	  input.solve_ne < ITERATION) 
 	freeMolecule(&atmos.molecules[n]);
   }
 
-  if (strcmp(input.KuruczData, "none") && input.solve_ne < ITERATION) {
+  if (strcmp(input.KuruczData, "none")) {
     free(atmos.Tpf);  atmos.Tpf = NULL;
     for (n = 0;  n < atmos.Nelem;  n++) {
       free(atmos.elements[n].ionpot);

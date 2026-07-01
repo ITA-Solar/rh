@@ -1,50 +1,16 @@
-# Object files
 *.o
-*.ko
-*.pyc
-*.d
-
-# Libraries
-*.lib
 *.a
-
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
-
-# Executables
-*.exe
-*.out
-*.app
-*.x
-*rh15d_lteray
-*rh15d_ray
-*rh15d_ray_pool
-*backgrcontr
-*solve1d
-*solveray
-*rhsphere
-
-# Packages and other stuff
-*.tgz
-*.tar.gz
-*.tar.bz2
-*.dat
-*.old
-*.orig
-.DS_Store
-.ipynb_checkpoints
-
-
-# Directories
-Atoms
-rh15d/run/
-rh15d/run?/
-rh15d/run_t*/
-rhf1d/run/
-rhsc2d/run/
-rhsc3d/run/
-rhsphere/run/
-
+rhf1d/backgrcontr
+rhf1d/rhf1d
+rhf1d/solve1d
+rhf1d/solveray
+rhsc2d/backgrcontr
+rhsc2d/chartflow
+rhsc2d/formal2d
+rhsc2d/rhsc2d
+rhsc2d/solve2d
+rhsc2d/solveray
+rhsc3d/formal3d
+rhsc3d/rhsc3d
+rhsc3d/solveray
+rhsphere/rhsphere

@@ -2,16 +2,13 @@
 
        Version:       rh1.0, tools
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Thu Feb  3 09:55:09 2000 --
+       Last modified: Thu May 20 13:13:19 2021 --
 
        --------------------------                      ----------RH-- */
 
 /* --- Writes model atom from Atom structure atom. --  -------------- */
 
-/* Tiago, malloc.h not needed for Mac OS X */
-#if !defined(__APPLE__)
-#include <malloc.h>
-#endif
+ 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,7 +27,7 @@
 
 /* --- Global variables --                             -------------- */
 
-char messageStr[MAX_LINE_SIZE];
+extern char messageStr[MAX_LINE_SIZE];
 
 
 /* ------- begin -------------------------- writeModelAtom.c -------- */

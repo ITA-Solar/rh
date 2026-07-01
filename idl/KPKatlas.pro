@@ -31,10 +31,7 @@ PRO KPKatlas, lambdaMin, lambdaMax, SAMPLE=sample, $
   atlasFile = getenv('RH_ATLAS_PATH') + '/KPK/KPK_atlas.dat'
   openr, unit, atlasFile, /GET_LUN
 
-  IF ( (!VERSION.ARCH EQ "alpha") OR (!VERSION.ARCH EQ "mipsel") ) THEN $
-   little_endian = 1 $
-  ELSE $
-   little_endian = 0
+  little_endian = is_big_endian() ? 0 : 1
 
   Nspect = 0L
   readu, unit, Nspect

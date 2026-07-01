@@ -76,8 +76,6 @@ PRO XViewRay_Event, Event
 
   COMMON screen_common, screenSize, scaleFactor
 
-  screenSize  = fix([700, 650])
-
   stash = widget_info(Event.handler, /CHILD)
   widget_control, stash, GET_UVALUE=state
 
@@ -86,7 +84,7 @@ PRO XViewRay_Event, Event
     'QUIT': widget_control, Event.top, /DESTROY
 
     'PRINT': BEGIN
-      filename = '/tmp/viewRay-' + timeStamp() + '.ps'
+      filename = 'viewRay-' + timeStamp() + '.ps'
       PSopen, FILENAME=filename, /COLOR, XSIZE=7.0, YSIZE=6.5
       ScaleFactor = [!D.X_SIZE, !D.Y_SIZE] / float(ScreenSize)
       displayRay, state
@@ -97,7 +95,7 @@ PRO XViewRay_Event, Event
 
     'PNG': BEGIN
       widget_control, state.drawWidget, GET_VALUE=WindowNo
-      rhwritepng, WindowNo, '/tmp/viewRay-'
+      rhwritepng, WindowNo, 'viewRay-'
     END
 
     'RAYMENU': BEGIN
@@ -136,6 +134,8 @@ PRO displayRay, state
 
   MM_TO_M = 1.0E6
 
+  COMMON screen_common, screenSize, scaleFactor
+
 @geometry.common
 @spectrum.common
 @opacity.common
@@ -154,15 +154,19 @@ PRO displayRay, state
 
   vis = raytrace(geometry, state.ray, x_index, XRAY=xray, ZRAY=zray)
 
-  panel, scaleimg_idl(state.f, 500, 300), /ORTHOSCOPIC, $
+  IF (!D.NAME EQ 'PS') THEN CHARSIZE=0.6 ELSE CHARSIZE=1.0
+
+  panel, scaleimg_idl(state.f, screenSize[0]-250, 300), /ORTHOSCOPIC, $
    geometry.x/MM_TO_M, geometry.z/MM_TO_M, SCALETEXT=state.ztitle, $
-   XTITLE='x [Mm]', YTITLE='z [Mm]', XPOS=75, YPOS=300, /ORDER, $
-   TITLE=string(FORMAT='("x = ", I3, ", mu = ", I2)', x_index, state.ray)
+   XTITLE='x [Mm]', YTITLE='z [Mm]', XPOS=125, YPOS=300, /ORDER, $
+   TITLE=string(FORMAT='("x = ", I4, ", mu = ", I2)', x_index, state.ray), $
+         CHARSIZE=CHARSIZE
   oplot, xray/MM_TO_M, zray/MM_TO_M, PSYM=4, SYMSIZE=0.5, COLOR=255B
 
   fray = rayinterpolate(state.f, vis)
   plot, zray/MM_TO_M, fray, XTITLE='z [Mm]', YTITLE=state.ztitle, $
-   /DEVICE, POSITION=PSposition([75, 50, 575, 250]), /NOERASE
+   /DEVICE, POSITION=PSposition([125, 50, screenSize[0]-125, 250]), /NOERASE, $
+        CHARSIZE=CHARSIZE
   oplot, zray/MM_TO_M, fray, /PSYM, SYMSIZE=0.5, COLOR=200B
 
   IF (state.qstring EQ "Source function") THEN BEGIN
@@ -200,7 +204,7 @@ FUNCTION rayWidgetSetup, f, rayNo, x_index, ztitle
   COMMON screen_common, screenSize, scaleFactor
 
   scaleFactor = [1.0, 1.0]
-  screenSize  = fix([700, 650])
+  screenSize  = fix([1300, 650])
 
   state = {baseWidget: 0L, drawWidget: 0L, log: 0, $
            slider: 0L, xlabel: 0L, f: f, ray: rayNo, rayText: 0L, $
@@ -257,7 +261,8 @@ FUNCTION rayWidgetSetup, f, rayNo, x_index, ztitle
   drawFrame = widget_base(base, /FRAME, /COLUMN)
   label = widget_label(drawFrame, VALUE="Display values along a ray", $
                        /ALIGN_CENTER)
-  state.drawWidget = widget_draw(drawFrame, XSIZE=700, YSIZE=650)
+  state.drawWidget = widget_draw(drawFrame, $
+                                 XSIZE=screenSize[0], YSIZE=screenSize[1])
 
   slideFrame = widget_base(base, /FRAME, /ROW)
   state.Slider = widget_slider(slideFrame, TITLE='x index:', $
