@@ -3,7 +3,8 @@
 ; -------- begin -------------------------- setAtlas.pro ------------- ;
 
 FUNCTION setAtlas, state, KPNO=kpno, HAWAII=hawaii, KPK=kpk, $
-                   SUMER=sumer, ATMOS=atmos, SOLFLUX=SolFlux
+                   SUMER=sumer, ATMOS=atmos, SOLFLUX=SolFlux, $
+                   KPSPOT=kpspot, BRAULTNECKEL=braultneckel
 
 
   ;; --- Just to be on the safe side with memory requirements -- ----- ;
@@ -17,12 +18,14 @@ FUNCTION setAtlas, state, KPNO=kpno, HAWAII=hawaii, KPK=kpk, $
   widget_control, state.sampleField, $
    SET_VALUE=string(state.sample, FORMAT='(F8.5)')
 
-  IF (keyword_set(KPNO))    THEN state.atlas = "KPNO"
-  IF (keyword_set(HAWAII))  THEN state.atlas = "Hawaii_UV"
-  IF (keyword_set(KPK))     THEN state.atlas = "Harvard_UV"
-  IF (keyword_set(SUMER))   THEN state.atlas = "SUMER"
-  IF (keyword_set(ATMOS))   THEN state.atlas = "ATMOS"
-  IF (keyword_set(SOLFLUX)) THEN state.atlas = "SOLFLUX"
+  IF (keyword_set(KPNO))         THEN state.atlas = "KPNO"
+  IF (keyword_set(HAWAII))       THEN state.atlas = "Hawaii_UV"
+  IF (keyword_set(KPK))          THEN state.atlas = "Harvard_UV"
+  IF (keyword_set(SUMER))        THEN state.atlas = "SUMER"
+  IF (keyword_set(ATMOS))        THEN state.atlas = "ATMOS"
+  IF (keyword_set(SOLFLUX))      THEN state.atlas = "SOLFLUX"
+  IF (keyword_set(KPSPOT))       THEN state.atlas = "KPSPOT"
+  IF (keyword_set(BRAULTNECKEL)) THEN state.atlas = "BRAULTNECKEL"
 
   widget_control, state.atlasText, SET_VALUE=state.atlas
   widget_control, widget_info(state.baseWidget, /CHILD), SET_UVALUE=state
@@ -69,7 +72,8 @@ PRO XViewAtlas_Event, Event
     'SUMER':        displayAtlas, setAtlas(state, /SUMER)
     'ATMOS':        displayAtlas, setAtlas(state, /ATMOS)
     'SOLFLUX':      displayAtlas, setAtlas(state, /SOLFLUX)
-    'LABS&NECKEL':  result = dialog_message('Not yet implemented', /INFO)
+    'BRAULTNECKEL': displayAtlas, setAtlas(state, /BRAULTNECKEL)
+    'KPSPOT':       displayAtlas, setAtlas(state, /KPSPOT)
 
     'PRINT': BEGIN
       filename = '/tmp/viewAtlas-' + timeStamp() + '.ps'
@@ -98,7 +102,7 @@ PRO XViewAtlas_Event, Event
              "times the atlas' maximum resolution", $
              "", $
              "Version 1.0, Dec 22, 1995", $
-             "Han Uitenbroek (HUitenbroek@cfa.harvard.edu)"])
+             "Han Uitenbroek (HUitenbroek@nso.edu)"])
   ELSE:
   ENDCASE
 
@@ -158,6 +162,16 @@ PRO displayAtlas, state
     "SOLFLUX": BEGIN
       SolFluxatlas, state.lambdaMin, state.lambdaMax, Iatlas_c, latlas_c
       ytitle = 'Flux [J m!U-2!N s!U-1!N Hz!U-1!N]'
+      xmargin = [13, 2]
+    END
+    "BRAULTNECKEL": BEGIN
+      braultneckel, state.lambdaMin, state.lambdaMax, Iatlas_c, latlas_c
+      ytitle = 'Intensity [J m!U-2!N s!U-1!N Hz!U-1!N]'
+      xmargin = [13, 2]
+    END
+    "KPSPOT": BEGIN
+      KPspotatlas, state.lambdaMin, state.lambdaMax, Iatlas_c, latlas_c
+      ytitle = 'Relative Intensity'
       xmargin = [13, 2]
     END
   ENDCASE
@@ -233,8 +247,10 @@ FUNCTION atlasWidgetSetup, lambdaMin, lambdaMax, sample, ATLAS=atlas
                                UVALUE='ATMOS' )
   ATLASbutton = widget_button(atlasMenu, VALUE='Solar Flux', $
                                UVALUE='SOLFLUX' )
-  LNbutton = widget_button(atlasMenu, VALUE='Labs & Neckel', $
-                             UVALUE='LABS&NECKEL')
+  LNbutton = widget_button(atlasMenu, VALUE='Brault & Neckel', $
+                             UVALUE='BRAULTNECKEL')
+  KPbutton = widget_button(atlasMenu, VALUE='Kitt Peak spot atlas', $
+                             UVALUE='KPSPOT')
 
 
   toolMenu = widget_button( menuBar, VALUE='Tools', /MENU )
@@ -319,7 +335,7 @@ PRO XViewAtlas, lambdaMin, lambdaMax, SAMPLE=sample, $
 ;
 ; 	Written by:    Han Uitenbroek
 ;
-;   --- Last modified: Tue Jan 23 21:20:44 2001 --
+;   --- Last modified: Tue Jun  7 16:29:24 2011 --
 ;-
 
   IF (NOT keyword_set(GROUP_LEADER)) THEN group_leader=0

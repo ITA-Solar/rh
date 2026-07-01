@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Fri Jul 24 16:39:47 2009 --
+       Last modified: Thu Feb 22 16:59:47 2024 --
 
        --------------------------                      ----------RH-- */
 
@@ -30,7 +30,7 @@
        Solar Physics 164, pp 135-153.
        --                                              -------------- */
 
-
+ 
 #include <stdlib.h>
 #include <math.h>
 
@@ -70,10 +70,9 @@ void Opacity(int nspect, int mu, bool_t to_obs, bool_t initialize)
   double *phi, gijk, twohnu3_c2, twohc, hc_4PI, hc_k, hc, fourPI,
     *n_i, *n_j, Bijxhc_4PI, wlambda, chi_l, *chi_Q, *chi_U, *chi_V,
      eta_l, *eta_Q, *eta_U, *eta_V, *chip_Q, *chip_U, *chip_V,
-    *phi_Q, *phi_U, *phi_V, *psi_Q, *psi_U, *psi_V;
+    *phi_Q, *phi_U, *phi_V, *psi_Q, *psi_U, *psi_V,
+    lag, rho_int, *rho_tmp, sign;
   bool_t  solveStokes;
-
-  double lag, rho_int, *rho_tmp, sign;
 
   Atom *atom;
   Molecule *molecule;
@@ -82,19 +81,20 @@ void Opacity(int nspect, int mu, bool_t to_obs, bool_t initialize)
   MolecularLine *mrt;
   ActiveSet *as;
 
-  rho_tmp = (double *) calloc(spectrum.Nspect, sizeof(double));
-
   /* --- Some useful constants --                          ---------- */
-
+ 
   hc     = HPLANCK * CLIGHT;
   fourPI = 4.0 * PI;
   hc_4PI = hc / fourPI;
   twohc  = 2.0*hc / CUBE(NM_TO_M);
   hc_k   = hc / (KBOLTZMANN * NM_TO_M);
-
+ 
   as = &spectrum.as[nspect];
   nt = nspect % input.Nthreads;
 
+  if (input.PRD_angle_dep == PRD_ANGLE_APPROX)
+     rho_tmp = (double *) calloc(spectrum.Nspect, sizeof(double));
+  
   /* --- If polarized transition is present and we solve for polarized
          radiation we need to fill all four Stokes components -- ---- */
 
@@ -172,7 +172,7 @@ void Opacity(int nspect, int mu, bool_t to_obs, bool_t initialize)
 	      phi_Q = phi + atmos.Nspace;
 	      phi_U = phi + 2*atmos.Nspace;
 	      phi_V = phi + 3*atmos.Nspace;
-
+	      
 	      if (input.magneto_optical) {
 		psi_Q = phi + 4*atmos.Nspace;
 		psi_U = phi + 5*atmos.Nspace;
@@ -213,66 +213,70 @@ void Opacity(int nspect, int mu, bool_t to_obs, bool_t initialize)
 
 	if (line->PRD) {
 	  switch (input.PRD_angle_dep) {
+	  case PRD_ANGLE_AVER:
+	    for (k = 0;  k < atmos.Nspace;  k++)
+	      atom->rhth[nt].gij[n][k] *= line->rho_prd[la][k];
+
+	    break;
+
 	  case PRD_ANGLE_DEP:
 	    lamu = 2*(atmos.Nrays*la + mu) + to_obs;
 	    for (k = 0;  k < atmos.Nspace;  k++)
-	      atom->rhth[nt].gij[n][k] *= line->rho_prd[lamu][k] * input.prdswitch +
-					    (1 - input.prdswitch);
-	    break;
+	      atom->rhth[nt].gij[n][k] *= line->rho_prd[lamu][k];
 
+	    break;
+	    
 	  case PRD_ANGLE_APPROX:
 
 	    if (input.prdh_limit_mem) {
-
 	      sign = (to_obs) ? 1.0 : -1.0;
 
 	      for (k = 0;  k < atmos.Nspace;  k++) {
-		// wavelength in local rest frame frame
-		lag=line->lambda[la]* (1.+spectrum.v_los[mu][k]*sign/CLIGHT);
-		//  prd factor at constant k, with wavelength contiguous in memory
-		for (lamu=0 ; lamu<line->Nlambda ; lamu++)
-		  rho_tmp[lamu]=line->rho_prd[lamu][k] ;
-		// Interpolate to account for Doppler shift
+		
+		/* --- Wavelength in local rest frame frame -- ------ */
+		
+		lag = line->lambda[la] *
+		  (1.0 + spectrum.v_los[mu][k] * sign/CLIGHT);
+		
+		/* --- Prd factor at constant k,
+		       with wavelength contiguous in memory -- ------ */
+		
+		for (lamu=0;  lamu<line->Nlambda;  lamu++)
+		  rho_tmp[lamu] = line->rho_prd[lamu][k];
+		
+		/* --- Interpolate to account for Doppler shift -- -- */
+		
 		Linear(line->Nlambda, line->lambda, &(rho_tmp[0]),
 		       1, &lag, &rho_int, TRUE);
-		atom->rhth[nt].gij[n][k] *= rho_int * input.prdswitch +
-					    (1 - input.prdswitch);
+		atom->rhth[nt].gij[n][k] *= rho_int;
 	      }
 
 	    } else {
 
 	      for (k = 0;  k < atmos.Nspace;  k++) {
-
 		lamu = 2*(atmos.Nrays*la + mu) + to_obs;
 
-		rho_int=  (1.0-line->frac[lamu][k]) * line->rho_prd[ line->id0[lamu][k] ][k]
-		  +            line->frac[lamu][k]  * line->rho_prd[ line->id1[lamu][k] ][k];
+		rho_int =  (1.0 - line->frac[lamu][k]) *
+		  line->rho_prd[line->id0[lamu][k]][k] +
+		  line->frac[lamu][k] *
+		  line->rho_prd[line->id1[lamu][k]][k];
 
-		atom->rhth[nt].gij[n][k] *= rho_int * input.prdswitch +
-					    (1 - input.prdswitch);
-
+		atom->rhth[nt].gij[n][k] *= rho_int;
 	      }
-
 	    }
 
-	    break;
-
-	  case PRD_ANGLE_INDEP:
-	    for (k = 0;  k < atmos.Nspace;  k++) {
-	      atom->rhth[nt].gij[n][k] *= line->rho_prd[la][k] * input.prdswitch +
-					    (1 - input.prdswitch);
-	    }
 	    break;
 	  }
 	}
-
+	
 	/* --- Store wavelength integration weights -- -------------- */
 
 	if (initialize) {
-	  wlambda = getwlambda_line(line, la);
+	  wlambda = getwlambda_line(line, la); 
 	  for (k = 0;  k < atmos.Nspace;  k++)
 	  atom->rhth[nt].wla[n][k] = wlambda * line->wphi[k] / hc_4PI;
 	}
+	
 	break;
 
       case ATOMIC_CONTINUUM:
@@ -300,6 +304,7 @@ void Opacity(int nspect, int mu, bool_t to_obs, bool_t initialize)
 	      fourPI/HPLANCK * (wlambda/continuum->lambda[la]);
 	  }
 	}
+	
 	break;
 
       default:
@@ -308,7 +313,7 @@ void Opacity(int nspect, int mu, bool_t to_obs, bool_t initialize)
 	twohnu3_c2 = 0.0;
       }
       /* --- Always calculate total opacity and emissivity of set - - */
-
+      
       if (twohnu3_c2) {
 	for (k = 0;  k < atmos.Nspace;  k++) {
 	  as->chi[k] += atom->rhth[nt].Vij[n][k] *
@@ -404,7 +409,7 @@ void Opacity(int nspect, int mu, bool_t to_obs, bool_t initialize)
 	twohnu3_c2 = 0.0;
       }
       /* --- Always calculate total opacity and emissivity of set - - */
-
+      
       if (twohnu3_c2) {
 	for (k = 0;  k < atmos.Nspace;  k++) {
 	  as->chi[k] += molecule->rhth[nt].Vij[n][k] *
@@ -428,7 +433,7 @@ void Opacity(int nspect, int mu, bool_t to_obs, bool_t initialize)
         as->eta[k] += atom->rhth[nt].eta[k];
     }
   }
-  for (nact = 0;  nact < atmos.Nactivemol;  nact++) {
+  for (nact = 0;  nact < atmos.Nactivemol;  nact++) { 
     molecule = atmos.activemols[nact];
     if (as->Nactivemolrt[nact] > 0) {
       for (k = 0;  k < atmos.Nspace;  k++)
@@ -436,7 +441,8 @@ void Opacity(int nspect, int mu, bool_t to_obs, bool_t initialize)
     }
   }
 
-  free(rho_tmp);
+  if (input.PRD_angle_dep == PRD_ANGLE_APPROX)
+    free(rho_tmp);
 }
 /* ------- end ---------------------------- Opacity.c --------------- */
 
@@ -503,7 +509,7 @@ void alloc_as(int nspect, bool_t crosscoupling)
       /* --- Allocate pointer space for cross-coupling coefficients - */
 
       if (crosscoupling) {
-	atom->rhth[nt].chi_down =
+	atom->rhth[nt].chi_down = 
 	  (double **) calloc(atom->Nlevel, sizeof(double *));
 	atom->rhth[nt].chi_up   =
 	  (double **) calloc(atom->Nlevel, sizeof(double *));
@@ -532,7 +538,7 @@ void alloc_as(int nspect, bool_t crosscoupling)
       molecule->rhth[nt].eta =
 	(double *) malloc(atmos.Nspace * sizeof(double));
 
-      molecule->rhth[nt].Vij =
+      molecule->rhth[nt].Vij = 
 	matrix_double(as->Nactivemolrt[nact], atmos.Nspace);
       molecule->rhth[nt].gij =
 	matrix_double(as->Nactivemolrt[nact], atmos.Nspace);
@@ -698,7 +704,7 @@ bool_t containsPRDline(ActiveSet *as)
 /* ------- end ---------------------------- containsPRDline.c ------- */
 
 /* ------- begin -------------------------- mrt_locate.c ------------ */
-
+ 
 void mrt_locate(int N, MolecularLine *lines, double lambda, int *low)
 {
   int high, index, increment;
@@ -711,7 +717,7 @@ void mrt_locate(int N, MolecularLine *lines, double lambda, int *low)
     high = N;
   } else {
 
-    /* --- Else hunt up or down to bracket value --    -------------- */
+    /* --- Else hunt up or down to bracket value --    -------------- */ 
 
     increment = 1;
     if (lambda >= lines[*low].lambda0) {
@@ -837,7 +843,7 @@ flags MolecularOpacity(double lambda, int nspect, int mu, bool_t to_obs,
 	    backgrflags.hasline = TRUE;
 	    if (mrt->polarizable) {
 	      backgrflags.ispolarized = TRUE;
-	      if (mrt->zm == NULL) mrt->zm = MolZeeman(mrt);
+	      if (mrt->zm == NULL) MolZeeman(mrt);
 	    }
 
 	    for (k = 0;  k < atmos.Nspace;  k++) {

@@ -79,9 +79,9 @@ void init_hdf5_atmos(Atmosphere *atmos, Geometry *geometry,
   }
 
   /* get some values in atmos/geometry structures */
-  geometry->Ndep = (int)  infile->nz;
-  atmos->Nspace  = (long) infile->nz;
-  atmos->NHydr   = (int)  nn;
+  geometry->Ndep = (int) infile->nz;
+  atmos->Nspace  = (int) infile->nz;
+  atmos->NHydr   = (int) nn;
 
   if (atmos->NHydr < 2  &&  !atmos->H_LTE) {
     sprintf(messageStr, "NHydr has to be at least 2, not %d to run with"
@@ -201,10 +201,10 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 		    Input_Atmos_file *infile) {
   /* Reads the variables T, ne, vel, nh for a given (xi,yi) pair */
   const char routineName[] = "readAtmos_hdf5";
-  hsize_t     start[]    = {0, 0, 0, 0}; /* starting values */
-  hsize_t     count[]    = {1, 1, 1, 1};
-  hsize_t     start_nh[] = {0, 0, 0, 0, 0};
-  hsize_t     count_nh[] = {1, 1, 1, 1, 1};
+  hsize_t    start[]    = {0, 0, 0, 0}; /* starting values */
+  hsize_t    count[]    = {1, 1, 1, 1};
+  hsize_t    start_nh[] = {0, 0, 0, 0, 0};
+  hsize_t    count_nh[] = {1, 1, 1, 1, 1};
   hsize_t    dims_memory[2];
   hid_t      ncid, dataspace_id, memspace_id;
   int        ierror, i, j;
@@ -352,7 +352,7 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
   old_moving = atmos->moving;
   atmos->moving = FALSE;
   for (i = 0;  i < atmos->Nspace;  i++) {
-    if (fabs(geometry->vel[i]) >= atmos->vmacro_tresh) {
+    if (fabs(geometry->vel[i]) > atmos->vmacro_tresh) {
       atmos->moving = TRUE;
       /* old_moving should only be false*/
       if ((old_moving == FALSE) & (atmos->moving == TRUE)) {

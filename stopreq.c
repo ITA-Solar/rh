@@ -1,4 +1,4 @@
-/* ------- file: -------------------------- riigen.c ----------------
+/* ------- file: -------------------------- Stoprequested.c ---------
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)

@@ -13,7 +13,7 @@ FUNCTION setLambdaNo, stash, index
   lambdaDisplay  = index
   state.lambdaNo = index
   widget_control, state.lambdaText, $
-   SET_VALUE=string(FORMAT='(F10.3)', spectrum.lambda(index))
+   SET_VALUE=string(FORMAT='(F10.3)', spectrum.lambda[index])
 
   widget_control, stash, SET_UVALUE=state
   return, state
@@ -272,11 +272,13 @@ PRO readJ, lambda
 
   lambdaDisplay = lambda
   CASE geometryType OF
-    "ONE_D_PLANE":         offset = 8L*lambda * geometry.Ndep
-    "TWO_D_PLANE":         offset = 8L*lambda * (geometry.Nx*geometry.Nz)
-    "THREE_D_PLANE":       offset = 8L*lambda * $
-     (geometry.Nx*geometry.Ny*geometry.Nz)
-    "SPHERICAL_SYMMETRIC": offset = 8L*lambda * geometry.Nradius
+    "ONE_D_PLANE":         offset = 8UL*lambda * geometry.Ndep
+    "TWO_D_PLANE":         offset = 8UL*long64(lambda) * $
+                                    long64(geometry.Nx*geometry.Nz)
+    "THREE_D_PLANE":       offset = 8UL*long64(lambda) * $
+                                    (long64(geometry.Nx)*long64(geometry.Ny)* $
+                                     long64(geometry.Nz))
+    "SPHERICAL_SYMMETRIC": offset = 8UL*lambda * geometry.Nradius
   ENDCASE
 
   point_lun, Junit, offset
@@ -313,7 +315,7 @@ PRO XViewJ, GROUP_LEADER=group_leader
 ;
 ; 	Written by:    Han Uitenbroek
 ;
-;   --- Last modified: Wed Feb 14 16:59:46 2007 --
+;   --- Last modified: Fri Jul  2 03:42:06 2010 --
 ;-
 
 

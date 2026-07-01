@@ -63,11 +63,11 @@
    print, "     Success" $
   ELSE $
    print, "     Failed"
-;  print, "-- Reading flux ...."
-;  IF (readflux('flux.out')) THEN $
-;   print, "     Success" $
-;  ELSE $
-;   print, "     Failed"
+  print, "-- Reading flux ...."
+  IF (readflux('flux.out')) THEN $
+   print, "     Success" $
+  ELSE $
+   print, "     Failed"
 @spectrum.common
 
   print, "-- Reading atomic models ...."

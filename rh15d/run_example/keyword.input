@@ -7,7 +7,7 @@
 # (both KEYWORD_REQUIRED).
 
   ATMOS_FILE = ../../Atmos/FALC_82_5x5.hdf5 
-  ABUND_FILE = ../../Atoms_example/abundance.input
+  ABUND_FILE = ../../Atoms/abundance.input
 
 # Stuff for 1.5D version:
   SNAPSHOT = 0
@@ -45,25 +45,6 @@
 # Value to add to supplied VTURB (in m/s)
   VTURB_ADD = 0.0
 
-# N_PESC_ITER sets the number of escape probility iterations
-# It only works if ESCAPE_PROBABILITY is chosen as initial solution method
-# for any of the active atoms. 
-  N_PESC_ITER = 4
-
-# COLLRAD_SWITCH defines if collisional-radiative switching is on
-# If < 0, switching parameter is constant (and equal to COLLRAD_SWITCH_INI)
-# If = 0, no collisional-radiative switching
-# If > 0, collisional-radiative switching decreases by COLLRAD_SWITCH per log decade,
-#         starting with the COLLRAD_SWITCH_INI value.
-# worked: (25, 50), (x,y,snap) = (300,150,0) [20 SLICE]
-# lead to non-conv instead of crash: (15, 5555500), (x,y,snap) = (400,150,4) 
-  COLLRAD_SWITCH = 0.
-  COLLRAD_SWITCH_INI = 300.
-
-# PRD Switching. At the moment this number (if > 0), is used so that
-# it converges to full PRD in 1/sqrt(PRD_SWITCH) iterations.
-  PRD_SWITCH = 0.0
-
 # Set choice of number of rays (KEYWORD_OPTIONAL).
   NRAYS = 5
 
@@ -76,7 +57,7 @@
 #  NON_ICE = FALSE
 
 # Table of additional wavelengths  KEYWORD_OPTIONAL
-#   WAVETABLE = ../../Atoms_example/wave_files/cont.wave
+#   WAVETABLE = ../../Atoms/wave_files/cont.wave
 
 # Maximum number of iterations to initialize scattering radiation
 # field in the background (KEYWORD_OPTIONAL).
@@ -103,7 +84,7 @@
 # Regulate the approximation for the formal solution in the rhf1d and 
 # rh15d versions of the code (KEYWORD_DEFAULT). Options are LINEAR, BEZIER 
 # or CUBIC_HERMITE. Default value is LINEAR
-  S_INTERPOLATION = LINEAR
+  S_INTERPOLATION = S_LINEAR
 
 # PRD specific parameters. PRD_N_MAX_ITER is the maximum number of
 # PRD iterations per main iteration. PRD_ITER_LIMIT is the convergence
@@ -153,12 +134,12 @@
 # tables (as function of T) for the first 100 peridic table elements.
 # It is needed when either KURUCZ_DATA or SOLVE_NE is set an is of
 # type KEYWORD_OPTIONAL
-  KURUCZ_PF_DATA = ../../Atoms_example/pf_Kurucz.input
+  KURUCZ_PF_DATA = ../../Atoms/pf_Kurucz.input
 
 # BARKLEM_DATA_DIR should point to the directory where the Barklem collisional
 # data files are located (e.g Barklem_spdata.dat). Type is KEYWORD_OPTIONAL,
 # default value is ../../Atoms
-  BARKLEM_DATA_DIR = ../../Atoms_example
+  BARKLEM_DATA_DIR = ../../Atoms
 
 # Wether to solve for electron density or not. Possible values:
 # NONE (default), ONCE, ITERATION
@@ -179,7 +160,7 @@
 # Data file for background opacity fudge to compensate for missing
 # UV line haze. Type is KEYWORD_OPTIONAL. When set to ``none'' (the
 # default value) no data is read.
-#  OPACITY_FUDGE = ../../Atoms_example/opacity_fudge.input
+#  OPACITY_FUDGE = ../../Atoms/opacity_fudge.input
 
 # Typical value of ``micro-turbulence'' in [km/s]. Used in getlambda.c
 # to convert doppler units to real wavelengths.

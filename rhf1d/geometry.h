@@ -2,7 +2,7 @@
 
        Version:       rh2.0, 1-D plane-parallel
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Fri Feb 24 08:21:55 2012 --
+       Last modified: Thu May 31 14:45:26 2018 --
 
        --------------------------                      ----------RH-- */
 
@@ -12,7 +12,7 @@
 /* --- Define geometric quantities for 1-D plane-parallel version --  */
 
 
-enum boundcond  {ZERO, THERMALIZED, IRRADIATED, REFLECTIVE};
+enum boundcond  {IRRADIATED, ZERO, THERMALIZED, REFLECTIVE};
 enum mass_scale {GEOMETRIC, COLUMN_MASS, TAU500};
 enum vertical   {TOP=0, BOTTOM};
 
@@ -37,13 +37,31 @@ void writeGeometry(Geometry *geometry);
 
 double Feautrier(int nspect, int mu, double *chi, double *S,
 		 enum FeautrierOrder order, double *P, double *Psi);
+
 void Piecewise_1D(int nspect, int mu, bool_t to_obs,
 		  double *chi, double *S, double *I, double *Psi);
-void PieceBezier_1D(int nspect, int mu, bool_t to_obs,
-		    double *chi, double *S, double *I, double *Psi);
-void PiecewiseStokes(int nspect, int mu, bool_t to_obs,
-		     double *chi_I, double **S, double **I, double *Psi);
+void Piecewise_Linear_1D(int nspect, int mu, bool_t to_obs,
+			 double *chi, double *S, double *I, double *Psi);
 
+void Piecewise_Bezier_1D(int nspect, int mu, bool_t to_obs,
+			 double *chi, double *S, double *I, double *Psi);
+
+/* --- Prototype for parabolic DELO solver --          -------------- */
+
+void Piece_Stokes_1D(int nspect, int mu, bool_t to_obs,
+		     double *chi_I, double **S, double **I,
+		     double *Psi);
+
+
+/* --- Prototypes for cubic Bezier solvers --          -------------- */
+
+void Piece_Stokes_Bezier3_1D(int nspect, int mu, bool_t to_obs,
+			     double *chi, double **S, double **I,
+			     double *Psi);
+
+void Piecewise_Bezier3_1D(int nspect, int mu, bool_t to_obs,
+			  double *chi, double *S, double *I,
+			  double *Psi);
 
 #endif /* !__GEOMETRY_H__ */
 

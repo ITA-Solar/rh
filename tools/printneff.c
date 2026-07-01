@@ -7,10 +7,6 @@
  * Last modified: Mar 6, 1996
  */
  
-/* Tiago, malloc.h not needed for Mac OS X */
-#if !defined(__APPLE__)
-#include <malloc.h>
-#endif
 #include <math.h>
 #include <stdlib.h>
 
@@ -33,7 +29,7 @@ char   messageStr[MAX_LINE_SIZE];
 
 /* ------- begin -------------------------- printneff.c ------------- */
 
-void main( int argc, char *argv[] )
+int main( int argc, char *argv[] )
 {
   register int i;
 

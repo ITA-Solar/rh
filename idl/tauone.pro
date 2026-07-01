@@ -23,7 +23,7 @@ FUNCTION tauone, z, chi, TAUVALUE=tauvalue
     FOR k=1, Nz-1 DO $
       tau[k] = tau[k-1] + 0.5*(chi[k-1] + chi[k]) * dz[k]
 
-    tabinv, alog(tau[1:*]), alog(tauvalue), zeff
+    tabinv, tau, tauvalue, zeff
     zeff = zeff
   ENDIF ELSE BEGIN
     tau = fltarr(Nx, Nz)
@@ -36,7 +36,7 @@ FUNCTION tauone, z, chi, TAUVALUE=tauvalue
     zeff = fltarr(Nx)
 
     FOR l=0, Nx-1 DO BEGIN
-      tabinv, alog(tau[1:*, l]), alog(tauvalue), z_eff
+      tabinv, tau[*, l], tauvalue, z_eff
       zeff[l] = z_eff
     ENDFOR
   ENDELSE

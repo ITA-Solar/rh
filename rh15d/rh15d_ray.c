@@ -38,6 +38,7 @@ int main(int argc, char *argv[])
 {
   bool_t write_analyze_output, equilibria_only, run_ray, writej;
   int    niter;
+  double deltaJ;
 
   /* --- Set up MPI ----------------------             -------------- */
   initParallel(&argc, &argv, run_ray=FALSE);
@@ -134,7 +135,8 @@ int main(int argc, char *argv[])
     adjustStokesMode();
     niter = 0;
     while (niter < input.NmaxScatter) {
-      if (solveSpectrum(FALSE, FALSE) <= input.iterLimit) break;
+      deltaJ = solveSpectrum(FALSE, FALSE);
+      if (!input.backgr_pol && deltaJ <= input.iterLimit) break;
       niter++;
     }
     copyBufVars(writej=FALSE);

@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Tue Jul  7 14:50:51 2009 --
+       Last modified: Tue Feb 20 09:47:52 2024 --
 
        --------------------------                      ----------RH-- */
 
@@ -14,7 +14,7 @@
        and the transitions that are active at each of the wavelengths.
        --                                              -------------- */
 
-#define N_MAX_OVERLAP  100
+#define N_MAX_OVERLAP  500
 
 #define VACUUM_TO_AIR_LIMIT  200.0000
 #define AIR_TO_VACUUM_LIMIT  199.9352
@@ -74,16 +74,19 @@ void alloc_as(int nspect, bool_t crosscoupling);
 void free_as(int nspect, bool_t crosscoupling);
 void initSpectrum(void);
 void Opacity(int nspect, int mu, bool_t top_to_bottom, bool_t activate);
-void Planck(long Nspace, double *T, double lambda0, double *Bnu);
+void Planck(int Nspace, double *T, double lambda0, double *Bnu);
 
 void readJlambda(int nspect, double *J);
 void writeJlambda(int nspect, double *J);
 void readJ20lambda(int nspect, double *J20);
 void writeJ20lambda(int nspect, double *J20);
+void writeJgas(double **Jgas);
+void readJgas(double **Jgas);
 
 void readImu(int nspect, int mu, bool_t to_obs, double *I);
 void writeImu(int nspect, int mu, bool_t to_obs, double *I);
 void writeSpectrum(Spectrum *spectrum);
+void freeSpectrum(Spectrum *spectrum);
 void writeOpacity();
 
 

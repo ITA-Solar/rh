@@ -17,33 +17,38 @@ PRO braultneckel, lambda_blue, lambda_red, Ilambda, lambda, Icont
   CM_TO_M = 1.0E-02
 
   files  = file_search("$RH_ATLAS_PATH/LabsNeckel/file1[1-9]")
-  Nlines = [156840L, 191426L, 147521L, 131128L, $
-            111895L,  99141L,  96235L,  78737L,  65615L]
+  files  = [files, file_search("$RH_ATLAS_PATH/LabsNeckel/file20")]
+
+  Nlines = [ 156840L, 191426L, 147521L, 131128L, $
+             111895L,  99141L,  96235L,  78737L,  65615L, 29424L ]
 
   lstart = [ 3290.0013,  4000.0041,  5000.0044,  6000.0026, $
-             7000.0037,  8000.0006,  9000.0041, 10000.0080, 11000.0013]
+             7000.0037,  8000.0006,  9000.0041, 10000.0080, 11000.0013, $
+             12000.0063 ] * ANGSTROM_TO_NM
 
   lend   = [ 3999.9995,  4999.9984,  5999.9960,  6999.9948, $
-             7999.9916,  8999.9948,  9999.9964, 10999.9873, 11999.9897]
+             7999.9916,  8999.9948,  9999.9964, 10999.9873, 11999.9897, $
+             12509.9824 ] * ANGSTROM_TO_NM
 
-  lambda_file = [lstart, lend[n_elements(files)-1]] * ANGSTROM_TO_NM
-
-  IF (lambda_red LT lambda_file[0] OR $
+  IF (lambda_red LT lstart[0] OR $
       lambda_blue GT lend[n_elements(files)-1]) THEN BEGIN
-    print, "Wavelengths outside atlas domain: ", lambda_blue, lambda_red
+    print, "Wavelengths outside atlas domain: ", lambda_blue, lambda_red, $
+           ", atlas = [", lstart[0], "' ", lend[n_elements(files)-1], "]"
     return
   ENDIF
 
-  tabinv, lambda_file, [lambda_blue, lambda_red], index
-  Nindex = fix(index[1]) - fix(index[0]) + 1
+  tabinv, lstart, lambda_blue, index  
+  nstart = fix(index)
+  nend = nstart
+  WHILE (lend[nend] LT lambda_red) DO nend++
 
-  FOR n=index[0], index[1] DO BEGIN
+  FOR n=nstart, nend DO BEGIN
     tmp = fltarr(3, Nlines[n])
     openr, lun, /GET_LUN, files[n]
     readf, lun, tmp
     free_lun, lun
 
-    IF (n EQ index[0]) THEN BEGIN
+    IF (n EQ nstart) THEN BEGIN
       lambda  = reform(tmp[0, *])
       Ilambda = reform(tmp[1, *])
       Icont   = reform(tmp[2, *])

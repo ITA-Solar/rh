@@ -181,6 +181,7 @@ void drone(void) {
     bool_t write_analyze_output, equilibria_only;
     int niter, result=1;
     long task=1;
+    double deltaJ;
 
     mpi.isfirst = TRUE;
     /* Main loop over tasks */
@@ -260,8 +261,9 @@ void drone(void) {
         adjustStokesMode();
         niter = 0;
         while (niter < input.NmaxScatter) {
-            if (solveSpectrum(FALSE, FALSE) <= input.iterLimit) break;
-            niter++;
+          deltaJ = solveSpectrum(FALSE, FALSE);
+          if (!input.backgr_pol && deltaJ <= input.iterLimit) break;
+          niter++;
         }
         if (mpi.convergence[mpi.task]) {
             /* Make sure aux written before ray redefined */

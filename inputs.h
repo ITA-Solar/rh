@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Wed Jul 24 12:38:33 2013 --
+       Last modified: Tue Feb 20 09:34:35 2024 --
 
        --------------------------                      ----------RH-- */
 
@@ -15,15 +15,17 @@
 
 
 #define MAX_KEYWORD_LENGTH  32
-#define MAX_VALUE_LENGTH    80
+#define MAX_VALUE_LENGTH    160
 
 #define CHECK_OPTION(option, name, length) \
         (strncmp(option, name, MAX(((int) length), strlen(option))) == 0)
 
 
 enum keywordtype  {KEYWORD_REQUIRED, KEYWORD_DEFAULT, KEYWORD_OPTIONAL};
-enum S_interpol   {S_LINEAR, CUBIC_HERMITE, BEZIER, BEZIER3};
+
+enum S_interpol          {S_LINEAR, S_PARABOLIC, S_BEZIER3};
 enum S_interpol_stokes   {DELO_PARABOLIC, DELO_BEZIER3};
+
 enum order_3D     {LINEAR_3D, BICUBIC_3D};
 enum ne_solution  {NONE, ONCE, ITERATION};
 
@@ -77,33 +79,29 @@ typedef struct {
          Itop[MAX_VALUE_LENGTH];
   bool_t magneto_optical, XRD, Eddington,
          backgr_pol, limit_memory, allow_passive_bb, NonICE,
-         rlkscatter, prdh_limit_mem, backgr_in_mem, xdr_endian,
-         old_background, accelerate_mols;
+         rlkscatter, xdr_endian, old_background, accelerate_mols,
+         RLK_explicit, prdh_limit_mem, backgr_in_mem;
   enum   solution startJ;
+  
   enum   StokesMode StokesMode;
   enum   S_interpol S_interpolation;
   enum   S_interpol_stokes S_interpolation_stokes;
+  enum   PRDangle PRD_angle_dep;
   enum   order_3D interpolate_3D;
   enum   ne_solution solve_ne;
-  enum   PRDangle PRD_angle_dep;
+  
   int    isum, Ngdelay, Ngorder, Ngperiod, NmaxIter,
          PRD_NmaxIter, PRD_Ngdelay, PRD_Ngorder, PRD_Ngperiod,
-         NmaxScatter, Nthreads;
-  /* Tiago, for collisional-radiative switching */
-  double crsw, crsw_ini;
-  /* Tiago, for PRD switching */
-  double prdswitch, prdsw;
+         NmaxScatter, Nthreads, CR_Nstep;
   /* Tiago, for micro turbulence multiplication and addition */
   double vturb_mult, vturb_add;
-  /* Tiago, for escape probability iterations */
-  int    NpescIter;
   /* Tiago, added this for 1.5D version */
   int    p15d_nt, p15d_x0, p15d_x1, p15d_xst, p15d_y0, p15d_y1, p15d_yst;
   int    Natoms;
   double p15d_tmax;
   bool_t p15d_wxtra, p15d_rerun, p15d_refine, p15d_zcut, p15d_wtau;
   bool_t p15d_wpop, p15d_wrates, p15d_wcrates;
-  double iterLimit, PRDiterLimit, metallicity, *wavetable;
+  double iterLimit, PRDiterLimit, metallicity, CR_factor, *wavetable;
   unsigned int Nxwave;
   /* Tiago, for saving the input files */
   char  *atoms_file_contents, *keyword_file_contents, *ray_file_contents;
@@ -138,9 +136,11 @@ void  setnesolution(char *value, void *pointer);
 void  setStokesMode(char *value, void *pointer);
 void  setPRDangle(char *value, void *pointer);
 void  setThreadValue(char *value, void *pointer);
+
 void  setInterpolate_3D(char *value, void *pointer);
-void  set_S_interpolation(char *value, void *pointer);
+void  set_S_Interpolation(char *value, void *pointer);
 void  set_S_interpolation_stokes(char *value, void *pointer);
+
 void  showValues(int Nkeyword, Keyword *theKeywords);
 char *substring(const char *string, int N0, int Nchar);
 void  UpperCase(char *string);

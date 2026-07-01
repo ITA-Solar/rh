@@ -2,7 +2,7 @@
 
        Version:       rh2.0, 1-D plane-parallel
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Fri Mar 27 16:03:23 2009 --
+       Last modified: Mon Sep 22 16:45:38 2025 --
 
        --------------------------                      ----------RH-- */
 
@@ -51,11 +51,15 @@ void readAtmos_multi(Atmosphere *atmos, Geometry *geometry,
   const char routineName[] = "readAtmos_multi";
   register int k, n;
   struct  stat statBuffer;
-  char    scaleStr[20], inputLine[MAX_LINE_SIZE], *filename;
+  char    scaleStr[21], inputLine[MAX_LINE_SIZE], *filename;
   bool_t  exit_on_EOF, enhanced_atmos_ID = FALSE;
   int     Nread, Ndep, Nrequired, checkPoint;
   double *dscale, turbpress, turbelecpress, nbaryon, meanweight;
 
+  /* --- P/Pe total ionized gas. Edited: BRC --          ------------ */
+  double threshold_ion = 1.9082806;
+  double gas_pressure, elec_pressure;
+    
   /* --- Open the input file for model atmosphere in MULTI format - - */
   if ((atmos->fp_atmos = fopen(input.atmos_input, "r")) == NULL) {
     sprintf(messageStr, "Unable to open inputfile %s", input.atmos_input);
@@ -155,7 +159,7 @@ void readAtmos_multi(Atmosphere *atmos, Geometry *geometry,
   }
   atmos->moving = FALSE;
   for (k = 0;  k < Ndep;  k++) {
-    if (fabs(geometry->vel[k]) >= atmos->vmacro_tresh) {
+    if (fabs(geometry->vel[k]) > atmos->vmacro_tresh) {
       atmos->moving = TRUE;
       break;
     }
@@ -201,11 +205,16 @@ void readAtmos_multi(Atmosphere *atmos, Geometry *geometry,
       turbpress     = 0.5 * meanweight * SQ(atmos->vturb[k]);
       turbelecpress = 0.5 * M_ELECTRON * SQ(atmos->vturb[k]);
 
-      nbaryon =
-	(atmos->gravity * geometry->cmass[k] -
-	 atmos->ne[k] *(KBOLTZMANN * atmos->T[k] + turbelecpress));
-
-      atmos->nHtot[k] =	nbaryon /
+      /* --- Edits to prevent negative pressures --    -------------- */
+      gas_pressure = atmos->gravity * geometry->cmass[k]     ; /* BRC */
+      elec_pressure = atmos->ne[k] * KBOLTZMANN * atmos->T[k] ;/* BRC */
+      if (gas_pressure < threshold_ion*elec_pressure){
+        gas_pressure = threshold_ion*elec_pressure           ; /* BRC */
+      }
+      nbaryon = (gas_pressure -
+	    atmos->ne[k] *(KBOLTZMANN * atmos->T[k] + turbelecpress)); /* BRC */
+	
+      atmos->nHtot[k] =	nbaryon / 
 	(atmos->totalAbund * (KBOLTZMANN * atmos->T[k] + turbpress));
     }
   } else if (k == Ndep) {

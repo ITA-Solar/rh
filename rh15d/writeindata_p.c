@@ -150,9 +150,6 @@ void init_hdf5_indata_new(void)
   case OLD_POPULATIONS:
     strcpy(startJ, "OLD_POPULATIONS");
     break;
-  case ESCAPE_PROBABILITY:
-    strcpy(startJ, "ESCAPE_PROBABILITY");
-    break;
   case NEW_J:
     strcpy(startJ, "NEW_J");
     break;
@@ -169,9 +166,6 @@ void init_hdf5_indata_new(void)
     break;
   case FIELD_FREE:
     strcpy(StokesMode, "FIELD_FREE");
-    break;
-  case POLARIZATION_FREE:
-    strcpy(StokesMode, "POLARIZATION_FREE");
     break;
   case FULL_STOKES:
     strcpy(StokesMode, "FULL_STOKES");
@@ -207,6 +201,12 @@ void init_hdf5_indata_new(void)
     break;
   case SET_B8:
     strcpy(angleSet, "SET_B8");
+    break;
+  case SET_GAUSS_LOBATTO:
+    strcpy(angleSet, "SET_GAUSS_LOBATTO");
+    break;
+  case SET_EDDINGTON:
+    strcpy(angleSet, "SET_EDDINGTON");
     break;
   case NO_SET:
     strcpy(angleSet, "NO_SET");
@@ -931,12 +931,11 @@ void readSavedKeywords(void) {
   hid_t ncid, ncid_input, plist;
   H5T_class_t type_class;
   bool_t saved_p15d_refine, saved_p15d_zcut, saved_accelerate_mols;
-  int saved_NpescIter, saved_Ngdelay, saved_Ngorder, saved_Ngperiod;
+  int saved_Ngdelay, saved_Ngorder, saved_Ngperiod;
   int saved_NmaxScatter, saved_NmaxIter, saved_PRD_NmaxIter;
   int saved_PRD_Ngdelay, saved_PRD_Ngorder, saved_PRD_Ngperiod;
   enum S_interpol saved_S_interpolation;
   enum S_interpol_stokes saved_S_interpolation_stokes;
-  double saved_crsw, saved_crsw_ini, saved_prdswitch, saved_prdsw;
   double saved_p15d_tmax, saved_iterLimit, saved_PRDiterLimit;
 
   /* --- Open the inputdata file --- */
@@ -982,11 +981,6 @@ void readSavedKeywords(void) {
   saved_p15d_zcut = input.p15d_zcut;
   saved_p15d_tmax = input.p15d_tmax;
   saved_p15d_refine = input.p15d_refine;
-  saved_crsw = input.crsw;
-  saved_crsw_ini = input.crsw_ini;
-  saved_prdsw = input.prdsw;
-  saved_prdswitch = input.prdswitch;
-  saved_NpescIter = input.NpescIter;
   saved_p15d_tmax = input.p15d_tmax;
   saved_NmaxScatter = input.NmaxScatter;
   saved_NmaxIter = input.NmaxIter;
@@ -1009,11 +1003,6 @@ void readSavedKeywords(void) {
   input.p15d_zcut = saved_p15d_zcut;
   input.p15d_tmax = saved_p15d_tmax;
   input.p15d_refine = saved_p15d_refine;
-  input.crsw = saved_crsw;
-  input.crsw_ini = saved_crsw_ini;
-  input.prdsw = saved_prdsw;
-  input.prdswitch = saved_prdswitch;
-  input.NpescIter = saved_NpescIter;
   input.p15d_tmax = saved_p15d_tmax;
   input.NmaxScatter = saved_NmaxScatter;
   input.NmaxIter = saved_NmaxIter;

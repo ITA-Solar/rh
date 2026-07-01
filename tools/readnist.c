@@ -66,7 +66,7 @@ void main(int argc, char *argv[])
       for (i = 0;  i < strlen(label);  i++)
 	if (*(label+i) == '.') *(label+i) = ' ';
       UpperCase(label);
-      sscanf(inputLine+37, "%2s%", term);
+      sscanf(inputLine+37, "%2s", term);
 
       if (strcmp(spectrum, "I") == 0)
 	nl->stage = 0;

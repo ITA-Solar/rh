@@ -2,7 +2,6 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Wed Nov 5, 2014, 15:24 --
 
        --------------------------                      ----------RH-- */
 
@@ -28,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
 
 #include "rh.h"
 #include "atom.h"
@@ -64,6 +64,47 @@ extern Atmosphere atmos;
 extern InputData input;
 extern char messageStr[];
 
+/* ------- begin -------------------------- determinate_abo.c ------- */
+
+bool_t determinate_abo(char *label,  int *l)
+{
+  const char routineName[] = "determinate";
+
+  char multiplet[ATOM_LABEL_WIDTH+1], *ptr, **words, orbit[3];
+  int  count, multiplicity, length, off;
+
+  /* --- Get the principal, spin, orbital, and angular quantum numbers
+         from the atomic label --                      -------------- */
+
+  strcpy(multiplet, label);
+  ptr = multiplet + (strlen(multiplet) - 1);
+  while ((*ptr != 'E')  &&  (*ptr != 'O')  &&  (ptr > multiplet))  ptr--;
+  if (ptr > multiplet)
+    *(ptr + 1) = '\0';
+  else {
+    sprintf(messageStr, "Cannot determine parity of atomic level %s", label);
+    Error(WARNING, routineName, messageStr);
+    return FALSE;
+  }
+
+  words = getWords(multiplet, " ", &count);
+  length = strlen(words[count-2]);
+
+  // ---JdlCR: get the level l from the level configuration, not from the spectral term! --- //
+  sscanf(words[count-2], "%d%s", &multiplicity, orbit); 
+  free(words);
+
+  
+  /* --- Orbital quantum number --                     -------------- */
+
+  *l = getOrbital(toupper(orbit[0]));
+  if(*l == -1) return FALSE;
+
+
+  return TRUE;
+}
+
+/* ------- end ---------------------------- determinate_abo.c ------- */
 
 /* ------- begin -------------------------- readBarklemTable.c ------ */
 
@@ -170,41 +211,43 @@ bool_t getBarklemcross(Barklemstruct *bs, RLK_Line *rlk)
 
   /* --- Note: ABO tabulations are valid only for neutral atoms -- -- */
 
-  if (rlk->stage > 0)
-    return FALSE;
-
-  if ((deltaEi = element->ionpot[rlk->stage] - rlk->Ei) <= 0.0)
-    return FALSE;
-  if ((deltaEj = element->ionpot[rlk->stage] - rlk->Ej) <= 0.0)
-    return FALSE;
-
-  Z = (double) (rlk->stage + 1);
-  E_Rydberg = E_RYDBERG / (1.0 + M_ELECTRON / (element->weight * AMU));
-  neff1 = Z * sqrt(E_Rydberg / deltaEi);
-  neff2 = Z * sqrt(E_Rydberg / deltaEj);
-
-  if (rlk->Li > rlk->Lj) SWAPDOUBLE(neff1, neff2);
-
-  if (neff1 < bs->neff1[0] || neff1 > bs->neff1[bs->N1-1])
-    return FALSE;
-  Locate(bs->N1, bs->neff1, neff1, &index);
-  findex1 =
-    (double) index + (neff1 - bs->neff1[index]) / BARKLEM_DELTA_NEFF;
-
-  if (neff2 < bs->neff2[0] || neff2 > bs->neff2[bs->N2-1])
-    return FALSE;
-  Locate(bs->N2, bs->neff2, neff2, &index);
-  findex2 =
-    (double) index + (neff2 - bs->neff2[index]) / BARKLEM_DELTA_NEFF;
-
-  /* --- Find interpolation in table --                -------------- */
-
-  rlk->cross = cubeconvol(bs->N2, bs->N1,
-			  bs->cross[0], findex2, findex1);
-  rlk->alpha = cubeconvol(bs->N2, bs->N1,
-			  bs->alpha[0], findex2, findex1);
-
-
+  if(rlk->cross < 20.0){
+    if (rlk->stage > 0)
+      return FALSE;
+    
+    if ((deltaEi = element->ionpot[rlk->stage] - rlk->level_i.E) <= 0.0)
+      return FALSE;
+    if ((deltaEj = element->ionpot[rlk->stage] - rlk->level_j.E) <= 0.0)
+      return FALSE;
+    
+    Z = (double) (rlk->stage + 1);
+    E_Rydberg = E_RYDBERG / (1.0 + M_ELECTRON / (element->weight * AMU));
+    neff1 = Z * sqrt(E_Rydberg / deltaEi);
+    neff2 = Z * sqrt(E_Rydberg / deltaEj);
+    
+    if (rlk->level_i.l > rlk->level_j.l) SWAPDOUBLE(neff1, neff2);
+    
+    if (neff1 < bs->neff1[0] || neff1 > bs->neff1[bs->N1-1])
+      return FALSE;
+    Locate(bs->N1, bs->neff1, neff1, &index);
+    findex1 =
+      (double) index + (neff1 - bs->neff1[index]) / BARKLEM_DELTA_NEFF;
+    
+    if (neff2 < bs->neff2[0] || neff2 > bs->neff2[bs->N2-1])
+      return FALSE;
+    Locate(bs->N2, bs->neff2, neff2, &index);
+    findex2 =
+      (double) index + (neff2 - bs->neff2[index]) / BARKLEM_DELTA_NEFF;
+    
+    /* --- Find interpolation in table --                -------------- */
+    
+    rlk->cross = cubeconvol(bs->N2, bs->N1,
+			    bs->cross[0], findex2, findex1);
+    rlk->alpha = cubeconvol(bs->N2, bs->N1,
+			    bs->alpha[0], findex2, findex1);
+    
+  }
+  
   reducedmass  = AMU / (1.0/atmos.H->weight + 1.0/element->weight);
   meanvelocity = sqrt(8.0 * KBOLTZMANN / (PI * reducedmass));
   crossmean    = SQ(RBOHR) * pow(meanvelocity / 1.0E4, -rlk->alpha);
@@ -233,77 +276,67 @@ bool_t getBarklemactivecross(AtomicLine *line)
   j = line->j;
   i = line->i;
 
-  /* ---
-     JdlCR: Interpolate the tables only if sigma is smaller than 20
-     otherwise assume that we are already giving Barklem cross-sections
-     --- */
+  /* --- ABO tabulations are only valid for neutral atoms -- -------- */
 
-  if(line->cvdWaals[0] < 20.0){
+  if (atom->stage[i] > 0)
+    return FALSE;
 
+  /* --- Get the quantum numbers for orbital angular momentum -- ---- */
 
-    /* --- ABO tabulations are only valid for neutral atoms  -- -------- */
+  determined &= determinate_abo(atom->label[i], &Ll); // JdlCR: need to extract l, not L
+  determined &= determinate_abo(atom->label[j], &Lu); // JdlCR: need to extract L, not L
 
-    if (atom->stage[i] > 0) return FALSE;
+  /* --- See if one of the Barklem cases applies --    -------------- */
 
-    /* --- Get the quantum numbers for orbital angular momentum -- ---- */
-
-    determined &= determinate(atom->label[i], atom->g[i],
-			      &nq, &Sl, &Ll, &Jl);
-    determined &= determinate(atom->label[j], atom->g[j],
-			      &nq, &Su, &Lu, &Ju);
-
-    /* --- See if one of the Barklem cases applies --    -------------- */
-
-    if (determined) {
-      if ((Ll == S_ORBIT && Lu == P_ORBIT) ||
-	  (Ll == P_ORBIT && Lu == S_ORBIT)) {
-          useBarklem = readBarklemTable(SP, &bs);
-      } else if ((Ll == P_ORBIT && Lu == D_ORBIT) ||
-		 (Ll == D_ORBIT && Lu == P_ORBIT)) {
-          useBarklem = readBarklemTable(PD, &bs);
-      } else if ((Ll == D_ORBIT && Lu == F_ORBIT) ||
-		 (Ll == F_ORBIT && Lu == D_ORBIT)) {
-	      useBarklem = readBarklemTable(DF, &bs);
-      }
+  if (determined) {
+    if ((Ll == S_ORBIT && Lu == P_ORBIT) ||
+	(Ll == P_ORBIT && Lu == S_ORBIT)) {
+      useBarklem = readBarklemTable(SP, &bs);
+    } else if ((Ll == P_ORBIT && Lu == D_ORBIT) ||
+	       (Ll == D_ORBIT && Lu == P_ORBIT)) {
+      useBarklem = readBarklemTable(PD, &bs);
+    } else if ((Ll == D_ORBIT && Lu == F_ORBIT) ||
+	       (Ll == F_ORBIT && Lu == D_ORBIT)) {
+      useBarklem = readBarklemTable(DF, &bs);
     }
-    if (!determined || !useBarklem) return FALSE;
-
-    /* --- Determine the index of the appropriate continuum level -- -- */
-
-    Z = atom->stage[j] + 1;
-    for (ic = j + 1;  atom->stage[ic] < atom->stage[j]+1;  ic++);
-
-    deltaEi   = atom->E[ic] - atom->E[i];
-    deltaEj   = atom->E[ic] - atom->E[j];
-    E_Rydberg = E_RYDBERG / (1.0 + M_ELECTRON / (atom->weight * AMU));
-
-    neff1 = Z * sqrt(E_Rydberg / deltaEi);
-    neff2 = Z * sqrt(E_Rydberg / deltaEj);
-
-    if (Ll > Lu) SWAPDOUBLE(neff1, neff2);
-
-    /* --- Interpolate according to effective principal quantum number  */
-
-    if (neff1 < bs.neff1[0] || neff1 > bs.neff1[bs.N1-1])
-      return FALSE;
-    Locate(bs.N1, bs.neff1, neff1, &index);
-    findex1 =
-      (double) index + (neff1 - bs.neff1[index]) / BARKLEM_DELTA_NEFF;
-
-    if (neff2 < bs.neff2[0] || neff2 > bs.neff2[bs.N2-1])
-      return FALSE;
-    Locate(bs.N2, bs.neff2, neff2, &index);
-    findex2 =
-      (double) index + (neff2 - bs.neff2[index]) / BARKLEM_DELTA_NEFF;
-
-    /* --- Find interpolation in table --                -------------- */
-
-    line->cvdWaals[0] = cubeconvol(bs.N2, bs.N1,
-				   bs.cross[0], findex2, findex1);
-    line->cvdWaals[1] = cubeconvol(bs.N2, bs.N1,
-				   bs.alpha[0], findex2, findex1);
   }
+  if (!determined || !useBarklem) return FALSE;
 
+  /* --- Determine the index of the appropriate continuum level -- -- */
+
+  Z = atom->stage[j] + 1;
+  for (ic = j + 1;  atom->stage[ic] < atom->stage[j]+1;  ic++);
+
+  deltaEi   = atom->E[ic] - atom->E[i];
+  deltaEj   = atom->E[ic] - atom->E[j];
+  E_Rydberg = E_RYDBERG / (1.0 + M_ELECTRON / (atom->weight * AMU));
+
+  neff1 = Z * sqrt(E_Rydberg / deltaEi);
+  neff2 = Z * sqrt(E_Rydberg / deltaEj);
+
+  if (Ll > Lu) SWAPDOUBLE(neff1, neff2);
+  
+  /* --- Interpolate according to effective principal quantum number  */
+
+  if (neff1 < bs.neff1[0] || neff1 > bs.neff1[bs.N1-1])
+    return FALSE;
+  Locate(bs.N1, bs.neff1, neff1, &index);
+  findex1 =
+    (double) index + (neff1 - bs.neff1[index]) / BARKLEM_DELTA_NEFF;
+
+  if (neff2 < bs.neff2[0] || neff2 > bs.neff2[bs.N2-1])
+    return FALSE;
+  Locate(bs.N2, bs.neff2, neff2, &index);
+  findex2 =
+    (double) index + (neff2 - bs.neff2[index]) / BARKLEM_DELTA_NEFF;
+
+  /* --- Find interpolation in table --                -------------- */
+
+  line->cvdWaals[0] = cubeconvol(bs.N2, bs.N1,
+				 bs.cross[0], findex2, findex1);
+  line->cvdWaals[1] = cubeconvol(bs.N2, bs.N1,
+				 bs.alpha[0], findex2, findex1);
+  
   reducedmass  = AMU / (1.0/atmos.atoms[0].weight + 1.0/atom->weight);
   meanvelocity = sqrt(8.0 * KBOLTZMANN / (PI * reducedmass));
   crossmean    = SQ(RBOHR) * pow(meanvelocity / 1.0E4, -line->cvdWaals[1]);
@@ -319,3 +352,28 @@ bool_t getBarklemactivecross(AtomicLine *line)
   return TRUE;
 }
 /* ------- end ---------------------------- getBarklemactivecross.c -- */
+
+/* ------- begin -------------------------- getBarklemExplicit.c -- -- */
+
+bool_t getBarklemExplicit(AtomicLine *line)
+{
+  double reducedmass, meanvelocity, crossmean;
+  Atom *atom;
+ 
+  atom = line->atom;
+  
+  reducedmass  = AMU / (1.0/atmos.atoms[0].weight + 1.0/atom->weight);
+  meanvelocity = sqrt(8.0 * KBOLTZMANN / (PI * reducedmass));
+  crossmean    = SQ(RBOHR) * pow(meanvelocity / 1.0E4, -line->cvdWaals[1]);
+
+  line->cvdWaals[0] *= 2.0 * pow(4.0/PI, line->cvdWaals[1]/2.0) * 
+    exp(gammln((4.0 - line->cvdWaals[1])/2.0)) * meanvelocity * crossmean;  
+
+  /* --- Use UNSOLD for the contribution of Helium atoms -- ---------- */
+
+  line->cvdWaals[2] = 1.0;
+  line->cvdWaals[3] = 0.0;
+
+  return TRUE;
+}
+/* ------- end - -------------------------- getBarklemExplicit.c -- -- */

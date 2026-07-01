@@ -2,9 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Modified: Wed Oct 12 20:00:35 2011 --
-       Last Modified: Oct 20, 2017 by serena criscuoli (scriscuo@nso.edu)
-                      Additional electronic transitions for CO and SiO isotopes.
+       Last modified: Mon Jun 26 14:12:33 2023 --
 
        --------------------------                      ----------RH-- */
 
@@ -96,7 +94,7 @@ void readMolecule(Molecule *molecule, char *fileName, bool_t active)
     sprintf(messageStr, "Unable to open inputfile %s", fileName);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   } else {
-    sprintf(messageStr, " -- reading input file: %s %s",
+    sprintf(messageStr, " -- reading input file: %s %s", 
 	    fileName, (active) ? "(active)\n\n" : "(passive)\n");
 
 
@@ -104,7 +102,7 @@ void readMolecule(Molecule *molecule, char *fileName, bool_t active)
     initMolecule(molecule);
   }
   /* --- Read molecule ID --                           -------------- */
-
+ 
   getLine(fp_molecule, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
   Nread = sscanf(inputLine, "%s", molecule->ID);
   checkNread(Nread, Nrequired=1, routineName, checkPoint=1);
@@ -195,7 +193,7 @@ void readMolecule(Molecule *molecule, char *fileName, bool_t active)
 	    fitStr, fileName);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
-  /* --- Charged molecules can only be in KURUCZ_{70,85} format -- -- *
+  /* --- Charged molecules can only be in KURUCZ_{70,85} format -- -- */
 
   if (molecule->charge > 0) {
     if (molecule->fit != KURUCZ_70  &&  molecule->fit != KURUCZ_85) {
@@ -205,7 +203,7 @@ void readMolecule(Molecule *molecule, char *fileName, bool_t active)
       Error(ERROR_LEVEL_2, routineName, messageStr);
     }
   }
-  * --- Read minimum and maximum formation temperature -- ---------- */
+  /* --- Read minimum and maximum formation temperature -- ---------- */
 
   getLine(fp_molecule, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
   Nread = sscanf(inputLine, "%lf %lf", &molecule->Tmin, &molecule->Tmax);
@@ -335,7 +333,7 @@ void readMolecule(Molecule *molecule, char *fileName, bool_t active)
     sprintf(messageStr,
 	    " --- Found %d electronic configurations for molecule %s: %s\n\n",
 	    molecule->Nconfig, molecule->ID, molecule->configs);
-    Error(MESSAGE, routineName, messageStr);
+    Error(MESSAGE, routineName, messageStr);    
 
     /* --- Allocate memory for the populations of each vibrational
            state in each electronic configuration. Within each of these
@@ -355,7 +353,7 @@ void readMolecule(Molecule *molecule, char *fileName, bool_t active)
 
     /* --- In this case vibrational partition functions for the molecule
            and each of its vibrational states are calculated in routine
-           LTEmolecule --                              -------------- */
+           LTEmolecule --                              -------------- */ 
 
     LTEmolecule(molecule);
 
@@ -405,11 +403,12 @@ void initMolecule(Molecule *molecule)
   molecule->popsFile = NULL;
   molecule->active = FALSE;
   molecule->fit = KURUCZ_70;
-  molecule->pt_index = molecule->pt_count = 0;
+  molecule->pt_index = molecule->pt_count = NULL;
   molecule->Nelement = molecule->Nnuclei = 0;
   molecule->Npf = molecule->Neqc = molecule->Nrt = 0;
   molecule->charge = 0;
   molecule->Nv = molecule->NJ = 0;
+  molecule->configs = NULL;
   molecule->Nconfig = 0;
   molecule->Ediss = molecule->Tmin = molecule->Tmax = molecule->weight = 0.0;
   molecule->vbroad = NULL;
@@ -422,6 +421,8 @@ void initMolecule(Molecule *molecule)
   molecule->Gamma = NULL;
   molecule->mrt = NULL;
   molecule->Ng_nv = NULL;
+  molecule->vbroad = NULL;
+  molecule->rhth = NULL;
 }
 /* ------- end ---------------------------- initMolecule.c ---------- */
 
@@ -443,10 +444,13 @@ void freeMolecule(Molecule *molecule)
   if (molecule->nvstar != NULL)   freeMatrix((void **) molecule->nvstar);
   if (molecule->C_ul != NULL)     free(molecule->C_ul);
   if (molecule->Gamma != NULL)    freeMatrix((void **) molecule->Gamma);
+  if (molecule->configs != NULL)  free(molecule->configs);
+  if (molecule->popsFile != NULL) free(molecule->popsFile);
+  if (molecule->rhth != NULL)     free(molecule->rhth);
 
   if (molecule->mrt != NULL) {
     for (kr = 0;  kr < molecule->Nrt;  kr++)
-      freeMolLine(molecule->mrt + kr);
+      freeMolLine(&molecule->mrt[kr]);
     free(molecule->mrt);
   }
 }
@@ -462,7 +466,7 @@ void initMolLine(MolecularLine *mrt, enum type line_type)
   mrt->configi[0] = mrt->configj[0] = '\0';
   mrt->symmetric = TRUE;
   mrt->Voigt = TRUE;
-  mrt->vi = mrt->vj = 0;
+  mrt->vi = mrt->vj = 0; 
   mrt->Nlambda = mrt->Nblue = 0;
   mrt->lambda0 = mrt->isotope_frac = 0.0;
   mrt->lambda = NULL;
@@ -492,17 +496,14 @@ void freeMolLine(MolecularLine *mrt)
   mrt->molecule = NULL;
 
   if (mrt->zm != NULL) {
-    free(mrt->zm->q);
-    free(mrt->zm->strength);
-    free(mrt->zm->shift);
+    freeZeeman(mrt->zm);
   }
-  free(mrt->zm);
   mrt->zm = NULL;
 }
 /* ------- end ---------------------------- freeMolLine.c ----------- */
 
 /* ------- begin -------------------------- mrt_ascend.c ------------ */
-
+ 
 int mrt_ascend(const void *v1, const void *v2)
 {
   double f1, f2;
@@ -535,7 +536,7 @@ int stringcompare(const void *s1, const void *s2)
 /* ------- begin -------------------------- readMolecularLines.c ---- */
 
 /* --- Reads molecular line data and computes molecular opacities.
-
+ 
        Recognized formats:
 
          -- GOORVITCH94:
@@ -562,7 +563,7 @@ int stringcompare(const void *s1, const void *s2)
        2.5     --  J second level (usually upper level)
   -49177.701   --  Energy second level [cm^-1]
     108X00F1   --  Molecule ID (OH in this case) plus ID first level:
-                   X configuration, vibration level 0, F parity
+                   X configuration, vibration level 0, F parity 
        A07E1   --  ID second level: A configuration, vibration level 7,
                    parity E
         16     --  Isotope ID (16 refers to O16 in this case)
@@ -581,6 +582,17 @@ int stringcompare(const void *s1, const void *s2)
    Parity translation p --> E, and m --> F, for the orbital angular
    momentum pointing parallel or anti-parallel to the internuclear axis.
 
+
+         -- KURUCZ_CO:
+
+          Molecular line data from Bob Kurucz's CO XX transitions
+
+  203.6264 -7.917  2.5    83.924  2.5 -49177.701 108X00     A07     16
+|    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |
+0    5   10        20        30        40        50        60        70
+
+  NOTE: the trailing 200 in the file coxx.asc neeeds to be removed, as
+        it confuses the Zeeman determination.
        --                                              -------------- */
 
 void readMolecularLines(struct Molecule *molecule, char *line_data)
@@ -600,7 +612,7 @@ void readMolecularLines(struct Molecule *molecule, char *line_data)
   C = 2.0*PI * (Q_ELECTRON/EPSILON_0) * (Q_ELECTRON/M_ELECTRON) / CLIGHT;
 
   /* --- Open the data file --                         -------------- */
-
+ 
   if ((fp_lines = fopen(line_data, "r")) == NULL) {
     sprintf(messageStr, "Unable to open inputfile %s", line_data);
     Error(ERROR_LEVEL_2, routineName, messageStr);
@@ -638,8 +650,10 @@ void readMolecularLines(struct Molecule *molecule, char *line_data)
       initMolLine(mrt, VIBRATION_ROTATION);
 
       mrt->molecule = molecule;
+      
       strcpy(mrt->configi, "X");
       strcpy(mrt->configj, "X");
+
       mrt->Nlambda = Nlambda;
       mrt->qwing   = qwing;
 
@@ -649,7 +663,7 @@ void readMolecularLines(struct Molecule *molecule, char *line_data)
 		     &strength, &mrt->vj, &mrt->vi, branchStr, &Ji,
 		     &isotope);
       checkNread(Nread, Nrequired=11, routineName, checkPoint=3);
-
+    
       mrt->lambda0 = (CM_TO_M / NM_TO_M) / mrt->lambda0;
       mrt->Ei *= (HPLANCK * CLIGHT) / CM_TO_M;
       mrt->Ej  = mrt->Ei + HPLANCK*CLIGHT / (mrt->lambda0 * NM_TO_M);
@@ -666,7 +680,7 @@ void readMolecularLines(struct Molecule *molecule, char *line_data)
 	Jj = Ji + 1;
 	break;
       default:
-	sprintf(messageStr, "Invalid value of branch stringin file %s: %s\n"
+	sprintf(messageStr, "Invalid value of branch string in file %s: %s\n"
 		" Line: %f [nm]\n  Valid options are P, R and Q",
 		line_data, branchStr, mrt->lambda0);
 	Error(ERROR_LEVEL_2, routineName, messageStr);
@@ -676,8 +690,8 @@ void readMolecularLines(struct Molecule *molecule, char *line_data)
       mrt->Bji = CUBE(mrt->lambda0*NM_TO_M) /
 	(2.0*HPLANCK*CLIGHT) * mrt->Aji;
       mrt->Bij = (mrt->gj / mrt->gi) * mrt->Bji;
-
-      /* --- Temporary measure to accommodate $^13$CO --   ------------ */
+    
+      /* --- Temporary measure to accommodate $^13$CO --   ---------- */  
 
       switch (isotope) {
       case 12:
@@ -686,9 +700,9 @@ void readMolecularLines(struct Molecule *molecule, char *line_data)
       case 36: mrt->isotope_frac = C_13;        break;
       default: mrt->isotope_frac = 1.0;
       }
+      
+      mrt->polarizable = FALSE;
     }
-    mrt->polarizable = FALSE;
-
   } else if (strstr(format_string, "KURUCZ_CD18") ||
 	         strstr(format_string, "KURUCZ_NEW") ||
              strstr(format_string, "KURUCZ_SIO") ||
@@ -724,7 +738,7 @@ void readMolecularLines(struct Molecule *molecule, char *line_data)
 		       &mrt->gi, &mrt->Ei, &mrt->gj, &mrt->Ej);
       }
       checkNread(Nread, Nrequired=6, routineName, checkPoint=3);
-
+    
       mrt->Ei = (HPLANCK * CLIGHT) / CM_TO_M * fabs(mrt->Ei);
       mrt->Ej = (HPLANCK * CLIGHT) / CM_TO_M * fabs(mrt->Ej);
       mrt->gi = 2*mrt->gi + 1;
@@ -751,8 +765,7 @@ void readMolecularLines(struct Molecule *molecule, char *line_data)
 	mrt->parityj[0] = inputLine[63];
 	mrt->parityi[1] = '\0';
 	mrt->parityj[1] = '\0';
-
-
+  
 	/* --- Vibrational quantum numbers --            ------------ */
 
 	Nread = sscanf(inputLine+53, "%2d", &mrt->vi);
@@ -762,6 +775,19 @@ void readMolecularLines(struct Molecule *molecule, char *line_data)
 
 	Nread = sscanf(inputLine+56, "%1d", &mrt->subi);
 	Nread = sscanf(inputLine+64, "%1d", &mrt->subj);
+
+      } else if (strstr(format_string, "KURUCZ_CO")) {
+		/* --- Electronic configuration --             -------------- */
+
+	mrt->configi[0] = inputLine[52];
+	mrt->configj[0] = inputLine[60];
+	mrt->configi[1] = '\0';
+	mrt->configj[1] = '\0';
+
+	/* --- Vibrational quantum numbers --            ------------ */
+
+	Nread = sscanf(inputLine+53, "%2d", &mrt->vi);
+	Nread = sscanf(inputLine+61, "%2d", &mrt->vj);
 
       } else if (strstr(format_string, "KURUCZ_NEW")) {
 
@@ -778,7 +804,7 @@ void readMolecularLines(struct Molecule *molecule, char *line_data)
 	mrt->parityj[0] = inputLine[64];
 	mrt->parityi[1] = '\0';
 	mrt->parityj[1] = '\0';
-
+  
 	/* --- Vibrational quantum numbers --            ------------ */
 
 	Nread = sscanf(inputLine+54, "%2d", &mrt->vi);
@@ -908,7 +934,7 @@ void readMolecularLines(struct Molecule *molecule, char *line_data)
 	mrt->parityj[0] = ((inputLine[61] == 'p') ? 'E' : 'F');
 	mrt->parityi[1] = '\0';
 	mrt->parityj[1] = '\0';
-
+  
 	/* --- Vibrational quantum numbers --            ------------ */
 
 	Nread = sscanf(inputLine+51, "%2d", &mrt->vi);
@@ -985,7 +1011,7 @@ void readMolecularLines(struct Molecule *molecule, char *line_data)
 	}
 	/* --- Set the polarized flag only if the atmosphere has magnetic
 	       fields --                               -------------- */
-
+	
 	if (atmos.Stokes) mrt->polarizable = TRUE;
       } else
 	mrt->polarizable = FALSE;
@@ -1078,11 +1104,11 @@ void readMolecularModels(void)
     if (strcmp(molecule->ID, "H2") == 0) atmos.H2 = molecule;
 
     /* --- Store pointers to OH and CH molecules, if appropriate,
-           for use in bf opacity calculation (see ohchbf.c) -- ------ */
+           for use in bf opacity calculation (see ohchbf.c) -- ------ */                      
 
     if (strcmp(molecule->ID, "OH") == 0) atmos.OH = molecule;
     if (strcmp(molecule->ID, "CH") == 0) atmos.CH = molecule;
-
+  
     /* --- Set flag for initial soltion --             -------------- */
 
     if (strstr(popsKey, "OLD_POPULATIONS")) {
@@ -1108,11 +1134,11 @@ void readMolecularModels(void)
               "Has to be LTE_POPULATIONS for molecules\n",
 	      moleculeID);
       Error(ERROR_LEVEL_2, routineName, messageStr);
-    }
+    } 
 
   }
   fclose(fp_molecules);
-
+  
   /* --- Figure out for each element in which molecule it may be
          bound and store the indices of those molecules -- ---------- */
 
@@ -1163,7 +1189,7 @@ char *getMoleculeID(char *molecule_file)
   }
 
   /* --- Read molecule ID --                           -------------- */
-
+ 
   getLine(fp_molecule, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
   sscanf(inputLine, "%s", moleculeID);
   for (n = 0;  n < (int) strlen(moleculeID);  n++)

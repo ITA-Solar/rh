@@ -27,7 +27,7 @@ char messageStr[MAX_LINE_SIZE];
 
 /* ------- begin -------------------------- addgrad.c --------------- */
 
-void main( int argc, char *argv[] )
+int main( int argc, char *argv[] )
 {
   FILE  *fp_out;
   Atom atom;

@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Tue Jan 12 10:23:58 2010 --
+       Last modified: Tue Feb 27 15:44:31 2024 --
 
        --------------------------                      ----------RH-- */
 
@@ -52,8 +52,6 @@
 
 /* --- Function prototypes --                          -------------- */
 
-void freeZeeman(ZeemanMultiplet *zm);
-
 
 /* --- Global variables --                             -------------- */
 
@@ -78,14 +76,6 @@ void Profile(AtomicLine *line)
          *phi_V = NULL, *psi_Q = NULL, *psi_U = NULL, *psi_V = NULL;
 
   Atom *atom = line->atom;
-  ZeemanMultiplet *zm = NULL;
-
-  if (!line->Voigt) {
-    sprintf(messageStr,
-	    "Magnetic lines cannot have GAUSSian profiles. Line %d -> %d",
-	    line->j, line->i);
-    Error(ERROR_LEVEL_2, routineName, messageStr);
-  }
 
   getCPU(3, TIME_START, NULL);
 
@@ -98,7 +88,7 @@ void Profile(AtomicLine *line)
          reinitialized. --                             -------------- */
 
   if (line->PRD && line->rho_prd == NULL) {
-    if (input.PRD_angle_dep == PRD_ANGLE_DEP) 
+    if (input.PRD_angle_dep == PRD_ANGLE_DEP)
       Nlamu = 2*atmos.Nrays * line->Nlambda;
     else
       Nlamu = line->Nlambda;
@@ -112,7 +102,7 @@ void Profile(AtomicLine *line)
   }
 
   vbroad = atom->vbroad;
-  adamp  = (double *) malloc(atmos.Nspace * sizeof(double));
+  adamp  = (double *) calloc(atmos.Nspace, sizeof(double));
   if (line->Voigt) Damping(line, adamp);
 
   line->wphi = (double *) calloc(atmos.Nspace, sizeof(double));
@@ -120,10 +110,10 @@ void Profile(AtomicLine *line)
   if (line->polarizable && (input.StokesMode > FIELD_FREE)) {
     Larmor = (Q_ELECTRON / (4.0*PI*M_ELECTRON)) * (line->lambda0*NM_TO_M);
 
-    zm = Zeeman(line);
+    Zeeman(line);
     sprintf(messageStr,
 	    " -- Atom %2s, line %3d -> %3d has %2d Zeeman components\n",
-	    atom->ID, line->j, line->i, zm->Ncomponent);
+	    atom->ID, line->j, line->i, line->zm->Ncomponent);
     Error(MESSAGE, routineName, messageStr);
   }
 
@@ -139,7 +129,7 @@ void Profile(AtomicLine *line)
       Error(ERROR_LEVEL_2, routineName, messageStr);
     }
 
-    if (line->polarizable && (input.StokesMode > FIELD_FREE)) {
+    if (line->polarizable && (input.StokesMode == FULL_STOKES)) {
       NrecStokes = (input.magneto_optical) ? 7 : 4;
       phi = (double *) malloc(NrecStokes*atmos.Nspace * sizeof(double));
 
@@ -160,11 +150,11 @@ void Profile(AtomicLine *line)
     }
   } else {
     if (atmos.moving || 
-	(line->polarizable && (input.StokesMode > FIELD_FREE))) {
+	(line->polarizable && (input.StokesMode == FULL_STOKES))) {
       Nlamu = 2*atmos.Nrays*line->Nlambda;
       line->phi = matrix_double(Nlamu, atmos.Nspace);
 
-      if (line->polarizable && (input.StokesMode > FIELD_FREE)) {
+      if (line->polarizable && (input.StokesMode == FULL_STOKES)) {
 	line->phi_Q = matrix_double(Nlamu, atmos.Nspace);
 	line->phi_U = matrix_double(Nlamu, atmos.Nspace);
 	line->phi_V = matrix_double(Nlamu, atmos.Nspace);
@@ -179,7 +169,7 @@ void Profile(AtomicLine *line)
       line->phi = matrix_double(line->Nlambda, atmos.Nspace);
   }
 
-  if (line->polarizable && (input.StokesMode > FIELD_FREE)) {
+  if (line->polarizable && (input.StokesMode == FULL_STOKES)) {
 
     /* --- Temporary storage for inner loop variables, vB is the
            Zeeman splitting due to the local magnetic field -- ------ */  
@@ -196,24 +186,26 @@ void Profile(AtomicLine *line)
   /* --- Calculate the absorption profile and store for each line -- */
 
   if (atmos.moving ||
-      (line->polarizable && (input.StokesMode > FIELD_FREE))) {
+      (line->polarizable && (input.StokesMode == FULL_STOKES))) {
 
-    v_los = matrix_double(atmos.Nrays, atmos.Nspace);
-    for (mu = 0;  mu < atmos.Nrays;  mu++) {
-      for (k = 0;  k < atmos.Nspace;  k++) {
-	v_los[mu][k] = vproject(k, mu) / vbroad[k];
+    if (atmos.moving) {
+      v_los = matrix_double(atmos.Nrays, atmos.Nspace);
+      for (mu = 0;  mu < atmos.Nrays;  mu++) {
+	for (k = 0;  k < atmos.Nspace;  k++) {
+	  v_los[mu][k] = vproject(k, mu) / vbroad[k];
+	}
       }
     }
     v = matrix_double(atmos.Nspace, line->Ncomponent);
-
+    
     for (la = 0;  la < line->Nlambda;  la++) {
       for (n = 0;  n < line->Ncomponent;  n++) {
 	for (k = 0;  k < atmos.Nspace;  k++) {
-	  v[k][n] = (line->lambda[la] - line->lambda0 - line->c_shift[n]) *
+	  v[k][n] = (line->lambda[la] - line->lambda0 -
+		     line->c_shift[n]) *
 	    CLIGHT / (vbroad[k] * line->lambda0);
 	}
       }
-
       for (mu = 0;  mu < atmos.Nrays;  mu++) {
 	wlamu = getwlambda_line(line, la) * 0.5*atmos.wmu[mu];
 
@@ -230,7 +222,7 @@ void Profile(AtomicLine *line)
 	    for (k = 0;  k< NrecStokes*atmos.Nspace;  k++) phi[k] = 0.0;
 	  } else {
 	    phi = line->phi[lamu];
-	    if (line->polarizable && (input.StokesMode > FIELD_FREE)) {
+	    if (line->polarizable && (input.StokesMode == FULL_STOKES)) {
 	      phi_Q = line->phi_Q[lamu];
 	      phi_U = line->phi_U[lamu];
 	      phi_V = line->phi_V[lamu];
@@ -243,7 +235,7 @@ void Profile(AtomicLine *line)
 	    }
 	  }
 	    
-	  if (line->polarizable && (input.StokesMode > FIELD_FREE)) {
+	  if (line->polarizable && (input.StokesMode == FULL_STOKES)) {
 	    for (k = 0;  k < atmos.Nspace;  k++) {
 	      sin2_gamma = 1.0 - SQ(atmos.cos_gamma[mu][k]);
 
@@ -258,29 +250,30 @@ void Profile(AtomicLine *line)
               /* --- Sum over isotopes --              -------------- */
 
 	      for (n = 0;  n < line->Ncomponent;  n++) {
-		vk = v[k][n] + sign * v_los[mu][k];
+		vk = v[k][n];
+		if (atmos.moving) vk += sign * v_los[mu][k];
 
 		phi_sm = phi_pi = phi_sp = 0.0;
 		psi_sm = psi_pi = psi_sp = 0.0;
 
                 /* --- Sum over Zeeman sub-levels --   -------------- */
 
-		for (nz = 0;  nz < zm->Ncomponent;  nz++) {
-		  H = Voigt(adamp[k], vk - zm->shift[nz]*vB[k],
+		for (nz = 0;  nz < line->zm->Ncomponent;  nz++) {
+		  H = Voigt(adamp[k], vk - line->zm->shift[nz]*vB[k],
 			    &F, HUMLICEK);
 
-		  switch (zm->q[nz]) {
+		  switch (line->zm->q[nz]) {
 		  case -1:
-		    phi_sm += zm->strength[nz] * H;
-		    psi_sm += zm->strength[nz] * F;
+		    phi_sm += line->zm->strength[nz] * H;
+		    psi_sm += line->zm->strength[nz] * F;
 		    break;
 		  case  0:
-		    phi_pi += zm->strength[nz] * H;
-		    psi_pi += zm->strength[nz] * F;
+		    phi_pi += line->zm->strength[nz] * H;
+		    psi_pi += line->zm->strength[nz] * F;
 		    break;
 		  case  1:
-		    phi_sp += zm->strength[nz] * H;
-		    psi_sp += zm->strength[nz] * F;
+		    phi_sp += line->zm->strength[nz] * H;
+		    psi_sp += line->zm->strength[nz] * F;
 		  }
 		}
 		phi_sigma = (phi_sp + phi_sm) * line->c_fraction[n];
@@ -291,7 +284,7 @@ void Profile(AtomicLine *line)
 		  phi_delta * sin2_gamma * atmos.cos_2chi[mu][k] * sv[k];
 		phi_U[k] +=
 		  phi_delta * sin2_gamma * atmos.sin_2chi[mu][k] * sv[k];
-		phi_V[k] += sign * line->c_fraction[n] *
+		phi_V[k] += sign * line->c_fraction[n] * 
 		  0.5*(phi_sp - phi_sm) * atmos.cos_gamma[mu][k] * sv[k];
 
 		if (input.magneto_optical) {
@@ -362,15 +355,14 @@ void Profile(AtomicLine *line)
   free(adamp);
   if (input.limit_memory) free(phi);
 
-  if (atmos.moving || (line->polarizable && (input.StokesMode > FIELD_FREE))) {
-    if (zm)
-      freeZeeman(zm);
-    free(zm);
+  if (atmos.moving) freeMatrix((void **) v_los);
+  if (atmos.moving ||
+      (line->polarizable && (input.StokesMode == FULL_STOKES))) {
+       freeMatrix((void **) v);
+  }
+  if (line->polarizable && (input.StokesMode == FULL_STOKES)) {
     free(vB);
     free(sv);
-
-    freeMatrix((void **) v);
-    freeMatrix((void **) v_los);
 
     sprintf(messageStr, "Stokes prof %7.1f", line->lambda0);
   } else

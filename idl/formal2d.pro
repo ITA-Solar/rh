@@ -1,8 +1,8 @@
 
-  angleSet = 0L  &  mu = 0L
+  angleSet = 4L  &  mu = 6L
   Ninclination = 4L  &  Nazimuth = 3L
   Nx = 250L  &  Nz = 100L
-  dx = 2.5*12.5 + dblarr(Nx)
+  dx = 12.5 + dblarr(Nx)
   zmin = 0.0  &  zmax = 600.0
 
   dS_x = 0.0  &  dS_z = 0.0
@@ -13,16 +13,17 @@
   x = dblarr(Nx)  &  FOR l=0, Nx-2 DO x(l+1) = x(l) + dx(l)
   z = zmax + (zmin - zmax)*dindgen(Nz)/double(Nz - 1)
 
-  chi = dblarr(Nx, Nz) + 1.0E-5
+  chi = dblarr(Nx, Nz) + 1.0E-6
 ;;  chi = dblarr(Nx, Nz) + (1.0 + fltarr(Nx)) # $
 ;;        (1.0E-7 + z*(1.0E-9 + z*(1.0E-12 + z*1.0E-15)))
 ;;  S   = (1.0 + dS_x*cos(4*!pi*dindgen(Nx)/(Nx-1))) # $
 ;;   (1.0 + dS_z*sin(!pi*dindgen(Nz)/(Nz-1)))
 
-;;  S = dblarr(Nx, Nz)
+  S = dblarr(Nx, Nz)
+  S[*, 40:49] = 1.0
 
-  tau = z * chi[0, *] * 1.0E3
-  S = (1.0 + fltarr(Nx)) # (1.0 + tau*(0.1 + tau*0.01))
+;;  tau = z * chi[0, *] * 1.0E3
+;;  S = (1.0 + fltarr(Nx)) # (1.0 + tau*(0.1 + tau*0.01))
 
   Itop  = dblarr(Nx)  &  Ibottom = dblarr(Nx)
   Ileft = dblarr(Nz)  &  Iright  = dblarr(Nz)
@@ -30,6 +31,7 @@
 
 ;  Itop(index) = (sin(!PI*dindgen(6)/5.0) > 0.0) 
 ;  Ibottom(index) = (sin(!PI*dindgen(6)/5.0) > 0.0)
+  Ibottom[index] = 1.0
 ;  Ileft(index) = (sin(!PI*dindgen(6)/5.0) > 0.0)
 
 ;;  openw, pipe, 'formal.in', /GET_LUN

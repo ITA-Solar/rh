@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Wed Apr  1 09:53:47 2009 --
+       Last modified: Tue Feb 20 13:35:29 2024 --
 
        --------------------------                      ----------RH-- */
 
@@ -49,17 +49,10 @@ void initScatter()
 	for (kr = 0;  kr < atom->Nline;  kr++) {
 	  line = atom->line + kr;
 	  if (line->PRD) {
-	    switch (input.PRD_angle_dep) {
-	    case PRD_ANGLE_INDEP:
-	      PRDScatter(line, LINEAR);
-	      break;
-	    case PRD_ANGLE_APPROX:
-	      PRDAngleApproxScatter(line, LINEAR);
-	      break;
-	    case PRD_ANGLE_DEP:
+	    if (input.PRD_angle_dep == PRD_ANGLE_DEP)
 	      PRDAngleScatter(line, LINEAR);
-	      break;
-	    }
+            else
+	      PRDScatter(line, LINEAR);
 	  }
 	}
       }

@@ -299,7 +299,7 @@ FUNCTION avgWidgetSetup, lambda, blue, red
            rayText: 0L, log: 1, xmuText: 0L, ymuText: 0L, zmuText: 0L, $
 	   wmuText: 0L, blueText: 0L, redText: 0L, $
 	   blueField: 0L, redField: 0L, blue: long(blue),  red: long(red), $
-           lambdared: lambda(red), lambdablue: lambda(blue), oplot: 0, $
+           lambdared: lambda[red], lambdablue: lambda[blue], oplot: 0, $
            atlas_toggle: 0L, atlas: "KPNO", atlas_button: lonarr(5), $
            atlas_scale: 0.0, x_press: 0L, y_press: 0L}
 

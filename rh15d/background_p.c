@@ -192,9 +192,9 @@ void init_Background(void)
 
   if (atmos.moving || atmos.Stokes) {
     atmos.backgrrecno =
-      (long *) malloc(2*spectrum.Nspect*atmos.Nrays * sizeof(long));
+      (int *) malloc(2*spectrum.Nspect*atmos.Nrays * sizeof(int));
   } else
-    atmos.backgrrecno = (long *) malloc(spectrum.Nspect * sizeof(long));
+    atmos.backgrrecno = (int *) malloc(spectrum.Nspect * sizeof(int));
 
   /* --- Read background files from Kurucz data file -- ------------- */
   atmos.Nrlk = 0;
@@ -665,7 +665,7 @@ void Background_p(bool_t write_analyze_output, bool_t equilibria_only)
 	    chi_c[k] += chi[k];
 	    eta_c[k] += eta[k];
 	  }
-      	  if (input.rlkscatter) {
+	  if (input.rlkscatter) {
 	    for (k = 0;  k < atmos.Nspace;  k++) {
 	      sca_c[k] += scatt[k];
 	      chi_c[k] += scatt[k];

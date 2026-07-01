@@ -11,11 +11,9 @@
  * Last modified: Thu Feb  3 11:41:55 2000 --
  */
  
-#if !defined(__APPLE__)
-#include <malloc.h>
-#endif
 #include <math.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "rh.h"
 #include "constant.h"
@@ -44,7 +42,7 @@ char   messageStr[MAX_LINE_SIZE];
 
 /* ------- begin -------------------------- Hcollisions.c ----------- */
 
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   register int k, n;
 

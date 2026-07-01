@@ -116,7 +116,7 @@ FUNCTION StokesWidgetSetup, lambda, blue, red, StokesType, rayNo
            xmuText: 0L, ymuText: 0L, zmuText: 0L, wmuText: 0L, $
            blueField: 0L, redField: 0L, xSlider: 0L, zSlider: 0L, $
            wire: 1, ray: rayNo, shade: 0,  blue: long(blue),  red: long(red), $
-           lambdablue: lambda(blue), lambdared: lambda(red), $
+           lambdablue: lambda[blue], lambdared: lambda[red], $
            StokesType: StokesType, relative: 0L}
 
   state.baseWidget = widget_base(TITLE='XViewStokes: ' + StokesType, $
@@ -259,7 +259,7 @@ PRO drawStokes, state
   widget_control, state.redText, $
    SET_VALUE=string(FORMAT='(I6)', red)
 
-  center_spectrum = file_search('spectrum_*', COUNT=count)
+  center_spectrum = file_search('spectrum_*1.00', COUNT=count)
   IF (count GT 0) THEN ray = readray(center_spectrum[0])
 
    CASE (state.StokesType) OF

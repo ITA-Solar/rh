@@ -2,7 +2,7 @@
 
        Version:       rh2.0, 1-D spherically symmetric
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Wed Jul  8 10:30:06 2009 --
+       Last modified: Wed Dec 14 16:40:20 2011 --
 
        --------------------------                      ----------RH-- */
 
@@ -91,7 +91,8 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
     J = spectrum.J[nspect];
     for (k = 0;  k < Nspace;  k++) Jdag[k] = J[k];
   }
-  for (k = 0;  k < Nspace;  k++) J[k] = 0.0;
+  if (spectrum.updateJ)
+    for (k = 0;  k < Nspace;  k++) J[k] = 0.0;
 
   /* --- Case of angle-dependent opacity and source function -- ----- */
 
@@ -122,8 +123,11 @@ double Formal(int nspect, bool_t eval_operator, bool_t redistribute)
 	for (k = 0;  k < ray->Ns;  k++) Psi[k] /= chi[k];
 	addtoGamma_sphere(nspect, ray, I, Psi);
       }
-      for (k = 0;  k < ray->Ns;  k++) J[k] += I[k] * ray->wmu[k];
-      addtoRates_sphere(nspect, ray, I, redistribute);
+      if (spectrum.updateJ) {
+	for (k = 0;  k < ray->Ns;  k++)
+	  J[k] += I[k] * ray->wmu[k];
+	addtoRates_sphere(nspect, ray, I, redistribute);
+      }
     }
   }
   /* --- Write new J for current position in the spectrum -- -------- */

@@ -122,7 +122,7 @@ FUNCTION ContribWidgetSetup, lambda, blue, red, type
            xmuText: 0L, ymuText: 0L, wmuText: 0L, $
            blueField: 0L, redField: 0L, xSlider: 0L, zSlider: 0L, $
            ray: rayNo, log: 0, panel: 0,  blue: blue,  red: red, $
-           lambdablue: lambda(blue), lambdared: lambda(red), $
+           lambdablue: lambda[blue], lambdared: lambda[red], $
            orientButton: 0L, type: type}
 
   state.baseWidget = widget_base(TITLE='XViewContrib', /ROW, MBAR=menuBar, $

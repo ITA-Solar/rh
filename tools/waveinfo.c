@@ -47,7 +47,7 @@ void ShowUsage(char *programName, struct Option *theOpt)
 
 /* ------- begin -------------------------- waveinfo.c -------------- */
 
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   register int i;
   const char routineName[] = "waveinfo";

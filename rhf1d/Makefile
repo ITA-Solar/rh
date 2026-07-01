@@ -2,28 +2,36 @@
 #
 #      Version:       rh2.0, 1-D plane-parallel
 #      Author:        Han Uitenbroek (huitenbroek@nso.edu)
-#      Last modified: Wed Apr 22 09:37:39 2009 --
+#      Last modified: Thu May 20 13:10:04 2021 --
 #
 ##     --------------------------                      ----------RH-- ##
 
+GEOMETRY = ONE_D_PLANE
+
+
 include ../Makefile.config
 
-## --- If no FORTRAN compiler is available remove -lrh_f90 in following
+LIBS = -lrh -lrh_f90
 
-      LIBS = -lrh -lrh_f90
+CFLAGS += -I../
+LDFLAGS += -L../
 
 
 ## --- Define groups of object files --                -------------- ##
 
 
-ONE_D_OBJS = anglequad.o  feautrier.o  formal.o  hydrostat.o  multiatmos.o \
-             rhf1d.o  piecestokes.o  piecewise.o  project.o  riiplane.o \
-             writeflux_xdr.o  writegeom_xdr.o 
+ONE_D_OBJS = anglequad.o  bezier_1D.o feautrier.o  formal.o  hydrostat.o \
+             multiatmos.o \
+             rhf1d.o  piecestokes_1D.o  piecewise_1D.o  project.o \
+             riiplane.o  writeflux_xdr.o  writegeom_xdr.o 
 
-   ONEDOBJ = solve1d.o  iter_1d.o  feautrier.o
+   ONEDOBJ = bezier_1D.o  solve1d.o  iter_1d.o  feautrier.o \
+              piecewise_1D.o  project.o
 
-  RAY_OBJS = anglequad.o  feautrier.o  formal.o  hydrostat.o  multiatmos.o \
-             project.o  piecestokes.o  piecewise.o  riiplane.o  solveray.o
+  RAY_OBJS = anglequad.o  bezier_1D.o  feautrier.o  formal.o  hydrostat.o \
+             multiatmos.o \
+             project.o  piecestokes_1D.o  piecewise_1D.o  riiplane.o \
+             solveray.o  writegeom_xdr.o
 
 BACKGROPAC = anglequad.o  backgrcontr.o  multiatmos.o  project.o
 
@@ -63,6 +71,9 @@ clean:
 anglequad.o:            ../rh.h  ../atom.h  ../atmos.h  \
                         geometry.h
 
+bezier_1D.o:            ../rh.h  ../atom.h  ../atmos.h       \
+                        geometry.h  ../spectrum.h  ../bezier.h
+
 backgrcontr.o:          ../rh.h  ../atom.h  ../atmos.h  \
                         ../spectrum.h  geometry.h  ../background.h  \
                         ../inputs.h  ../error.h  ../statistics.h
@@ -79,7 +90,7 @@ hydrostat.o:            ../rh.h  ../atom.h  ../atmos.h  geometry.h \
                         ../error.h
 
 iter_1d.o:              ../rh.h  ../atom.h  ../atmos.h  \
-                        geometry.h  ../accelerate.h  ../error.h  \
+                        geometry.h  ../accelerate.h  ../inputs.h  ../error.h  \
                         ../statistics.h
 
 multiatmos.o:           ../rh.h  ../atom.h  ../atmos.h  \
@@ -87,10 +98,10 @@ multiatmos.o:           ../rh.h  ../atom.h  ../atmos.h  \
                         ../constant.h  ../error.h  ../inputs.h  \
                         ../statistics.h  ../xdr.h
 
-piecestokes.o:          ../rh.h  ../atom.h  ../atmos.h  \
+piecestokes_1D.o:       ../rh.h  ../error.h  ../atom.h  ../atmos.h  \
                         geometry.h  ../spectrum.h
 
-piecewise.o:            ../rh.h  ../atom.h  ../atmos.h  \
+piecewise_1D.o:         ../rh.h  ../error.h  ../atom.h  ../atmos.h  \
                         geometry.h  ../spectrum.h
 
 project.o:              ../rh.h  ../atom.h  ../atmos.h  \

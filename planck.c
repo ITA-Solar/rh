@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Thu Nov 11 15:12:13 2010 --
+       Last modified: Wed Jan  4 17:46:57 2017 --
 
        --------------------------                      ----------RH-- */
 
@@ -35,7 +35,7 @@
 
 /* ------- begin -------------------------- Planck.c ---------------- */
 
-void Planck(long Nspace, double *T, double lambda, double *Bnu)
+void Planck(int Nspace, double *T, double lambda, double *Bnu)
 {
   register int k;
 

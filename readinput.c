@@ -43,7 +43,8 @@ void readInput(char *input_string)
 {
   const char routineName[] = "readInput";
   static char atom_input[MAX_VALUE_LENGTH], molecule_input[MAX_VALUE_LENGTH];
-
+  char errorStr[MAX_MESSAGE_LENGTH];
+  
   int   Nkeyword;
   char *keyword_string;
 
@@ -57,8 +58,6 @@ void readInput(char *input_string)
     {"ANGLE_SET", "NO_SET", FALSE, KEYWORD_OPTIONAL, &atmos.angleSet,
      setAngleSet},
 
-    {"EDDINGTON", "FALSE", FALSE, KEYWORD_OPTIONAL, &input.Eddington,
-     setboolValue},
     {"ATMOS_ITOP", "none", FALSE, KEYWORD_OPTIONAL, input.Itop, setcharValue},
 
     {"WAVETABLE", "none", FALSE, KEYWORD_OPTIONAL, input.wavetable_input,
@@ -84,6 +83,11 @@ void readInput(char *input_string)
      setintValue},
     {"NG_MOLECULES", "FALSE", FALSE, KEYWORD_DEFAULT, &input.accelerate_mols,
      setboolValue},
+    {"COLL_RELAX_NSTEP", "0", FALSE, KEYWORD_OPTIONAL, &input.CR_Nstep,
+     setintValue},
+    {"COLL_RELAX_FACTOR", "1.0", FALSE, KEYWORD_OPTIONAL, &input.CR_factor,
+     setdoubleValue},
+   
     {"PRD_N_MAX_ITER", "3", FALSE, KEYWORD_OPTIONAL, &input.PRD_NmaxIter,
      setintValue},
     {"PRD_ITER_LIMIT", "1.0E-2", FALSE, KEYWORD_OPTIONAL, &input.PRDiterLimit,
@@ -94,13 +98,11 @@ void readInput(char *input_string)
      setintValue},
     {"PRD_NG_PERIOD", "0", FALSE, KEYWORD_OPTIONAL, &input.PRD_Ngperiod,
      setintValue},
-    {"PRD_ANGLE_DEP", "PRD_ANGLE_INDEP", FALSE, KEYWORD_DEFAULT, &input.PRD_angle_dep,
-     setPRDangle},
+    {"PRD_ANGLE_DEP", "FALSE", FALSE, KEYWORD_DEFAULT,
+     &input.PRD_angle_dep, setPRDangle},
     {"PRDH_LIMIT_MEM", "FALSE", FALSE, KEYWORD_OPTIONAL, &input.prdh_limit_mem,
      setboolValue},
-    {"BACKGR_IN_MEM", "FALSE", FALSE, KEYWORD_OPTIONAL, &input.backgr_in_mem,
-     setboolValue},
-    {"XRD", "FALSE", FALSE, KEYWORD_DEFAULT, &input.XRD, setboolValue},
+    {"XRD", "FALSE", FALSE, KEYWORD_DEFAULT, &input.XRD, setboolValue}, 
 
     {"J_FILE",     "", FALSE, KEYWORD_REQUIRED, input.JFile, setcharValue},
     {"BACKGROUND_FILE", "", FALSE, KEYWORD_REQUIRED, input.background_File,
@@ -150,7 +152,7 @@ void readInput(char *input_string)
 
     {"VMICRO_CHAR", "",     FALSE, KEYWORD_REQUIRED, &atmos.vmicro_char,
      setdoubleValue},
-    {"VMACRO_TRESH", "0.1", FALSE, KEYWORD_OPTIONAL, &atmos.vmacro_tresh,
+    {"VMACRO_TRESH", "0.0", FALSE, KEYWORD_OPTIONAL, &atmos.vmacro_tresh,
      setdoubleValue},
     {"LAMBDA_REF",   "500.0", FALSE, KEYWORD_DEFAULT, &atmos.lambda_ref,
      setdoubleValue},
@@ -169,11 +171,14 @@ void readInput(char *input_string)
      &input.magneto_optical, setboolValue},
     {"BACKGROUND_POLARIZATION", "FALSE", FALSE, KEYWORD_DEFAULT,
      &input.backgr_pol, setboolValue},
+    {"RLK_EXPLICIT", "FALSE", FALSE, KEYWORD_DEFAULT,
+     &input.RLK_explicit, setboolValue},
+
     {"XDR_ENDIAN", "TRUE", FALSE, KEYWORD_OPTIONAL,
      &input.xdr_endian, setboolValue},
 
-    {"S_INTERPOLATION", "LINEAR", FALSE, KEYWORD_DEFAULT,
-     &input.S_interpolation, set_S_interpolation},
+    {"S_INTERPOLATION", "S_LINEAR", FALSE, KEYWORD_DEFAULT,
+     &input.S_interpolation, set_S_Interpolation},
 
     {"S_INTERPOLATION_STOKES", "DELO_BEZIER3", FALSE, KEYWORD_DEFAULT,
      &input.S_interpolation_stokes, set_S_interpolation_stokes},
@@ -206,17 +211,6 @@ void readInput(char *input_string)
     {"Y_END", "-1",  FALSE, KEYWORD_OPTIONAL, &input.p15d_y1,
      setintValue},
     {"Y_STEP", "1",  FALSE, KEYWORD_OPTIONAL, &input.p15d_yst,
-     setintValue},
-
-    {"COLLRAD_SWITCH",     "0.0", FALSE, KEYWORD_OPTIONAL, &input.crsw,
-     setdoubleValue},
-    {"COLLRAD_SWITCH_INI", "1.0", FALSE, KEYWORD_OPTIONAL, &input.crsw_ini,
-     setdoubleValue},
-
-    {"PRD_SWITCH",     "0.0", FALSE, KEYWORD_OPTIONAL, &input.prdsw,
-     setdoubleValue},
-
-    {"N_PESC_ITER", "3",  FALSE, KEYWORD_OPTIONAL, &input.NpescIter,
      setintValue},
 
     {"VTURB_MULTIPLIER",     "1.0", FALSE, KEYWORD_OPTIONAL, &input.vturb_mult,
@@ -260,11 +254,48 @@ void readInput(char *input_string)
 
   switch (topology) {
   case ONE_D_PLANE:
-    if (atmos.Nrays == 0) {
+    if (atmos.Nrays == 0)
       Error(ERROR_LEVEL_2, routineName,
 	    "Must set keyword NRAYS in 1-D plane parallel geometry");
-    }
-    if (atmos.angleSet.set != NO_SET) {
+
+    if (atmos.angleSet.set == SET_VERTICAL ||
+	atmos.angleSet.set == SET_GAUSS_LOBATTO ||
+	atmos.angleSet.set == SET_EDDINGTON) {
+      switch (atmos.angleSet.set) {
+      case SET_VERTICAL:
+      
+	if (atmos.Nrays != 1) {
+	  Error(WARNING, routineName,
+		"Ignoring value of NRAYS in 1-D plane geometry when"
+		" SET_VERTICAL is specified\n. Setting NRAYS = 1");
+	}
+	atmos.Nrays = 1;
+	break;
+	
+      case SET_GAUSS_LOBATTO:
+	
+	if (atmos.Nrays != NRO_GLOB_4  &&  atmos.Nrays != NRO_GLOB_6) {
+	  sprintf(errorStr, "NRAYS must be %d or %d for SET_GAUSS_LOBATTO",
+		  NRO_GLOB_4, NRO_GLOB_6);
+	  Error(ERROR_LEVEL_2, routineName, errorStr);
+	}
+	break;
+	
+      case SET_EDDINGTON:
+	
+	if (atmos.Nrays != 1) {
+	  Error(WARNING, routineName,
+		"Ignoring value of NRAYS in 1-D plane geometry when"
+		" SET_EDDINGTON is specified\n. Setting NRAYS = 1,"
+		" and muz = 1/sqrt(3)");
+	}
+	atmos.Nrays = 1;
+	break;
+	
+      default:
+	break;
+      }
+    } else {
       Error(WARNING, routineName,
 	    "Ignoring value of keyword ANGLE_SET in 1-D plane geometry");
     }
@@ -284,7 +315,7 @@ void readInput(char *input_string)
 	    "Ignoring value of keywords ANGLE_SET > NO_VERTICAL when\n "
 	    " EDDINGTON is set to TRUE\n"
 	    " Using SET_VERTICAL with muz = 1/sqrt(3)");
-      atmos.angleSet.set = SET_VERTICAL;
+      atmos.angleSet.set = SET_EDDINGTON;
     }
     break;
 
@@ -314,26 +345,14 @@ void readInput(char *input_string)
 	    "Value of LAMBDA_REF should be larger than or equal 0.0");
     break;
   }
-  /* --- Stokes for the moment only in 1D plane --     -------------- */
-
+ 
   if (strcmp(input.Stokes_input, "none")) {
+
+    /* --- Magnetic field is specified --              -------------- */
+
     switch (topology) {
     case ONE_D_PLANE:
     case TWO_D_PLANE:
-      if (atmos.B_char == 0.0) {
-	Error(WARNING, routineName,
-	      "Parameter atmos.B_char not set or set to zero\n"
-	      " Wavelength grids of line profiles do not take account "
-	      " of Zeeman splitting");
-      }
-      if (input.StokesMode == NO_STOKES) {
-        sprintf(messageStr, "%s",
-	      "Keyword STOKES_MODE == NO_STOKES.\n"
-	      " Set to FIELD_FREE, POLARIZATION_FREE, or FULL_STOKES\n"
-	      " when doing polarization calculations");
-	Error(ERROR_LEVEL_1, routineName, messageStr);
-      }
-      break;
     case THREE_D_PLANE:
       if (atmos.B_char == 0.0) {
 	Error(WARNING, routineName,
@@ -344,7 +363,7 @@ void readInput(char *input_string)
       if (input.StokesMode == NO_STOKES) {
         sprintf(messageStr, "%s",
 	      "Keyword STOKES_MODE == NO_STOKES.\n"
-	      " Set to FIELD_FREE, POLARIZATION_FREE, or FULL_STOKES\n"
+	      " Set to FIELD_FREE or FULL_STOKES\n"
 	      " when doing polarization calculations");
 	Error(ERROR_LEVEL_1, routineName, messageStr);
       }
@@ -354,15 +373,21 @@ void readInput(char *input_string)
 	    "Cannot accomodate magnetic fields in this topology");
     }
   } else {
+
+    /* --- No magnetic field input specified --        -------------- */
+    
     if (atmos.B_char != 0.0) {
       Error(WARNING, routineName,
 	    "Ignoring value of keyword B_STRENGTH_CHAR when no "
 	    "magnetic field is read");
     }
-    if (input.StokesMode > NO_STOKES) {
-      Error(WARNING, routineName,
-	    "Ignoring value of keyword STOKES_MODE when no "
-	    "magnetic field is read");
+    if ((input.StokesMode == FIELD_FREE ||
+	 input.StokesMode == FULL_STOKES) &&
+	input.backgr_pol == FALSE) {
+      Error(ERROR_LEVEL_2, routineName,
+	    "Should not run STOKES_MODE == FIELD_FREE or FULL_STOKES\n "
+	    "when no magnetic field is read and "
+	    "BACKGROUND_POLARIZATION == FALSE");
     }
   }
   /* --- Hydrostatic equilibrium only in 1-D plane parallel -- ------ */

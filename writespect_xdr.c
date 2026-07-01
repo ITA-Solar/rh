@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Thu Jan 19 13:21:37 2012 --
+       Last modified: Tue Feb 27 15:54:34 2024 --
 
        --------------------------                      ----------RH-- */
 
@@ -89,18 +89,18 @@ void writeSpectrum(Spectrum *spectrum)
     Nintensity = 0;
     break;
   }
-  result &= xdr_vector(&xdrs, (char *) spectrum->I[0], Nintensity,
+  result &= xdr_vector(&xdrs, (char *) spectrum->I[0], Nintensity, 
 		       sizeof(double), (xdrproc_t) xdr_double);
 
   result &= xdr_bool(&xdrs, &spectrum->vacuum_to_air);
   result &= xdr_double(&xdrs, &vacuum_to_air_limit);
 
   if (atmos.Stokes || input.backgr_pol) {
-    result &= xdr_vector(&xdrs, (char *) spectrum->Stokes_Q[0], Nintensity,
+    result &= xdr_vector(&xdrs, (char *) spectrum->Stokes_Q[0], Nintensity, 
 			 sizeof(double), (xdrproc_t) xdr_double);
-    result &= xdr_vector(&xdrs, (char *) spectrum->Stokes_U[0], Nintensity,
+    result &= xdr_vector(&xdrs, (char *) spectrum->Stokes_U[0], Nintensity, 
 			 sizeof(double), (xdrproc_t) xdr_double);
-    result &= xdr_vector(&xdrs, (char *) spectrum->Stokes_V[0], Nintensity,
+    result &= xdr_vector(&xdrs, (char *) spectrum->Stokes_V[0], Nintensity, 
 			 sizeof(double), (xdrproc_t) xdr_double);
   }
 
@@ -137,9 +137,73 @@ void writeSpectrum(Spectrum *spectrum)
       }
       for (nspect = 0;  nspect < spectrum->Nspect;  nspect++)
 	writeJ20lambda(nspect, spectrum->J20[nspect]);
-
+      
       close(spectrum->fd_J20);
+    }
+    /* --- Write the mean intensity transformed to the gas frame -- - */
+    
+    if (atmos.NPRDactive > 0  &&
+	input.PRD_angle_dep == PRD_ANGLE_APPROX) {
+
+      writeJgas(spectrum->Jgas);
     }
   }
 }
+
 /* ------- end ---------------------------- writeSpectrum.c --------- */
+
+
+/* ------- begin -------------------------- freeSpectrum.c ---------- */
+
+void freeSpectrum(Spectrum *spectrum)
+{
+  register int nspect, nact;
+
+  ActiveSet *as;
+  
+  /* --- Clean up memory allocations for the Spectrum structure -- -- */
+
+  free(spectrum->lambda);
+
+  if (atmos.NPRDactive > 0  &&  input.PRD_angle_dep == PRD_ANGLE_DEP)
+    free(spectrum->PRDindex);
+  
+  freeMatrix((void **) spectrum->I);
+  freeMatrix((void **) spectrum->J);
+  
+  if (atmos.Stokes || input.backgr_pol) {
+    freeMatrix((void **) spectrum->Stokes_Q);
+    freeMatrix((void **) spectrum->Stokes_U);
+    freeMatrix((void **) spectrum->Stokes_V);
+  }
+  if (input.backgr_pol) freeMatrix((void **) spectrum->J20);
+
+  for (nspect = 0; nspect < spectrum->Nspect; nspect++) {
+    as = &spectrum->as[nspect];
+
+    for (nact = 0; nact < atmos.Nactiveatom; nact++)
+    {
+      if (as->Nactiveatomrt[nact] > 0)
+        {
+          free(as->art[nact]);
+          free(as->lower_levels[nact]);
+          free(as->upper_levels[nact]);
+      }
+    }
+    if (atmos.Nactiveatom > 0) free(as->art);
+    
+    /* --- Reallocate space for the molecular transition arrays -- -- */
+
+    for (nact = 0; nact < atmos.Nactivemol; nact++)
+    {
+      if (as->Nactivemolrt[nact] > 0)
+      {
+        free(as->mrt[nact]);
+      }
+    }
+    if (atmos.Nactivemol > 0) free(as->mrt);
+  }
+  free(spectrum->as);
+}
+
+/* ------- end ---------------------------- freeSpectrum.c ---------- */

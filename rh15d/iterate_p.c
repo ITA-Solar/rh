@@ -1,8 +1,8 @@
 /* ------- file: -------------------------- iterate.c ---------------
 
        Version:       rh2.0
-       Author:        Tiago Pereira (tiago.pereira@nasa.gov)
-       Last modified: Tue Jan 24 18:26:00 2012 --
+       Author:        Han Uitenbroek  (huitenbroek@nso.edu)
+       Last modified: Tue Feb 20 13:13:59 2024 --
 
        --------------------------                      ----------RH-- */
 
@@ -51,11 +51,11 @@ void Iterate_p(int NmaxIter, double iterLimit)
 {
   const char routineName[] = "Iterate";
   register int niter, nact;
-  double cswitch;
 
-  bool_t eval_operator, write_analyze_output, equilibria_only;
-  double dpopsmax, PRDiterlimit;
-  Atom *atom;
+  bool_t    eval_operator, write_analyze_output, equilibria_only;
+  int       Ngorder;
+  double    dpopsmax, PRDiterlimit;
+  Atom     *atom;
   Molecule *molecule;
 
   if (NmaxIter <= 0) {
@@ -76,31 +76,23 @@ void Iterate_p(int NmaxIter, double iterLimit)
   }
   for (nact = 0;  nact < atmos.Nactivemol;  nact++) {
     molecule = atmos.activemols[nact];
+    Ngorder  = (input.accelerate_mols) ? input.Ngorder : 0;
+
     molecule->Ng_nv = NgInit(molecule->Nv*atmos.Nspace, input.Ngdelay,
-			       input.Ngorder, input.Ngperiod,
-			       molecule->nv[0]);
+			     Ngorder, input.Ngperiod, molecule->nv[0]);
   }
   /* --- Start of the main iteration loop --             ------------ */
 
   niter = 1;
-  
-  /* Collisional-radiative switching ? */
-  if (input.crsw != 0.0)
-    cswitch = input.crsw_ini;
-  else
-    cswitch = 1.0;
+  while (niter <= NmaxIter ||
+	 (input.CR_Nstep > 0 && niter <= input.CR_Nstep)) {
+
+    if (StopRequested()) return;
     
-  /* PRD switching ? */
-  if (input.prdsw > 0.0)
-    input.prdswitch = 0.0;
-  else
-    input.prdswitch = 1.0;
-  
-  while (niter <= NmaxIter) {
     getCPU(2, TIME_START, NULL);
 
     for (nact = 0;  nact < atmos.Nactiveatom;  nact++)
-      initGammaAtom(atmos.activeatoms[nact], cswitch); 
+      initGammaAtom(atmos.activeatoms[nact], niter);
     for (nact = 0;  nact < atmos.Nactivemol;  nact++)
       initGammaMolecule(atmos.activemols[nact]);
 
@@ -110,8 +102,7 @@ void Iterate_p(int NmaxIter, double iterLimit)
 
     /* --- Solve statistical equilibrium equations --  -------------- */
 
-    sprintf(messageStr, "\n -- Iteration %3d, switch = %.2f, prd switch = %.2f\n",
-	    niter, cswitch, input.prdswitch);
+    sprintf(messageStr, "\n -- Iteration %3d\n", niter);
     Error(MESSAGE, routineName, messageStr);
     dpopsmax = updatePopulations(niter);
     if (mpi.stop) return;
@@ -137,20 +128,11 @@ void Iterate_p(int NmaxIter, double iterLimit)
     mpi.niter[mpi.task] = niter;
     mpi.dpopsmax_hist[mpi.task][niter-1] = dpopsmax;
 
-    if ((dpopsmax < iterLimit) && (cswitch <= 1.0) && (input.prdswitch >= 1.0)) break;
+    if (dpopsmax < iterLimit) break;
     niter++;
     
     if (input.solve_ne == ITERATION)
       Background(write_analyze_output=TRUE, equilibria_only=FALSE);
-    
-    /* Update collisional radiative switching */
-    if (input.crsw > 0)
-      cswitch = MAX(1.0, cswitch * pow(0.1, 1./input.crsw));
-      
-    /* Update PRD switching */ 
-    if (input.prdsw > 0.0) 
-      input.prdswitch = MIN(1.0, input.prdsw * (double) (niter * niter) ); 
-
 
     if (atmos.hydrostatic) {
       if (!atmos.atoms[0].active) {
@@ -186,7 +168,7 @@ void Iterate_p(int NmaxIter, double iterLimit)
 
 double solveSpectrum_p(bool_t eval_operator, bool_t redistribute)
 {
-  register int nspect, nt,k;
+  register int nspect, nt, k;
 
   int         Nthreads, lambda_max;
   double      dJ, dJmax;
@@ -218,12 +200,14 @@ double solveSpectrum_p(bool_t eval_operator, bool_t redistribute)
   lambda_max = 0;
   dJmax = 0.0;
 
-  // zero out J in gas parcel's frame
-  if (spectrum.updateJ && input.PRD_angle_dep == PRD_ANGLE_APPROX
-      && atmos.Nrays > 1  && atmos.NPRDactive > 0){
-  for (k = 0;  k < atmos.Nspace;  k++) {
-    for (nspect = 0;  nspect < spectrum.Nspect;  nspect++) {
-      spectrum.Jgas[nspect][k] = 0.0;
+  /* --- Zero out J in gas parcel's frame --           -------------- */
+  
+  if (spectrum.updateJ  &&
+      input.PRD_angle_dep == PRD_ANGLE_APPROX &&
+      atmos.Nrays > 1 && atmos.NPRDactive > 0){
+    for (k = 0;  k < atmos.Nspace;  k++) {
+      for (nspect = 0;  nspect < spectrum.Nspect;  nspect++) {
+	spectrum.Jgas[nspect][k] = 0.0;
       }
     }
   }

@@ -2,7 +2,7 @@
 
        Version:       rh2.0, 1-D spherically symmetric
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Fri Jan 28 11:01:08 2005 --
+       Last modified: Wed May 23 10:52:47 2018 --
 
        --------------------------                      ----------RH-- */
 
@@ -10,7 +10,7 @@
        return emergent intensity I_surface along a ray with given
        optical depth scale tau and source function S.
 
-    -- When FeautrierOrder == HERMITE the fourth order Feautrier method
+    -- When FeautrierOrder == FEAUTRIER_HERMITE the fourth order Feautrier method
        suggested by L. Auer (1976, JQSRT 16, 931-938) is used.
 
     -- Numerical scheme formulated as in Appendix A of:
@@ -24,6 +24,7 @@
 #include <math.h>
 
 #include "rh.h"
+#include "error.h"
 #include "atom.h"
 #include "atmos.h"
 #include "geometry.h"
@@ -38,10 +39,10 @@
 
 /* --- Global variables --                             -------------- */
 
-extern char messageStr[];
 extern Geometry geometry;
 extern Atmosphere atmos;
 extern Spectrum spectrum;
+extern char messageStr[];
 
 
 /* ------- begin -------------------------- Feautrier.c ------------- */
@@ -83,12 +84,16 @@ double Feautrier(int nspect, int mu, double *chi, double *S,
     r0 = 0.0;
     h0 = geometry.Itop[nspect];
     break;
+    case THERMALIZED:
+      sprintf(messageStr, "Boundary condition not implemented: %d",
+	      geometry.rboundary[TOP]);
+      Error(ERROR_LEVEL_2, routineName, messageStr);
   }
   f0      = (1.0 - r0) / (1.0 + r0);
   abc[0]  = 1.0 + 2.0*f0 / dtau[0];
   C1[0]   = 2.0 / SQ(dtau[0]);
   Stmp[0] = S[0] + 2.0*h0 / ((1.0 + r0)*dtau[0]);
-  if (F_order == HERMITE) {
+  if (F_order == FEAUTRIER_HERMITE) {
     C1[0]   -= 2.0*A_SIXTH;
     Stmp[0] += 2.0*A_SIXTH * (S[1] - S[0]);
   }
@@ -108,7 +113,7 @@ double Feautrier(int nspect, int mu, double *chi, double *S,
   abc[Ns-1]  = 1.0 + 2.0*fN / dtau[Ns-2];
   A1[Ns-1]   = 2.0 / SQ(dtau[Ns-2]);
   Stmp[Ns-1] = S[Ns-1] + 2.0*hN / ((1.0 + rN)*dtau[Ns-2]);
-  if (F_order == HERMITE) {
+  if (F_order == FEAUTRIER_HERMITE) {
     A1[Ns-1]   -= 2.0*A_SIXTH;
     Stmp[Ns-1] += 2.0*A_SIXTH * (S[Ns-2] - S[Ns-1]);
   }
@@ -120,7 +125,7 @@ double Feautrier(int nspect, int mu, double *chi, double *S,
     abc[k]  = 1.0;
     Stmp[k] = S[k];
   }
-  if (F_order == HERMITE) {
+  if (F_order == FEAUTRIER_HERMITE) {
     for (k = 1;  k < Ns-1;  k++) {
       Ak     = A_SIXTH * (1.0 - 0.5*SQ(dtau[k])*A1[k]);
       Ck     = A_SIXTH * (1.0 - 0.5*SQ(dtau[k-1])*C1[k]);
@@ -147,7 +152,7 @@ double Feautrier(int nspect, int mu, double *chi, double *S,
   /* --- If necessary evaluate the diagonal operator -- ------------- */
 
   if (Psi) {
-    if (F_order == HERMITE) {
+    if (F_order == FEAUTRIER_HERMITE) {
       sprintf(messageStr,
 	      "Higher order for diagonal operator not yet implemented");
       Error(ERROR_LEVEL_1, routineName, messageStr);

@@ -37,7 +37,6 @@
        the string input value to the proper type and store the latter
        in the variable pointed to by pointer.
        --                                              -------------- */
-#define _GNU_SOURCE
 
 #include <ctype.h>
 #include <stdlib.h>
@@ -207,6 +206,10 @@ void setAngleSet(char *value, void *pointer)
   else if  (!strcmp(value, "SET_B4")) angleSet.set = SET_B4;
   else if  (!strcmp(value, "SET_B6")) angleSet.set = SET_B6;
   else if  (!strcmp(value, "SET_B8")) angleSet.set = SET_B8;
+  else if  (!strcmp(value, "SET_GAUSS_LOBATTO"))
+    angleSet.set = SET_GAUSS_LOBATTO;
+  else if  (!strcmp(value, "SET_EDDINGTON"))
+    angleSet.set = SET_EDDINGTON;
   else if  (!strcmp(value, "NO_SET")) angleSet.set = NO_SET;
 
   else if (strstr(value, "SET_GL_")) {
@@ -267,8 +270,6 @@ void setStokesMode(char *value, void *pointer)
     StokesMode = NO_STOKES;
   else if (!strcmp(value, "FIELD_FREE"))
     StokesMode = FIELD_FREE;
-  else if (!strcmp(value, "POLARIZATION_FREE"))
-    StokesMode = POLARIZATION_FREE;
   else if (!strcmp(value, "FULL_STOKES"))
     StokesMode = FULL_STOKES;
   else {
@@ -279,77 +280,6 @@ void setStokesMode(char *value, void *pointer)
   memcpy(pointer, &StokesMode, sizeof(enum_t));
 }
 /* ------- end ---------------------------- setStokesMode.c --------- */
-
-
-/* ------- begin ---------------------- set_S_interpolation.c ------- */
-
-void set_S_interpolation(char *value, void *pointer)
-{
-  const char routineName[] = "set_S_interpolation";
-
-  enum S_interpol interpolation;
-
-  if (!strcmp(value, "LINEAR"))
-    interpolation = S_LINEAR;
-  else if (!strcmp(value, "BEZIER"))
-    interpolation = BEZIER;
-  else if (!strcmp(value, "BEZIER3"))
-    interpolation = BEZIER3;
-  else if (!strcmp(value, "CUBIC_HERMITE"))
-    interpolation = CUBIC_HERMITE;
-  else {
-    sprintf(messageStr,
-	     "Invalid value for keyword S_INTERPOLATION: %s", value);
-    Error(ERROR_LEVEL_2, routineName, messageStr);
-  }
-  memcpy(pointer, &interpolation, sizeof(enum S_interpol));
-}
-/* ------- end -----------------------set_S_interpolation.c ------- */
-
-/* ------- begin ---------------------- set_S_interpolation_stokes.c ------- */
-
-void set_S_interpolation_stokes(char *value, void *pointer)
-{
-  const char routineName[] = "set_S_interpolation_stokes";
-
-  enum S_interpol_stokes interpolation;
-
-  if (!strcmp(value, "DELO_BEZIER3"))
-    interpolation = DELO_BEZIER3;
-  else if (!strcmp(value, "DELO_PARABOLIC"))
-    interpolation = DELO_PARABOLIC;
-  else {
-    sprintf(messageStr,
-	     "Invalid value for keyword S_INTERPOLATION_STOKES: %s", value);
-    Error(ERROR_LEVEL_2, routineName, messageStr);
-  }
-  memcpy(pointer, &interpolation, sizeof(enum S_interpol));
-}
-/* ------- end -----------------------set_S_interpolation_stokes.c ------- */
-
-
-/* ------- begin -------------------------- setPRDangle.c --------- */
-
-void setPRDangle(char *value, void *pointer)
-{
-  const char routineName[] = "setPRDangle";
-
-  enum PRDangle PRD_angle_dep;
-
-  if (!strcmp(value, "PRD_ANGLE_INDEP"))
-    PRD_angle_dep = PRD_ANGLE_INDEP;
-  else if (!strcmp(value, "PRD_ANGLE_APPROX"))
-    PRD_angle_dep = PRD_ANGLE_APPROX;
-  else if (!strcmp(value, "PRD_ANGLE_DEP"))
-    PRD_angle_dep = PRD_ANGLE_DEP;
-  else {
-    sprintf(messageStr,
-	     "Invalid value for keyword PRD_ANGLE_DEP: %s", value);
-    Error(ERROR_LEVEL_2, routineName, messageStr);
-  }
-  memcpy(pointer, &PRD_angle_dep, sizeof(enum_t));
-}
-/* ------- end ---------------------------- setPRDangle.c --------- */
 
 /* ------- begin -------------------------- setThreadValue.c -------- */
 
@@ -429,6 +359,77 @@ void setInterpolate_3D(char *value, void *pointer)
   memcpy(pointer, &order, sizeof(enum order_3D));
 }
 /* ------- end ---------------------------- setInterpolate_3D.c ----- */
+
+
+/* ------- begin -------------------------- set_S_Interpolation.c --- */
+
+void set_S_Interpolation(char *value, void *pointer)
+{
+  const char routineName[] = "setInterpolate_3D";
+
+  enum S_interpol interpolation;
+
+  if (!strcmp(value, "S_PARABOLIC"))
+    interpolation = S_PARABOLIC;
+  else if (!strcmp(value, "S_LINEAR"))
+    interpolation = S_LINEAR;
+  else if (!strcmp(value, "S_BEZIER3"))
+    interpolation = S_BEZIER3;
+  else {
+    sprintf(messageStr,
+	    "\n  Invalid value for keyword S_INTERPOLATION: %s", value);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
+  memcpy(pointer, &interpolation, sizeof(enum S_interpol));
+}
+/* ------- end ---------------------------- set_S_Interpolation.c --- */
+
+
+/* ------- begin ------------------- set_S_interpolation_stokes.c --- */
+
+void set_S_interpolation_stokes(char *value, void *pointer)
+{
+  const char routineName[] = "set_S_interpolation_stokes";
+
+  enum S_interpol_stokes interpolation;
+
+  if (!strcmp(value, "DELO_BEZIER3"))
+    interpolation = DELO_BEZIER3;
+  else if (!strcmp(value, "DELO_PARABOLIC"))
+    interpolation = DELO_PARABOLIC;
+  else {
+    sprintf(messageStr,
+	     "Invalid value for keyword S_INTERPOLATION_STOKES: %s", value);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
+  memcpy(pointer, &interpolation, sizeof(enum S_interpol_stokes));
+}
+/* ------- end --------------------- set_S_interpolation_stokes.c --- */
+
+
+/* ------- begin ------------------- setPRDangle.c ------------------ */
+
+void setPRDangle(char *value, void *pointer)
+{
+  const char routineName[] = "setPRDangle";
+
+  enum PRDangle PRD_angle_dep;
+
+  if (!strcmp(value, "PRD_ANGLE_AVER") || !strcmp(value, "FALSE"))
+    PRD_angle_dep = PRD_ANGLE_AVER;
+  else if (!strcmp(value, "PRD_ANGLE_APPROX"))
+    PRD_angle_dep = PRD_ANGLE_APPROX;
+  else if (!strcmp(value, "PRD_ANGLE_DEP"))
+    PRD_angle_dep = PRD_ANGLE_DEP;
+  else {
+    sprintf(messageStr,
+	     "Invalid value for keyword PRD_ANGLE_DEP: %s", value);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
+  }
+  memcpy(pointer, &PRD_angle_dep, sizeof(enum_t));
+}
+/* ------- end ---------------------------- setPRDangle.c ----------- */
+
 
 /* ------- begin -------------------------- setstartValue.c --------- */
 

@@ -80,10 +80,11 @@ void COcollisions(struct Molecule *molecule)
 
   molecule->C_ul = (double *) malloc(atmos.Nspace * sizeof(double));
 
-  /* --- Neutral hydrogen contribution --              -------------- */
-
   for (k = 0;  k < atmos.Nspace;  k++) {
     if (molecule->n[k]) {
+
+      /* --- Neutral hydrogen contribution --          -------------- */
+
       molecule->C_ul[k] = C_0 * atmos.T[k] *
 	exp(B_H - A_H * pow(atmos.T[k], -0.33333333)) /
 	(1.0 - exp(-beta[k])) * atmos.H->n[0][k];

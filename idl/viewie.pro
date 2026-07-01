@@ -94,7 +94,7 @@ PRO XViewIe_Event, Event
     'QUIT': widget_control, Event.top, /DESTROY
 
     'PRINT': BEGIN
-      filename = '/tmp/viewIe-' + timeStamp() + '.ps'
+      filename = 'viewIe-' + timeStamp() + '.ps'
       psopen, FILENAME=filename, /COLOR, FONT=font
       scaleFactor = [!D.X_SIZE, !D.Y_SIZE] / float(screenSize)
       drawIe, state
@@ -179,6 +179,11 @@ PRO XViewIe_Event, Event
       widget_control, stash, SET_UVALUE=state
     END
     'KPK_ATLAS': BEGIN
+      state.atlas = Action
+      drawIe, state
+      widget_control, stash, SET_UVALUE=state
+    END
+    'KPSPOT_ATLAS': BEGIN
       state.atlas = Action
       drawIe, state
       widget_control, stash, SET_UVALUE=state
@@ -283,8 +288,8 @@ FUNCTION IeWidgetSetup, lambda, blue, red
            xmuText: 0L, ymuText: 0L, zmuText: 0L, wmuText: 0L, $
            blueField: 0L, redField: 0L, xSlider: 0L, zSlider: 0L, $
            ray: rayNo, log: 0, wire: 1,  blue: long(blue),  red: long(red), $
-           lambdablue: lambda(blue), lambdared: lambda(red), $
-           atlas_toggle: 0L, atlas: "KPNO", atlas_button: lonarr(6), $
+           lambdablue: lambda[blue], lambdared: lambda[red], $
+           atlas_toggle: 0L, atlas: "KPNO", atlas_button: lonarr(7), $
            atlas_scale: 0.0, x_press: 0L, y_press: 0L}
 
   state.baseWidget = widget_base(TITLE='XViewIe', /ROW, MBAR=menuBar, $
@@ -352,7 +357,9 @@ FUNCTION IeWidgetSetup, lambda, blue, red
                                             UVALUE='KPK_ATLAS')
       state.atlas_button[5] = widget_button(atlasMenu, VALUE='ATMOS (IR)', $
                                             UVALUE='ATMOS_ATLAS')
-      FOR n=0, 5 DO widget_control, state.atlas_button[n], SENSITIVE=0
+      state.atlas_button[6] = widget_button(atlasMenu, VALUE='KP spot', $
+                                            UVALUE='KPSPOT_ATLAS')
+      FOR n=0, 6 DO widget_control, state.atlas_button[n], SENSITIVE=0
     ENDIF ELSE $
      widget_control, atlasMenu, SENSITIVE=0
   ENDELSE
@@ -570,8 +577,10 @@ PRO drawIe, state, SET_ATLAS_SCALE=set_atlas_scale, TRACK=track
              KPNOatlas, state.lambdablue, state.lambdared, Iatlas, latlas $
             ELSE IF (state.atlas EQ "KPIR_ATLAS") THEN $
              KPIRatlas, state.lambdablue, state.lambdared, Iatlas, latlas $
+            ELSE IF (state.atlas EQ "ATMOS_ATLAS") THEN $
+             ATMOSatlas, state.lambdablue, state.lambdared, Iatlas, latlas $
             ELSE $
-             ATMOSatlas, state.lambdablue, state.lambdared, Iatlas, latlas
+             KPspotatlas, state.lambdablue, state.lambdared, Iatlas, latlas
 
             IF (state.atlas_scale EQ 0.0 AND $
                 NOT keyword_set(SET_ATLAS_SCALE)) THEN BEGIN
@@ -637,7 +646,7 @@ PRO XViewIe, BLUE=blue, RED=red, GROUP_LEADER=group_leader
 ;
 ; 	Written by:    Han Uitenbroek
 ;
-;   --- Last modified: Fri Apr 17 15:34:52 2009 --
+;   --- Last modified: Tue Jun  7 16:42:23 2011 --
 ;-
 
 @geometry.common

@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Wed Nov 17 16:29:32 2010 --
+       Last modified: Wed Feb  3 11:23:58 2021 --
 
        --------------------------                      ----------RH-- */
 
@@ -21,6 +21,9 @@
        When keyword fromscratch is set the electron density is
        calculated from scratch, using pure Hydrogen ionization
        as initial guess. Otherwise, the values passed in ne are used.
+
+       Correction from Chris Osborne, Glasgow University (CMO) in
+         getfjk().
        --                                              -------------- */
  
 #include <math.h>
@@ -36,7 +39,7 @@
 
 #define MAX_ELECTRON_ERROR         1.0E-2
 #define N_MAX_ELECTRON_ITERATIONS  100
-#define N_MAX_ELEMENT              20
+#define N_MAX_ELEMENT              26
 
 
 /* --- Function prototypes --                          -------------- */
@@ -155,7 +158,9 @@ void getfjk(Element *element, double ne, int k, double *fjk, double *dfjk)
   Atom *atom;
 
   /* --- Get the fractional population f_j(ne, T) = N_j/N for element
-         element and its partial derivative with ne. -- ------------- */
+         element and its partial derivative with ne. 
+
+         CMO correction in evaluation of fjk --         ------------- */
 
   if (element->model  &&  element->model->NLTEpops) {
 
@@ -168,7 +173,10 @@ void getfjk(Element *element, double ne, int k, double *fjk, double *dfjk)
       dfjk[j] = 0.0;
     }
     for (i = 0;  i < atom->Nlevel;  i++)
-      fjk[atom->stage[i]] += atom->stage[i] * atom->n[i][k];
+      
+      /* --- Correction (CMO): no multiplication with stage[i] -- --- */
+
+      fjk[atom->stage[i]] += atom->n[i][k];
 
     for (j = 0;  j < element->Nstage;  j++) fjk[j] /= atom->ntotal[k];
   } else {
