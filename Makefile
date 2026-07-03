@@ -50,7 +50,6 @@ SRC = abundance.c \
 	  getline.c \
 	  giigen.c \
 	  h2collisions.c \
-	  humlicek.c \
 	  hunt.c \
 	  hydrogen.c \
 	  initial_xdr.c \
@@ -93,6 +92,7 @@ SRC = abundance.c \
 	  thomson.c \
 	  vacuumtoair.c \
 	  voigt.c \
+	  voigt_cmplx.c \
 	  w3.c \
 	  wigner.c \
 	  writeatmos_xdr.c \

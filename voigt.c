@@ -30,10 +30,10 @@
 
        -- Lookup table. 
 
-    Note: If a FORTRAN 90 compiler is available FORTRAN's builtin
-          complex arithmatic can be used by defining HAVE_F90 and
-          linking with humlicek_.f90, hui_.f90, and libf90 at the final
-          linking step that makes the executable.
+    Note: VoigtHui and VoigtHumlicek are defined in voigt_cmplx.c, where
+          they use C99 native complex arithmetic (double _Complex). This
+          is as fast as the old optional FORTRAN path (humlicek_.f90,
+          hui_.f90) but needs no FORTRAN, so HAVE_F90 is obsolete.
 
        --                                              -------------- */
 
@@ -43,7 +43,6 @@
 
 #include "rh.h"
 #include "constant.h"
-#include "complex.h"
 #include "error.h"
 
 #define  TINY 1.0E-08
@@ -60,15 +59,6 @@ double VoigtK1(double a, double v);
 double VoigtK2(double a, double v);
 double VoigtK3(double a, double v);
 
-#if defined(HAVE_F90)
-void humlicek_(double *a, double *v, complex *W);
-void hui_(complex *z, complex *W);
-#else
-complex Humlicek1(complex z);
-complex Humlicek2(complex z);
-complex Humlicek3(complex z);
-complex Humlicek4(complex z);
-#endif
 
 double VoigtLookup(double a, double v);
 
@@ -305,119 +295,9 @@ double VoigtRybicki(double a, double v)
 }
 /* ------- end ---------------------------- VoigtRybicki.c ---------- */
 
-/* ------- begin -------------------------- VoigtHui.c -------------- */
-
-#define NHUI 6
-
-double VoigtHui(double a, double v, double *F)
-{
-#if !defined(HAVE_F90)
-  register int n;
-
-  static double ah[NHUI+1] = 
-        {122.607931777104326, 214.382388694706425, 181.928533092181549,
-          93.155580458138441,  30.180142196210589,   5.912626209773153,
-           0.564189583562615};
-
-  static double bh[NHUI+1] =
-        {122.607931773875350, 352.730625110963558, 457.334478783897737,
-         348.703917719495792, 170.354001821091472,  53.992906912940207,
-          10.479857114260399};
-
-  complex W1 = {0.0, 0.0}, W2;
-
-  /* --- Voigt function generator using rational approximation of
-         the complex error function W(a - iv).
-         This routine is faster for large a (> 1.5)
-
-         Voigt:             H(a, v) = Re[W(v + ia)]
-         Faraday - Voigt: 2*F(a, v) = Im[W(v + ia)]
-
-         --                                            -------------- */
-#endif
-  complex z, W;
-
-  z  = cmplx(a, -v);
-
-#if defined(HAVE_F90)
-
-  /* --- If a FORTRAN 90 compiler is available then FORTRAN's intrinsic 
-         complex arithmatic can be used. This will give a factor of
-         two to three improvement in speed (with the SUN compilers).
-
-    See: hui_.f90
-         --                                            -------------- */
-
-  hui_(&z, &W);
-#else
-
-  /* --- C version is used otherwise --                -------------- */
-
-  W2 = z;
-  for (n = NHUI;  n >= 0;  n--) {
-    W1 = cmplx_mult(cmplx_addr(W1, ah[n]), z);
-    W2 = cmplx_mult(cmplx_addr(W2, bh[n]), z);
-  }
-  W = cmplx_div(W1, W2);
-#endif
-
-  if (F != NULL) *F = W.i;
-  return W.r;
-}
-/* ------- end ---------------------------- VoigtHui.c -------------- */
-
-/* ------- begin -------------------------- VoigtHumlicek.c --------- */
-
-  /* --- Voigt function generator using rational approximation of
-         the complex error function W(v + ia).
-
-         Output:
-
-         Voigt:             H(a, v) = Re[W(v + ia)]
-         Faraday - Voigt: 2*F(a, v) = Im[W(v + ia)]
-
-         --                                            -------------- */
-
-double VoigtHumlicek(double a, double v, double *F)
-{
-#if defined(HAVE_F90)
-
-  complex W;
-
-  /* --- If a FORTRAN 90 compiler is available then FORTRAN's intrinsic 
-         complex arithmatic can be used. This will give a factor of
-         two to three improvement in speed (with the SUN compilers).
-
-    See: humlicek_.f90
-         --                                            -------------- */
-
-  humlicek_(&a, &v, &W);
-
-#else
-
-  complex W, z = cmplx(a, -v);
-  double s = fabs(v) + a;
-
-  /* --- C versions are called otherwise
-
-    See: humlicek.c
-         --                                            -------------- */
-
-  if (s >= 15.0)
-    W = Humlicek1(z);
-  else if (s >= 5.5)
-      W = Humlicek2(z);
-  else if (a >= 0.195*fabs(v) - 0.176)
-    W = Humlicek3(z);
-  else
-    W = Humlicek4(z);
-
-#endif
-
-  if (F != NULL) *F = W.i;
-  return W.r;
-}
-/* ------- end ---------------------------- VoigtHumlicek.c --------- */
+/* --- VoigtHui and VoigtHumlicek now live in voigt_cmplx.c,
+       rewritten with C99 native complex arithmetic (faster,
+       no FORTRAN/HAVE_F90 needed). Prototypes are above. --  */
 
 /* ------- begin -------------------------- VoigtLookup.c ----------- */
 
