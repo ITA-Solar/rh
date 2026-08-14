@@ -59,6 +59,12 @@ int main(int argc, char *argv[])
   getCPU(1, TIME_START, NULL);
   init_atmos(&atmos, &geometry, &infile);
   distribute_jobs();  /* Find out the work load for each process */
+  /* Static decomposition: every rank walks its own contiguous slice of
+     the taskmap in lockstep, so when the slices are equally long all
+     ranks issue the same readAtmos calls in the same order and the
+     atmosphere read may go collective.  mpi.total_tasks == 0 is
+     balanced but has no reads at all, so exclude it. */
+  mpi.coll_atmos_read = (mpi.isbalanced && mpi.total_tasks > 0);
   /* Saved input overrides any current options */
   if (input.p15d_rerun) {
       readSavedInput();

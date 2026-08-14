@@ -15,6 +15,15 @@
 typedef struct {
   char     name[MPI_MAX_PROCESSOR_NAME], rev_id[MAX_LINE_SIZE];
   bool_t   single_log, stop, isfirst,isbalanced;
+  /* --- May readAtmos_hdf5 issue COLLECTIVE H5Dread? ------------------
+     Only true when every rank in mpi.comm reads the same number of
+     columns in the same order, i.e. the static decomposition of
+     rh15d_ray with a balanced taskmap.  It must stay FALSE for
+     rh15d_ray_pool, where drones read on demand and a collective read
+     issued by one rank alone deadlocks.  Kept separate from
+     isbalanced, which only describes the taskmap and is also TRUE for
+     e.g. an all-converged rerun (0 tasks everywhere). */
+  bool_t   coll_atmos_read;
   int      nx, ny;
   int      size, rank, namelen, ix, iy, *xnum, *ynum, *niter, zcut, ndims_z;
   int     *zcut_hist, **rh_converged, StokesMode_save, *convergence, snap_number;

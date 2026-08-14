@@ -87,6 +87,10 @@ void initParallel(int *argc, char **argv[], bool_t run_ray) {
   mpi.node_task_start  = 0;
   mpi.node_task_count  = 0;
 
+  /* Collective atmosphere reads are opt-in per binary (see parallel.h).
+     Independent reads are always safe, so that is the default. */
+  mpi.coll_atmos_read  = FALSE;
+
   /* --- Build rank -> node_id mapping ---
      Every rank contributes its node_id; the resulting array lets the
      pool overlord route tasks for node k only to drones on node k. */

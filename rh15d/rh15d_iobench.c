@@ -283,8 +283,8 @@ int main(int argc, char *argv[])
   atmos.moving = TRUE;
 
   /* --- I/O benchmark: select read mode --------------------------------
-     `readAtmos_hdf5` issues collective H5Dread when mpi.isbalanced is
-     TRUE and independent reads when FALSE.  In the real rh15d_ray_pool
+     `readAtmos_hdf5` issues collective H5Dread when mpi.coll_atmos_read
+     is TRUE and independent reads when FALSE.  In the real rh15d_ray_pool
      the overlord is excluded so 262144 / 2047 ≈ unbalanced → independent
      reads.  Our static round-robin makes the iobench balanced by
      accident, which would measure a code path the real run does not
@@ -296,14 +296,14 @@ int main(int argc, char *argv[])
   {
     const char *mode = getenv("RH_IOBENCH_READ_MODE");
     if (mode != NULL && strcmp(mode, "collective") == 0) {
-      mpi.isbalanced = TRUE;
+      mpi.coll_atmos_read = TRUE;
       if (mpi.rank == 0) {
         fprintf(mpi.main_logfile,
                 "  [iobench] read mode: COLLECTIVE "
                 "(forced via RH_IOBENCH_READ_MODE)\n");
       }
     } else {
-      mpi.isbalanced = FALSE;
+      mpi.coll_atmos_read = FALSE;
       if (mpi.rank == 0) {
         fprintf(mpi.main_logfile,
                 "  [iobench] read mode: INDEPENDENT "
@@ -499,7 +499,7 @@ int main(int argc, char *argv[])
       input.p15d_wrates ? "yes" : "no",
       input.p15d_wtau   ? "yes" : "no",
       io.ray_nwave_sel,
-      mpi.isbalanced ? "collective" : "independent",
+      mpi.coll_atmos_read ? "collective" : "independent",
       KiB_per_col_r, KiB_per_col_w,
       t_setup_max, t_read_max, t_fill_max, t_write_max, t_run_max,
       GB_r, GB_w, read_throughput, write_throughput, end_to_end_throughput);

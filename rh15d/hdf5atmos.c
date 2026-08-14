@@ -736,7 +736,7 @@ void readAtmos_hdf5(int xi, int yi, Atmosphere *atmos, Geometry *geometry,
 
   /* Transfer property list (collective vs independent).  Created here
      so the cache fast-path doesn't allocate or leak it. */
-  if (COLLECTIVE_IO_R && mpi.isbalanced) {
+  if (COLLECTIVE_IO_R && mpi.coll_atmos_read) {
     if ((plist_id = H5Pcreate(H5P_DATASET_XFER)) < 0) HERR(routineName);
     if (H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE) < 0)
       HERR(routineName);
