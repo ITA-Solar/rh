@@ -176,15 +176,26 @@ void distribute_jobs(void)
   mpi.node_task_count = 0;
   if (mpi.taskmap != NULL && remain_tasks > 0) {
     long k;
+    bool_t found = FALSE;
     for (k = 0; k < remain_tasks; k++) {
       if (mpi.taskmap[k][0] >= mpi.node_ix0) {
         mpi.node_task_start = k;
+        found = TRUE;
         break;
       }
     }
-    for (k = mpi.node_task_start; k < remain_tasks; k++) {
-      if (mpi.taskmap[k][0] >= mpi.node_ix1) break;
-      mpi.node_task_count++;
+    if (!found) {
+      /* Every remaining task lies in a row below this node's range, so
+         this node owns nothing.  Anchor an empty slice at the end of
+         the taskmap: leaving node_task_start at 0 would make the count
+         scan below pick up tasks belonging to lower-numbered nodes.
+         Only reachable on a rerun, where the taskmap is sparse. */
+      mpi.node_task_start = remain_tasks;
+    } else {
+      for (k = mpi.node_task_start; k < remain_tasks; k++) {
+        if (mpi.taskmap[k][0] >= mpi.node_ix1) break;
+        mpi.node_task_count++;
+      }
     }
   }
 
