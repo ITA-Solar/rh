@@ -27,6 +27,8 @@ void overlord_batch_nodeaware(long *node_cursor, const long *node_end,
                               long flush_interval, long *dispatched_out);
 int  drone_batch(PoolOutputBuf *poolbuf);
 static void compute_node_task_ranges(long *node_start, long *node_end);
+static int  next_node_for(int home, const long *node_cursor,
+                          const long *node_end, long *stolen);
 
 
 /* --- Global variables --                             -------------- */
@@ -105,14 +107,15 @@ int main(int argc, char *argv[])
   initParallelIO(run_ray=FALSE, writej=FALSE);
 
   /* --- Node-aware batched pool ------------------------------------
-     Every drone is pinned to its node's row range.  The overlord keeps
-     a per-node cursor into the global taskmap; when a drone reports
-     done, the overlord serves the next task from THAT drone's node's
-     cursor.  Drones on drained nodes sit out the rest of the run at
-     BATCHTAG but still participate in the collective flush with an
-     empty poolbuf.  Because every assigned (ix, iy) lies in the
-     drone's own node row range, readAtmos_hdf5 always hits the cache
-     and never touches Lustre during the run loop.                   */
+     The overlord keeps a per-node cursor into the global taskmap; when
+     a drone reports done, the overlord serves the next task from THAT
+     drone's node's cursor, so the assigned (ix, iy) is in the node's
+     atmosphere cache and readAtmos_hdf5 never touches Lustre.  Node
+     affinity is a preference, not a partition: once a node's cursor is
+     drained its drones are served from the busiest remaining node
+     instead of idling, paying one cache miss per stolen column.  All
+     ranks meet at the collective flush every flush_interval columns,
+     drones with nothing to write participating with an empty poolbuf. */
 
   int flush_interval = input.p15d_flush_interval;
   if (flush_interval < 1) flush_interval = 1;
@@ -255,15 +258,54 @@ static void compute_node_task_ranges(long *node_start, long *node_end) {
 }
 /* ------- end   --------- compute_node_task_ranges --------------- */
 
+/* ------- start --------- next_node_for --------------------------- */
+static int next_node_for(int home, const long *node_cursor,
+                         const long *node_end, long *stolen)
+{
+/* Choose which node's cursor to serve a drone from.
+
+   Its own node first: those columns sit in the node's shared
+   atmosphere cache, so the drone never touches Lustre for them.  Once
+   that node is drained, fall back to whichever node has the most work
+   left rather than idling the drone.  A stolen column misses the cache
+   and is read from the file — that is the whole cost, and it is much
+   cheaper than parking a rank for the rest of the run.
+
+   Without this fallback the row->node binding is a hard partition, and
+   any run whose remaining work is unevenly spread over rows collapses
+   onto a few nodes.  That is the normal state of a 15D_RERUN, where
+   the leftover columns are the ones that failed to converge and are
+   clustered rather than uniform.
+
+   Returns -1 when no node has work left.                            */
+  int  k, best = -1;
+  long best_left = 0;
+
+  if (home >= 0 && home < mpi.n_nodes && node_cursor[home] < node_end[home])
+    return home;
+
+  for (k = 0; k < mpi.n_nodes; k++) {
+    long left = node_end[k] - node_cursor[k];
+    if (left > best_left) {
+      best_left = left;
+      best      = k;
+    }
+  }
+  if (best >= 0 && stolen != NULL) ++(*stolen);
+  return best;
+}
+/* ------- end   --------- next_node_for --------------------------- */
+
 /* ------- start ---------------------------- overlord.c ------------ */
 void overlord_batch_nodeaware(long *node_cursor, const long *node_end,
                               long flush_interval, long *dispatched_out)
 {
 /* Node-aware dynamic dispatch for one batch.  Each drone is served at
-   most `flush_interval` tasks from its own node's cursor.  Drones
-   whose node is out of tasks (or whose node has nothing left for this
-   batch) are sent BATCHTAG immediately and sit out until the next
-   collective flush.
+   most `flush_interval` tasks, taken from its own node's cursor while
+   that node still has work and from the busiest other node once it
+   does not (see next_node_for).  A drone is only excused from the
+   batch with BATCHTAG when it has spent its flush budget or no node
+   anywhere has work left.
 
    State: node_cursor[k] advances monotonically through [start, end[k])
    across batches, so work already dispatched in previous batches is
@@ -272,6 +314,7 @@ void overlord_batch_nodeaware(long *node_cursor, const long *node_end,
   int  result;
   long rank;
   long dispatched = 0;
+  long stolen = 0;
   int  active = 0;
 
   /* drone_got[r] counts how many tasks rank r has received this batch.
@@ -280,15 +323,16 @@ void overlord_batch_nodeaware(long *node_cursor, const long *node_end,
 
   /* --- Seed: send every drone its first task (if available) --- */
   for (rank = 1; rank <= mpi.size; rank++) {
-    int nk = mpi.rank_node[rank];
-    if (nk < mpi.n_nodes && node_cursor[nk] < node_end[nk]) {
+    int nk = next_node_for(mpi.rank_node[rank], node_cursor, node_end,
+                           &stolen);
+    if (nk >= 0) {
       long t = node_cursor[nk]++;
       MPI_Send(&t, 1, MPI_LONG, rank, WORKTAG, MPI_COMM_WORLD);
       drone_got[rank] = 1;
       dispatched++;
       active++;
     } else {
-      /* Drone's node has no work left — excuse it from this batch. */
+      /* No node has work left — excuse this drone from the batch. */
       MPI_Send(0, 0, MPI_INT, rank, BATCHTAG, MPI_COMM_WORLD);
     }
   }
@@ -298,19 +342,27 @@ void overlord_batch_nodeaware(long *node_cursor, const long *node_end,
     MPI_Recv(&result, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG,
              MPI_COMM_WORLD, &status);
     int src = status.MPI_SOURCE;
-    int nk  = mpi.rank_node[src];
-    if (drone_got[src] < (int) flush_interval &&
-        nk < mpi.n_nodes && node_cursor[nk] < node_end[nk]) {
+    int nk  = -1;
+    if (drone_got[src] < (int) flush_interval)
+      nk = next_node_for(mpi.rank_node[src], node_cursor, node_end, &stolen);
+    if (nk >= 0) {
       long t = node_cursor[nk]++;
       MPI_Send(&t, 1, MPI_LONG, src, WORKTAG, MPI_COMM_WORLD);
       drone_got[src]++;
       dispatched++;
     } else {
-      /* Drone is done for this batch (either hit flush budget or its
-         node is drained).  Send BATCHTAG so it returns for flush. */
+      /* Drone is done for this batch (either hit flush budget or there
+         is no work anywhere).  Send BATCHTAG so it returns for flush. */
       MPI_Send(0, 0, MPI_INT, src, BATCHTAG, MPI_COMM_WORLD);
       active--;
     }
+  }
+
+  if (stolen > 0) {
+    sprintf(messageStr,
+            "  batch: %ld columns dispatched, %ld served off-node "
+            "(cache miss, read from file)\n", dispatched, stolen);
+    fprintf(mpi.main_logfile, "%s", messageStr);
   }
 
   free(drone_got);
