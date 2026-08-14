@@ -920,20 +920,22 @@ void readConvergence(void) {
     Error(WARNING, routineName, messageStr);
     }
   free(atmosID);
-  /* Check that dimension sizes match */
+  /* Check that dimension sizes match.  This must be fatal: the read
+     below pulls the whole nx*ny convergence dataset into a buffer
+     sized from the current mpi.nx/mpi.ny, so a larger grid in the file
+     overruns the heap.  A smaller one silently misaligns every column
+     index and the rerun would recompute (and overwrite) the wrong
+     columns. */
   if (( H5LTget_attribute_int(ncid, "/", "nx", &nx) ) < 0) HERR(routineName);
-  if (nx != mpi.nx) {
-    sprintf(messageStr,
-	    "Number of x points mismatch: expected %d, found %d.",
-	    mpi.nx, (int)nx);
-    Error(WARNING, routineName, messageStr);
-  }
   if (( H5LTget_attribute_int(ncid, "/", "ny", &ny) ) < 0) HERR(routineName);
-  if (ny != mpi.ny) {
+  if ((nx != mpi.nx) || (ny != mpi.ny)) {
     sprintf(messageStr,
-	    "Number of y points mismatch: expected %d, found %d.",
-	    mpi.ny, (int)ny);
-    Error(WARNING, routineName, messageStr);
+	    "Grid size mismatch with indata file: expected (nx, ny) = "
+	    "(%d, %d), found (%d, %d).\n"
+	    "  The rerun must use the same X_START/X_END/X_STEP and\n"
+	    "  Y_START/Y_END/Y_STEP as the original run.  Aborting.\n",
+	    mpi.nx, mpi.ny, (int)nx, (int)ny);
+    Error(ERROR_LEVEL_2, routineName, messageStr);
   }
   /* --- Read variable --- */
   if (( H5LTread_dataset_int(ncid_mpi, CONV_NAME,
@@ -960,6 +962,12 @@ void readSavedKeywords(void) {
   enum S_interpol_stokes saved_S_interpolation_stokes;
   double saved_crsw, saved_crsw_ini, saved_prdswitch, saved_prdsw;
   double saved_p15d_tmax, saved_iterLimit, saved_PRDiterLimit;
+  /* I/O tuning keywords: these describe how this job talks to the
+     filesystem, not what it computes, so they must follow the current
+     keyword.input rather than the copy saved by the original run. */
+  bool_t saved_use_node_atmos_cache, saved_atmos_cache_cyclic;
+  bool_t saved_pool_collective_write, saved_mpiio_lustre_hints;
+  int    saved_p15d_flush_interval;
 
   /* --- Open the inputdata file with Lustre-optimised access --- */
   plist = create_hdf5_fapl();
@@ -1023,6 +1031,11 @@ void readSavedKeywords(void) {
   saved_PRD_Ngperiod = input.PRD_Ngperiod;
   saved_S_interpolation = input.S_interpolation;
   saved_S_interpolation_stokes = input.S_interpolation_stokes;
+  saved_use_node_atmos_cache = input.use_node_atmos_cache;
+  saved_atmos_cache_cyclic = input.atmos_cache_cyclic;
+  saved_pool_collective_write = input.pool_collective_write;
+  saved_mpiio_lustre_hints = input.mpiio_lustre_hints;
+  saved_p15d_flush_interval = input.p15d_flush_interval;
   /* Overwrite non-changeable keyword options with saved ones */
   readInput(input.keyword_file_contents);
   /* Put back changeable keyword options */
@@ -1050,6 +1063,11 @@ void readSavedKeywords(void) {
   input.PRD_Ngperiod = saved_PRD_Ngperiod;
   input.S_interpolation = saved_S_interpolation;
   input.S_interpolation_stokes = saved_S_interpolation_stokes;
+  input.use_node_atmos_cache = saved_use_node_atmos_cache;
+  input.atmos_cache_cyclic = saved_atmos_cache_cyclic;
+  input.pool_collective_write = saved_pool_collective_write;
+  input.mpiio_lustre_hints = saved_mpiio_lustre_hints;
+  input.p15d_flush_interval = saved_p15d_flush_interval;
   return;
 }
 
