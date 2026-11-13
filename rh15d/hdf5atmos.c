@@ -913,6 +913,8 @@ post_read:
   atmos->vturb     = (double *) realloc(atmos->vturb,     Nspace * sizeof(double));
   geometry->height = (double *) realloc(geometry->height, Nspace * sizeof(double));
   atmos->nHtot     = (double *) realloc(atmos->nHtot,     Nspace * sizeof(double));
+  if (atmos->nHmin != NULL)
+    atmos->nHmin   = (double *) realloc(atmos->nHmin,     Nspace * sizeof(double));
   if (atmos->Stokes) {
     atmos->B       = (double *) realloc(atmos->B,       Nspace * sizeof(double));
     atmos->gamma_B = (double *) realloc(atmos->gamma_B, Nspace * sizeof(double));
