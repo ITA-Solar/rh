@@ -48,7 +48,7 @@ void Piecewise_Linear_1D(int nspect, int mu, bool_t to_obs,
   register int k;
 
   int    k_start, k_end, dk, Ndep = geometry.Ndep;
-  double dtau_uw, dtau_dw, dS_uw, dS_dw, I_uw, w[2], zmu, Bnu[2];
+  double dtau_uw, dtau_dw, dS_uw, dS_dw, I_uw, w[3], zmu, Bnu[2];
 
   zmu = 0.5 / geometry.muz[mu];
 
@@ -112,19 +112,16 @@ void Piecewise_Linear_1D(int nspect, int mu, bool_t to_obs,
   /* --- Solve transfer along ray --                   -------------- */
 
   for (k = k_start+dk;  k != k_end;  k += dk) {
-    w2(dtau_uw, w);
+    /* --- Opacity integration --- */
+    
+    dtau_uw = zmu * (chi[k] + chi[k-dk]) *
+      fabs(geometry.height[k] - geometry.height[k-dk]); 
+    
+    linear_coeffs(dtau_uw, w);
+    I[k] = I[k-dk]*w[0] + w[1]*S[k-dk] + w[2]*S[k];
 
-    I[k] = (1.0 - w[0])*I_uw + w[0]*S[k] + w[1]*dS_uw;
-    if (Psi) Psi[k] = w[0] - w[1] / dtau_uw;
-
-    dtau_uw = zmu * (chi[k] + chi[k+dk]) *
-      fabs(geometry.height[k] - geometry.height[k+dk]);
-    dS_uw   = (S[k] - S[k+dk]) / dtau_uw;
-
-    I_uw = I[k];
+    if (Psi) Psi[k] = w[2];
   }
-  I[k_end] = (1.0 - w[0])*I_uw + w[0]*S[k_end] + w[1]*dS_uw;
-  if (Psi) Psi[k_end] = w[0] - w[1] / dtau_uw;
 }
 /* ------- end ---------------------------- Piecewise_Linear_1D.c --- */
 
