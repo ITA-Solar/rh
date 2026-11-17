@@ -131,7 +131,7 @@ PRO create_wavelength_input, wtable, $
 
   lambda = fltarr(Npoint * Nline)
   FOR n=0, Nline-1 DO $
-   lambda(n*Npoint:(n+1)*Npoint-1) = lambda_central(n) - deltal/2.0 + $
+   lambda[n*Npoint:(n+1)*Npoint-1] = lambda_central[n] - deltal/2.0 + $
                                      deltal * findgen(Npoint) / (Npoint-1)
 
   lambda = lambda(sort(lambda))

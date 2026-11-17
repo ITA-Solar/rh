@@ -5,7 +5,7 @@
 #define MAX_INCL_SIZE 400
 #define MAX_NAME_SIZE  20
 
-void main( int argc, char *argv[] )
+int main( int argc, char *argv[] )
 {
   register int n;
 

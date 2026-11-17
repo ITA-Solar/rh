@@ -63,7 +63,7 @@ PRO displayAlpha, state
      YTITLE='Cross-section [MegaBarn]', YLOG=state.log
     oplot, lambda, alpha0 * (lambda/(*thecontinuum).lambda0)^3, COLOR=175B
   ENDIF ELSE BEGIN
-    lambda = lambda(0) + ((*thecontinuum).lambda0 - lambda(0)) * $
+    lambda = lambda[0] + ((*thecontinuum).lambda0 - lambda[0]) * $
      findgen((*thecontinuum).Nlambda) / ((*thecontinuum).Nlambda - 1)
     alpha = alpha0 * (lambda/(*thecontinuum).lambda0)^3
 
@@ -158,7 +158,7 @@ PRO XViewAlpha, transition, GROUP_LEADER=group_leader
 ; MODIFICATION HISTORY:
 ; 	Written by:    Han Uitenbroek
 ;
-;   --- Last modified: Thu Jun 10 15:09:38 1999 --
+;   --- Last modified: Wed Jan 10 15:01:37 2018 --
 ;-
 
   IF (NOT keyword_set(GROUP_LEADER)) THEN group_leader=0

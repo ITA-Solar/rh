@@ -4,7 +4,7 @@
 /* Main routine of my_1D_radiative_transfer_program.
  *
  * Han Uitenbroek
- * Last modified: Wed Apr 22 09:44:52 2009 --
+ * Last modified: Wed Feb 20 13:31:33 2019 --
  */
  
 #include <stdlib.h>
@@ -29,8 +29,9 @@ void   GaussLeg(double x1, double x2, double *x, double *w, int n);
 
   enum  Topology topology = ONE_D_PLANE;
 
+bool_t  shortchar;
    int  Nlambda;
-double *Bp, *epsilon, *phi, *wlamb, wphi,
+double *Bp, *epsilon, *phi, *wlamb, wphi, Itop, Ibot,
         BoundCond[4] = {0.0, 0.0, 1.0, 0.0}, *chi, *Sny, **Iemerge;
 char    messageStr[MAX_LINE_SIZE];
 struct  Ng *NgS;
@@ -40,20 +41,25 @@ Geometry geometry;
 Spectrum spectrum;
 ProgramStats stats;
 CommandLine  commandline;
+InputData input;
+
 
 /* ------- begin -------------------------- solve1d.c --------------- */
 
 int main(int argc, char *argv[])
 {
-  register int l, la;
+  register int l, la, mu;
 
   int     Ndep, Nrays, NmaxIter, Ngdelay, Ngorder, Ngperiod, Nread,
-          Nwrite;
+    Nwrite, btop, bbot;
   double *lambda, Adamp, iterLimit;
   
   commandline.quiet = FALSE;
   commandline.logfile = stderr;
 
+  shortchar = TRUE;
+  input.S_interpolation = S_BEZIER3;
+  
   stats.printCPU = TRUE;
   getCPU(0, TIME_START, NULL);
   SetFPEtraps();
@@ -61,9 +67,6 @@ int main(int argc, char *argv[])
   /* --- Read input data --                        ------------------ */
 
   setbuf(stdout, NULL);
-
-  geometry.vboundary[TOP] = ZERO;
-  geometry.vboundary[BOTTOM] = REFLECTIVE;
 
   Nread = fread(&NmaxIter, sizeof(int), 1, stdin);
   Nread = fread(&iterLimit, sizeof(double), 1, stdin);
@@ -76,7 +79,12 @@ int main(int argc, char *argv[])
   Nread = fread(&Nlambda, sizeof(int), 1, stdin);
   Nread = fread(&geometry.Ndep, sizeof(int), 1, stdin);
   Ndep  = geometry.Ndep;
-
+  
+  Nread = fread(&btop, sizeof(int), 1, stdin);
+  geometry.vboundary[TOP] = btop;
+  Nread = fread(&bbot, sizeof(int), 1, stdin);
+  geometry.vboundary[BOTTOM] = bbot;
+  
   geometry.height = (double *) malloc(Ndep * sizeof(double));
   Nread = fread(geometry.height, sizeof(double), Ndep, stdin);
   for (l = 0;  l < Ndep;  l++) geometry.height[l] *= KM_TO_M;
@@ -104,6 +112,18 @@ int main(int argc, char *argv[])
   Nread = fread(chi, sizeof(double), Ndep, stdin);
   Nread = fread(Bp, sizeof(double), Ndep, stdin);
   Nread = fread(epsilon, sizeof(double), Ndep, stdin);
+  Nread = fread(&Itop, sizeof(double), 1, stdin);
+  Nread = fread(&Ibot, sizeof(double), 1, stdin);
+
+  geometry.Itop    = matrix_double(Nlambda, Nrays);
+  geometry.Ibottom = matrix_double(Nlambda, Nrays);
+  
+  for (la = 0; la < Nlambda;  la++) {
+    for (mu = 0;  mu < Nrays;  mu++) {
+      geometry.Itop[la][mu]    = Itop;
+      geometry.Ibottom[la][mu] = Ibot;
+    }
+  }
 
   Sny = (double *) malloc(Ndep * sizeof(double));
   for (l = 0;  l < Ndep;  l++) {

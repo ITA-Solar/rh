@@ -29,6 +29,7 @@ SRC = abundance.c \
 	  backgropac_xdr.c \
 	  background.c \
 	  barklem.c \
+	  bezier_aux.c \
 	  broad.c \
 	  brs_xdr.c \
 	  chemequil.c \

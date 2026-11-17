@@ -32,6 +32,8 @@ Because there is much in common with RH, this manual should be seen as
 an incremental documentation of the 1.5D parallel side. This manual
 focuses on what is different from RH. Users should refer to the RH
 documentation by Han Uitenbroek for more detailed information on RH.
+The other geometries (`rhf1d`, `rhsc2d`, `rhsc3d` and `rhsphere`) are not
+covered here (see [Installation](installation.md#other-geometries)).
 
 ## Comparison with RH
 
@@ -90,7 +92,9 @@ plane-parallel geometry:
     format
 -   `solveray` is no longer used
 -   `backgrcontr` no longer works with the new output
--   Any other geometry aside from 1.5D
+-   Any other geometry aside from 1.5D (the other geometries are
+    available as separate programs, see
+    [Installation](installation.md#other-geometries))
 -   Continuing old run by reading populations and output files
 -   Full Stokes NLTE iterations and background polarisation (might work
     with little effort, but has not been tested)

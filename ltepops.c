@@ -2,14 +2,15 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Wed Nov 17 10:07:34 2010 --
+       Last modified: Thu May  6 15:43:59 2021 --
 
        --------------------------                      ----------RH-- */
 
 /* --- Various routines to calculate LTE populations -- ------------- */
-
+ 
 #include <math.h>
 #include <stdlib.h>
+#include <float.h>
 
 #include "rh.h"
 #include "atom.h"
@@ -35,8 +36,7 @@ void LTEpops(Atom *atom, bool_t Debeye)
   register int k, i, m;
 
   char    labelStr[MAX_LINE_SIZE];
-  int     Z, dZ, *nDebeye;
-  long    Nspace = atmos.Nspace;
+  int     Z, dZ, *nDebeye, Nspace = atmos.Nspace;
   double  cNe_T, dE_kT, dEion, dE, gi0, c1, sum, c2;
 
   /* --- Computes LTE populations of a given atom.
@@ -45,7 +45,7 @@ void LTEpops(Atom *atom, bool_t Debeye)
 
            dE_ion = -Z * (e^2/4PI*EPSILON_0) / D           [J]
                 D = sqrt(EPSILON_0/(2e^2)) * sqrt(kT/ne)   [m]
-
+ 
     See: Mihalas (78), pp. 293-295
 
        --                                              -------------- */
@@ -86,15 +86,17 @@ void LTEpops(Atom *atom, bool_t Debeye)
 	dE_kT = (dE - nDebeye[i] * dEion) / (KBOLTZMANN * atmos.T[k]);
       else
 	dE_kT = dE / (KBOLTZMANN * atmos.T[k]);
-
+      
       atom->nstar[i][k] = gi0 * exp(-dE_kT);
       for (m = 1;  m <= dZ;  m++) atom->nstar[i][k] /= cNe_T;
       sum += atom->nstar[i][k];
     }
     atom->nstar[0][k] = atom->ntotal[k] / sum;
 
-    for (i = 1;  i < atom->Nlevel;  i++)
+    for (i = 1;  i < atom->Nlevel;  i++) {
       atom->nstar[i][k] *= atom->nstar[0][k];
+      atom->nstar[i][k] = MAX(atom->nstar[i][k], DBL_MIN);
+    }
   }
 
   if (Debeye) free(nDebeye);
@@ -229,12 +231,11 @@ void SetLTEQuantities(void)
     LTEpops(atom, Debeye);
 
     if (atom->active) {
-
+      
       /* --- Read the collisional data (in MULTI's GENCOL format).
              After this we can close the input file for the active
              atom. --                                  -------------- */
-      // Tiago: this must work with atom as string, must use
-      //        atom->offset_coll, and somehow read the file again! (filename gone)
+      /* Tiago: changed to work with atom as string  */
       CollisionRate(atom, atom->offset_coll);
 
       /* --- Compute the fixed rates and store in Cij -- ------------ */
@@ -244,3 +245,4 @@ void SetLTEQuantities(void)
   }
 }
 /* ------- end ---------------------------- SetLTEQuantities.c ------ */
+

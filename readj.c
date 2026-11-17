@@ -2,13 +2,18 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Mon Jan 16 18:31:58 2012 --
+       Last modified: Tue Feb 20 17:12:25 2024 --
 
        --------------------------                      ----------RH-- */
 
 /* --- Routines to read and write angle-averaged mean intensity and
        background opacities and emissivities. --       -------------- */
  
+
+/* --- Note: pread and pwrite are only able to deal with chunks
+             that are less than 2^31 - 1 bytes. The routines
+             pread_rh and pwrite_rh read/write chunks of PWRITE_SLICE
+             sequentially to overcome this. --         -------------- */
 
 #include <unistd.h>
 
@@ -20,8 +25,13 @@
 #include "inputs.h"
 #include "error.h"
 
+#define PWRITE_SLICE 1073741824
+
 
 /* --- Function prototypes --                          -------------- */
+
+size_t pwrite_rh(int fd, const void *buf, size_t count, off_t offset);
+size_t pread_rh(int fd, const void *buf, size_t count, off_t offset);
 
 
 /* --- Global variables --                             -------------- */
@@ -89,8 +99,8 @@ void readJlambda(int nspect, double *J)
 
   if (!result) {
     sprintf(messageStr,
-	    "Error reading file: offset = %lu, recordsize = %zu",
-	    offset, recordsize);
+	    "Error reading file: offset = %lld, recordsize = %zu",
+	    (long long) offset, recordsize);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
 }
@@ -113,47 +123,48 @@ void writeJlambda(int nspect, double *J)
 
   if (!result) {
     sprintf(messageStr,
-	    "Error writing file: offset = %lu, recordsize = %zu",
-	    offset, recordsize);
+	    "Error writing file: offset = %lld, recordsize = %zu",
+	    (long long) offset, recordsize);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
 }
 /* ------- end ---------------------------- writeJlambda.c ---------- */
 
 
-/* ------- begin -------------------------- readJgas.c ------------- */
+/* ------- begin -------------------------- readJgas.c -------------- */
 
-void readJgas(double **J)
+void readJgas(double **Jgas)
 {
   const char routineName[] = "readJgas";
 
   size_t recordsize;
-  FILE *fp;
-  int result;
+  FILE  *fp;
+  int    result;
   
-  recordsize = atmos.Nspace * spectrum.Nspect; // * sizeof(double);
-  fp=fopen("Jgas.dat","r");
-  result=fread(&(J[0][0]), sizeof(double), recordsize, fp);
-  fclose(fp);
+  recordsize = atmos.Nspace * spectrum.Nspect;
+  fp         = fopen("Jgas.dat", "r");
+  result     = fread(&(Jgas[0][0]), sizeof(double), recordsize, fp);
 
+  fclose(fp);
 }
 /* ------- end ---------------------------- readJgas.c ------------- */
 
 
-/* ------- begin ----------------------------- writeJgas.c ---------- */
+/* ------- begin -------------------------- writeJgas.c ------------ */
 
-void writeJgas(double **J)
+void writeJgas(double **Jgas)
 {
   const char routineName[] = "writeJgas";
 
   size_t recordsize;
-  FILE *fp;
+  FILE  *fp;
+  int    result;
   
-  recordsize = atmos.Nspace * spectrum.Nspect; // * sizeof(double);
-  fp=fopen("Jgas.dat","w");
-  fwrite(&(J[0][0]), sizeof(double), recordsize, fp);
+  recordsize = atmos.Nspace * spectrum.Nspect;
+  fp         = fopen("Jgas.dat", "w");
+  result     = fwrite(&(Jgas[0][0]), sizeof(double), recordsize, fp);
+  
   fclose(fp);
-
   } 
 /* ------- end ------------------------------- writeJgas.c ---------- */
 
@@ -176,8 +187,8 @@ void readJ20lambda(int nspect, double *J20)
 
   if (!result) {
     sprintf(messageStr,
-	    "Error reading file: offset = %lu, recordsize = %zu",
-	    offset, recordsize);
+	    "Error reading file: offset = %lld, recordsize = %zu",
+	    (long long) offset, recordsize);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
 }
@@ -201,8 +212,8 @@ void writeJ20lambda(int nspect, double *J20)
 
   if (!result) {
     sprintf(messageStr,
-	    "Error writing file: offset = %lu, recordsize = %zu",
-	    offset, recordsize);
+	    "Error writing file: offset = %lld, recordsize = %zu",
+	    (long long) offset, recordsize);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
 }
@@ -230,8 +241,8 @@ void readImu(int nspect, int mu, bool_t to_obs, double *I)
 
  if (!result) {
     sprintf(messageStr,
-	    "Error reading file: offset = %lu, recordsize = %zu",
-	    offset, recordsize);
+	    "Error reading file: offset = %lld, recordsize = %zu",
+	    (long long) offset, recordsize);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
 }
@@ -259,8 +270,8 @@ void writeImu(int nspect, int mu, bool_t to_obs, double *I)
 
  if (!result) {
     sprintf(messageStr,
-	    "Error writing file: offset = %lu, recordsize = %zu",
-	    offset, recordsize);
+	    "Error writing file: offset = %lld, recordsize = %zu",
+	    (long long) offset, recordsize);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
 }
@@ -307,30 +318,30 @@ void readBackground(int nspect, int mu, bool_t to_obs)
 
   /* --- Read background opacity --                    -------------- */
 
-  result &= (pread(atmos.fd_background, as->chi_c,
-                   NrecStokes * recordsize,
-                   offset) == NrecStokes * recordsize);
+  result &= (pread_rh(atmos.fd_background, as->chi_c,
+		      NrecStokes * recordsize,
+		      offset) == NrecStokes * recordsize);
   offset += NskipStokes * recordsize;
 
   /* --- Read off-diagonal elements propagation matrix K -- --------- */
 
   if (atmos.backgrflags[nspect].ispolarized && input.magneto_optical) {
     if (input.StokesMode == FULL_STOKES)
-      result &= (pread(atmos.fd_background, as->chip_c, 3*recordsize,
-                       offset) == 3*recordsize);
+      result &= (pread_rh(atmos.fd_background, as->chip_c, 3*recordsize,
+			  offset) == 3*recordsize);
     offset += 3 * recordsize;
   }
   /* --- Read background emissivity --                 -------------- */
 
-  result &= (pread(atmos.fd_background, as->eta_c,
+  result &= (pread_rh(atmos.fd_background, as->eta_c,
                    NrecStokes * recordsize,
                    offset) == NrecStokes * recordsize);
   offset += NskipStokes * recordsize;
 
   /* --- Read background scattering opacity --         -------------- */
 
-  result &= (pread(atmos.fd_background,
-                   as->sca_c, recordsize, offset) == recordsize);
+  result &= (pread_rh(atmos.fd_background,
+		      as->sca_c, recordsize, offset) == recordsize);
 
   /* --- Exit if reading is unsuccessful --            -------------- */
 
@@ -372,33 +383,36 @@ int writeBackground(int nspect, int mu, bool_t to_obs,
 
   /* --- Write background opacity --                   -------------- */
 
-  result &= (pwrite(atmos.fd_background, chi_c, NrecStokes * recordsize,
-                    offset) == NrecStokes * recordsize);
+  result &= (pwrite_rh(atmos.fd_background, chi_c,
+		       NrecStokes * recordsize,
+		       offset) == NrecStokes * recordsize);
   Nwrite += NrecStokes;
   offset += NrecStokes * recordsize;
 
   /* --- Write off-diagonal elements of propagation matrix K -- ----- */
 
   if (atmos.backgrflags[nspect].ispolarized && input.magneto_optical) {
-    result &= (pwrite(atmos.fd_background, chip_c, 3*recordsize,
-                      offset) == 3*recordsize);
+    result &= (pwrite_rh(atmos.fd_background, chip_c, 3*recordsize,
+			 offset) == 3*recordsize);
     Nwrite += 3;
     offset += 3 * recordsize;
   }
   /* --- Write background emissivity --                -------------- */
 
-  result &= (pwrite(atmos.fd_background, eta_c, NrecStokes * recordsize,
-                    offset) == NrecStokes * recordsize);
+  result &= (pwrite_rh(atmos.fd_background, eta_c, 
+		       NrecStokes * recordsize,
+		       offset) == NrecStokes * recordsize);
   Nwrite += NrecStokes;
   offset += NrecStokes * recordsize;
 
   /* --- Write background scattering opacity --        -------------- */
 
-  result &= (pwrite(atmos.fd_background, sca_c, recordsize,
-                    offset) == recordsize);
+  result &= (pwrite_rh(atmos.fd_background, sca_c, recordsize,
+		       offset) == recordsize);
   Nwrite += 1;
 
-  if (!result) Error(ERROR_LEVEL_2, routineName, "Error writing file");
+  if (!result)
+    Error(ERROR_LEVEL_2, routineName, "Error writing file");
 
   /* --- Return the number of written records --       -------------- */
 
@@ -471,3 +485,55 @@ void writeProfile(AtomicLine *line, int lamu, double *phi)
   if (!result) Error(ERROR_LEVEL_2, routineName, "Error writing file");
 }
 /* ------- end ---------------------------- writeProfile.c ---------- */
+
+/* ------- begin -------------------------- pread_rh.c -------------- */
+
+size_t pread_rh(int fd, const void *buffer, size_t count, off_t offset)
+{
+  register int i;
+
+  int    Nslice;
+  size_t Nread = 0, remainder;
+  off_t  offs = offset;
+  char  *buf = (char *) buffer;
+
+  Nslice    = count / PWRITE_SLICE;
+  remainder = count % PWRITE_SLICE;
+
+  for (i = 0;  i < Nslice;  i++) {
+    Nread += pread(fd, buf, PWRITE_SLICE, offs);
+    offs  += PWRITE_SLICE;
+    buf   += PWRITE_SLICE;
+   }
+  if (remainder > 0)
+    Nread += pread(fd, buf, remainder, offs);
+
+  return Nread;
+}
+/* ------- end ---------------------------- pread_rh.c -------------- */
+
+/* ------- begin -------------------------- pwrite_rh.c ------------- */
+
+size_t pwrite_rh(int fd, const void *buffer, size_t count, off_t offset)
+{
+  register int i;
+
+  int    Nslice;
+  size_t Nwrite = 0, remainder;
+  off_t  offs = offset;
+  char  *buf = (char *) buffer;
+
+  Nslice    = count / PWRITE_SLICE;
+  remainder = count % PWRITE_SLICE;
+
+  for (i = 0;  i < Nslice;  i++) {
+    Nwrite += pwrite(fd, buf, PWRITE_SLICE, offs);
+    offs += PWRITE_SLICE;
+    buf  += PWRITE_SLICE;
+   }
+  if (remainder > 0)
+    Nwrite += pwrite(fd, buf, remainder, offs);
+
+  return Nwrite;
+}
+/* ------- end ---------------------------- pwrite_rh.c ------------- */

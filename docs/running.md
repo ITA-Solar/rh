@@ -212,9 +212,6 @@ Only the following options can be changed in `keyword.input`:
 |  `15D_DEPTH_CUT`
 |  `15D_TMAX_CUT`
 |  `15D_DEPTH_REFINE`
-|  `N_PESC_ITER`
-|  `COLLRAD_SWITCH`
-|  `COLLRAD_SWITCH_INIT`
 |  `PRD_SWITCH`
 |  `NRAYS`
 |  `N_MAX_SCATTER`

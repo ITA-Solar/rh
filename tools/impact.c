@@ -23,10 +23,6 @@
        In this latter case a predifined f-value F_QUADRUPOLE is used.
        --                                              --------------- */
  
-/* Tiago, malloc.h not needed for Mac OS X */
-#if !defined(__APPLE__)
-#include <malloc.h>
-#endif
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -74,7 +70,7 @@ char messageStr[MAX_LINE_SIZE];
 
 /* ------- begin -------------------------- impact.c ---------------- */
 
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   int    Ntemp = NTEMP;
   /*  double temp[NTEMP] = {3.0E+3, 5.0E+3, 7.0E+3, 1.0E+4, 2.0E+4,
@@ -136,7 +132,7 @@ void quantumNumbers(Atom *atom)
     if (ptr > multiplet)
       *(ptr + 1) = '\0';
     else {
-      sprintf(messageStr, "Unable to determine whether level is even or odd",
+      sprintf(messageStr, "Unable to determine whether level is even or odd %s",
 	      atom->label[i]);
       Error(ERROR_LEVEL_2, "quantumNumbers", messageStr);
     }

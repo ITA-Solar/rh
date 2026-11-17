@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Wed Apr  1 14:01:22 2009 --
+       Last modified: Mon Feb 26 16:40:54 2024 --
 
        --------------------------                      ----------RH-- */
 
@@ -80,20 +80,11 @@ void Redistribute(int NmaxIter, double iterLimit)
       for (kr = 0;  kr < atom->Nline;  kr++) {
 	line = &atom->line[kr];
 	if (line->PRD) {
-	  switch (input.PRD_angle_dep) {
-	    case PRD_ANGLE_INDEP:
-	      PRDScatter(line, representation=LINEAR);
-	      break;
-	    
-	    case PRD_ANGLE_APPROX:
-	      PRDAngleApproxScatter(line, representation=LINEAR); 
-	      break;
-	    
-	    case PRD_ANGLE_DEP:
-	      PRDAngleScatter(line, representation=LINEAR);
-	      break;
-	  }
-	      
+	  if (input.PRD_angle_dep == PRD_ANGLE_DEP)
+	    PRDAngleScatter(line, representation=LINEAR);
+          else
+	    PRDScatter(line, representation=LINEAR);
+
 	  accel = Accelerate(line->Ng_prd, line->rho_prd[0]);
 	  sprintf(messageStr, "  PRD: iter #%d, atom %s, line %d,",
 		  line->Ng_prd->count-1, atom->ID, kr);

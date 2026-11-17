@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Mon Apr 18 06:31:57 2011 --
+       Last modified: Tue Sep 23 10:58:12 2025 --
 
        --------------------------                      ----------RH-- */
 
@@ -22,8 +22,6 @@
 #define PRD_QSPREAD 5.0
 #define PRD_DQ      0.25
 
-#define RLK_LABEL_LENGTH  10
-
 
 enum type        {ATOMIC_LINE, ATOMIC_CONTINUUM,
 		  VIBRATION_ROTATION, MOLECULAR_ELECTRONIC};
@@ -34,6 +32,7 @@ enum fit_type    {KURUCZ_70, KURUCZ_85, SAUVAL_TATUM_84, IRWIN_81, TSUJI_73};
 enum Hund        {CASE_A, CASE_B};
 enum Barklemtype {SP, PD, DF};
 enum orbit_am    {S_ORBIT=0, P_ORBIT, D_ORBIT, F_ORBIT};
+enum zeeman_cpl  {LS_COUPLING=0, JK_COUPLING, JJ_COUPLING};
 
 /* --- Structure prototypes --                         -------------- */
 
@@ -51,18 +50,18 @@ typedef struct Paschenstruct Paschenstruct;
 struct AtomicLine {
   bool_t   symmetric, polarizable, Voigt, PRD;
   enum vdWaals vdWaals;
-  int      i, j, Nlambda, Nblue, Ncomponent, Nxrd, fd_profile;
+  int      i, j, Nlambda, Nblue, Ncomponent, Nxrd, fd_profile,
+           **id0, **id1;
   double   lambda0, *lambda, isotope_frac, g_Lande_eff,
            Aji, Bji, Bij, *Rij, *Rji, **phi, **phi_Q, **phi_U, **phi_V,
          **psi_Q, **psi_U, **psi_V, *wphi, *Qelast, Grad, cvdWaals[4],
-           cStark, qcore, qwing, **rho_prd, *c_shift, *c_fraction, **gII;
-  int    **id0, **id1;
-  double **frac;
+    cStark, qcore, qwing, **rho_prd, *c_shift, *c_fraction, **frac;
   FILE    *fp_GII;
   struct Ng *Ng_prd;
   Atom *atom;
   AtomicLine **xrd;
   pthread_mutex_t rate_lock;
+  ZeemanMultiplet *zm;
 };
 
 typedef struct {
@@ -124,7 +123,7 @@ struct Atom {
           activeindex;
   char   *offset_coll;
   double  abundance, weight, *g, *E, **C, *vbroad, **n, **nstar,
-         *ntotal, **Gamma;
+         *ntotal, **Gamma;  
   AtomicLine *line;
   AtomicContinuum *continuum;
   FixedTransition *ft;
@@ -158,19 +157,26 @@ struct Molecule {
 };
 
 typedef struct {
+  int    L, L1, l1, l2, l;
+  double g, E, S, J, S1, J1, j1, j2, K, gL, hfs;
+  enum zeeman_cpl cpl;
+  bool_t zm_explicit;
+} RLK_level;
+  
+typedef struct {
   bool_t polarizable;
   enum vdWaals vdwaals;
-  int    pt_index, stage, isotope, Li, Lj;
-  double lambda0, gi, gj, Ei, Ej, Bji, Aji, Bij, Si, Sj,
+  int    pt_index, stage, isotope;
+  double lambda0, Bji, Aji, Bij,
          Grad, GStark, GvdWaals, hyperfine_frac,
-         isotope_frac, gL_i, gL_j, hfs_i, hfs_j, iso_dl,
-         cross, alpha;
+         isotope_frac, iso_dl, cross, alpha;
+  RLK_level level_i, level_j;
   ZeemanMultiplet *zm;
 } RLK_Line;
 
 struct ZeemanMultiplet{
   int     Ncomponent, *q;
-  double *shift, *strength;
+  double *shift, *strength, g_eff;
 };
 
 typedef struct {
@@ -187,7 +193,7 @@ struct Paschenstruct{
 
 /* --- Associated function prototypes --               -------------- */
 
-void   initSolution();
+void   initSolution(void);
 void   Iterate(int NmaxIter, double iterLimit);
 
 void   readAtomicModels(void);
@@ -211,7 +217,11 @@ void initAtom(Atom *atom);
 void initAtomicLine(AtomicLine *line);
 void initAtomicContinuum(AtomicContinuum *continuum);
 
-void initGammaAtom(Atom *atom, double cswitch);
+void initZeeman(ZeemanMultiplet *zm);
+void freeZeeman(ZeemanMultiplet *zm);
+double zm_gamma(double J, double S, double L);
+
+void initGammaAtom(Atom *atom, int iter);
 void initGammaMolecule(Molecule *molecule);
 
 void LTEpops(Atom *atom, bool_t Debeye);
@@ -221,7 +231,7 @@ void getProfiles(void);
 void Profile(AtomicLine *line);
 void readProfile(AtomicLine *line, int lamu, double *phi);
 void writeProfile(AtomicLine *line, int lamu, double *phi);
-void readAtom(Atom *atom, bool_t active);
+void readAtom(Atom *atom);
 void readPopulations(Atom *atom);
 void SortLambda(void);
 void Stark(AtomicLine *line, double *GStark);
@@ -241,6 +251,8 @@ bool_t writeDamping(Atom *atom);
 bool_t readBarklemTable(enum Barklemtype type, Barklemstruct *bs);
 bool_t getBarklemcross(Barklemstruct *bs, RLK_Line *rlk);
 bool_t getBarklemactivecross(AtomicLine *line);
+bool_t getBarklemExplicit(AtomicLine *line);
+bool_t determinate_abo(char *label,  int *l);
 
 
 /* --- Associated function prototypes --               -------------- */
@@ -281,15 +293,15 @@ void   PRDAngleApproxScatter(AtomicLine *PRDline,
 
 /* --- Polarization related --                         -------------- */
 
-void   adjustStokesMode();
+void   adjustStokesMode(void);
 bool_t determinate(char *label, double g, int *n, double *S, int *L,
 		   double *J);
 double effectiveLande(AtomicLine *line);
 double Lande(double S, int L, double J);
 void   StokesProfile(AtomicLine *line);
-ZeemanMultiplet* Zeeman(AtomicLine *line);
-ZeemanMultiplet* MolZeeman(MolecularLine *mrt);
-double           MolLande_eff(MolecularLine *mrt);
+void   Zeeman(AtomicLine *line);
+void   MolZeeman(MolecularLine *mrt);
+double MolLande_eff(MolecularLine *mrt);
 int    getOrbital(char orbit);
 double ZeemanStrength(double Ju, double Mu, double Jl, double Ml);
 

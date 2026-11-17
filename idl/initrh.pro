@@ -11,8 +11,8 @@ forward_function  openJ, readGeometry, readAtmos, readAtom, $
 .r viewmolpops viewsplitting viewstokes readmollines
 .r viewtermdiag viewmolterm viewangles viewabundance viewbopac
 .r orient viewj viewsource viewavg viewgrid viewdisk viewatlas
-.r KPNOatlas Hawaiiatlas KPKatlas sumeratlas 
-.r KPIRatlas ATMOSatlas SolFluxatlas
+.r KPNOatlas Hawaiiatlas KPKatlas sumeratlas KPspotatlas
+.r KPIRatlas ATMOSatlas SolFluxatlas KPspotIRatlas
 .r rawatom viewalpha viewcontrib xyann imu viewflux rotbroad 
 .r rayinterpolate raytrace viewray
 .r analyze 

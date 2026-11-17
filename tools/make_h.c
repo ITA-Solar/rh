@@ -10,9 +10,6 @@
  * Last modified: Thu Feb  3 11:48:44 2000 --
  */
  
-#if !defined(__APPLE__)
-#include <malloc.h>
-#endif
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -62,7 +59,7 @@ char   messageStr[MAX_LINE_SIZE];
 
 /* ------- begin -------------------------- make_H.c ---------------- */
 
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   register int i;
 

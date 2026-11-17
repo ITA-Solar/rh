@@ -68,8 +68,7 @@ int main(int argc, char *argv[])
   distribute_jobs();  /* Find out the work load for each process */
   readRayInput();
 
-  if (input.StokesMode == FIELD_FREE ||
-      input.StokesMode == POLARIZATION_FREE) {
+  if (input.StokesMode == FIELD_FREE) {
     input.StokesMode = FULL_STOKES;
   }
 

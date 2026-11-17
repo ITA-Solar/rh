@@ -148,7 +148,7 @@ END
     ENDFOR
   ENDFOR
 
-  read_atmos, '~/src/rh/Atmos/FAL_C.atmos'
+  read_atmos, '~/src/rh_v2/Atmos/FALC_82.atmos'
 
   nHfal = fltarr(Ndep)
   FOR k=0, Ndep-1 DO $
@@ -166,7 +166,11 @@ END
     CNfal(k) = nCN
   ENDFOR
 
-  psopen, /LANDSCAPE, FILENAME='molecule.ps', /COLOR
+  MAKE_PS = 1
+
+  IF (MAKE_PS) THEN $
+   psopen, FILENAME='molecule.ps', /COLOR, /FONT
+
   loadct, 1
   !P.MULTI = [0, 2, 2, 0, 0]  &  !P.CHARSIZE=1.4
 
@@ -190,5 +194,8 @@ END
    ZTITLE='n!DCN!N/n!DCO!N', /SAVE
   plots, Tfal, nHfal, CNfal/COfal, /T3D, THICK=2, COLOR=250B
 
-  psclose  &  !P.MULTI=0  &  !P.CHARSIZE=1.0
+  IF (MAKE_PS) THEN $
+   psclose
+
+  !P.MULTI=0  &  !P.CHARSIZE=1.0
 END

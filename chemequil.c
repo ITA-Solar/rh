@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Mon Apr 18 07:08:41 2011 --
+       Last modified: Tue Feb  6 10:33:22 2018 --
 
        --------------------------                      ----------RH-- */
 
@@ -109,7 +109,7 @@ void ChemicalEquilibrium(int NmaxIter, double iterLimit)
   const char routineName[] = "ChemicalEquilibrium";
   register int k, i, j, nu;
 
-  char    tmpStr[7];
+  char    tmpStr[13];
   bool_t  quiet;
   int     Nequation, **nucl_index, niter, Nnuclei, Ngdelay, Ngperiod,
           Ngorder, Nmaxstage;

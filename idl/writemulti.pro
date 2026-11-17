@@ -87,14 +87,14 @@ PRO writemulti, model, geometry, HLTE=HLTE, FILENAME=filename, $
 
   FOR k=0, atmos.Ndep-1 DO BEGIN
     CASE (atmos.scale) OF
-      'MASS_SCALE':      depthScale = alog10(atmos.cmass[k])
+      'MASS_SCALE':      depthScale = alog10(atmos.cmass[k] / 10.0)
       'TAU500_SCALE':    depthScale = alog10(atmos.tau500[k])
       'GEOMETRIC_SCALE': depthScale = atmos.height[k]
     ENDCASE
 
     printf, unit, FORMAT='(E17.8, 4E15.6)', $
      depthScale, atmos.T[k], atmos.n_elec[k] * CM_TO_M^3, $
-     atmos.v[k], atmos.vturb[k]
+     atmos.v[k], atmos.vturb[k] / 1.0E3
   ENDFOR
 
   IF (n_elements(atmos.nH) LE 1 OR keyword_set(HLTE)) THEN BEGIN

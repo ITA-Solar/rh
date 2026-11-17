@@ -15,7 +15,7 @@ ifeq ($(REV), )
     CFLAGS += -I../ -I$(HDF5_DIR)/include/
 else
     REV = $(shell git log -1 --pretty=format:"%h  %an  %ai")
-    CFLAGS += -I../ -I$(HDF5_DIR)/include/ -D'REV_ID="$(REV)"'
+    CFLAGS += -I../ -isystem $(HDF5_DIR)/include/ -D'REV_ID="$(REV)"'
 endif
 
 LDFLAGS += -L../ -L$(HDF5_DIR)/lib/ -lrh -lrh_f90 -lhdf5 -lhdf5_hl -lm -lpthread
@@ -23,9 +23,8 @@ LDFLAGS += -L../ -L$(HDF5_DIR)/lib/ -lrh -lrh_f90 -lhdf5 -lhdf5_hl -lm -lpthread
 SRC = accelerate_p.c  \
   	  anglequad.c  \
 	  background_p.c  \
-      bezier.c  \
+          bezier_1D.c  \
 	  distribute_jobs.c  \
-	  escape.c  \
 	  expint_p.c \
 	  feautrier.c  \
 	  formal.c  \
@@ -36,8 +35,8 @@ SRC = accelerate_p.c  \
 	  ludcmp_p.c  \
 	  multiatmos.c  \
 	  parallel.c  \
-	  piecestokes.c  \
-	  piecewise.c  \
+	  piecestokes_1D.c  \
+	  piecewise_1D.c  \
 	  project.c  \
 	  readRayInput.c  \
 	  readatmos.c  \

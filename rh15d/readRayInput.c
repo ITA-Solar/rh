@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "rh.h"
+#include "atom.h"
 #include "atmos.h"
 #include "geometry.h"
 #include "error.h"

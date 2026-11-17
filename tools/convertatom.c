@@ -2,7 +2,7 @@
 
        Version:       rh1.0, tools
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Mon Apr 10 09:41:12 2000 --
+       Last modified: Fri Apr 29 03:46:50 2011 --
 
        --------------------------                      ----------RH-- */
 
@@ -15,10 +15,6 @@
 
        --                                              -------------- */ 
 #include <ctype.h>
-/* Tiago, malloc.h not needed for Mac OS X */
-#if !defined(__APPLE__)
-#include <malloc.h>
-#endif
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,7 +43,7 @@ char messageStr[MAX_LINE_SIZE];
 
 /* ------- begin -------------------------- convertAtom.c ----------- */
 
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   Atom atom;
   FILE   *fpOut, *atomFile;
@@ -179,7 +175,7 @@ void MULTIatom(FILE *atomFile, Atom *atom)
     if ((line->qcore < 0.0) || (line->qwing < 0.0)) {
       line->lambda = (double *) malloc(line->Nlambda * sizeof(double));
       for (la = 0;  la < line->Nlambda;  la++)
-	fscanf(atomFile, "%lf", line->lambda + la);
+	Nread = fscanf(atomFile, "%lf", line->lambda + la);
       line->symmetric = FALSE;
       line->qcore = fabs(line->qcore);
       line->qwing = fabs(line->qwing);

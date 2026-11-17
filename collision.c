@@ -2,7 +2,6 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Thu Dec 15 13:21:00 2016 (Tiago) --
 
        --------------------------                      ----------RH-- */
 
@@ -242,11 +241,10 @@ double ar85cea(int i, int j, int k, struct Atom *atom)
 
   char cseq[ATOM_ID_WIDTH+1];
   int iz, ichrge, isoseq;
-  double zz, cup, bkt, b, zeff, iea, y, f1y, a, g, cea;
+  double zz, cup, bkt, b, zeff, iea, y, f1y, a, g;
 
   /* --- Initialize output to zero --                  -------------- */
 
-  cea = 0.0;
   y   = 0.0;
   f1y = 0.0;
   cup = 0.0;
@@ -349,23 +347,31 @@ double ar85cea(int i, int j, int k, struct Atom *atom)
 
   if(!strcmp(atom->ID, "CA")  &&  ichrge == 0) {
     iea = 25.;
-    a   = 9.8e-17;
+    a   = 6.0e-17;
     b   = 1.12;
+    y   = iea / bkt;
+    f1y = fone(y);
     cup = 6.69E+7 * a * iea / sqrt(bkt) * exp(-y)*(1.0 + b*f1y);
   } else if (!strcmp(atom->ID, "CA")  &&  ichrge == 1) {
-    a   = 6.0e-17;
+    a   = 9.8e-17;
     iea = 25.0;
     b   = 1.12;
+    y   = iea / bkt;
+    f1y = fone(y);
     cup = 6.69E+7 * a * iea / sqrt(bkt) * exp(-y)*(1.0 + b*f1y);
   } else if (!strcmp(atom->ID, "FE")  &&  ichrge == 3) {
     a   = 1.8E-17;
     iea = 60.0;
     b   = 1.0;
+    y   = iea / bkt;
+    f1y = fone(y);
     cup = 6.69e+7 * a * iea / sqrt(bkt) * exp(-y)*(1.0 + b*f1y);
   } else if (!strcmp(atom->ID, "FE")  &&  ichrge == 4) {
-    a   = 5.0E-17;
+    a   = 5.0E-18;
     iea = 73.0;
     b   = 1.0;
+    y   = iea / bkt;
+    f1y = fone(y);
     cup = 6.69E+7 * a * iea / sqrt(bkt) * exp(-y)*(1.0 + b*f1y);
   }
 
@@ -472,7 +478,7 @@ void CollisionRate(struct Atom *atom, char *fp_atom)
   bool_t  hunt, exit_on_EOF;
   int     nitem, i1, i2, i, j, ij, ji, Nlevel = atom->Nlevel, Nitem,
     status;
-  long    Nspace = atmos.Nspace;
+  int    Nspace = atmos.Nspace;
   fpos_t  collpos;
   double  dE, C0, *T, *coeff, *C, Cdown, Cup, gij, *np, xj, fac, fxj;
   int      Ncoef, Nrow;
@@ -491,6 +497,10 @@ void CollisionRate(struct Atom *atom, char *fp_atom)
   atom->C = matrix_double(SQ(Nlevel), Nspace);
 
   C = (double *) malloc(Nspace * sizeof(double));
+
+  /* --- For safety, initialize to 1, since we don't check whether it
+         gets set later on --                          -------------- */
+  sumscl = 1.0;
 
   T = coeff = NULL;
   while ((status = getLineString(&fp_atom, COMMENT_CHAR,
@@ -956,8 +966,6 @@ void CollisionRate(struct Atom *atom, char *fp_atom)
   free(C);
   free(T);
   free(coeff);
-
-  //fsetpos(fp_atom, &collpos);  // Tiago: not needed now (but when to free fp_atom?!)
 
   sprintf(labelStr, "Collision Rate %2s", atom->ID);
   getCPU(3, TIME_POLL, labelStr);

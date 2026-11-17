@@ -1,4 +1,4 @@
-FUNCTION read1datmos, fileName
+FUNCTION read1datmos, fileName, NHYDR=NHydr
 
 ;+
 ; NAME:
@@ -33,11 +33,13 @@ FUNCTION read1datmos, fileName
 ;
 ; 	Written by:    Han Uitenbroek
 ;
-;   --- Last modified: Wed Apr  5 15:09:31 2000 --
+;   --- Last modified: Fri Oct 11 16:18:01 2013 --
 ;-
 
   CM_TO_M = 1.0D-02
   KM_TO_M = 1.0D+03
+  G_TO_KG = 1.0E-3
+  
 
   openr, atmosUnit, fileName, /GET_LUN
 
@@ -86,8 +88,11 @@ FUNCTION read1datmos, fileName
     nH = 0.0D+0
   ENDIF ELSE BEGIN
     HLTE = 0
-    nH = dblarr(Ndep, 6)
-    dummy = dblarr(6)
+
+    if (not keyword_set(Nhydr)) then Nhydr = 6
+
+    nH = dblarr(Ndep, Nhydr)
+    dummy = dblarr(Nhydr)
     reads, inputLine, dummy
     nH(0, *) = dummy
     FOR n=1, Ndep-1 DO BEGIN
@@ -100,13 +105,18 @@ FUNCTION read1datmos, fileName
 
   ;; Convert to proper units
 
-  nH = nH / CM_TO_M^3
-  n_elec = n_elec / CM_TO_M^3
+  nH /= CM_TO_M^3
+  n_elec /= CM_TO_M^3
+
+  v     *= KM_TO_M
+  vturb *= KM_TO_M
 
   CASE (scaleType) OF
     'MASS_SCALE': BEGIN
+      depth = (10.0^depth) * G_TO_KG / CM_TO_M^2
+
       atmos = {atmosID: atmosID,  gravitation: 10.0^gravitation, $
-               Ndep: long(Ndep),  scale: scaleType,  cmass: 10.0^depth, $
+               Ndep: long(Ndep),  scale: scaleType,  cmass: depth, $
                T: T,  n_elec: n_elec,  v: v,  vturb: vturb, $
                nH: nH}
     END

@@ -23,7 +23,7 @@ struct NIST_Level {
 CommandLine commandline;
 char   messageStr[MAX_LINE_SIZE];
 
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   register int i, k;
 

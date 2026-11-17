@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Fri Nov  3 09:04:22 2000 --
+       Last modified: Mon May 21 13:22:25 2018 --
 
        --------------------------                      ----------RH-- */
 
@@ -103,7 +103,7 @@ double Feautrier(int nspect, int mu, double *chi, double *S,
   abc[0]  = 1.0 + 2.0*f0 / dtau[0];
   C1[0]   = 2.0 / SQ(dtau[0]);
   Stmp[0] = S[0] + 2.0*h0 / ((1.0 + r0)*dtau[0]);
-  if (F_order == HERMITE) {
+  if (F_order == FEAUTRIER_HERMITE) {
     C1[0]   -= 2.0*A_SIXTH;
     Stmp[0] += 2.0*A_SIXTH * (S[1] - S[0]);
   }
@@ -130,7 +130,7 @@ double Feautrier(int nspect, int mu, double *chi, double *S,
   abc[Ndep-1]  = 1.0 + 2.0*fN / dtau[Ndep-2];
   A1[Ndep-1]   = 2.0 / SQ(dtau[Ndep-2]);
   Stmp[Ndep-1] = S[Ndep-1] + 2.0*hN / ((1.0 + rN)*dtau[Ndep-2]);
-  if (F_order == HERMITE) {
+  if (F_order == FEAUTRIER_HERMITE) {
     A1[Ndep-1]   -= 2.0*A_SIXTH;
     Stmp[Ndep-1] += 2.0*A_SIXTH * (S[Ndep-2] - S[Ndep-1]);
   }
@@ -142,7 +142,7 @@ double Feautrier(int nspect, int mu, double *chi, double *S,
     abc[k]  = 1.0;
     Stmp[k] = S[k];
   }
-  if (F_order == HERMITE) {
+  if (F_order == FEAUTRIER_HERMITE) {
     for (k = 1;  k < Ndep-1;  k++) {
       Ak     = A_SIXTH * (1.0 - 0.5*SQ(dtau[k])*A1[k]);
       Ck     = A_SIXTH * (1.0 - 0.5*SQ(dtau[k-1])*C1[k]);
@@ -169,7 +169,7 @@ double Feautrier(int nspect, int mu, double *chi, double *S,
   /* --- If necessary evaluate the diagonal operator -- ------------- */
 
   if (Psi) {
-    if (F_order == HERMITE) {
+    if (F_order == FEAUTRIER_HERMITE) {
       sprintf(messageStr,
        "Higher order for diagonal operator calculation not yet implemented");
       Error(ERROR_LEVEL_1, routineName, messageStr);

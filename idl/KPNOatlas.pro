@@ -49,8 +49,8 @@ PRO KPNOatlas, lambdaMin, lambdaMax, SAMPLE=sample, $
   readu, unit, lambda
   IF (little_endian) THEN lambda = swap_endian(lambda)
   lambda = float(lambda)/10.0
-  lambda0 = lambda(0)
-  lambdaN = lambda(Nlambda-1) + 0.1 - dlambda
+  lambda0 = lambda[0]
+  lambdaN = lambda[Nlambda-1] + 0.1 - dlambda
 
   IF ( (lambdaMin LT lambda0) OR (lambdaMin GT lambdaN) )THEN BEGIN
     print, FORMAT='("Minimum wavelength outside range: ", F5.1, ' + $
@@ -65,12 +65,12 @@ PRO KPNOatlas, lambdaMin, lambdaMax, SAMPLE=sample, $
 
   tabinv, lambda, [lambdaMin, lambdaMax], leff
   rec = fix(leff)
-  offsetMin = fix((lambdaMin - lambda(rec(0)))/interval * Nrec)
-  offsetMax = fix((lambdaMax - lambda(rec(1)))/interval * Nrec)
-  Nrecords = Nrec * (rec(1) - rec(0)) + offsetMax - offsetMin
+  offsetMin = fix((lambdaMin - lambda[rec[0]])/interval * Nrec)
+  offsetMax = fix((lambdaMax - lambda[rec[1]])/interval * Nrec)
+  Nrecords = Nrec * (rec[1] - rec[0]) + offsetMax - offsetMin
 
   Iatlas = intarr(Nrecords)
-  point_lun, unit, (1 + Nlambda + rec(0)*Nrec + offsetMin) * 2
+  point_lun, unit, (1 + Nlambda + rec[0]*Nrec + offsetMin) * 2
   readu, unit, Iatlas
   free_lun, unit
 
@@ -81,7 +81,7 @@ PRO KPNOatlas, lambdaMin, lambdaMax, SAMPLE=sample, $
 
   IF (n_params(0) EQ 4) THEN BEGIN
     sample = Nsample * dlambda
-    lambda0 = lambda(rec(0)) + offsetMin*dlambda 
+    lambda0 = lambda[rec[0]] + offsetMin*dlambda 
     latlas  = lambda0 + sample*findgen(n_elements(Iatlas))
   ENDIF
   Iatlas = Iatlas * 1.0E-4

@@ -9,7 +9,7 @@
 /* --- Reads and/or computes the initial solution (populations and/or
        mean intensity J).
 
-       NetCDF version.
+       RH 1.5D version.
 
        Possible options:
 
@@ -46,7 +46,7 @@
 
 
 /* --- Function prototypes --                          -------------- */
-void Escape(Atom *atom);
+
 
 /* --- Global variables --                             -------------- */
 
@@ -59,18 +59,28 @@ extern MPI_data mpi;
 extern enum Topology topology;
 
 
-/* ------- begin -------------------------- initSolution_alloc.c ---- */
-void initSolution_alloc(void) {
-  const char routineName[] = "initSolution_p";
-  register int nspect, nact,k,kr,mu;
-  char    permission[3], file_imu[MAX_MESSAGE_LENGTH];
-  int     Nsr, Nplane, index, oflag,la;
-  int to_obs,lamuk,sign,ncoef,ilow,Nlamu,lamu;
-  Molecule   *molecule;
-  Atom       *atom;
-  AtomicLine *line;
+/* ------- begin -------------------------- initSolution_alloc.c ---------- */
+
+void initSolution_alloc(void)
+{
+  const char routineName[] = "initSolution";
+  register int k, i, ij, nspect, n, kr, nact, mu;
+
+  char     permission[3], file_imu[MAX_MESSAGE_LENGTH];
+  bool_t   result, openJfile;
+  int      la, j, niter, Nsr, Nplane, index, status, oflag,
+           to_obs, lamuk, sign, ncoef, ilow, Nlamu, lamu;
+  double   gijk, wla, twohnu3_c2, hc_k, twoc, fourPI, *J, *J20,
+           *lambda, fac, lambda_prv, lambda_gas, lambda_nxt, dl,
+           frac, lag;
   long int idx, lc;
-  double *lambda,fac,lambda_prv,lambda_gas,lambda_nxt,dl,lag;
+  Atom     *atom;
+  Molecule *molecule;
+  ActiveSet *as;
+  AtomicLine *line;
+  AtomicContinuum *continuum;
+
+  getCPU(2, TIME_START, NULL);
 
   /* --- Allocate space for angle-averaged mean intensity -- -------- */
 
@@ -87,9 +97,11 @@ void initSolution_alloc(void) {
     }
   }
 
- /* --- For the PRD angle approximation  we need to store J in
-     the gas frame,                                   -------- */
-  if (input.PRD_angle_dep == PRD_ANGLE_APPROX &&  atmos.NPRDactive > 0) {
+  /* --- For the PRD angle approximation we need to store J in
+         the gas frame --                              -------------- */
+  
+  if (input.PRD_angle_dep == PRD_ANGLE_APPROX  &&
+      atmos.NPRDactive > 0) {
 
     if (spectrum.Jgas != NULL) freeMatrix((void **) spectrum.Jgas);
     spectrum.Jgas  = matrix_double(spectrum.Nspect, atmos.Nspace);
@@ -103,75 +115,17 @@ void initSolution_alloc(void) {
       }
     }
 
-    /* --- allocate space for gII redistribution function in PRD
-       lines                                                     --- */
-    for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
-
-      atom = atmos.activeatoms[nact];
-
-      for (kr = 0;  kr < atom->Nline;  kr++) {
-
-	line = &atom->line[kr];
-
-	if (line->PRD) {
-
-	  /*	  line->gII  = (double **) malloc(atmos.Nrays * sizeof(double *));
-
-	  for (k = 0;  k < atmos.Nspace;  k++) {
-	    for (la = 0 ;  la < line->Nlambda;  la++) {
-
-	      // second index in line.gII array
-	      lak= k * line->Nlambda + line->Nlambda;
-
-	      q_emit = (line->lambda[la] - line->lambda0) * CLIGHT /
-		(line->lambda0 * atom->vbroad[k]);
-
-
-	      if (fabs(q_emit) < PRD_QCORE) {
-		q0 = -PRD_QWING;
-		qN =  PRD_QWING;
-	      } else {
-		if (fabs(q_emit) < PRD_QWING) {
-		  if (q_emit > 0.0) {
-		    q0 = -PRD_QWING;
-		    qN = q_emit + PRD_QSPREAD;
-		  } else {
-		    q0 = q_emit - PRD_QSPREAD;
-		    qN = PRD_QWING;
-		  }
-		} else {
-		  q0 = q_emit - PRD_QSPREAD;
-		  qN = q_emit + PRD_QSPREAD;
-		}
-	      }
-	      Np = (int) ((qN - q0) / PRD_DQ) + 1;
-
-	      line->gII[lak]= (double *) malloc(Np*sizeof(double));
-
-	    }
-	    }*/
-
-	  Nsr=MAX(3*PRD_QWING,2*PRD_QSPREAD)/PRD_DQ+1;
-	  if (line->gII != NULL) freeMatrix((void **) line->gII);
-	  line->gII  = matrix_double(atmos.Nspace*line->Nlambda,Nsr);
-	  line->gII[0][0] = -1.0;
-	}
-      }
-    }
-
-   /* precompute prd_rho interpolation coefficients if requested */
+    /* --- Precompute prd_rho interpolation coefficients if requested */
+    
     if (!input.prdh_limit_mem) {
 
       for (nact = 0;  nact < atmos.Nactiveatom;  nact++) {
-
 	atom = atmos.activeatoms[nact];
 
 	for (kr = 0;  kr < atom->Nline;  kr++) {
-
 	  line = &atom->line[kr];
 
 	  if (line->PRD) {
-
 	    Nlamu = 2*atmos.Nrays * line->Nlambda;
 
 	    if (line->frac != NULL) freeMatrix((void **) line->frac);
@@ -191,25 +145,39 @@ void initSolution_alloc(void) {
 
 		  for (k = 0;  k < atmos.Nspace;  k++) {
 
-		    // wavelength in local rest frame
-		    lag=line->lambda[la] * (1.+spectrum.v_los[mu][k]*sign/CLIGHT);
+		    /* ---  Wavelength in local rest frame -- ------- */
+		    
+		    lag=line->lambda[la] *
+		      (1.0 + spectrum.v_los[mu][k]*sign/CLIGHT);
 
 		    if (lag <= line->lambda[0]) {
-		      // out of the lambda table, constant extrapolation
-		      line->frac[lamu][k]=0.0;
-		      line->id0[lamu][k]=0;
-		      line->id1[lamu][k]=1;
-		    } else if (lag >= line->lambda[line->Nlambda-1] ) {
-		      // out of the lambda table, constant extrapolation
-		      line->frac[lamu][k]=1.0;
-		      line->id0[lamu][k]=line->Nlambda-2;
-		      line->id1[lamu][k]=line->Nlambda-1;
+		      
+		      /* --- out of the lambda table then
+			     constant extrapolation -- ------------- */
+		      
+		      line->frac[lamu][k] = 0.0;
+		      line->id0[lamu][k]  = 0;
+		      line->id1[lamu][k]  = 1;
+		      
+		    } else if (lag >= line->lambda[line->Nlambda-1]) {
+		      
+		      /* --- Out of the lambda table then
+			     constant extrapolation -- ------------- */
+		      
+		      line->frac[lamu][k] = 1.0;
+		      line->id0[lamu][k]  = line->Nlambda-2;
+		      line->id1[lamu][k]  = line->Nlambda-1;
+		      
 		    } else {
-		      // Locate index of line->lambda of point directly to the left of lag
+		      
+		      /* --- Locate index of line->lambda of point
+			     directly to the left of lag --- ------- */
+		      
 		      Locate(line->Nlambda,line->lambda,lag,&ilow);
-		      line->frac[lamu][k] = (lag-line->lambda[ilow])/ (line->lambda[ilow+1]-line->lambda[ilow]);
-		      line->id0[lamu][k]=ilow;
-		      line->id1[lamu][k]=ilow+1;
+		      line->frac[lamu][k] = (lag-line->lambda[ilow]) /
+			(line->lambda[ilow+1] - line->lambda[ilow]);
+		      line->id0[lamu][k] = ilow;
+		      line->id1[lamu][k] = ilow+1;
 		    }
 		  }
 		}
@@ -220,9 +188,9 @@ void initSolution_alloc(void) {
       }
     }
 
-    /* precompute Jgas interpolation coefficients if requested */
+    /* --- Precompute Jgas interpolation coefficients if requested -- */
+    
     if (!input.prdh_limit_mem) {
-
       lambda = spectrum.lambda;
 
       /* --- keeps track of where to get indices and interpolation
@@ -243,54 +211,62 @@ void initSolution_alloc(void) {
 		+ to_obs * (atmos.Nspace)
 		+ k ;
 
-	      ncoef=0;
+	      ncoef = 0;
 
-	      // previous, current and next wavelength shifted to gas rest frame
-	      fac = (1.+spectrum.v_los[mu][k]*sign/CLIGHT);
-	      lambda_prv = lambda[ MAX(la-1,0)                 ]*fac;
-	      lambda_gas = lambda[ la                          ]*fac;
-	      lambda_nxt = lambda[ MIN(la+1,spectrum.Nspect-1) ]*fac;
+	      /* --- Previous, current and next wavelength shifted to
+		     gas rest frame --                 -------------- */
+	      
+	      fac = (1.0 + spectrum.v_los[mu][k] * sign / CLIGHT);
+	      lambda_prv = lambda[ MAX(la-1,0)                 ] * fac;
+	      lambda_gas = lambda[ la                          ] * fac;
+	      lambda_nxt = lambda[ MIN(la+1,spectrum.Nspect-1) ] * fac;
 
-	      // do lambda_prv and lambda_gas bracket lambda points?
+	      /* --- Do lambda_prv and lambda_gas bracket
+		     lambda points? --                 -------------- */
+	      
 	      if (lambda_prv !=  lambda_gas) {
 		dl= lambda_gas - lambda_prv;
 		for (idx = 0; idx < spectrum.Nspect ; idx++) {
-		  if (lambda[idx] > lambda_prv && lambda[idx] <= lambda_gas) ncoef=ncoef+1;
+		  if (lambda[idx] > lambda_prv &&
+		       lambda[idx] <= lambda_gas) ncoef = ncoef+1;
 		}
 	      } else {
-		// edge case, use constant extrapolation for lambda[idx]<lambda gas
+		/* --- edge case, use constant extrapolation for
+		       lambda[idx]<lambda gas --       -------------- */
+		
 		for (idx = 0; idx < spectrum.Nspect ; idx++) {
 		  if (lambda[idx] <=  lambda_gas) ncoef=ncoef+1;
 		}
 	      }
-
-	      // do lambda_gas and lambda_nxt bracket lambda points?
+	      /* --- Do lambda_gas and lambda_nxt bracket
+		     lambda points? --                 -------------- */
+	      
 	      if (lambda_gas != lambda_nxt) {
 		dl= lambda_nxt - lambda_gas;
 		for (idx = 0; idx < spectrum.Nspect ; idx++) {
 		  if (lambda[idx] > lambda_gas && lambda[idx] < lambda_nxt) ncoef=ncoef+1;
 		}
 	      } else {
-		// edge case, use constant extrapolation for lambda[idx]>lambda gas
+		/* --- Edge case, use constant extrapolation for
+		       lambda[idx]>lambda gas --       -------------- */
+		
 		for (idx = 0; idx < spectrum.Nspect ; idx++) {
-		  if (lambda[idx] >=  lambda_gas) ncoef=ncoef+1;
+		  if (lambda[idx] >=  lambda_gas) ncoef = ncoef + 1;
 		}
 	      }
-
 	      /* --- number of point this lambda contributes to is
-	 	 computed as a difference --- */
+	 	     computed as a difference --       -------------- */
+	      
 	      if (lamuk == 0) {
 		spectrum.nc[lamuk] = ncoef;
 	      } else {
 		spectrum.nc[lamuk]=spectrum.nc[lamuk-1]+ncoef;
 	      }
-
-	    } // k
-	  } // to_obs
-	} // mu
-      } // la
-
-      /* --- now we know the number of interpolation coefficients,
+	    }
+	  }
+	}
+      }
+      /* --- Now we know the number of interpolation coefficients,
              it's stored in the last element of spectrum.nc,
 	     so allocate space                                     --- */
 
@@ -318,32 +294,42 @@ void initSolution_alloc(void) {
 		+ to_obs * (atmos.Nspace)
 		+ k ;
 
-	      // starting index for storage for this lamuk point
+	      /* --- Starting index for storage for this lamuk point- */
+	      
 	      lc = (lamuk==0) ? 0 : spectrum.nc[lamuk-1];
 
-	      // previous, current and next wavelength shifted to gas rest frame
-	      fac = (1.+spectrum.v_los[mu][k]*sign/CLIGHT);
-	      lambda_prv = lambda[ MAX(la-1,0)                 ]*fac;
-	      lambda_gas = lambda[ la                          ]*fac;
-	      lambda_nxt = lambda[ MIN(la+1,spectrum.Nspect-1) ]*fac;
+	      /* --- Previous, current and next wavelength shifted
+		     to gas rest frame --              -------------- */
+	      
+	      fac = (1.0 + spectrum.v_los[mu][k] * sign/CLIGHT);
+	      lambda_prv = lambda[ MAX(la-1,0)                 ] * fac;
+	      lambda_gas = lambda[ la                          ] * fac;
+	      lambda_nxt = lambda[ MIN(la+1,spectrum.Nspect-1) ] * fac;
 
-	      // do lambda_prv and lambda_gas bracket lambda points?
+	      /* --- Do lambda_prv and lambda_gas bracket
+		     lambda points? --                --------------- */
+	      
 	      if (lambda_prv !=  lambda_gas) {
-		dl= lambda_gas - lambda_prv;
-		for (idx = 0; idx < spectrum.Nspect ; idx++) {
-		  if (lambda[idx] > lambda_prv && lambda[idx] <= lambda_gas) {
-		    // bracketed point found
-		    spectrum.iprdh[lc]=idx;
-		    spectrum.cprdh[lc]=(lambda[idx]-lambda_prv)/dl;
+		dl = lambda_gas - lambda_prv;
+		for (idx = 0;  idx < spectrum.Nspect;  idx++) {
+		  if (lambda[idx] > lambda_prv &&
+		      lambda[idx] <= lambda_gas) {
+		    
+		    /* --- Bracketed point found --   --------------- */
+		    
+		    spectrum.iprdh[lc] = idx;
+		    spectrum.cprdh[lc] = (lambda[idx]-lambda_prv) / dl;
 		    lc++;
 		  }
 		}
 	      } else {
-		// edge case, use constant extrapolation for lambda[idx]<lambda gas
-		for (idx = 0; idx < spectrum.Nspect ; idx++) {
+		/* --- Edge case, use constant extrapolation for
+		       lambda[idx]<lambda gas --      --------------- */
+		
+		for (idx = 0;  idx < spectrum.Nspect;  idx++) {
 		  if (lambda[idx] <=  lambda_gas)  {
-		    spectrum.iprdh[lc]=idx;
-		    spectrum.cprdh[lc]=1.0;
+		    spectrum.iprdh[lc] = idx;
+		    spectrum.cprdh[lc] = 1.0;
 		    lc++;
 		  }
 		}
@@ -352,33 +338,36 @@ void initSolution_alloc(void) {
 	      // do lambda_gas and lambda_nxt bracket lambda points?
 	      if (lambda_gas != lambda_nxt) {
 		dl= lambda_nxt - lambda_gas;
-		for (idx = 0; idx < spectrum.Nspect ; idx++) {
-		  if (lambda[idx] > lambda_gas && lambda[idx] < lambda_nxt) {
-		    // bracketed point found
-		    spectrum.iprdh[lc]=idx;
-		    spectrum.cprdh[lc]=1.0 - (lambda[idx]-lambda_gas)/dl;
+		for (idx = 0;  idx < spectrum.Nspect;  idx++) {
+		  if (lambda[idx] > lambda_gas &&
+		      lambda[idx] < lambda_nxt) {
+		    
+		    /* --- Bracketed point found --    -------------- */
+		    
+		    spectrum.iprdh[lc] = idx;
+		    spectrum.cprdh[lc] = 1.0 -
+		      (lambda[idx] - lambda_gas) / dl;
 		    lc++;
 		  }
 		}
 	      } else {
-		// edge case, use constant extrapolation for lambda[idx]>lambda gas
-		for (idx = 0; idx < spectrum.Nspect ; idx++) {
+		/* --- Edge case, use constant extrapolation for
+		       lambda[idx]>lambda gas --       -------------- */
+		
+		for (idx = 0;  idx < spectrum.Nspect;  idx++) {
 		  if (lambda[idx] >=  lambda_gas)  {
-		    spectrum.iprdh[lc]=idx;
-		    spectrum.cprdh[lc]=1.0;
+		    spectrum.iprdh[lc] = idx;
+		    spectrum.cprdh[lc] = 1.0;
 		    lc++;
 		  }
 		}
 	      }
-
-	    } // k
-	  } // to_obs
-	} // mu
-      } // la
-
-    }  //input.prdh_limit_mem if switch
-  } // PRD_ANGLE_APPROX if switch
-
+	    }
+	  }
+	}
+      }
+    }
+  }
 
   /* --- Allocate space for the emergent intensity --  -------------- */
 
@@ -481,7 +470,8 @@ void initSolution_alloc(void) {
       index = 0;
       for (nspect = 0;  nspect < spectrum.Nspect;  nspect++) {
 	if (containsPRDline(&spectrum.as[nspect])) {
-	  spectrum.PRDindex[nspect] = index++;
+	  spectrum.PRDindex[nspect] = index;
+      index++;
 	}
       }
     }
@@ -604,20 +594,6 @@ void initSolution_p(void)
       /* --- Solve statistical equilibrium equations --  ------------ */
 
       statEquil(atom, (input.isum == -1) ? 0 : input.isum);
-      break;
-
-    case ESCAPE_PROBABILITY:
-      for (k=0; k < input.NpescIter; k++) {
-	/* set the Gamma rate matrix equal to the collisional rates */
-	initGammaAtom(atom, 1.0);
-
-	/* Perform escape probability approximation */
-	Escape(atom);
-
-	/* Get populations from statistical equilibrium */
-	statEquil(atom, (input.isum == -1) ? 0 : input.isum);
-      }
-
       break;
 
     case OLD_POPULATIONS:

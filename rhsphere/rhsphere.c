@@ -2,7 +2,7 @@
 
        Version:       rh2.0, 1-D spherically symmetric
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Wed Apr 22 09:51:33 2009 --
+       Last modified: Mon Sep 22 16:41:03 2025 --
 
        --------------------------                      ----------RH-- */
 
@@ -62,12 +62,12 @@ int main(int argc, char *argv[])
 
   /* --- Read input data and initialize --             -------------- */
 
-  readInput();
+  readInput(NULL);
   spectrum.updateJ = TRUE;
 
   getCPU(1, TIME_START, NULL);
   readAtmos(&atmos, &geometry);
-
+  
   readAtomicModels();
   readMolecularModels();
   SortLambda();
@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
     molecule = atmos.activemols[nact];
     writeMolPops(molecule);
   }
-  writeOpacity(&spectrum);
+  writeOpacity();
 
   getCPU(1, TIME_POLL, "Output");
   printTotalCPU();

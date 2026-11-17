@@ -656,14 +656,6 @@ void calculate_ray(void) {
   for (nact = 0; nact < atmos.Nactiveatom; nact++) {
     atom = atmos.activeatoms[nact];
 
-    // TIAGO: commented below
-    /* Rewind atom files to point just before collisional data
-    if ((ierror = fseek(atom->fp_input, io.atom_file_pos[nact], SEEK_SET))) {
-      sprintf(messageStr, "Unable to rewind atom file for %s", atom->ID);
-      Error(ERROR_LEVEL_2, "rh15d_ray", messageStr);
-    }
-    */
-
     /* Free collisions matrix, going to be re-allocated in background */
     if (atom->C != NULL) {
       freeMatrix((void **) atom->C);
@@ -728,7 +720,7 @@ void calculate_ray(void) {
   }
 
   if (input.PRD_angle_dep == PRD_ANGLE_APPROX &&  atmos.NPRDactive > 0) {
-    // recalculate line-of-sight velocity
+    /* recalculate line-of-sight velocity */
     if (spectrum.v_los != NULL) freeMatrix((void **) spectrum.v_los);
     spectrum.v_los = matrix_double( atmos.Nrays, atmos.Nspace);
     for (mu = 0;  mu < atmos.Nrays;  mu++) {
@@ -738,7 +730,7 @@ void calculate_ray(void) {
     }
 
     /* set switch so that shift of rho_prd is done with a fresh
-       interpolation */
+       interpolation. */
     prdh_limit_mem_save = FALSE;
     if (input.prdh_limit_mem) prdh_limit_mem_save = TRUE;
     input.prdh_limit_mem = TRUE;
@@ -749,7 +741,7 @@ void calculate_ray(void) {
   /* --- Solve radiative transfer for ray --           -------------- */
   solveSpectrum(FALSE, FALSE);
 
-  // set back PRD input option
+  /* set back PRD input option */
   if (input.PRD_angle_dep == PRD_ANGLE_APPROX && atmos.NPRDactive > 0)
     input.prdh_limit_mem = prdh_limit_mem_save ;
 

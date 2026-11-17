@@ -30,7 +30,7 @@ char messageStr[MAX_LINE_SIZE];
 
 /* ------- begin -------------------------- avgmolweight.c ---------- */
 
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   Atmosphere atmos;
 

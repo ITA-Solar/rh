@@ -982,7 +982,7 @@ void readPopulations(Atom *atom) {
     HERR(routineName);
   if (nz < atmos.Nspace) {
     sprintf(messageStr,
-      "Number of depth points mismatch: expected %ld, found %d.",
+      "Number of depth points mismatch: expected %d, found %d.",
       atmos.Nspace, (int)nz);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }
@@ -1065,7 +1065,7 @@ void readMolPops(Molecule *molecule) {
     HERR(routineName);
   if (nz < atmos.Nspace) {
     sprintf(messageStr,
-      "Number of depth points mismatch: expected %ld, found %d.",
+      "Number of depth points mismatch: expected %d, found %d.",
       atmos.Nspace, (int)nz);
     Error(ERROR_LEVEL_2, routineName, messageStr);
   }

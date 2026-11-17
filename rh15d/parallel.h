@@ -14,10 +14,10 @@
 typedef struct {
   char     name[MPI_MAX_PROCESSOR_NAME], rev_id[MAX_LINE_SIZE];
   bool_t   single_log, stop, isfirst;
-  int      nx, ny;
+  int      nx, ny, backgrrecno;
   int      size, rank, namelen, ix, iy, *xnum, *ynum, *niter, zcut, ndims_z;
   int     *zcut_hist, **rh_converged, StokesMode_save, *convergence, snap_number;
-  long     nconv, nnoconv, ncrash, my_start, backgrrecno;
+  long     nconv, nnoconv, ncrash, my_start;
   long   **taskmap, task, Ntasks, total_tasks;
   double  *dpopsmax, **dpopsmax_hist;
   FILE    *logfile, *main_logfile;

@@ -4,10 +4,10 @@ FUNCTION readKuruczMolecularLines, logicalUnit, Nlines
                   wavelength: 0.0, log_gf: 0.0, Ji: 0.0, Ei: 0.0, $
                   Jj: 0.0, Ej: 0.0, code: 0, $
                   configi: 'X', vi: 0, parity_i: 'E1', $
-                  configj: 'A', vj: 0, parity_j: 'E1', isotope: 0}
+                  configj: 'A', vj: 0, parity_j: 'E1'}
 
   rt_format = '(F10.4, F7.3, F5.1, F10.3, F5.1, F11.3, I4, ' + $
-   'A1, I2, A2, 3X, A1, I2, A2, 3X, I2)'
+   'A1, I2, A2, 3X, A1, I2, A2)'
 
   lines = replicate(molecular_rt, Nlines)
   readf, logicalUnit, lines, FORMAT=rt_format
@@ -24,11 +24,66 @@ FUNCTION readKurucznewMolecularLines, logicalUnit, Nlines
                   configj: '0A', vj: 0, parity_j: 'E1', isotope: 0}
 
   rt_format = '(F10.4, F7.3, F5.1, F10.3, F5.1, F11.3, I4, ' + $
-   'A2, I2, A2, 2X, A2, I2, A2, 2X, I2)'
+   'A1, I2, A2, 3X, A1, I2, A2, 3X, I2)'
 
   lines = replicate(molecular_rt, Nlines)
   readf, logicalUnit, lines, FORMAT=rt_format
 
+  return, lines
+END
+
+FUNCTION readKuruczTiOMolecularLines, logicalUnit, Nlines
+
+  molecular_rt = {KURUCZ_MOL_LINE_STR3, $
+                  wavelength: 0.0, log_gf: 0.0, Ji: 0.0, Ei: 0.0, $
+                  Jj: 0.0, Ej: 0.0, code: 0, $
+                  configi: '0X', vi: 0, parity_i: 'E1', $
+                  configj: '0A', vj: 0, parity_j: 'E1', isotope: 0}
+
+  rt_format = '(F10.4, F7.3, F5.1, F10.3, F5.1, F10.3, I3, ' + $
+   'A1, I2, A2, 3X, A1, I2, A2, 3X, I2)'
+
+  lines = replicate(molecular_rt, Nlines)
+  readf, logicalUnit, lines, FORMAT=rt_format
+
+  return, lines
+END
+
+FUNCTION readKuruczCNMolecularLines, logicalUnit, Nlines, ISOTOPE=isotope
+
+  molecular_rt = {KURUCZ_MOL_LINE_STR4, $
+                  wavelength: 0.0, log_gf: 0.0, Ji: 0.0, Ei: 0.0, $
+                  Jj: 0.0, Ej: 0.0, code: 0, $
+                  configi: '0X', vi: 0, parity_i: 'E1', isotope: 0, $
+                  configj: '0A', vj: 0, parity_j: 'E1'}
+
+  rt_format = '(F10.4, F7.3, F5.1, F10.3, F5.1, F11.3, 1X, I3, ' + $
+   'A1, I2, 1X, A1, 1X, I2, A1, I2, A2)'
+
+  lines = replicate(molecular_rt, Nlines)
+  readf, logicalUnit, lines, FORMAT=rt_format
+
+  IF (keyword_set(ISOTOPE)) THEN $
+     lines = lines[where(lines.isotope eq isotope)]
+
+  Nnew = n_elements(lines)
+  for n=0, Nnew-1 do begin
+     if (lines[n].Ji eq lines[n].Jj) then begin
+        case (lines[n].parity_j) of
+           'E1':  lines[n].parity_i = 'F2'
+           'E2':  lines[n].parity_i = 'F1'
+           'F1':  lines[n].parity_i = 'E2'
+           'F2':  lines[n].parity_i = 'E1'
+        endcase
+     endif else begin
+        if (lines[n].parity_i eq $
+            strmid(lines[n].parity_j, 1, 1)) then $
+               lines[n].parity_i = lines[n].parity_j else $
+                  lines[n].parity_i = strmid(lines[n].parity_j, 0, 1) + $
+                                      lines[n].parity_i
+     endelse
+  endfor
+  
   return, lines
 END
 
@@ -47,7 +102,7 @@ FUNCTION readGoorvitchCOLines, logicalUnit, Nlines
   return, lines
 END
 
-FUNCTION readmollines, filename
+FUNCTION readmollines, filename, ISOTOPE=isotope
 
   openr, logicalUnit, filename, /GET_LUN
 
@@ -64,6 +119,9 @@ FUNCTION readmollines, filename
     'GOORVITCH94': lines = readGoorvitchCOLines(logicalUnit, Nline)
     'KURUCZ_CD18': lines = readKuruczMolecularLines(logicalUnit, Nline)
     'KURUCZ_NEW':  lines = readKurucznewMolecularLines(logicalUnit, Nline)
+    'KURUCZ_TIO':  lines = readKuruczTiOMolecularLines(logicalUnit, Nline)
+    'KURUCZ_CN' :  lines = readKuruczCNMolecularLines(logicalUnit, $
+                                                      Nline, ISOTOPE=isotope)
 
     ELSE: BEGIN
       print, "Unknown molecular line format: ", format
@@ -72,7 +130,7 @@ FUNCTION readmollines, filename
   ENDCASE
   free_lun, logicalUnit
 
-  print, n_elements(lines), type, FORMAT='("Found ", I5, " lines of type ", A)'
+  print, n_elements(lines), type, FORMAT='("Found ", I8, " lines of type ", A)'
   return, lines
 END
 

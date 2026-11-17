@@ -31,7 +31,7 @@ FUNCTION rawAtom, fileName, VACUUM_TO_AIR=vacuum_to_air
 ; MODIFICATION HISTORY:
 ; 	Written by:    Han Uitenbroek
 ;
-;   --- Last modified: Thu Jun 10 16:48:27 2010 --
+;   --- Last modified: Wed Jan 10 15:03:51 2018 --
 ;-
 
   LABEL_WIDTH    = 20
@@ -72,7 +72,7 @@ FUNCTION rawAtom, fileName, VACUUM_TO_AIR=vacuum_to_air
 
   Nrad = Nline + Ncont
   IF (Nrad GT 0) THEN BEGIN
-    trans = replicate({type: 0L,  i: 0L,  j: 0L, Nlamb: 0L, $
+    trans = replicate({type: 0L,  i: 0L,  j: 0L, Nlambda: 0L, $
                        blue: 0L,  red: 0L, $
                        lambda0: 0.0,  lambdamin: 0.0, $
                        shape: 0L,  strength: 0.0, $
@@ -87,7 +87,7 @@ FUNCTION rawAtom, fileName, VACUUM_TO_AIR=vacuum_to_air
    fixed = 0
 
   atom = {Nlevel: Nlevel, Nline: Nline, Ncont: Ncont, Nfixed: Nfixed, $
-          abundance: 0.0,  weight: 0.0, $
+          abundance: 0.0,  weight: 0.0, active: 0, $
           labels: replicate(string(FORMAT='(A20)', ''), Nlevel),  $
           g: fltarr(Nlevel), E: fltarr(Nlevel), stage: lonarr(Nlevel), $
           transition: trans, fixed: fixed, $
@@ -116,7 +116,7 @@ FUNCTION rawAtom, fileName, VACUUM_TO_AIR=vacuum_to_air
     items = items(where(items NE ''))
 
     line.i = long(items(1))  &  line.j = long(items(0))
-    line.Nlamb = long(items(4))
+    line.Nlambda = long(items(4))
     line.lambda0 = (hPlanck * cLight) / $
      (atom.E(line.j) - atom.E(line.i))
     line.strength = C / line.lambda0^2 * $
@@ -144,7 +144,7 @@ FUNCTION rawAtom, fileName, VACUUM_TO_AIR=vacuum_to_air
       items = items(where(items NE ''))
 
       cont.i = long(items(1))  &  cont.j = long(items(0))
-      cont.Nlamb = long(items(3))
+      cont.Nlambda = long(items(3))
       cont.strength = float(items(2))
       cont.lambda0 = (hPlanck * cLight) / $
        (atom.E(cont.j) - atom.E(cont.i)) / NM_TO_M
@@ -155,17 +155,17 @@ FUNCTION rawAtom, fileName, VACUUM_TO_AIR=vacuum_to_air
       ENDCASE
       cont.lambdaMin = float(items(5))
 
-      lambda = fltarr(cont.Nlamb)  &  alpha = lambda
+      lambda = fltarr(cont.Nlambda)  &  alpha = lambda
       dummy = fltarr(2)
       IF (cont.shape EQ 4) THEN BEGIN
-        FOR la=0, cont.Nlamb-1 DO BEGIN
+        FOR la=0, cont.Nlambda-1 DO BEGIN
           inputLine = getline(atomUnit, /EXIT_ON_EOF)
           reads, inputLine, dummy
           lambda[la] = dummy[0]  &  alpha[la] = dummy[1]
         ENDFOR
       ENDIF ELSE BEGIN
         lambda = [cont.lambdaMin]
-        alpha  = [cont.strength * (cont.lambda0/lambda(0))^3]
+        alpha  = [cont.strength * (cont.lambda0/lambda[0])^3]
       ENDELSE
       IF (keyword_set(VACUUM_TO_AIR)) THEN BEGIN
         cont.lambda0 = vacuumtoair(cont.lambda0)

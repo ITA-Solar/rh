@@ -2,7 +2,7 @@
 
        Version:       rh2.0, 1-D plane-parallel
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Fri Mar 27 16:03:23 2009 --
+       Last modified: Mon Sep 22 16:45:38 2025 --
 
        --------------------------                      ----------RH-- */
 
@@ -51,16 +51,22 @@ void MULTIatmos(Atmosphere *atmos, Geometry *geometry)
   const char routineName[] = "MULTIatmos";
   register int k, n, mu;
 
-  char    scaleStr[20], inputLine[MAX_LINE_SIZE], *filename;
+  char    scaleStr[21], inputLine[MAX_LINE_SIZE], *filename;
   bool_t  exit_on_EOF, enhanced_atmos_ID = FALSE;
   int     Nread, Ndep, Nrequired, checkPoint;
   double *dscale, turbpress, turbelecpress, nbaryon, meanweight;
+
+  /* --- P/Pe total ionized gas. Edited: BRC --          ------------ */
+  
+  double threshold_ion = 1.9082806;
+  double gas_pressure, elec_pressure ;
+  
   struct  stat statBuffer;
 
   getCPU(2, TIME_START, NULL);
 
   /* --- Get abundances of background elements --        ------------ */
-
+ 
   readAbundance(atmos);
 
   /* --- Open the input file for model atmosphere in MULTI format - - */
@@ -80,7 +86,7 @@ void MULTIatmos(Atmosphere *atmos, Geometry *geometry)
 
   if (strcmp(input.Itop, "none"))
     geometry->vboundary[TOP] = IRRADIATED;
-  else
+  else 
     geometry->vboundary[TOP] = ZERO;
 
   /* --- Boundary condition at BOTTOM of atmosphere --   ------------ */
@@ -89,7 +95,7 @@ void MULTIatmos(Atmosphere *atmos, Geometry *geometry)
 
   /* --- Read atmos ID, scale type, gravity, and number of depth
          points --                                       ------------ */
-
+ 
   getLine(atmos->fp_atmos, MULTI_COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
   if (enhanced_atmos_ID) {
 
@@ -166,12 +172,12 @@ void MULTIatmos(Atmosphere *atmos, Geometry *geometry)
 
   for (k = 0;  k < Ndep;  k++) {
     geometry->vel[k] *= KM_TO_M;
-    atmos->vturb[k] = atmos->vturb[k] * KM_TO_M * input.vturb_mult + input.vturb_add;
+    atmos->vturb[k]  *= KM_TO_M;
     atmos->ne[k]     /= CUBE(CM_TO_M);
   }
   atmos->moving = FALSE;
   for (k = 0;  k < Ndep;  k++) {
-    if (fabs(geometry->vel[k]) >= atmos->vmacro_tresh) {
+    if (fabs(geometry->vel[k]) > atmos->vmacro_tresh) {
       atmos->moving = TRUE;
       break;
     }
@@ -221,11 +227,17 @@ void MULTIatmos(Atmosphere *atmos, Geometry *geometry)
       turbpress     = 0.5 * meanweight * SQ(atmos->vturb[k]);
       turbelecpress = 0.5 * M_ELECTRON * SQ(atmos->vturb[k]);
 
-      nbaryon =
-	(atmos->gravity * geometry->cmass[k] -
-	 atmos->ne[k] *(KBOLTZMANN * atmos->T[k] + turbelecpress));
-
-      atmos->nHtot[k] =	nbaryon /
+      /* --- Edits to prevent negative pressures --    -------------- */
+      
+      gas_pressure = atmos->gravity * geometry->cmass[k]     ; /* BRC */
+      elec_pressure = atmos->ne[k] * KBOLTZMANN * atmos->T[k] ;/* BRC */
+      if (gas_pressure < threshold_ion*elec_pressure){
+	gas_pressure = threshold_ion*elec_pressure           ; /* BRC */
+      }
+      nbaryon = (gas_pressure -
+	 atmos->ne[k] *(KBOLTZMANN * atmos->T[k] + turbelecpress)); /* BRC */
+	
+      atmos->nHtot[k] =	nbaryon / 
 	(atmos->totalAbund * (KBOLTZMANN * atmos->T[k] + turbpress));
     }
   } else if (k == Ndep) {
@@ -278,7 +290,7 @@ void convertScales(Atmosphere *atmos, Geometry *geometry)
     height[0] = 0.0;
     tau_ref[0] = as->chi_c[0] / rho[0] * cmass[0];
     for (k = 1;  k < Ndep;  k++) {
-      height[k] = height[k-1] - 2.0*(cmass[k] - cmass[k-1]) /
+      height[k] = height[k-1] - 2.0*(cmass[k] - cmass[k-1]) / 
 	(rho[k-1] + rho[k]);
       tau_ref[k] = tau_ref[k-1] + 0.5*(as->chi_c[k-1] + as->chi_c[k]) *
 	(height[k-1] - height[k]);
@@ -288,7 +300,7 @@ void convertScales(Atmosphere *atmos, Geometry *geometry)
     height[0] = 0.0;
     cmass[0]  = (tau_ref[0] / as->chi_c[0]) * rho[0];
     for (k = 1;  k < Ndep;  k++) {
-      height[k] = height[k-1] - 2.0 * (tau_ref[k] - tau_ref[k-1]) /
+      height[k] = height[k-1] - 2.0 * (tau_ref[k] - tau_ref[k-1]) / 
 	(as->chi_c[k-1] + as->chi_c[k]);
       cmass[k]  = cmass[k-1]  + 0.5*(rho[k-1] + rho[k]) *
 	(height[k-1] - height[k]);

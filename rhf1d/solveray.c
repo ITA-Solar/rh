@@ -2,7 +2,7 @@
 
        Version:       rh2.0, 1-D plane-parallel
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Wed Apr 22 09:45:18 2009 --
+       Last modified: Fri May  1 09:57:08 2020 --
 
        --------------------------                      ----------RH-- */
 
@@ -33,8 +33,11 @@
 #include "error.h"
 #include "xdr.h"
 
-#define COMMENT_CHAR    "#"
-#define RAY_INPUT_FILE  "ray.input"
+
+#define COMMENT_CHAR        "#"
+
+#define RAY_INPUT_FILE      "ray.input"
+#define ASCII_SPECTRUM_FILE "spectrum_%4.2f.asc"
 
 
 /* --- Function prototypes --                          -------------- */
@@ -57,14 +60,14 @@ char messageStr[MAX_LINE_SIZE];
 
 int main(int argc, char *argv[])
 {
-  register int n, k;
+  register int n, k, la;
 
-  char    rayFileName[14], inputLine[MAX_LINE_SIZE];
+  char    rayFileName[14], inputLine[MAX_LINE_SIZE], ascFilename[18];
   bool_t  result, exit_on_EOF, to_obs, initialize, crosscoupling,
           analyze_output, equilibria_only;
   int     Nspect, Nread, Nrequired, checkPoint, *wave_index = NULL;
   double  muz, *S, *chi, *J;
-  FILE   *fp_out, *fp_ray, *fp_stokes;
+  FILE   *fp_out, *fp_ray, *fp_stokes, *fp_out_asc;
   XDR     xdrs;
   ActiveSet *as;
 
@@ -99,8 +102,11 @@ int main(int argc, char *argv[])
     Error(ERROR_LEVEL_2, argv[0], messageStr);
   }
 
-  if (input.StokesMode == FIELD_FREE ||
-      input.StokesMode == POLARIZATION_FREE) {
+  if ((atmos.Stokes && input.StokesMode == FIELD_FREE) ||
+      input.backgr_pol) {
+    
+    /* --- Want formal solution to be polarized in these cases -- --- */
+    
     input.StokesMode = FULL_STOKES;
   }
   /* --- redefine geometry for just this one ray --    -------------- */
@@ -122,8 +128,11 @@ int main(int argc, char *argv[])
 
   /* --- Open file with background opacities --        -------------- */
 
-  if (atmos.moving || input.StokesMode) {
-    strcpy(input.background_File, "background.ray");
+  if (atmos.moving || atmos.Stokes) {
+    
+    /* --- Case of angle-dependent background opacities -- ---------- */
+      
+    strcpy(input.background_File, input.background_ray_File);
     Background(analyze_output=FALSE, equilibria_only=FALSE);
   } else {
     Background(analyze_output=FALSE, equilibria_only=TRUE);
@@ -160,6 +169,32 @@ int main(int argc, char *argv[])
   result = xdr_double(&xdrs, &muz);
   result = xdr_vector(&xdrs, (char *) spectrum.I[0], spectrum.Nspect,
 		      sizeof(double), (xdrproc_t) xdr_double);
+
+  /* --- Write ASCII table for special applications -- -------------- */
+
+  if (!input.xdr_endian) {
+    sprintf(ascFilename, ASCII_SPECTRUM_FILE, muz);
+    if ((fp_out_asc = fopen(ascFilename, "w" )) == NULL) {
+      sprintf(messageStr, "Unable to open output file %s", ascFilename);
+      Error(ERROR_LEVEL_2, argv[0], messageStr);
+    }
+    fprintf(fp_out_asc, "%d\n", spectrum.Nspect);
+
+    if (atmos.Stokes || input.backgr_pol) {
+      for (la = 0;  la < spectrum.Nspect;  la++) {
+	fprintf(fp_out_asc, "%15.6lg %12.5lg %12.5lg %12.5lg %12.5lg\n",
+		spectrum.lambda[la],
+		spectrum.I[0][la], spectrum.Stokes_Q[0][la],
+		spectrum.Stokes_U[0][la], spectrum.Stokes_V[0][la]);
+      }
+    } else {
+      for (la = 0;  la < spectrum.Nspect;  la++) {
+	fprintf(fp_out_asc, "%15.6lg %12.5lg %12.5lg %12.5lg %12.5lg\n",
+		spectrum.lambda[la],
+		spectrum.I[0][la], 0.0, 0.0, 0.0);
+      }
+    }
+  }
 
   /* --- Read wavelength indices for which chi and S are to be
          written out for the specified direction --    -------------- */
@@ -224,7 +259,8 @@ int main(int argc, char *argv[])
     free_as(wave_index[n], crosscoupling=FALSE);
   }
 
-  /* --- If magnetic fields are present --             -------------- */
+  /* --- If magnetic fields are present or background is polarized --
+                                                       -------------- */
   
   if (atmos.Stokes || input.backgr_pol) {
     result = xdr_vector(&xdrs, (char *) spectrum.Stokes_Q[0],

@@ -2,7 +2,7 @@
 
        Version:       rh2.0
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Wed Feb 26 16:11:25 2014 --
+       Last modified: Tue Feb 27 15:35:44 2024 --
 
        --------------------------                      ----------RH-- */
 
@@ -59,7 +59,7 @@ extern char messageStr[];
 
 /* ------- begin -------------------------- readAtom.c -------------- */
 
-void readAtom(Atom *atom, bool_t active)
+void readAtom(Atom *atom)
 {
   const char routineName[] = "readAtom";
   register int kr, krp, kf, la, k, n;
@@ -81,21 +81,6 @@ void readAtom(Atom *atom, bool_t active)
   getCPU(3, TIME_START, NULL);
 
   C = 2*PI * (Q_ELECTRON/EPSILON_0) * (Q_ELECTRON/M_ELECTRON) / CLIGHT;
-
-  /* --- Open the data file for current model atom --  -------------- */
-
-  initAtom(atom);
-  /*
-  if ((atom->fp_input = fopen(atom_file, "r")) == NULL) {
-    sprintf(messageStr, "Unable to open input file %s", atom_file);
-    Error(ERROR_LEVEL_2, routineName, atom_file);
-  } else {
-    sprintf(messageStr, " -- reading input file: %s %s",
-	    atom_file, (active) ? "(active)\n\n" : "(passive)\n");
-    Error(MESSAGE, routineName, messageStr);
-  }
-  */
-  atom->active = active;
 
   /* --- Read atom ID and convert to uppercase --     -------------- */
   getLineString(&atom_string, COMMENT_CHAR, inputLine, exit_on_EOF=TRUE);
@@ -297,6 +282,14 @@ void readAtom(Atom *atom, bool_t active)
 	line->vdWaals = UNSOLD;
 	line->cvdWaals[3] = line->cvdWaals[1] = 0.0;
       }
+    } else if (strstr(vdWstr, "ABO_EXPL")) {
+      line->vdWaals = BARKLEM;
+      if (getBarklemExplicit(line)) {
+	sprintf(messageStr,
+		"Line %3d -> %3d: Using explicit ABO coefficients",
+		j, i);
+	Error(WARNING, routineName, messageStr);
+      }
     } else {
       sprintf(messageStr, "Invalid value for vd Waals string: %s", vdWstr);
       Error(ERROR_LEVEL_2, routineName, messageStr);
@@ -329,12 +322,6 @@ void readAtom(Atom *atom, bool_t active)
 	     determinate(atom->label[j], atom->g[j], &nq, &S, &L, &Ju) &&
 	     fabs(Ju - Jl) <= 1.0)) {
 
-          if (line->Ncomponent > 1) {
-	    sprintf(messageStr,
-		    "Line %3d -> %3d: cannot treat composite line "
-                    "with polarization", j, i);
-	    Error(ERROR_LEVEL_2, routineName, messageStr);
-	  }
 	  line->polarizable = TRUE;
 	} else {
 	  sprintf(messageStr,
@@ -488,13 +475,15 @@ void readAtom(Atom *atom, bool_t active)
 	      "pops.%.1s.out" : "pops.%.2s.out", atom->ID);
 
     if (atom->Nprd > 0) {
-      if (atmos.moving && !input.PRD_angle_dep) {
+      if (atmos.moving  &&  input.PRD_angle_dep == PRD_ANGLE_AVER) {
 	sprintf(messageStr,
 		"Using angle-averaged PRD in moving atmosphere for "
                 "atom %2s\n", atom->ID);
 	Error(WARNING, routineName, messageStr);
       }
-      if (!atmos.moving && input.PRD_angle_dep) {
+      if (!atmos.moving  &&
+	  (input.PRD_angle_dep == PRD_ANGLE_DEP ||
+	   input.PRD_angle_dep == PRD_ANGLE_APPROX)) {
 	sprintf(messageStr,
 		"Using angle-dependent PRD in static atmosphere for "
                 "atom %2s\n", atom->ID);
@@ -652,7 +641,6 @@ void initAtomicLine(AtomicLine *line)
   line->frac = NULL;
   line->id0 = NULL;
   line->id1 = NULL;
-  line->gII = NULL;
 }
 /* ------- end ---------------------------- initAtomicLine.c -------- */
 
@@ -677,17 +665,24 @@ void initAtomicContinuum(AtomicContinuum *continuum)
 
 void freeAtom(Atom *atom)
 {
-  register int kr;
+  register int kr, i;
 
   /* --- Free allocated memory for atomic data structure -- --------- */
 
-  if (atom->label != NULL)       freeMatrix((void **) atom->label);
+  if (atom->label != NULL) {
+      for (i = 0;  i < atom->Nlevel;  i++) free(atom->label[i]);
+      free(atom->label);
+  }
+  if (atom->active) {
+      if (atom->C != NULL) freeMatrix((void **) atom->C);
+      if (atom->rhth != NULL) free(atom->rhth);
+  }
+    
   if (atom->popsinFile != NULL)  free(atom->popsinFile);
   if (atom->popsoutFile != NULL) free(atom->popsoutFile);
   if (atom->stage != NULL)       free(atom->stage);
   if (atom->g != NULL)           free(atom->g);
   if (atom->E != NULL)           free(atom->E);
-  if (atom->C != NULL)           freeMatrix((void **) atom->C);
   if (atom->vbroad != NULL)      free(atom->vbroad);
 
   /* --- Be careful here because atom->n points to atom->nstar in
@@ -702,12 +697,12 @@ void freeAtom(Atom *atom)
 
   if (atom->line != NULL) {
     for (kr = 0;  kr < atom->Nline;  kr++)
-      freeAtomicLine(atom->line + kr);
+      freeAtomicLine(&atom->line[kr]);
     free(atom->line);
   }
   if (atom->continuum != NULL) {
     for (kr = 0;  kr < atom->Ncont;  kr++)
-      freeAtomicContinuum(atom->continuum + kr);
+      freeAtomicContinuum(&atom->continuum[kr]);
     free(atom->continuum);
   }
   if (atom->ft != NULL) free(atom->ft);
@@ -739,7 +734,7 @@ void freeAtomicLine(AtomicLine *line)
   if (line->wphi != NULL)    free(line->wphi);
   if (line->Qelast != NULL)  free(line->Qelast);
   if (line->rho_prd != NULL) freeMatrix((void **) line->rho_prd);
-  if (line->fp_GII != NULL)  free(line->fp_GII);
+  if (line->fp_GII != NULL)  fclose(line->fp_GII);
 }
 /* ------- end ---------------------------- freeAtomicLine.c -------- */
 
@@ -767,7 +762,7 @@ void readAtomicModels(void)
   char    filename[MAX_LINE_SIZE],
           actionKey[MAX_KEYWORD_SIZE], popsKey[MAX_KEYWORD_SIZE],
           popsFile[MAX_LINE_SIZE], inputLine[MAX_LINE_SIZE], *atomID;
-  bool_t  active, exit_on_EOF;
+  bool_t  exit_on_EOF;
   int     Nread, Nrequired, checkPoint;
   char   *fp_atoms;
   Atom   *atom;
@@ -816,6 +811,9 @@ void readAtomicModels(void)
            treated in Non-LTE --                       -------------- */
 
     atom = &atmos.atoms[n];
+    initAtom(atom);
+    atom->active = (strstr(actionKey, "ACTIVE") ? TRUE : FALSE);
+
     /* Either use saved files (rerun only) or read whole file as string  */
     if (input.atomic_file_contents != NULL) {
         atom->fp_input = input.atomic_file_contents[n];
@@ -824,7 +822,6 @@ void readAtomicModels(void)
     }
     strncpy(atom->atom_file, filename, sizeof(atom->atom_file));
     atom->atom_file[sizeof(atom->atom_file) - 1] = '\0';  /* terminate string */
-    readAtom(atom, active=(strstr(actionKey, "ACTIVE") ? TRUE : FALSE));
 
     /* --- Set flag for initial soltion --             -------------- */
 
@@ -834,8 +831,6 @@ void readAtomicModels(void)
       atom->initial_solution = LTE_POPULATIONS;
     } else if (strstr(popsKey, "ZERO_RADIATION")) {
       atom->initial_solution = ZERO_RADIATION;
-    } else if (strstr(popsKey, "ESCAPE_PROBABILITY")) {
-      atom->initial_solution = ESCAPE_PROBABILITY;
     }
     /* --- If popsKey is not recognized --             -------------- */
 
@@ -864,6 +859,7 @@ void readAtomicModels(void)
 	(char *) malloc((strlen(popsFile) + 1) * sizeof(char));
       strcpy(atom->popsinFile, popsFile);
     }
+    readAtom(atom);
   }
 
   /* --- Create an alias to the hydrogen atom structure -- ---------- */

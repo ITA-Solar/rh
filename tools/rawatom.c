@@ -2,7 +2,7 @@
 
        Version:       rh1.0, tools
        Author:        Han Uitenbroek (huitenbroek@nso.edu)
-       Last modified: Tue Jun 19 10:13:25 2001 --
+       Last modified: Thu May 20 13:13:54 2021 --
 
        --------------------------                      ----------RH-- */
 
@@ -10,14 +10,9 @@
 
  
 #include <ctype.h>
-/* Tiago, malloc.h not needed for Mac OS X */
-#if !defined(__APPLE__)
-#include <malloc.h>
-#else
-#include <stdlib.h>
-#endif
 #include <math.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "rh.h"
 #include "atom.h"
@@ -33,7 +28,7 @@
 
 /* --- Global variables --                             -------------- */
 
-char messageStr[MAX_LINE_SIZE];
+extern char messageStr[MAX_LINE_SIZE];
 
 
 /* ------- begin -------------------------- rawAtom.c --------------- */
