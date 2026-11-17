@@ -28,18 +28,19 @@ following subdirectories:
 |  rh/idl           |  Old RH IDL routines, not used  |
 |  rh/Molecules     |  Used to keep molecule files  |
 |  rh/python        |  Utility Python programs  |
-|  rh/rh15d.        |  Source files for RH 1.5D  |
-|  rh/rhf1d         |  Source files for 1D geometry :material-close: **deprecated, do not use**  |
-|  rh/rhsphere      | Source files for spherical geometry :material-close: **deprecated, do not use**  |
+|  rh/rh15d         |  Source files for RH 1.5D  |
+|  rh/rhf1d         |  Source files for the 1D plane-parallel geometry  |
+|  rh/rhsc2d        |  Source files for the 2D Cartesian geometry  |
+|  rh/rhsc3d        |  Source files for the 3D Cartesian geometry  |
+|  rh/rhsphere      |  Source files for the 1D spherically symmetric geometry  |
 |  rh/tools         |  Associate C programs for RH, not tested. |
 
 
-!!! warning
+!!! note
 
-    The source code directories for other geometries (rhf1d, rhsphere) are
-    still in the code tree, but they are deprecated and will be removed
-    soon. With the latest changes related to rh15d, they are not guaranteed
-    to work or even run. Do not use.
+    The source code directories for the other geometries (`rhf1d`,
+    `rhsc2d`, `rhsc3d` and `rhsphere`) share the main RH library (`librh.a`) with RH 1.5D. See [Other geometries](#other-geometries) for how to compile
+    them.
 
 ## Dependencies
 
@@ -179,6 +180,37 @@ binaries with `make`. The following executables will be created:
   `rh15d_ray_pool` |  Main RH 1.5D binary, uses a job pool
   `rh15d_ray`      |  Alternative RH 1.5D binary. **Deprecated.** This program runs much slower than `rh15d_ray_pool` and is kept for backwards compatibility only. Will be removed in a future revision.
   `rh15d_lteray`   |  Special binary for running in LTE
+
+### Other geometries
+
+The other geometries use the same main libraries as RH 1.5D and are
+compiled in the same way: after building `librh.a` and `librh_f90.a`, go
+to the directory of the geometry and run `make`. The following
+executables will be created:
+
+|  <div style="width:100px">Directory</div>  |  Geometry  |  Executables  |
+|:-------------|:-------------------------|:------------------------------|
+|  `rhf1d`     |  1D plane-parallel       |  `rhf1d`, `solve1d`, `solveray`, `backgrcontr`  |
+|  `rhsc2d`    |  2D Cartesian            |  `rhsc2d`, `solve2d`, `formal2d`, `solveray`, `chartflow`, `backgrcontr`  |
+|  `rhsc3d`    |  3D Cartesian            |  `rhsc3d`, `solveray`, `formal3d`  |
+|  `rhsphere`  |  1D spherically symmetric  |  `rhsphere`  |
+
+The compiler settings for `rhf1d` are taken from `Makefile.config`,
+while `rhsc2d`, `rhsc3d` and `rhsphere` take them from
+`makefiles/rhmakefile`. These programs are not MPI-parallel and, unlike
+RH 1.5D, write their output in the XDR format of the original RH and not
+in HDF5. Their `Makefile`s only track some of the header dependencies, so
+run `make clean` in these directories after changes to the headers of
+the main library.
+
+Each directory has a `run` subdirectory with example input files. To run
+a geometry, customise the `keyword.input`, `atoms.input` and other input
+files, and run the program from that directory (e.g. `../rhf1d`). The
+keywords, input files and output of these programs are described in the
+RH manual ([rhmanual.pdf](rhmanual.pdf)). Keywords that are read by the
+main library, such as `PRD_SWITCH`, apply to these geometries as well
+(see [Input files](input.md)), while the options specific to RH 1.5D
+(e.g. those starting with `15D_`) have no effect on them.
 
 ## Run directory
 

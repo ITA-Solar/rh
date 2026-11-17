@@ -215,14 +215,16 @@ void Opacity(int nspect, int mu, bool_t to_obs, bool_t initialize)
 	  switch (input.PRD_angle_dep) {
 	  case PRD_ANGLE_AVER:
 	    for (k = 0;  k < atmos.Nspace;  k++)
-	      atom->rhth[nt].gij[n][k] *= line->rho_prd[la][k];
+	      atom->rhth[nt].gij[n][k] *= line->rho_prd[la][k] * input.prdswitch +
+					    (1.0 - input.prdswitch);
 
 	    break;
 
 	  case PRD_ANGLE_DEP:
 	    lamu = 2*(atmos.Nrays*la + mu) + to_obs;
 	    for (k = 0;  k < atmos.Nspace;  k++)
-	      atom->rhth[nt].gij[n][k] *= line->rho_prd[lamu][k];
+	      atom->rhth[nt].gij[n][k] *= line->rho_prd[lamu][k] * input.prdswitch +
+					    (1.0 - input.prdswitch);
 
 	    break;
 	    
@@ -248,7 +250,8 @@ void Opacity(int nspect, int mu, bool_t to_obs, bool_t initialize)
 		
 		Linear(line->Nlambda, line->lambda, &(rho_tmp[0]),
 		       1, &lag, &rho_int, TRUE);
-		atom->rhth[nt].gij[n][k] *= rho_int;
+		atom->rhth[nt].gij[n][k] *= rho_int * input.prdswitch +
+					    (1.0 - input.prdswitch);
 	      }
 
 	    } else {
@@ -261,7 +264,8 @@ void Opacity(int nspect, int mu, bool_t to_obs, bool_t initialize)
 		  line->frac[lamu][k] *
 		  line->rho_prd[line->id1[lamu][k]][k];
 
-		atom->rhth[nt].gij[n][k] *= rho_int;
+		atom->rhth[nt].gij[n][k] *= rho_int * input.prdswitch +
+					    (1.0 - input.prdswitch);
 	      }
 	    }
 

@@ -69,6 +69,13 @@
 #  PRD_NG_ORDER   = 2
 #  PRD_NG_PERIOD  = 3
 
+# PRD_SWITCH (KEYWORD_OPTIONAL) introduces the effects of PRD gradually.
+# If > 0, PRD is added over the first iterations so that full PRD is
+# reached after 1/sqrt(PRD_SWITCH) iterations (convergence is only
+# accepted once full PRD is reached). The default is 0.0 (no switching).
+
+  PRD_SWITCH = 0.0
+
 # If PRD_ANGLE_DEP is set to FALSE angle-averaged PRD is used. Other
 # options are:
 #- PRD_ANGLE_AVER  (same, angle-averaged PRD)

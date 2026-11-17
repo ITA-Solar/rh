@@ -102,6 +102,8 @@ void readInput(char *input_string)
      &input.PRD_angle_dep, setPRDangle},
     {"PRDH_LIMIT_MEM", "FALSE", FALSE, KEYWORD_OPTIONAL, &input.prdh_limit_mem,
      setboolValue},
+    {"PRD_SWITCH", "0.0", FALSE, KEYWORD_OPTIONAL, &input.prdsw,
+     setdoubleValue},
     {"XRD", "FALSE", FALSE, KEYWORD_DEFAULT, &input.XRD, setboolValue}, 
 
     {"J_FILE",     "", FALSE, KEYWORD_REQUIRED, input.JFile, setcharValue},

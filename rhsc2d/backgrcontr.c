@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
   setOptions(argc, argv);
   SetFPEtraps();
 
-  readInput();
+  readInput(NULL);
   readAtmos(&atmos, &geometry);
   readAtomicModels();
   readMolecularModels();

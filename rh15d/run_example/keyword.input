@@ -102,10 +102,14 @@
 #  PRD_NG_PERIOD  = 5
 
 # The option PRD_ANGLE_DEP can take the values of :
-# - PRD_ANGLE_INDEP (angle-independent PRD, default)
+# - PRD_ANGLE_AVER (angle-averaged PRD, default)
 # - PRD_ANGLE_APPROX (Jorrit's hybrid scheme)
 # - PRD_ANGLE_DEP (full angle-dependent PRD) 
   PRD_ANGLE_DEP = PRD_ANGLE_APPROX
+
+# PRD Switching. At the moment this number (if > 0), is used so that
+# it converges to full PRD in 1/sqrt(PRD_SWITCH) iterations.
+  PRD_SWITCH = 0.0
 
 # Enable cross-redistribution between PRD levels that share a common
 # upper level. RH determines automatically which levels if set to TRUE.
@@ -183,11 +187,11 @@
 # Input file for the magnetic field (KEYWORD_OPTIONAL). Default is "none".
 # Never used in RH 1.5D, but must be set for compatibility reasons. 
 # Cannot be set if STOKES_MODE = NO_STOKES.
-  STOKES_INPUT = foo.bar
+#  STOKES_INPUT = foo.bar
 
 # Input Stokes mode (KEYWORD_OPTIONAL). 
 # Options are: NO_STOKES, FIELD_FREE, POLARIZATION_FREE, and FULL_STOKES.
-  STOKES_MODE = FIELD_FREE
+  STOKES_MODE = NO_STOKES
 
 # Include magneto-optical effects (KEYWORD_DEFAULT). Default is TRUE.
 #  MAGNETO_OPTICAL = FALSE

@@ -78,6 +78,15 @@ void Iterate(int NmaxIter, double iterLimit)
   /* --- Start of the main iteration loop --             ------------ */
 
   niter = 1;
+
+  /* --- PRD switching: start without PRD effects in the emissivity and
+         ramp up to full PRD --                          ------------ */
+
+  if (input.prdsw > 0.0)
+    input.prdswitch = 0.0;
+  else
+    input.prdswitch = 1.0;
+
   while (niter <= NmaxIter ||
 	 (input.CR_Nstep > 0 && niter <= input.CR_Nstep)) {
 
@@ -96,7 +105,8 @@ void Iterate(int NmaxIter, double iterLimit)
 
     /* --- Solve statistical equilibrium equations --  -------------- */
 
-    sprintf(messageStr, "\n -- Iteration %3d\n", niter);
+    sprintf(messageStr, "\n -- Iteration %3d, prd switch = %.2f\n",
+	    niter, input.prdswitch);
     Error(MESSAGE, routineName, messageStr);
     dpopsmax = updatePopulations(niter);
 
@@ -115,8 +125,13 @@ void Iterate(int NmaxIter, double iterLimit)
     sprintf(messageStr, "Total Iteration %3d", niter);
     getCPU(2, TIME_POLL, messageStr);
 
-    if (dpopsmax < iterLimit) break;
+    if (dpopsmax < iterLimit && input.prdswitch >= 1.0) break;
     niter++;
+
+    /* --- Update PRD switching (quadratic in niter) -- ------------- */
+
+    if (input.prdsw > 0.0)
+      input.prdswitch = MIN(1.0, input.prdsw * (double) (niter * niter));
 
     if (input.solve_ne == ITERATION)
       Background(write_analyze_output=TRUE, equilibria_only=FALSE);

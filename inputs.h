@@ -102,6 +102,7 @@ typedef struct {
   bool_t p15d_wxtra, p15d_rerun, p15d_refine, p15d_zcut, p15d_wtau;
   bool_t p15d_wpop, p15d_wrates, p15d_wcrates;
   double iterLimit, PRDiterLimit, metallicity, CR_factor, *wavetable;
+  double prdswitch, prdsw;
   unsigned int Nxwave;
   /* Tiago, for saving the input files */
   char  *atoms_file_contents, *keyword_file_contents, *ray_file_contents;

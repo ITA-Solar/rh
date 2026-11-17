@@ -937,6 +937,7 @@ void readSavedKeywords(void) {
   enum S_interpol saved_S_interpolation;
   enum S_interpol_stokes saved_S_interpolation_stokes;
   double saved_p15d_tmax, saved_iterLimit, saved_PRDiterLimit;
+  double saved_prdswitch, saved_prdsw;
 
   /* --- Open the inputdata file --- */
   if (( plist = H5Pcreate(H5P_FILE_ACCESS )) < 0) HERR(routineName);
@@ -996,6 +997,8 @@ void readSavedKeywords(void) {
   saved_PRD_Ngperiod = input.PRD_Ngperiod;
   saved_S_interpolation = input.S_interpolation;
   saved_S_interpolation_stokes = input.S_interpolation_stokes;
+  saved_prdsw = input.prdsw;
+  saved_prdswitch = input.prdswitch;
   /* Overwrite non-changeable keyword options with saved ones */
   readInput(input.keyword_file_contents);
   /* Put back changeable keyword options */
@@ -1018,6 +1021,8 @@ void readSavedKeywords(void) {
   input.PRD_Ngperiod = saved_PRD_Ngperiod;
   input.S_interpolation = saved_S_interpolation;
   input.S_interpolation_stokes = saved_S_interpolation_stokes;
+  input.prdsw = saved_prdsw;
+  input.prdswitch = saved_prdswitch;
   return;
 }
 
