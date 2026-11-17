@@ -113,7 +113,7 @@ void Piecewise_Linear_1D(int nspect, int mu, bool_t to_obs,
 
   for (k = k_start+dk;  k != k_end;  k += dk) {
     /* --- Opacity integration --- */
-    
+
     dtau_uw = zmu * (chi[k] + chi[k-dk]) *
       fabs(geometry.height[k] - geometry.height[k-dk]); 
     
@@ -121,7 +121,11 @@ void Piecewise_Linear_1D(int nspect, int mu, bool_t to_obs,
     I[k] = I[k-dk]*w[0] + w[1]*S[k-dk] + w[2]*S[k];
 
     if (Psi) Psi[k] = w[2];
+
   }
+  
+  I[k_end] = I[k_end-dk]*w[0] + w[1]*S[k_end-dk] + w[2]*S[k_end];
+  if (Psi) Psi[k_end] = w[2];
 }
 /* ------- end ---------------------------- Piecewise_Linear_1D.c --- */
 
